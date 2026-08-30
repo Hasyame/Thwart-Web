@@ -2,6 +2,8 @@
 
 **ADR-101 — Shape of the sync protocol**
 
+**Status:** Accepted, 2026-08-30.
+
 ## Context
 
 Two or three clients — a phone, a tablet, later a browser — each hold a full

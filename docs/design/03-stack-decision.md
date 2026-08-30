@@ -18,6 +18,8 @@ answer.
 
 ## ADR-201 — The API is written in Go
 
+**Status:** Accepted, 2026-08-30.
+
 ### Context
 
 A small HTTP API implementing doc 02: eleven endpoints, no business logic worth
@@ -82,8 +84,10 @@ point of making it dumb. A component you touch twice a year should optimise for
 being operable and re-readable after six months away, not for sharing a syntax
 with the component you touch weekly.
 
-If you would rather not learn a language for this, Ktor is a defensible second
-choice and I would not argue hard. Node I would argue against.
+Ktor was the defensible second choice, and would have been a reasonable answer
+for anyone unwilling to take on a new language for this component. Benoît chose
+Go on 2026-08-30, so that question is closed. Node was argued against and
+remains so.
 
 ### Consequences
 
@@ -101,6 +105,8 @@ choice and I would not argue hard. Node I would argue against.
 ---
 
 ## ADR-202 — The database is SQLite
+
+**Status:** Accepted, 2026-08-30.
 
 ### Context
 
@@ -177,6 +183,8 @@ instead of a guess.
 ---
 
 ## ADR-203 — The web front end is a TypeScript PWA, not Compose for Wasm
+
+**Status:** Accepted, 2026-08-30.
 
 ### Context
 
@@ -261,6 +269,8 @@ enough to hold in your head.
 ---
 
 ## ADR-204 — Material 3 by tokens, not by Material Web components
+
+**Status:** Accepted, 2026-08-30.
 
 ### Context
 

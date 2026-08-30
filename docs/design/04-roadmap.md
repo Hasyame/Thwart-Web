@@ -4,6 +4,8 @@
 
 ## ADR-301 — The server and web app live in their own repository
 
+**Status:** Accepted, 2026-08-30.
+
 ### Context
 
 Three candidate homes: inside `Hasyame/Thwart`; in a new monorepo holding all
@@ -46,12 +48,12 @@ and is not restructured.
 
 Two notes on the arrangement:
 
-- **The name is slightly wrong and I would keep it anyway.** `Thwart-Web` holds
-  the sync server as well, and the server is arguably the more important half —
+- **The name is slightly wrong and we are keeping it.** `Thwart-Web` holds the
+  sync server as well, and the server is arguably the more important half —
   Phase 0 ships it with no web app at all. `Thwart-Sync` or `Thwart-Server`
-  would describe the contents better. Renaming a GitHub repository is cheap and
-  redirects old URLs, so this is easy to change later if it starts to grate.
-  Flagging it rather than deciding for you.
+  would describe the contents better. Raised on 2026-08-30 and settled in favour
+  of keeping `Thwart-Web`. Renaming a GitHub repository is cheap and redirects
+  old URLs, so this stays reversible if it ever starts to grate.
 - **One repository here, not a dev/public pair.** The Android split exists
   because F-Droid builds from the public repository and releases need a clean
   public history. Neither applies here. Keep `Thwart-Web` private until Phase 0
@@ -101,7 +103,8 @@ is which.
 
 Two amendments.
 
-**Amendment 1: a Phase 0 that ships before the server exists.** Doc 01 §5 found
+**Amendment 1: a Phase 0 that ships before the server exists.** Accepted
+2026-08-30. Doc 01 §5 found
 that no table has `updatedAt` and every delete is a hard delete. Those columns
 have to be in the field, populated on real installs, before sync can work at
 all. If they ship in the same release as sync, then on day one every existing
