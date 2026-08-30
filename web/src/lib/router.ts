@@ -5,7 +5,7 @@
  * building the card browser first is that a card is an indexable page. A
  * crawler will not follow `#/card/01001a`.
  *
- * Five routes is still not enough to justify a routing library.
+ * Seven routes, and still not enough to justify a routing library.
  */
 
 export type Route =
@@ -13,12 +13,16 @@ export type Route =
   | { readonly name: 'collection' }
   | { readonly name: 'randomizer' }
   | { readonly name: 'decks' }
+  | { readonly name: 'play' }
+  | { readonly name: 'stats' }
   | { readonly name: 'card'; readonly code: string };
 
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
 const COLLECTION_PATH = /^\/collection\/?$/;
 const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 const DECKS_PATH = /^\/decks\/?$/;
+const PLAY_PATH = /^\/play\/?$/;
+const STATS_PATH = /^\/stats\/?$/;
 
 export function routeFromPath(pathname: string, base: string): Route {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
@@ -41,6 +45,12 @@ export function routeFromPath(pathname: string, base: string): Route {
   if (DECKS_PATH.test(normalised)) {
     return { name: 'decks' };
   }
+  if (PLAY_PATH.test(normalised)) {
+    return { name: 'play' };
+  }
+  if (STATS_PATH.test(normalised)) {
+    return { name: 'stats' };
+  }
   return { name: 'search' };
 }
 
@@ -57,6 +67,12 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'decks') {
     return `${trimmedBase}/decks`;
+  }
+  if (route.name === 'play') {
+    return `${trimmedBase}/play`;
+  }
+  if (route.name === 'stats') {
+    return `${trimmedBase}/stats`;
   }
   return trimmedBase === '' ? '/' : `${trimmedBase}/`;
 }

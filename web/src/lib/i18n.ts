@@ -56,6 +56,41 @@ export interface Strings {
   readonly statBoost: string;
   readonly statThreat: string;
 
+  readonly navPlay: string;
+  readonly navStats: string;
+  readonly playTitle: string;
+  readonly playSetupNote: string;
+  readonly choose: string;
+  readonly standardSetWith: string;
+  readonly addHero: string;
+  readonly noHeroesYet: string;
+  readonly modularChooseNote: string;
+  readonly startGame: string;
+  readonly pauseClock: string;
+  readonly resumeClock: string;
+  readonly recordResult: string;
+  readonly location: string;
+  readonly victoryPoints: string;
+  readonly notes: string;
+  readonly won: string;
+  readonly lost: string;
+  readonly discardGame: string;
+  readonly discardNote: string;
+  readonly playRecorded: string;
+  readonly playAnother: string;
+  readonly statsTitle: string;
+  readonly statsEmpty: string;
+  readonly statsEmptyHint: string;
+  readonly statsNote: string;
+  readonly winRateOf: (won: number, total: number) => string;
+  readonly timePlayed: (formatted: string) => string;
+  readonly wonOf: (won: number, played: number) => string;
+  readonly byHero: string;
+  readonly byAspect: string;
+  readonly byHeroAspect: string;
+  readonly byScenario: string;
+  readonly byDifficulty: string;
+  readonly byPlayerCount: string;
   readonly navDecks: string;
   readonly decksTitle: string;
   readonly importDeck: string;
@@ -180,6 +215,45 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Boost',
     statThreat: 'Threat',
 
+    navPlay: 'Play',
+    navStats: 'Stats',
+    playTitle: 'My own setup',
+    playSetupNote: 'Choose everything yourself. The clock runs while you play.',
+    choose: 'Choose…',
+    standardSetWith: 'Standard set played with it',
+    addHero: 'Add a hero',
+    noHeroesYet: 'Add at least one hero.',
+    modularChooseNote:
+      'Whatever you actually shuffled in. Only sets from packs you own are listed.',
+    startGame: 'Start the game',
+    pauseClock: 'Pause the clock',
+    resumeClock: 'Resume the clock',
+    recordResult: 'Record the result',
+    location: 'Where you played',
+    victoryPoints: 'Victory points',
+    notes: 'Notes',
+    won: 'Won',
+    lost: 'Lost',
+    discardGame: 'Discard',
+    discardNote:
+      'Discarding records nothing: no play in your history and nothing in your statistics.',
+    playRecorded: 'Recorded.',
+    playAnother: 'Play another',
+    statsTitle: 'Statistics',
+    statsEmpty: 'No games recorded yet.',
+    statsEmptyHint:
+      'Record one from My own setup, or import a backup from the Android app on the Collection page.',
+    statsNote:
+      'Counted per seat, so a four-player game credits all four heroes rather than only the first.',
+    winRateOf: (won, total) => `${won} won of ${total} games`,
+    timePlayed: (formatted) => `${formatted} at the table`,
+    wonOf: (won, played) => `${won}/${played}`,
+    byHero: 'By hero',
+    byAspect: 'By aspect',
+    byHeroAspect: 'By hero and aspect',
+    byScenario: 'By scenario',
+    byDifficulty: 'By difficulty',
+    byPlayerCount: 'By number of players',
     navDecks: 'Decks',
     decksTitle: 'Decks',
     importDeck: 'Import from MarvelCDB',
@@ -334,6 +408,45 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Bonus',
     statThreat: 'Menace',
 
+    navPlay: 'Partie',
+    navStats: 'Stats',
+    playTitle: 'Ma propre configuration',
+    playSetupNote: 'Choisissez tout vous-même. Le chronomètre tourne pendant la partie.',
+    choose: 'Choisir…',
+    standardSetWith: 'Set Standard joué avec',
+    addHero: 'Ajouter un héros',
+    noHeroesYet: 'Ajoutez au moins un héros.',
+    modularChooseNote:
+      'Ce que vous avez réellement mélangé. Seuls les modules des paquets que vous possédez sont listés.',
+    startGame: 'Commencer la partie',
+    pauseClock: 'Mettre en pause',
+    resumeClock: 'Reprendre',
+    recordResult: 'Enregistrer le résultat',
+    location: 'Lieu de la partie',
+    victoryPoints: 'Points de victoire',
+    notes: 'Notes',
+    won: 'Victoire',
+    lost: 'Défaite',
+    discardGame: 'Abandonner',
+    discardNote:
+      "Abandonner n'enregistre rien : aucune partie dans votre historique ni dans vos statistiques.",
+    playRecorded: 'Enregistrée.',
+    playAnother: 'Rejouer',
+    statsTitle: 'Statistiques',
+    statsEmpty: 'Aucune partie enregistrée pour le moment.',
+    statsEmptyHint:
+      "Enregistrez-en une depuis Ma propre configuration, ou importez une sauvegarde de l'application Android sur la page Collection.",
+    statsNote:
+      'Compté par siège : une partie à quatre crédite les quatre héros et non le premier seulement.',
+    winRateOf: (won, total) => `${won} victoires sur ${total} parties`,
+    timePlayed: (formatted) => `${formatted} de jeu`,
+    wonOf: (won, played) => `${won}/${played}`,
+    byHero: 'Par héros',
+    byAspect: 'Par aspect',
+    byHeroAspect: 'Par héros et aspect',
+    byScenario: 'Par scénario',
+    byDifficulty: 'Par difficulté',
+    byPlayerCount: 'Par nombre de joueurs',
     navDecks: 'Decks',
     decksTitle: 'Decks',
     importDeck: 'Importer depuis MarvelCDB',

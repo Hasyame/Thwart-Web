@@ -6,6 +6,8 @@
   import CollectionPage from './components/CollectionPage.svelte';
   import RandomizerPage from './components/RandomizerPage.svelte';
   import DecksPage from './components/DecksPage.svelte';
+  import PlayPage from './components/PlayPage.svelte';
+  import StatsPage from './components/StatsPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
@@ -266,6 +268,10 @@
     <CollectionPage {t} {packs} {sets} {storageOk} />
   {:else if route.name === 'randomizer'}
     <RandomizerPage {t} {sets} {index} {storageOk} />
+  {:else if route.name === 'play'}
+    <PlayPage {t} {sets} {index} {storageOk} />
+  {:else if route.name === 'stats'}
+    <StatsPage {t} {storageOk} />
   {:else if route.name === 'decks'}
     <DecksPage
       {t}

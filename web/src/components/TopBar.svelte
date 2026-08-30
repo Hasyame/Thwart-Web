@@ -4,7 +4,13 @@
   import { LANGUAGE_NAMES, type Strings } from '../lib/i18n';
   import Logo from './Logo.svelte';
 
-  type NavTarget = 'search' | 'collection' | 'decks' | 'randomizer';
+  type NavTarget =
+    | 'search'
+    | 'collection'
+    | 'decks'
+    | 'randomizer'
+    | 'play'
+    | 'stats';
 
   interface Props {
     t: Strings;
@@ -82,6 +88,20 @@
         onclick={(event) => go(event, 'randomizer')}
       >
         {t.navRandomizer}
+      </a>
+      <a
+        href={hrefFor('play')}
+        class:current={active === 'play'}
+        onclick={(event) => go(event, 'play')}
+      >
+        {t.navPlay}
+      </a>
+      <a
+        href={hrefFor('stats')}
+        class:current={active === 'stats'}
+        onclick={(event) => go(event, 'stats')}
+      >
+        {t.navStats}
       </a>
     </nav>
 
