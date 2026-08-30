@@ -1,26 +1,40 @@
-# Thwart Sync & Web
+# Thwart Web
 
-An optional sync server and a web companion for
-[Thwart](https://github.com/Hasyame/Thwart), the offline-first Android app for
-the Marvel Champions living card game.
+A web companion for [Thwart](https://github.com/Hasyame/Thwart), the
+offline-first Android app for the Marvel Champions living card game. Bilingual
+in French and English, works with no account, and keeps its data in your own
+browser.
 
-**This is a work in progress.** Nothing here is released, nothing is stable,
-and the repository is private for now. It will be made public once there is
-something worth running.
+**Work in progress.** Nothing is deployed yet and the repository is private for
+now; it will be made public once there is something worth running.
 
-Two components are planned:
+## What it does
 
-- **A sync server.** A small, self-hostable HTTP API and database, so somebody
-  who wants their collection, decks, campaigns and play history on more than
-  one device can have that. An account is strictly opt-in: the Android app
-  stays fully usable with no account and no network, which is the point of it.
-- **A web application.** A progressive web app mirroring the Android app's
-  features and appearance, with richer statistics, working anonymously by
-  default and storing its data locally until somebody chooses otherwise.
+- **Cards.** Search the whole database in either language, with the app's own
+  accent- and case-folding, so `crane rouge` finds *Crâne Rouge*. Every card
+  has its own page.
+- **Collection.** Tick the packs you own, grouped by release wave as the app
+  groups them, and say which modular sets or scenarios your boxes are actually
+  missing.
+- **Decks.** Import a decklist from MarvelCDB by link or number, and read it
+  against your collection — it tells you whether you can build it.
+- **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
+  sets from what you own, honouring each scenario's own setup rules. Every
+  field can be locked and rerolled on its own.
+- **My own setup.** Choose everything yourself and let the clock run, then
+  record the result.
+- **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
+  difficulty and table size, counted per seat.
+- **Campaigns.** Read-only progress for campaigns imported from the app.
 
-The web application is being built first; the sync server is deferred. Design
-documents live in [`docs/design/`](docs/design/) — the data audit, the sync
-protocol, the stack decision, the roadmap and the operations plan.
+Until there is an account to sync with, the app's **backup file** is the bridge:
+export from your phone, import here, and export back. The records are stored in
+the same shapes the Android app uses, so a round trip loses nothing — including
+the decks, plays and campaigns this site cannot yet display.
+
+A sync server is designed but deferred; see
+[`docs/design/`](docs/design/) for the data audit, the sync protocol, the stack
+decision, the roadmap and the operations plan.
 
 ## Running the web app
 
@@ -61,7 +75,12 @@ checks MarvelCDB nightly and only rebuilds when something actually changed.
 Licensed under the MIT licence, as Thwart is.
 
 Marvel Champions card text and images belong to Fantasy Flight Games and to
-Marvel. Nothing in this repository bundles or re-hosts them, and the server
-never will: it stores what a player has made — which packs they own, which
-decks they saved, which games they played — and refers to cards by code, the
-same way the Android app does.
+Marvel. Nothing in this repository bundles or re-hosts them: the card database
+is fetched from MarvelCDB at build time and never committed, and card images
+are referenced at their canonical URLs rather than copied. What is stored is
+what a player has made — which packs they own, which decks they saved, which
+games they played — and cards are referred to by code, the same way the Android
+app does.
+
+This is an unofficial fan project, not affiliated with Fantasy Flight Games or
+Marvel.

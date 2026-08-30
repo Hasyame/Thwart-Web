@@ -56,6 +56,17 @@ export interface Strings {
   readonly statBoost: string;
   readonly statThreat: string;
 
+  readonly navCampaigns: string;
+  readonly campaignsTitle: string;
+  readonly campaignsEmpty: string;
+  readonly campaignsEmptyHint: string;
+  readonly campaignsReadOnly: string;
+  readonly campaignProgress: (done: number, total: number) => string;
+  readonly campaignConceded: string;
+  readonly campaignFinished: string;
+  readonly campaignPlays: (n: number) => string;
+  readonly campaignUnread: (n: number) => string;
+  readonly attempts: (n: number) => string;
   readonly navPlay: string;
   readonly navStats: string;
   readonly playTitle: string;
@@ -215,6 +226,25 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Boost',
     statThreat: 'Threat',
 
+    navCampaigns: 'Campaigns',
+    campaignsTitle: 'Campaigns',
+    campaignsEmpty: 'No campaigns here.',
+    campaignsEmptyHint:
+      'Import a backup from the Android app on the Collection page and your campaigns will show up.',
+    campaignsReadOnly:
+      'Read-only. Starting and playing a campaign stays in the Android app: the campaign engine runs counters, flags, questionnaires and branching, and none of that is ported yet. What is shown here is folded from the campaign log.',
+    campaignProgress: (done, total) => `${done} of ${total} scenarios beaten`,
+    campaignConceded: 'conceded',
+    campaignFinished: 'finished',
+    campaignPlays: (n) =>
+      n === 1
+        ? '1 recorded play belongs to this campaign.'
+        : `${n} recorded plays belong to this campaign.`,
+    campaignUnread: (n) =>
+      n === 1
+        ? "1 event in this campaign's log is not read by this page."
+        : `${n} events in this campaign's log are not read by this page.`,
+    attempts: (n) => `${n} attempts`,
     navPlay: 'Play',
     navStats: 'Stats',
     playTitle: 'My own setup',
@@ -408,6 +438,25 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Bonus',
     statThreat: 'Menace',
 
+    navCampaigns: 'Campagnes',
+    campaignsTitle: 'Campagnes',
+    campaignsEmpty: 'Aucune campagne ici.',
+    campaignsEmptyHint:
+      "Importez une sauvegarde de l'application Android sur la page Collection et vos campagnes apparaîtront.",
+    campaignsReadOnly:
+      "Lecture seule. Démarrer et jouer une campagne reste dans l'application Android : le moteur de campagne gère des compteurs, des drapeaux, des questionnaires et des embranchements, et rien de tout cela n'est encore porté. Ce qui est affiché ici est déduit du journal de la campagne.",
+    campaignProgress: (done, total) => `${done} scénarios battus sur ${total}`,
+    campaignConceded: 'abandonnée',
+    campaignFinished: 'terminée',
+    campaignPlays: (n) =>
+      n === 1
+        ? '1 partie enregistrée appartient à cette campagne.'
+        : `${n} parties enregistrées appartiennent à cette campagne.`,
+    campaignUnread: (n) =>
+      n === 1
+        ? "1 événement du journal de cette campagne n'est pas lu par cette page."
+        : `${n} événements du journal de cette campagne ne sont pas lus par cette page.`,
+    attempts: (n) => `${n} tentatives`,
     navPlay: 'Partie',
     navStats: 'Stats',
     playTitle: 'Ma propre configuration',

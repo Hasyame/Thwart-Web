@@ -8,6 +8,7 @@
   import DecksPage from './components/DecksPage.svelte';
   import PlayPage from './components/PlayPage.svelte';
   import StatsPage from './components/StatsPage.svelte';
+  import CampaignsPage from './components/CampaignsPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
@@ -272,6 +273,8 @@
     <PlayPage {t} {sets} {index} {storageOk} />
   {:else if route.name === 'stats'}
     <StatsPage {t} {storageOk} />
+  {:else if route.name === 'campaigns'}
+    <CampaignsPage {t} {uiLocale} {storageOk} />
   {:else if route.name === 'decks'}
     <DecksPage
       {t}
