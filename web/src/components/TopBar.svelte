@@ -11,7 +11,8 @@
     | 'randomizer'
     | 'play'
     | 'campaigns'
-    | 'stats';
+    | 'stats'
+    | 'rules';
 
   interface Props {
     t: Strings;
@@ -110,6 +111,13 @@
         onclick={(event) => go(event, 'stats')}
       >
         {t.navStats}
+      </a>
+      <a
+        href={hrefFor('rules')}
+        class:current={active === 'rules'}
+        onclick={(event) => go(event, 'rules')}
+      >
+        {t.navRules}
       </a>
     </nav>
 

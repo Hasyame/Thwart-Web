@@ -9,6 +9,7 @@
   import PlayPage from './components/PlayPage.svelte';
   import StatsPage from './components/StatsPage.svelte';
   import CampaignsPage from './components/CampaignsPage.svelte';
+  import RulesPage from './components/RulesPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
@@ -275,6 +276,8 @@
     <StatsPage {t} {storageOk} />
   {:else if route.name === 'campaigns'}
     <CampaignsPage {t} {uiLocale} {storageOk} />
+  {:else if route.name === 'rules'}
+    <RulesPage {t} {cardLocale} />
   {:else if route.name === 'decks'}
     <DecksPage
       {t}
@@ -323,9 +326,13 @@
 <footer class="page">
   <p class="muted">
     {t.dataFrom}
-    <a href="https://marvelcdb.com" target="_blank" rel="noopener">MarvelCDB</a>{#if meta !== null}
-      · {t.dataUpdated}
-      {new Date(meta.fetchedAt).toLocaleDateString(uiLocale)}{/if}
+    <a href="https://marvelcdb.com" target="_blank" rel="noopener">MarvelCDB</a>
+    {#if meta !== null}
+      <!-- The separator carries its own spaces: putting them in the markup
+           lets the block boundary swallow them. -->
+      {' · '}{t.dataUpdated}
+      {new Date(meta.fetchedAt).toLocaleDateString(uiLocale)}
+    {/if}
   </p>
   <p class="muted legal">{t.legal}</p>
 </footer>

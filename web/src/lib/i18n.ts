@@ -56,6 +56,14 @@ export interface Strings {
   readonly statBoost: string;
   readonly statThreat: string;
 
+  readonly navRules: string;
+  readonly rulesTitle: string;
+  readonly rulesSearchHint: string;
+  readonly rulesNoResults: string;
+  readonly rulesLoadError: string;
+  readonly rulesLoading: string;
+  readonly rulesCount: (shown: number, total: number) => string;
+  readonly rulesCredit: (credit: string, licence: string) => string;
   readonly navCampaigns: string;
   readonly campaignsTitle: string;
   readonly campaignsEmpty: string;
@@ -226,6 +234,16 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Boost',
     statThreat: 'Threat',
 
+    navRules: 'Rules',
+    rulesTitle: 'Rules Reference',
+    rulesSearchHint: 'Search the rules',
+    rulesNoResults: 'No rule matches your search.',
+    rulesLoadError: 'The rules reference could not be loaded.',
+    rulesLoading: 'Loading the rules reference…',
+    rulesCount: (shown, total) =>
+      shown === total ? `${total} entries` : `${shown} of ${total} entries`,
+    rulesCredit: (credit, licence) =>
+      `Rules reference compiled by ${credit}, released under ${licence}. Unofficial, and not endorsed by Fantasy Flight Games.`,
     navCampaigns: 'Campaigns',
     campaignsTitle: 'Campaigns',
     campaignsEmpty: 'No campaigns here.',
@@ -438,6 +456,18 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Bonus',
     statThreat: 'Menace',
 
+    navRules: 'Règles',
+    rulesTitle: 'Guide des règles',
+    rulesSearchHint: 'Rechercher dans les règles',
+    rulesNoResults: 'Aucune règle ne correspond à votre recherche.',
+    rulesLoadError: 'Impossible de charger le guide des règles.',
+    rulesLoading: 'Chargement du guide des règles…',
+    rulesCount: (shown, total) =>
+      shown === total
+        ? `${total} entrées`
+        : `${shown} ${shown === 1 ? 'entrée' : 'entrées'} sur ${total}`,
+    rulesCredit: (credit, licence) =>
+      `Guide des règles compilé par ${credit}, publié sous ${licence}. Non officiel, sans lien avec Fantasy Flight Games.`,
     navCampaigns: 'Campagnes',
     campaignsTitle: 'Campagnes',
     campaignsEmpty: 'Aucune campagne ici.',
@@ -457,9 +487,9 @@ const STRINGS: Record<Locale, Strings> = {
         ? "1 événement du journal de cette campagne n'est pas lu par cette page."
         : `${n} événements du journal de cette campagne ne sont pas lus par cette page.`,
     attempts: (n) => `${n} tentatives`,
-    navPlay: 'Partie',
+    navPlay: 'Ma propre partie',
     navStats: 'Stats',
-    playTitle: 'Ma propre configuration',
+    playTitle: 'Ma propre partie',
     playSetupNote: 'Choisissez tout vous-même. Le chronomètre tourne pendant la partie.',
     choose: 'Choisir…',
     standardSetWith: 'Set Standard joué avec',
@@ -484,7 +514,7 @@ const STRINGS: Record<Locale, Strings> = {
     statsTitle: 'Statistiques',
     statsEmpty: 'Aucune partie enregistrée pour le moment.',
     statsEmptyHint:
-      "Enregistrez-en une depuis Ma propre configuration, ou importez une sauvegarde de l'application Android sur la page Collection.",
+      "Enregistrez-en une depuis Ma propre partie, ou importez une sauvegarde de l'application Android sur la page Collection.",
     statsNote:
       'Compté par siège : une partie à quatre crédite les quatre héros et non le premier seulement.',
     winRateOf: (won, total) => `${won} victoires sur ${total} parties`,
@@ -517,7 +547,7 @@ const STRINGS: Record<Locale, Strings> = {
     notOwned: 'non possédée',
     deckLocaleNote: (locale) =>
       `Les noms de cartes sont affichés en ${locale === 'fr' ? 'français' : 'anglais'}, selon la langue des cartes choisie ci-dessus.`,
-    navRandomizer: 'Aléatoire',
+    navRandomizer: 'Partie aléatoire',
     filters: 'Filtres',
     filtersNote:
       "Ces filtres ne valent que pour cette session et ne sont pas enregistrés. Ce que vous possédez se règle sur la page Collection ; ici, c'est ce dont vous avez envie ce soir.",
@@ -528,7 +558,7 @@ const STRINGS: Record<Locale, Strings> = {
     savedDraws: 'Résultats enregistrés',
     beatenNote:
       "Cochez un scénario une fois battu, et le filtre ci-dessus pourra l'ignorer.",
-    randomizerTitle: 'Aléatoire',
+    randomizerTitle: 'Partie aléatoire',
     randomizerNoCollection:
       "Cochez d'abord les paquets que vous possédez sur la page Collection. Seul ce que vous pouvez réellement mettre sur la table est proposé.",
     randomizerNotEnough: (players) =>

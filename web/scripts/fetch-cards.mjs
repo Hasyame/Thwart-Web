@@ -331,6 +331,15 @@ async function main() {
     join(OUT_DIR, 'scenario-rules.json'),
   );
 
+  // The Rules Reference glossary. Unlike the card data this one *is* committed:
+  // it comes from deejimy's mc-reference under CC0-1.0, carries its French
+  // beside the English it was translated from, and is nobody's copyrighted card
+  // text. Copied here so it is served from the same place as everything else.
+  copyFileSync(
+    join(HERE, '..', 'data', 'rules-reference.json'),
+    join(OUT_DIR, 'rules-reference.json'),
+  );
+
   const metaPath = join(OUT_DIR, 'meta.json');
   const previous = existsSync(metaPath)
     ? JSON.parse(readFileSync(metaPath, 'utf8'))
