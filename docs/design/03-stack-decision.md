@@ -270,7 +270,9 @@ enough to hold in your head.
 
 ## ADR-204 — Material 3 by tokens, not by Material Web components
 
-**Status:** Accepted, 2026-08-30.
+**Status:** Accepted 2026-08-30. **Amended 2026-08-30** — see "Amendment" at
+the end: the tokens are transcribed from the app's schemes, not generated from
+its seed colours. The decision to avoid Material Web is unchanged.
 
 ### Context
 
@@ -329,6 +331,55 @@ together.
   disagreement to mediate.
 - The seed colours become a shared constant across three clients, and belong in
   the shared package described in doc 04.
+
+### Amendment, 2026-08-30 — transcribe the schemes, do not generate them
+
+The decision above was implemented and was wrong in its second half. Avoiding
+Material Web was right. Generating the palette from seed colours was not, and
+it produced a dark theme Benoît described, accurately, as very ugly.
+
+The mistake was reading `Color.kt` and stopping there. Its comment says the
+palette is derived from four hand-picked colours, which reads like an
+invitation to re-derive it. `Theme.kt` shows that is not what happens: it names
+every Material role explicitly, and three of those choices are deliberate
+*refusals* of what an algorithm gives you.
+
+- **Secondary is neutral graphite, not gold.** Its comment: gold is what the
+  game prints Justice in, so a gold selection chip sat in the same list as cards
+  where gold already meant something else. The generator had pinned secondary
+  and tertiary to the brand golds — reintroducing precisely the collision the
+  app had removed on purpose.
+- **The dark surfaces climb in five steps**, each warmed towards red, so a
+  dialog sits above a card sits above the page. A generated scheme gives two
+  tones and the screen reads flat.
+- **Headings do not use `primary`.** In the dark scheme `primary` is a bright
+  coral that Material pairs with dark maroon — "one hue twice with nothing
+  between the two, legible on a contrast table and mud on a phone". `Color.kt`
+  defines `HeadingFill`/`HeadingInk` for this and uses the same pair in both
+  themes. The generated app bar had exactly the muddy pairing the app documents
+  as unacceptable.
+
+**Amended decision:** `scripts/generate-theme.mjs` transcribes `LightScheme`,
+`DarkScheme`, the heading pair and the aspect colours from `Color.kt` and
+`Theme.kt` into CSS custom properties. `@material/material-color-utilities` is
+removed; there is nothing left for it to do.
+
+Consequences:
+
+- The two clients are the same palette rather than two derivations of one seed.
+- The aspect colours are the game's own, taken from the app instead of guessed.
+  The guesses had been close enough to look right and wrong enough to be wrong.
+- One dependency fewer.
+- The cost: the file must be kept in step with the app by hand. That is the
+  strongest argument yet for the shared data package in doc 04 — this is
+  precisely the sort of thing that drifts, and it now has a name and a home
+  waiting for it.
+
+The general lesson, worth carrying: **where the app has made a considered
+choice, port the choice, do not re-derive the inputs and hope to land in the
+same place.** The comments in that codebase are not decoration; they record
+decisions, and several of them exist specifically to warn off what an algorithm
+would do.
 
 ---
 

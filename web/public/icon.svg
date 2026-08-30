@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!--
+    The Thwart mark. Geometry copied from the Android launcher icon
+    (app/src/main/res/drawable/ic_launcher_foreground.xml) so the app and the
+    site carry the same drawing. Original geometry: no characters, no logos, no
+    trade dress.
+
+    Kept in sync by hand with src/components/Logo.svelte. There are only two
+    copies and they are both small; a build step to generate one from the other
+    would be more machinery than the problem deserves.
+  -->
+  <rect width="108" height="108" rx="24" fill="#B3000F"/>
+  <g transform="rotate(-12 54 54)">
+    <path fill="#8E0011" d="M34 16 L74 16 A5 5 0 0 1 79 21 L79 87 A5 5 0 0 1 74 92 L34 92 A5 5 0 0 1 29 87 L29 21 A5 5 0 0 1 34 16 Z"/>
+  </g>
+  <path fill="#5C0009" fill-opacity="0.55" d="M27 33 L87 33 L87 51 L66 51 L66 81 L48 81 L48 51 L27 51 Z"/>
+  <path fill="#FCC200" d="M24 30 L84 30 L84 48 L63 48 L63 78 L45 78 L45 48 L24 48 Z"/>
+</svg>

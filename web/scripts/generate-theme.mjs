@@ -1,91 +1,207 @@
 /**
- * Generates the Material 3 token set from Thwart's own seed colours.
+ * Emits the Material 3 token set as CSS custom properties.
  *
- * The Android app picks its colours by hand in
- * `core/designsystem/theme/Color.kt` and lets Material derive every container
- * and disabled state from them, so that the palette "stays in the same family
- * rather than drifting to stock purple". This does the same thing for the web,
- * with the same algorithm Compose uses, so the two clients match by
- * construction rather than by somebody eyeballing hex codes.
+ * This is a **transcription of the Android app's colour schemes**, not a
+ * generation from seed colours. That distinction was got wrong first time and
+ * is worth stating plainly, because the algorithmic version looked wrong in a
+ * way that took a person to notice.
  *
- * See docs/design/03-stack-decision.md, ADR-204: Material Web has been in
- * maintenance mode since June 2024, so we take the colour library — which is
- * maintained — and write the components ourselves.
+ * `Theme.kt` does not hand Material a seed and accept what comes out. It names
+ * every role, and several of those choices are deliberate refusals of what an
+ * algorithm would produce:
  *
- * Output is `src/theme.generated.css`, which is gitignored: it is a build
- * product, and the seed colours below are the source of truth.
+ *   - **Secondary is neutral graphite, not gold.** Gold is the colour the game
+ *     prints Justice in, so a gold selection chip sat in the same list as cards
+ *     where gold already meant something else. Deriving secondary from a gold
+ *     seed reintroduces exactly the collision the app removed.
+ *   - **The dark surfaces climb in five steps**, each warmed towards red, so a
+ *     dialog sits above a card sits above the page. Two tones read flat.
+ *   - **Headings do not use primary.** In the dark scheme `primary` is a bright
+ *     coral that Material pairs with dark maroon, which is one hue twice with
+ *     nothing between — fine on a contrast table, mud on a phone. Headings take
+ *     `HeadingFill`/`HeadingInk` instead, which is the same pair in both themes
+ *     so a heading does not change character when the lights go out.
+ *
+ * Source of truth: `core/designsystem/theme/Color.kt` and `Theme.kt` in the
+ * Android repository. Keep this file in step with them; it is the one place the
+ * two clients genuinely share a design decision, and doc 04 has it moving into
+ * Thwart-Data when that is extracted.
+ *
+ * Output is `src/theme.generated.css`, which is gitignored: a build product.
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  argbFromHex,
-  hexFromArgb,
-  themeFromSourceColor,
-  TonalPalette,
-} from '@material/material-color-utilities';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, '..', 'src', 'theme.generated.css');
 
-/**
- * Straight from Color.kt. Keep these in step with the app: they are the one
- * piece of the design system the two clients genuinely share, and doc 04 has
- * them moving into Thwart-Data when that is extracted.
- */
-const SEED = {
+/** Every named colour in Color.kt, verbatim. */
+const C = {
   ironRed: '#E30022',
+  ironRedDeep: '#CC0000',
+  ironRedTint: '#FFD9D5',
+  ironRedBright: '#FF5A49',
+  ironRedInk: '#480007',
+
   brassGold: '#D3AF37',
   arcGold: '#FCC200',
+
   panelInk: '#1A1113',
+  panelInkSoft: '#534342',
+  panelShadow: '#120C0B',
+
   paperWarm: '#FFF8F6',
+  paperShade: '#F3DDDB',
+
+  // Night pages, as five steps rather than two.
+  nightBase: '#0D0809',
+  nightLacquer: '#120C0D',
+  nightRaised: '#1A1213',
+  nightRaisedHigh: '#241A1A',
+  nightRaisedHighest: '#2F2221',
+  nightOutline: '#B9A6A3',
+  nightOutlineSoft: '#5A4A48',
+
+  // Neutral ink, for everything interactive.
+  inkGraphite: '#2B2422',
+  inkGraphiteSoft: '#E4DAD6',
+  boneCream: '#F2E7E2',
+  boneCreamDeep: '#554A47',
 };
 
 /**
- * Material 3's standard tone mapping for an accent role.
+ * Aspect colours, as the game prints them.
  *
- * Light themes take the accent at tone 40 on a tone 90 container; dark themes
- * invert to 80 on 30. Hard-coding these is what lets us pin secondary and
- * tertiary to the actual brand golds instead of accepting whatever the
- * algorithm derives from a red seed — a gold that is computed from red is not
- * gold.
+ * Not ours to restyle: they carry meaning a player already knows. Taken from
+ * Color.kt rather than guessed, which the first version of this file did — the
+ * guesses were close enough to look right and wrong enough to be wrong.
+ *
+ * `pool` is Deadpool's own aspect, the only one the game prints outside the
+ * four, kept clear of Aggression's red. `hero`, `encounter` and `campaign` are
+ * not aspects at all; they take neutrals so they cannot be mistaken for one.
  */
-const ACCENT_TONES = {
-  light: { base: 40, on: 100, container: 90, onContainer: 10 },
-  dark: { base: 80, on: 20, container: 30, onContainer: 90 },
+const FACTIONS = {
+  aggression: '#C0392B',
+  justice: '#D4A017',
+  leadership: '#2E6DA4',
+  protection: '#3E8E5A',
+  pool: '#8E44AD',
+  basic: '#7A7A7A',
+  hero: C.panelInkSoft,
+  encounter: C.boneCreamDeep,
+  campaign: C.nightOutlineSoft,
 };
 
-/** camelCase token name to the CSS custom property the components use. */
+/**
+ * The light scheme, exactly as `lightColorScheme(...)` declares it.
+ *
+ * The surface container ladder is the one thing added here. Compose leaves it
+ * to Material's defaults, which the browser has no equivalent of, so it is
+ * stepped between the two paper tones the app does name.
+ */
+const LIGHT = {
+  primary: C.ironRed,
+  onPrimary: C.paperWarm,
+  primaryContainer: C.ironRedTint,
+  onPrimaryContainer: C.ironRedInk,
+  inversePrimary: C.ironRedBright,
+
+  secondary: C.inkGraphite,
+  onSecondary: C.boneCream,
+  secondaryContainer: C.inkGraphiteSoft,
+  onSecondaryContainer: C.inkGraphite,
+
+  tertiary: C.inkGraphite,
+  onTertiary: C.boneCream,
+  tertiaryContainer: C.inkGraphiteSoft,
+  onTertiaryContainer: C.inkGraphite,
+
+  background: C.paperWarm,
+  onBackground: C.panelInk,
+  surface: C.paperWarm,
+  onSurface: C.panelInk,
+  surfaceVariant: C.paperShade,
+  onSurfaceVariant: C.panelInkSoft,
+
+  surfaceContainerLowest: '#FFFFFF',
+  surfaceContainerLow: '#FFFCFB',
+  surfaceContainer: '#FBF1EF',
+  surfaceContainerHigh: '#F7E7E5',
+  surfaceContainerHighest: C.paperShade,
+
+  // A heavy outline is most of what makes a panel read as drawn, not as a box.
+  outline: C.panelInk,
+  outlineVariant: C.panelInkSoft,
+
+  error: C.ironRedDeep,
+  onError: C.paperWarm,
+  errorContainer: C.ironRedTint,
+  onErrorContainer: C.ironRedInk,
+
+  scrim: C.panelShadow,
+};
+
+/** The dark scheme, exactly as `darkColorScheme(...)` declares it. */
+const DARK = {
+  primary: C.ironRedBright,
+  onPrimary: C.ironRedInk,
+  primaryContainer: C.ironRedDeep,
+  onPrimaryContainer: C.ironRedTint,
+  inversePrimary: C.ironRed,
+
+  secondary: C.boneCream,
+  onSecondary: C.inkGraphite,
+  secondaryContainer: C.boneCreamDeep,
+  onSecondaryContainer: C.boneCream,
+
+  tertiary: C.boneCream,
+  onTertiary: C.inkGraphite,
+  tertiaryContainer: C.boneCreamDeep,
+  onTertiaryContainer: C.boneCream,
+
+  background: C.nightBase,
+  onBackground: C.paperWarm,
+  surface: C.nightLacquer,
+  onSurface: C.paperWarm,
+  surfaceVariant: C.nightRaised,
+  onSurfaceVariant: C.paperShade,
+
+  surfaceContainerLowest: C.nightBase,
+  surfaceContainerLow: C.nightLacquer,
+  surfaceContainer: C.nightRaised,
+  surfaceContainerHigh: C.nightRaisedHigh,
+  surfaceContainerHighest: C.nightRaisedHighest,
+
+  outline: C.nightOutline,
+  outlineVariant: C.nightOutlineSoft,
+
+  error: C.ironRedBright,
+  onError: C.ironRedInk,
+  errorContainer: C.ironRedDeep,
+  onErrorContainer: C.ironRedTint,
+
+  scrim: C.panelShadow,
+};
+
+/**
+ * The filled heading strip, and the only text colour that belongs on it.
+ *
+ * Identical in both themes, on purpose. See the file header.
+ */
+const HEADING = {
+  headingFill: C.ironRed,
+  headingInk: C.paperWarm,
+
+  // The two golds, for the few places that want the brand accent directly
+  // rather than a Material role — the rule under the app bar, chiefly. Not
+  // wired into secondary, deliberately: see the file header.
+  arcGold: C.arcGold,
+  brassGold: C.brassGold,
+};
+
 function cssVarName(token) {
   return '--md-' + token.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase());
-}
-
-function accentRoles(hex, mode, prefix) {
-  const palette = TonalPalette.fromInt(argbFromHex(hex));
-  const tones = ACCENT_TONES[mode];
-  const capital = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-  return {
-    [prefix]: hexFromArgb(palette.tone(tones.base)),
-    [`on${capital}`]: hexFromArgb(palette.tone(tones.on)),
-    [`${prefix}Container`]: hexFromArgb(palette.tone(tones.container)),
-    [`on${capital}Container`]: hexFromArgb(palette.tone(tones.onContainer)),
-  };
-}
-
-function tokensFor(mode) {
-  const theme = themeFromSourceColor(argbFromHex(SEED.ironRed));
-  const scheme = theme.schemes[mode].toJSON();
-
-  const tokens = {};
-  for (const [name, argb] of Object.entries(scheme)) {
-    tokens[name] = hexFromArgb(argb);
-  }
-
-  // Pin the two golds rather than letting them be derived from the red.
-  Object.assign(tokens, accentRoles(SEED.brassGold, mode, 'secondary'));
-  Object.assign(tokens, accentRoles(SEED.arcGold, mode, 'tertiary'));
-
-  return tokens;
 }
 
 function declarations(tokens, indent) {
@@ -94,52 +210,48 @@ function declarations(tokens, indent) {
     .join('\n');
 }
 
-function block(selector, tokens) {
-  return `${selector} {\n${declarations(tokens, '  ')}\n}`;
+function factionDeclarations(indent) {
+  return Object.entries(FACTIONS)
+    .map(([code, value]) => `${indent}--faction-${code}: ${value};`)
+    .join('\n');
 }
 
-const light = tokensFor('light');
-const dark = tokensFor('dark');
-
-// The brand colours themselves, for the few places a component wants the ink
-// outline or the warm paper directly rather than a Material role.
-const brand = {
-  brandIronRed: SEED.ironRed,
-  brandBrassGold: SEED.brassGold,
-  brandArcGold: SEED.arcGold,
-  brandPanelInk: SEED.panelInk,
-  brandPaperWarm: SEED.paperWarm,
-};
-
 /*
- * Three blocks, in this order, so the theme survives all three states the
- * viewer can be in: an explicit light choice, an explicit dark choice, and the
- * default of following the system. The light palette is the bare `:root` so
- * that no colour has its only definition inside a media query; the media block
- * is guarded against an explicit light choice; the attribute block comes last
- * so a manual toggle wins in both directions.
+ * Three blocks, so the theme survives all three states the viewer can be in:
+ * an explicit light choice, an explicit dark choice, and the default of
+ * following the system. Light is the bare `:root`, so no colour has its only
+ * definition inside a media query.
  */
 const css = `/*
  * GENERATED FILE — do not edit.
  *
- * Written by scripts/generate-theme.mjs from the seed colours in Color.kt.
- * Run \`npm run theme\` to regenerate. This file is gitignored on purpose.
+ * Written by scripts/generate-theme.mjs, which transcribes the colour schemes
+ * in the Android app's Color.kt and Theme.kt. Run \`npm run theme\`.
  */
 
-${block(':root', { ...light, ...brand })}
+:root {
+${declarations(LIGHT, '  ')}
+
+${declarations(HEADING, '  ')}
+
+${factionDeclarations('  ')}
+}
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-${declarations(dark, '    ')}
+${declarations(DARK, '    ')}
   }
 }
 
-${block(":root[data-theme='dark']", dark)}
+:root[data-theme='dark'] {
+${declarations(DARK, '  ')}
+}
 `;
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, css, 'utf8');
 
 console.log(
-  `theme: wrote ${Object.keys(light).length} tokens per scheme to src/theme.generated.css`,
+  `theme: wrote ${Object.keys(LIGHT).length} roles per scheme plus ` +
+    `${Object.keys(FACTIONS).length} faction colours to src/theme.generated.css`,
 );

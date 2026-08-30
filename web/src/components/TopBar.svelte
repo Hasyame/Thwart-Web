@@ -2,6 +2,7 @@
   import type { Locale } from '../lib/types';
   import type { ThemeChoice } from '../lib/preferences';
   import { LANGUAGE_NAMES, type Strings } from '../lib/i18n';
+  import Logo from './Logo.svelte';
 
   interface Props {
     t: Strings;
@@ -29,7 +30,7 @@
 <header>
   <div class="page bar">
     <button class="brand" onclick={onHome} type="button">
-      <span class="shield" aria-hidden="true">🛡️</span>
+      <Logo size={40} />
       <span class="names">
         <span class="title">{t.appName}</span>
         <span class="tagline muted">{t.tagline}</span>
@@ -77,10 +78,19 @@
 </header>
 
 <style>
+  /*
+   * The heading pair, not primary/on-primary.
+   *
+   * In the dark scheme `primary` is the bright coral and Material pairs it with
+   * dark maroon — one hue twice with nothing between, which Color.kt describes
+   * as legible on a contrast table and mud on a phone. `HeadingFill` on
+   * `HeadingInk` separates in luminance *and* hue, and is the same pair in both
+   * themes, so the bar does not change character when the lights go out.
+   */
   header {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-bottom: 3px solid var(--md-secondary);
+    background: var(--md-heading-fill);
+    color: var(--md-heading-ink);
+    border-bottom: 3px solid var(--md-arc-gold);
   }
 
   .bar {
@@ -110,11 +120,6 @@
     text-decoration: underline;
   }
 
-  .shield {
-    font-size: 1.6rem;
-    line-height: 1;
-  }
-
   .names {
     display: flex;
     flex-direction: column;
@@ -127,10 +132,10 @@
   }
 
   /* The muted class is defined globally against surface text, which is the
-     wrong contrast on the primary bar, so it is overridden here. */
+     wrong contrast on the heading strip, so it is overridden here. */
   .tagline,
   .label {
-    color: color-mix(in srgb, var(--md-on-primary) 78%, transparent);
+    color: color-mix(in srgb, var(--md-heading-ink) 78%, transparent);
   }
 
   .tagline {

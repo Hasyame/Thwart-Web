@@ -25,18 +25,11 @@
   --space-6: 2rem;
 
   --page-max: 68rem;
-
-  /* The aspects, in the game's own colours. Not derived from our seeds:
-     a Justice card is yellow because Fantasy Flight says so. */
-  --faction-leadership: #4a90d9;
-  --faction-justice: #d8b93c;
-  --faction-aggression: #c0392b;
-  --faction-protection: #4b9b5f;
-  --faction-basic: #8d8d8d;
-  --faction-hero: #7b5ea7;
-  --faction-encounter: #6d5744;
-  --faction-campaign: #8a6d3b;
 }
+
+/* The aspect colours are generated alongside the palette, straight from the
+   app's Color.kt. They are the game's own and carry meaning a player already
+   knows, so they are not ours to restyle — and not ours to guess at either. */
 
 *,
 *::before,
@@ -93,10 +86,19 @@ input {
   padding: 0 var(--space-4) var(--space-6);
 }
 
+/*
+ * A raised panel.
+ *
+ * Takes `surface-container` rather than `surface`, which is what the depth
+ * ladder is for: in the dark theme the page is NightBase and this is
+ * NightRaised, two rungs up, so a row reads as sitting on the page rather than
+ * being painted on it. Theme.kt spells the ladder out and says why — with only
+ * two tones everything landed at the same depth and the screen read flat.
+ */
 .surface {
-  background: var(--md-surface);
+  background: var(--md-surface-container);
   color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant, var(--md-outline));
+  border: 1px solid var(--md-outline-variant);
   border-radius: var(--radius-md);
 }
 

@@ -72,7 +72,8 @@
 
   .row:hover {
     border-color: var(--md-primary);
-    background: var(--md-surface-variant);
+    /* One more rung up the ladder, so hover is a lift rather than a tint. */
+    background: var(--md-surface-container-high);
   }
 
   .faction {
@@ -87,6 +88,9 @@
 
   [data-faction='leadership'] .faction {
     background: var(--faction-leadership);
+  }
+  [data-faction='pool'] .faction {
+    background: var(--faction-pool);
   }
   [data-faction='justice'] .faction {
     background: var(--faction-justice);
