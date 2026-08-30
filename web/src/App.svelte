@@ -4,6 +4,7 @@
   import CardRow from './components/CardRow.svelte';
   import CardDetail from './components/CardDetail.svelte';
   import CollectionPage from './components/CollectionPage.svelte';
+  import RandomizerPage from './components/RandomizerPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
@@ -262,6 +263,8 @@
     {/if}
   {:else if route.name === 'collection'}
     <CollectionPage {t} {packs} {sets} {storageOk} />
+  {:else if route.name === 'randomizer'}
+    <RandomizerPage {t} {sets} {index} {storageOk} />
   {:else}
     <SearchControls
       {t}

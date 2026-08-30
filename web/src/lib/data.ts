@@ -1,4 +1,5 @@
 import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './types';
+import type { ScenarioRulesFile } from './randomizer';
 
 /**
  * Loads the files written by `scripts/fetch-cards.mjs`.
@@ -106,6 +107,26 @@ export async function loadCard(
   }
   const cards = await loadPackCards(locale, row.packCode);
   return cards.find((card) => card.code === code) ?? null;
+}
+
+let rulesCache: Promise<ScenarioRulesFile> | null = null;
+
+/**
+ * Scenario setup rules: modular counts and mandatory sets, per scenario.
+ *
+ * Locale-independent by design — the file holds no names, because those come
+ * from the card database already localised.
+ */
+export function loadScenarioRules(): Promise<ScenarioRulesFile> {
+  if (rulesCache === null) {
+    rulesCache = getJson<ScenarioRulesFile>(`${BASE}/scenario-rules.json`).catch(
+      (error: unknown) => {
+        rulesCache = null;
+        throw error;
+      },
+    );
+  }
+  return rulesCache;
 }
 
 export function loadMeta(): Promise<DataMeta> {

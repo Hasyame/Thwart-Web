@@ -25,7 +25,13 @@
  * either. Per pack is the natural seam: around 120 KB, it is the unit the data
  * actually arrives in, and opening a card only ever needs the pack it is from.
  */
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import {
+  writeFileSync,
+  mkdirSync,
+  readFileSync,
+  existsSync,
+  copyFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -165,6 +171,10 @@ function toIndexRow(card) {
     name: card.name,
     subname: card.subname ?? null,
     packCode: card.pack_code,
+    // The hero's own set, which is what identifies a hero rather than a card:
+    // several cards can be the same hero, and the randomiser must not put one
+    // hero into the bag twice.
+    setCode: card.card_set_code ?? null,
     typeCode: card.type_code,
     typeName: card.type_name,
     factionCode: card.faction_code,
@@ -310,6 +320,16 @@ async function buildLocale(locale) {
 
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
+
+  // Scenario rules travel with the card data because they are keyed to it:
+  // modular counts and mandatory sets, per scenario, with no names in them —
+  // those come from the card database at runtime, already localised. Copied
+  // from the app's assets; the second file, after pack metadata, that wants
+  // Thwart-Data to exist.
+  copyFileSync(
+    join(HERE, '..', 'data', 'scenario-rules.json'),
+    join(OUT_DIR, 'scenario-rules.json'),
+  );
 
   const metaPath = join(OUT_DIR, 'meta.json');
   const previous = existsSync(metaPath)

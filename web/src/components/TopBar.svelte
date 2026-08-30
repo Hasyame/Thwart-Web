@@ -4,6 +4,8 @@
   import { LANGUAGE_NAMES, type Strings } from '../lib/i18n';
   import Logo from './Logo.svelte';
 
+  type NavTarget = 'search' | 'collection' | 'randomizer';
+
   interface Props {
     t: Strings;
     uiLocale: Locale;
@@ -13,9 +15,9 @@
     onCardLocale: (locale: Locale) => void;
     onTheme: (theme: ThemeChoice) => void;
     onHome: () => void;
-    onNavigate: (name: 'search' | 'collection') => void;
-    hrefFor: (name: 'search' | 'collection') => string;
-    active: 'search' | 'collection' | 'card';
+    onNavigate: (name: NavTarget) => void;
+    hrefFor: (name: NavTarget) => string;
+    active: NavTarget | 'card';
   }
 
   const {
@@ -33,7 +35,7 @@
   }: Props = $props();
 
   /** Plain clicks route in-app; modified clicks stay the browser's business. */
-  function go(event: MouseEvent, name: 'search' | 'collection'): void {
+  function go(event: MouseEvent, name: NavTarget): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
     }
@@ -66,6 +68,13 @@
         onclick={(event) => go(event, 'collection')}
       >
         {t.navCollection}
+      </a>
+      <a
+        href={hrefFor('randomizer')}
+        class:current={active === 'randomizer'}
+        onclick={(event) => go(event, 'randomizer')}
+      >
+        {t.navRandomizer}
       </a>
     </nav>
 

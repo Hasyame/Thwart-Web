@@ -5,16 +5,18 @@
  * building the card browser first is that a card is an indexable page. A
  * crawler will not follow `#/card/01001a`.
  *
- * Two routes is not enough to justify a routing library.
+ * Four routes is still not enough to justify a routing library.
  */
 
 export type Route =
   | { readonly name: 'search' }
   | { readonly name: 'collection' }
+  | { readonly name: 'randomizer' }
   | { readonly name: 'card'; readonly code: string };
 
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
 const COLLECTION_PATH = /^\/collection\/?$/;
+const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 
 export function routeFromPath(pathname: string, base: string): Route {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
@@ -31,6 +33,9 @@ export function routeFromPath(pathname: string, base: string): Route {
   if (COLLECTION_PATH.test(normalised)) {
     return { name: 'collection' };
   }
+  if (RANDOMIZER_PATH.test(normalised)) {
+    return { name: 'randomizer' };
+  }
   return { name: 'search' };
 }
 
@@ -41,6 +46,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'collection') {
     return `${trimmedBase}/collection`;
+  }
+  if (route.name === 'randomizer') {
+    return `${trimmedBase}/randomizer`;
   }
   return trimmedBase === '' ? '/' : `${trimmedBase}/`;
 }

@@ -56,6 +56,24 @@ export interface Strings {
   readonly statBoost: string;
   readonly statThreat: string;
 
+  readonly navRandomizer: string;
+  readonly randomizerTitle: string;
+  readonly randomizerNoCollection: string;
+  readonly randomizerNotEnough: (players: number) => string;
+  readonly poolNote: (scenarios: number, heroes: number, modulars: number) => string;
+  readonly players: string;
+  readonly roll: string;
+  readonly reroll: string;
+  readonly lockField: string;
+  readonly scenario: string;
+  readonly difficultyLabel: string;
+  readonly difficulty: (id: string) => string;
+  readonly heroes: string;
+  readonly aspect: (id: string) => string;
+  readonly required: string;
+  readonly noModularSets: string;
+  readonly saveToHistory: string;
+  readonly savedToHistory: string;
   readonly wave: (n: number) => string;
   readonly waveUnknown: string;
   readonly navCards: string;
@@ -139,6 +157,41 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Boost',
     statThreat: 'Threat',
 
+    navRandomizer: 'Randomiser',
+    randomizerTitle: 'Randomiser',
+    randomizerNoCollection:
+      'Tick the packs you own on the Collection page first. The draw only offers what you can actually put on the table.',
+    randomizerNotEnough: (players) =>
+      `Not enough in your collection for ${players} players. Add packs, or play with fewer.`,
+    poolNote: (scenarios, heroes, modulars) =>
+      `Drawing from ${scenarios} scenarios, ${heroes} heroes and ${modulars} modular sets.`,
+    players: 'Players',
+    roll: 'Roll',
+    reroll: 'Roll again',
+    lockField: 'Keep this when rolling again',
+    scenario: 'Scenario',
+    difficultyLabel: 'Difficulty',
+    difficulty: (id) =>
+      ({
+        STANDARD_I: 'Standard I',
+        STANDARD_II: 'Standard II',
+        STANDARD_III: 'Standard III',
+        EXPERT_I: 'Expert I',
+        EXPERT_II: 'Expert II',
+      })[id] ?? id,
+    heroes: 'Heroes',
+    aspect: (id) =>
+      ({
+        aggression: 'Aggression',
+        justice: 'Justice',
+        leadership: 'Leadership',
+        protection: 'Protection',
+        pool: 'Pool',
+      })[id] ?? id,
+    required: 'required',
+    noModularSets: 'This scenario takes no modular sets.',
+    saveToHistory: 'Save this draw',
+    savedToHistory: 'Saved',
     wave: (n) => `Wave ${n}`,
     waveUnknown: 'Not yet classified',
     navCards: 'Cards',
@@ -228,6 +281,41 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Bonus',
     statThreat: 'Menace',
 
+    navRandomizer: 'Tirage',
+    randomizerTitle: 'Tirage aléatoire',
+    randomizerNoCollection:
+      "Cochez d'abord les paquets que vous possédez sur la page Collection. Le tirage ne propose que ce que vous pouvez réellement mettre sur la table.",
+    randomizerNotEnough: (players) =>
+      `Votre collection ne suffit pas pour ${players} joueurs. Ajoutez des paquets, ou jouez à moins.`,
+    poolNote: (scenarios, heroes, modulars) =>
+      `Tirage parmi ${scenarios} scénarios, ${heroes} héros et ${modulars} modules.`,
+    players: 'Joueurs',
+    roll: 'Tirer',
+    reroll: 'Retirer',
+    lockField: 'Conserver lors du prochain tirage',
+    scenario: 'Scénario',
+    difficultyLabel: 'Difficulté',
+    difficulty: (id) =>
+      ({
+        STANDARD_I: 'Standard I',
+        STANDARD_II: 'Standard II',
+        STANDARD_III: 'Standard III',
+        EXPERT_I: 'Expert I',
+        EXPERT_II: 'Expert II',
+      })[id] ?? id,
+    heroes: 'Héros',
+    aspect: (id) =>
+      ({
+        aggression: 'Agressivité',
+        justice: 'Justice',
+        leadership: 'Commandement',
+        protection: 'Protection',
+        pool: 'Pool',
+      })[id] ?? id,
+    required: 'obligatoire',
+    noModularSets: 'Ce scénario ne prend aucun module.',
+    saveToHistory: 'Enregistrer ce tirage',
+    savedToHistory: 'Enregistré',
     wave: (n) => `Vague ${n}`,
     waveUnknown: 'Non classés',
     navCards: 'Cartes',

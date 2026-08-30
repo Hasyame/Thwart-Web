@@ -22,6 +22,8 @@ export interface IndexRow {
   readonly name: string;
   readonly subname: string | null;
   readonly packCode: string;
+  /** The card's own set — hero, villain, modular. Null when it has none. */
+  readonly setCode: string | null;
   readonly typeCode: string;
   readonly typeName: string;
   readonly factionCode: string;
