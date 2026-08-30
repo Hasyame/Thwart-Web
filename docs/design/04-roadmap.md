@@ -92,205 +92,254 @@ schema file makes the eventual extraction mechanical instead of archaeological.
 
 ## The roadmap
 
-### Your ordering is right. It needs one phase in front of it.
+**Revised 2026-08-30.** The original ordering put the sync server first and the
+web app second. Benoît has reversed that: **the website comes first, and it
+mirrors the app.** Sync is deferred, not cancelled — docs 01 and 02 stand
+unchanged and are picked up when it returns.
 
-Your instinct — sync first with one client, then a read-only web view, then a
-full PWA — is correct, and for the right reason: **validating the protocol
-against one client before a second exists** is the single most valuable
-sequencing decision available. Two clients and an unproven protocol is how you
-end up debugging a merge bug and a UI bug at the same time, unable to tell which
-is which.
+### What the reversal costs, honestly
 
-Two amendments.
+The original ordering had one strong argument behind it: validating the sync
+protocol against a single client before a second one exists. That argument is
+now moot rather than defeated — there is no protocol running to validate,
+because there is no server. Nothing is lost today.
 
-**Amendment 1: a Phase 0 that ships before the server exists.** Accepted
-2026-08-30. Doc 01 §5 found
-that no table has `updatedAt` and every delete is a hard delete. Those columns
-have to be in the field, populated on real installs, before sync can work at
-all. If they ship in the same release as sync, then on day one every existing
-row has `updatedAt` seeded from a migration and no history of real edits — and
-worse, you have shipped the largest and riskiest diff (twenty-one DAO deletes
-becoming soft deletes, every read query gaining a filter) simultaneously with a
-network feature, so any bug reported in the first week could be either.
+The real risk arrives later. Building a second full client *before* sync means
+that when sync does come, there are two independently grown local data models
+to reconcile instead of one, and the web app will have had a year to drift.
 
-Ship the schema change on its own, as an ordinary release that changes no
-behaviour a user can see. Let it bake for a few weeks. Then build the server
-against a population whose rows already carry honest timestamps.
+**The mitigation is cheap and must be adopted from the first line of storage
+code:** the web app's local database stores the *same record shapes* as the
+Android app's `Backup` bundle — same field names, same types, same ids. Not a
+similar shape, the same one. Doc 01 §7 already establishes that bundle as the
+interchange format. If that discipline holds, adding sync later is adding a
+transport to a data model that already matches, which is the easy version of
+this problem. If it slips, sync becomes a migration project.
 
-**Amendment 2: your Phase 1 SEO rationale does not work as stated.** "A
-read-only web view: card search, collection, statistics" is described as good
-for SEO and discovery. But a collection and statistics are *behind an account* —
-crawlers cannot see them, and you would not want them indexed if they could. The
-SEO value lives entirely in the part that needs no account: public card pages
-and a public card search.
+### What the reversal makes easier, which is more than it costs
 
-So Phase 1 splits. The public card browser is genuinely low-risk, genuinely
-indexable, needs no login and no sync, and is the natural first thing to build
-in the new front-end stack. The account view is a separate, later slice. This
-also fixes the stale `.gitignore` comment noted in doc 01 §9, which describes a
-web card browser that was planned and never built.
+- **The Android app is not touched at all.** Phase 0a — schema 17, twenty-one
+  deletes becoming soft deletes, every read query gaining a filter — was the
+  riskiest diff in the whole programme, and it is now off the table until sync
+  is real. The app keeps shipping as it does today, and F-Droid's open merge
+  request is undisturbed.
+- **No server means no operations.** Doc 05 describes a thing you have promised
+  to keep running. Deferring it defers the backups, the TLS renewal, the rate
+  limiting, the tombstone cleanup job, and the standing obligation. The web app
+  is static files.
+- **No Go yet.** ADR-201 stands, but the language you have not learned is not on
+  the critical path. Everything in the next several months is TypeScript.
+- **The repository name stops being wrong.** ADR-301 noted that `Thwart-Web`
+  undersells a repository whose first deliverable was a sync server. Under the
+  new ordering the first deliverable *is* the web app, so the name is simply
+  accurate.
+- **It suits the machine you are on.** The deferred half — Docker, nginx,
+  SQLite backup timers, a Debian VPS — is the Linux-shaped work. The web app is
+  Node and a browser, which is the most Windows-native part of the whole
+  programme. Vite, TypeScript and Svelte need nothing but a Node install, and
+  the Android app already builds on Windows through `gradlew.bat`.
 
----
+### The bridge, while there is no sync
 
-## Phase 0a — Make the Android schema syncable
+Without a server the web app's data lives in one browser and goes nowhere. That
+would make it a demo rather than a companion.
 
-**Ships as an ordinary Android release. No server, no account, no visible
-change.**
+**Use the bundle the app already writes.** `BackupRepository` exports the whole
+of a user's data as JSON, and `Backup` is already the agreed interchange shape.
+The web app imports it and exports it back. That gives real cross-device data
+movement on day one, by way of a file the user moves themselves — the poor
+relation of sync, but honest about what it is, and it needs nothing from a
+server.
 
-Deliverables:
-
-- Room schema 17: `updatedAt` and `deletedAt` on the nine user tables, as an
-  `AutoMigration`, plus the handwritten `UPDATE`s seeding `updatedAt` from each
-  table's natural timestamp (doc 01 §5).
-- Every user-data delete becomes a soft delete; every read filters
-  `deletedAt IS NULL`.
-- `updatedAt` written on every mutation, enforced in the repositories.
-- `sync_state(collection, id, serverRevision, dirty)` table, unused for now.
-- `excludedScenarios` and the settings keys added to the `Backup` format.
-- A test asserting that every user-table read query filters tombstones.
-
-**Done when**: the release is out, and a device that upgrades from 1.35 shows
-identical data with identical counts on every screen. The riskiest change in the
-whole programme is one where success looks like nothing happening.
-
----
-
-## Phase 0b — Sync server and opt-in accounts
-
-**The phase that solves your actual problem: your own phone and tablet.**
-
-Deliverables:
-
-*Server*
-- Go service implementing doc 02: eleven endpoints, SQLite, Argon2id, opaque
-  device tokens.
-- Registration with no email; recovery code generated, shown once, downloadable.
-- The per-account revision transaction, with a test that runs concurrent pushes
-  and asserts no puller can skip a revision. **This test is the deliverable**;
-  the rest of the server is straightforward.
-- Tombstone cleanup job and a published `minCursor`.
-- `GET /v1/account/export` emitting the app's own `Backup` shape.
-- `DELETE /v1/account`, actually deleting.
-- `docker-compose.yml` and `.env.example`; a stranger clones and runs it.
-- FR and EN strings for the fixed error-code set.
-
-*Android*
-- Settings screen: sign in, sign out, account status, last sync time. Off by
-  default and clearly optional.
-- Background sync via WorkManager, with manual "sync now".
-- The first-sign-in adoption flow from doc 02 §6, **including the confirmation
-  screen with counts**, the export-before-replace safeguard, and the fork rule
-  for edited decks.
-- Full-resync path when the cursor falls below `minCursor` — the same
-  reconciliation code as first sign-in.
-
-*Operations*
-- Deployed on your VPS behind nginx with TLS; doc 05.
-- Backup running and, more importantly, a restore actually performed once.
-
-**Done when**: your phone and tablet hold the same data; a play recorded on one
-appears on the other; a deck deleted on one stays deleted; both devices can be
-flown offline for a week, edited independently, and reconciled without losing a
-campaign event. And — the acceptance test that matters — **a fresh install with
-existing anonymous data can sign in to an account that already has data and end
-up with the union of both, having been asked first.**
-
-Also done when someone who is not you can `git clone`, edit one `.env`, run
-`docker compose up`, and register an account.
+It also forces the shared-data-model discipline described above, at exactly the
+point where it is cheapest to enforce: if the web app can round-trip a real
+backup from a real phone, its record shapes are correct by demonstration rather
+than by intention.
 
 ---
 
-## Phase 1a — Public card browser
+## W0 — Foundations
 
-**No accounts. No sync. Static, indexable, bilingual.**
+No user-visible feature. The scaffolding everything else stands on.
 
-This is where the front-end stack gets built and proven on the low-stakes half.
+- Vite + TypeScript + Svelte project; ESLint, Prettier, `tsc --noEmit` in CI.
+- M3 tokens generated at build time from the app's seed colours — `IronRed
+  #E30022`, `BrassGold #D3AF37`, `ArcGold #FCC200`, `PanelInk #1A1113`,
+  `PaperWarm #FFF8F6` — via `@material/material-color-utilities` (ADR-204).
+  Light and dark, emitted as CSS custom properties.
+- FR/EN from the start, as a plain typed dictionary module. Two languages and no
+  pluralisation worth the name does not justify an i18n framework; a `Record<Lang,
+  Record<Key, string>>` with a `tsc` error on a missing key is smaller, faster
+  and impossible to get subtly wrong.
+- A build step fetching card data from MarvelCDB into `web/public/data/`,
+  **never committed** — the Android `.gitignore` already refuses the same thing
+  for the same copyright reason, and this repository's `.gitignore` was written
+  to match.
 
-Deliverables:
+**Done when** a page renders in both themes and both languages, and CI builds it
+from a clean clone.
 
-- Extract `Hasyame/Thwart-Data` (see above) and make Android consume it.
-- Vite + TypeScript + Svelte project; M3 tokens generated from the app's seed
-  colours (doc 03, ADR-204).
-- A build step fetching card data from MarvelCDB — **never committed**, exactly
-  as the Android repository already refuses to commit its seed.
-- Card search and card detail pages, FR and EN, pre-rendered so each card is a
-  real indexable URL.
+### One sizing decision to make here
+
+The generated card dumps are 2.3 MB (`cards.en.json`) and 2.5 MB
+(`cards.fr.json`). Shipping either to a browser as one blob is not acceptable
+on a phone.
+
+Split them: a **trimmed search index** carrying only what a result row needs —
+code, name, faction, type, pack, cost — which compresses to a couple of hundred
+kilobytes and can load up front; and the **full card records** fetched per card,
+or baked into pre-rendered pages. Decide this in W0, because both W1 and W2
+build on top of whatever it is.
+
+---
+
+## W1 — Public card browser
+
+The app's card search and card detail, on the web. No account, no local state,
+nothing to persist.
+
+- Card search with the same accent- and case-insensitive behaviour as the app.
+  `SearchNormalizer` already defines the rule — fold accents and case at write
+  time and again on the query — and the web implementation should match it
+  exactly, not approximately, or the two apps will disagree about whether
+  `strategie` finds `Stratégie`.
+- Card detail pages, pre-rendered so each card is a real indexable URL in both
+  languages.
 - Pack and scenario listings.
-- Deployed as static files. No server involvement at all.
+- Links out to MarvelCDB. **No card images re-hosted** — reference the existing
+  public sources exactly as the app does.
 
-**Done when**: a card page loads in under a second on a phone, is indexed by
-Google under both its French and English names, and links back to MarvelCDB and
-to the Android app. And when it re-hosts no card images — link to the existing
-public sources exactly as the app does.
+**Done when** a card page loads in under a second on a phone, is indexed under
+both its French and English names, and search results match what the Android app
+returns for the same query. That last one is the real acceptance test, and it is
+worth building a small fixture of tricky queries — accents, partial names,
+traits — and asserting both clients agree.
 
----
-
-## Phase 1b — Read-only account view
-
-Deliverables:
-
-- Sign in with the Phase 0b credentials; pull only, never push.
-- Collection, decks, play history, campaign list.
-- The richer statistics you want: win rates by hero, by aspect, by
-  hero-and-aspect pairing from `roster`, by scenario, over time. This is the
-  first place the data has room to be shown properly, and the `roster` field
-  already carries what the Android statistics screen was rebuilt to use.
-- Session in memory, not `localStorage`, while the app is read-only.
-
-**Done when**: you can look at your own statistics on a laptop, and the sync
-protocol has been exercised by a second, independently written client — which
-is the real point of this phase. Any protocol ambiguity that survived Phase 0b
-surfaces here, in a client that cannot push and therefore cannot damage
-anything.
+This is also the phase that quietly retires the stale `.gitignore` comment noted
+in doc 01 §9, which describes exactly this browser as something that was planned
+and never built.
 
 ---
 
-## Phase 2 — Full read/write PWA
+## W2 — Collection, local persistence, and the backup bridge
 
-Deliverables:
+The first phase with user data in it, and the one that sets the data model for
+everything after.
 
-- IndexedDB persistence via Dexie; the anonymous user is first-class and the
-  app works with no account, as the Android app does.
-- Service worker, offline shell, installable.
-- Write paths: collection, decks, play recording, campaign play.
-- Push, including the adoption flow — a browser that has been used anonymously
-  and then signs in hits exactly the case doc 02 §6 describes, and this is the
-  second implementation of that logic, so it is where a spec ambiguity becomes a
-  bug.
-- Full conflict handling including the deck fork rule.
+- IndexedDB via Dexie, with **record shapes identical to the `Backup` bundle**.
+- Collection management: owned packs with quantities, excluded modular sets,
+  excluded scenarios — matching the app's semantics, including "absence means
+  owned" for the exclusion tables.
+- Favourites.
+- **Import a `Backup` file exported from the Android app**, and export one back
+  that the app can restore.
+- A plain statement in the UI that data lives in this browser only, with the
+  export as the answer.
 
-**Done when**: the web app is a complete alternative to the Android app for
-everything except playing at the table, and three clients can be edited offline
-and reconciled.
+**Done when** a backup exported from a real phone imports cleanly, the
+collection matches what the phone shows, and exporting from the browser produces
+a file the phone restores without complaint. Round-tripping a real device's data
+is the acceptance test; a synthetic fixture is not sufficient here, because the
+fixtures will be written from the same misreading as the code.
+
+Worth fixing in the app around now: `Backup` omits `excludedScenarios` entirely
+(doc 01 §7), so a round trip silently loses them. That is a genuine bug in the
+existing backup feature, independent of any of this, and W2 is where it would
+first be noticed.
 
 ---
 
-## Later, deliberately unscheduled
+## W3 — Randomizer, play history and statistics
 
-- **Photograph sync.** The only binary content, the only content that could hold
-  someone's face, and the only thing that would need object storage and a
-  bandwidth budget. Opt-in when it happens.
-- **Optional email.** As a separate table with no row for most accounts, purely
-  for people who want password reset by mail and can run SMTP.
-- **Sharing.** A read-only link to a deck or a campaign log. Genuinely useful,
-  and a completely different security model — it is the first feature that would
-  make any of this data public, so it deserves its own design document rather
-  than an afterthought here.
+- Scenario and hero randomiser, honouring the collection and the exclusions.
+- Play logging, matching `PlayEntity` field for field — including `roster`,
+  which is what the app's statistics were rebuilt to count.
+- **The richer statistics.** This is the reason a web app is worth building at
+  all: a laptop screen has room the phone does not. Win rate by hero, by aspect,
+  by hero-and-aspect pairing, by scenario, by player count, over time.
+- Randomizer history with the `beaten` flag.
+
+**Done when** the statistics agree with the Android app's for the same imported
+data. Any disagreement is a real bug in one of the two, and finding out which is
+the point.
+
+---
+
+## W4 — Deck import
+
+- Import from marvelcdb.com by URL or id, matching the app's id scheme
+  (`decklist-12345`, `deck-12345`, `local-<uuid>`).
+- Deck view with the card list.
+- `rawJson` retained exactly as the app retains it.
+
+**Done when** a deck imported on the web and the same deck imported on the phone
+produce the same record, id included. That equality is what makes them merge
+cleanly when sync eventually arrives.
+
+---
+
+## W5 — Campaign engine
+
+By a distance the largest piece, and the one to do last.
+
+The Android engine is data-driven: a template of counters, flag sets, card lists
+and scenarios, folded over an append-only event log of fifteen event types. The
+whole of a campaign's state is derived, never stored — which is excellent design
+and does not make the port small. It means reimplementing the fold in TypeScript
+and keeping two implementations in agreement about the semantics of every event
+type, indefinitely.
+
+- **Extract `Hasyame/Thwart-Data` here**, not before. This is the phase with a
+  genuine second consumer of the campaign templates, `pack_metadata.json`,
+  `scenario_rules.json` and `rules_reference.json`. Extracting earlier buys a
+  submodule dance and a version-skew problem for nothing.
+- Write the JSON Schema for the campaign template format first. The prose exists
+  in `docs/campaign-templates/QUESTIONNAIRE.md` and `TEMPLATE_BLANK.json`,
+  `schemaVersion` is already a field, and `data.yml` already validates every
+  bundled campaign in CI. Turning that into a schema is what makes the port
+  mechanical instead of interpretive.
+- Port the fold. Then **test it against the Kotlin implementation** by running
+  both over the same event logs and asserting identical derived state. Nine
+  campaigns are bundled; that is nine free test cases, and they are the only
+  thing that will keep the two engines honest.
+
+**Done when** a campaign started on the phone, exported and imported, shows
+identical state on the web — and vice versa.
+
+If this phase looks too large when you reach it, it is entirely reasonable to
+stop at W4 and leave campaigns to the Android app. The web app is useful without
+them; the statistics alone justify it.
+
+---
+
+## Deferred — sync
+
+Docs 01 and 02 are unchanged and remain the plan. When sync returns, it runs in
+this order:
+
+1. **Android schema 17** — `updatedAt`, `deletedAt`, soft deletes, `sync_state`.
+   Shipped as a release with no user-visible change, allowed to bake.
+2. **The Go server** — doc 02, deployed per doc 05.
+3. **Android sign-in and sync**, including the adoption flow.
+4. **Web sign-in and sync**, which by then is adding a transport to a data model
+   that already matches — provided W2's discipline held.
+
+The web app should be built so that this is an addition rather than a rewrite:
+storage behind a small interface, no assumption that the local database is the
+only copy, and record shapes that already match the bundle. None of that costs
+anything now, and all of it is expensive to retrofit.
 
 ---
 
 ## What this ordering protects
 
-Each phase leaves something worth having even if the next never happens.
-
-- After **0a** the app is unchanged but ready, and the schema work has been
-  de-risked in isolation.
-- After **0b** your phone and tablet sync. If the web app is never built, the
-  project has still solved the problem you actually have.
-- After **1a** there is a public, indexable card browser — the thing most likely
-  to bring people to the Android app, and it depends on none of the sync work.
-- After **1b** the protocol has two independent implementations, which is the
-  only way to find out whether doc 02 is a specification or a description of
-  one program's behaviour.
-- **2** is the only phase that is all-or-nothing, and by then everything
-  underneath it has been in production for months.
+- After **W1** there is a public, indexable card browser — the thing most likely
+  to bring people to the Android app, depending on no server and no account.
+- After **W2** the web app is genuinely useful, and data moves between phone and
+  browser by a file the user controls.
+- After **W3** the statistics exist, which is the feature the phone cannot do
+  justice to and the clearest reason for the web app to exist.
+- After **W4** everything except campaigns is covered.
+- **W5** is optional, and can be abandoned without stranding anything.
+- **Sync**, whenever it comes, arrives to find two clients that already agree
+  about what a play is.
