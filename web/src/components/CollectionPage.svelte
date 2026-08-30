@@ -1,0 +1,386 @@
+<script lang="ts">
+  import { liveQuery } from 'dexie';
+  import type { CardSet, Pack } from '../lib/types';
+  import type { Strings } from '../lib/i18n';
+  import {
+    db,
+    setModularSetExcluded,
+    setPackQuantity,
+    setScenarioExcluded,
+  } from '../lib/db';
+  import BackupPanel from './BackupPanel.svelte';
+
+  interface Props {
+    t: Strings;
+    packs: readonly Pack[];
+    sets: readonly CardSet[];
+    storageOk: boolean;
+  }
+
+  const { t, packs, sets, storageOk }: Props = $props();
+
+  /**
+   * Dexie's liveQuery re-runs whenever the underlying tables change, so the
+   * screen follows the database rather than the database being pushed into the
+   * screen. That also means an import updates every tick box without anything
+   * having to remember to tell it.
+   */
+  const owned = $state<{ value: Map<string, number> }>({ value: new Map() });
+  const excludedSets = $state<{ value: Set<string> }>({ value: new Set() });
+  const excludedScenarios = $state<{ value: Set<string> }>({ value: new Set() });
+
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const subscriptions = [
+      liveQuery(() => db.ownedPacks.toArray()).subscribe((rows) => {
+        owned.value = new Map(rows.map((row) => [row.packCode, row.quantity]));
+      }),
+      liveQuery(() => db.excludedModularSets.toArray()).subscribe((rows) => {
+        excludedSets.value = new Set(rows.map((row) => row.setCode));
+      }),
+      liveQuery(() => db.excludedScenarios.toArray()).subscribe((rows) => {
+        excludedScenarios.value = new Set(rows.map((row) => row.scenarioCode));
+      }),
+    ];
+    return () => subscriptions.forEach((s) => s.unsubscribe());
+  });
+
+  let expanded = $state<string | null>(null);
+
+  const sortedPacks = $derived([...packs].sort((a, b) => a.position - b.position));
+
+  interface WaveGroup {
+    readonly wave: number;
+    readonly packs: readonly Pack[];
+  }
+
+  /**
+   * Packs grouped by release wave, which is how the app's collection screen
+   * arranges them — `CollectionViewModel` groups by `pack.wave` and sorts each
+   * group by `pack.position`. Same grouping, same order, so somebody who knows
+   * one screen can read the other.
+   *
+   * Wave 0 means the curated metadata does not mention the pack. It sorts last
+   * and is labelled for what it is rather than as "Wave 0", which would be a
+   * number nobody could act on.
+   */
+  const waves = $derived.by((): readonly WaveGroup[] => {
+    const byWave = new Map<number, Pack[]>();
+    for (const pack of sortedPacks) {
+      const bucket = byWave.get(pack.wave);
+      if (bucket === undefined) {
+        byWave.set(pack.wave, [pack]);
+      } else {
+        bucket.push(pack);
+      }
+    }
+    return [...byWave.entries()]
+      .map(([wave, group]) => ({ wave, packs: group }))
+      .sort((a, b) => {
+        if (a.wave === 0) {
+          return 1;
+        }
+        if (b.wave === 0) {
+          return -1;
+        }
+        return a.wave - b.wave;
+      });
+  });
+
+  function ownedInWave(group: WaveGroup): number {
+    return group.packs.filter((pack) => (owned.value.get(pack.code) ?? 0) > 0).length;
+  }
+
+  const setsByPack = $derived(
+    sets.reduce<Map<string, CardSet[]>>((map, set) => {
+      const bucket = map.get(set.packCode);
+      if (bucket === undefined) {
+        map.set(set.packCode, [set]);
+      } else {
+        bucket.push(set);
+      }
+      return map;
+    }, new Map()),
+  );
+
+  function contentsOf(packCode: string, type: string): CardSet[] {
+    return (setsByPack.get(packCode) ?? [])
+      .filter((set) => set.type === type)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const ownedCount = $derived(owned.value.size);
+</script>
+
+<section>
+  <h1>{t.collectionTitle}</h1>
+
+  {#if !storageOk}
+    <div class="notice surface">
+      <p>{t.storageUnavailable}</p>
+    </div>
+  {:else}
+    <p class="muted intro">{t.collectionIntro}</p>
+    <p class="muted">{t.collectionOwned(ownedCount, sortedPacks.length)}</p>
+
+    <BackupPanel {t} />
+
+    {#each waves as group (group.wave)}
+      <section class="wave">
+        <h2 class="wave-heading">
+          {group.wave === 0 ? t.waveUnknown : t.wave(group.wave)}
+          <span class="wave-count muted">
+            {ownedInWave(group)}/{group.packs.length}
+          </span>
+        </h2>
+
+        <ul class="packs">
+          {#each group.packs as pack (pack.code)}
+            {@const quantity = owned.value.get(pack.code) ?? 0}
+            {@const modular = contentsOf(pack.code, 'modular')}
+            {@const villains = contentsOf(pack.code, 'villain')}
+            {@const hasContents = modular.length > 0 || villains.length > 0}
+            <li class="pack surface" class:owned={quantity > 0}>
+              <div class="pack-row">
+                <label class="tick">
+                  <input
+                    type="checkbox"
+                    checked={quantity > 0}
+                    onchange={(event) =>
+                      setPackQuantity(pack.code, event.currentTarget.checked ? 1 : 0)}
+                  />
+                  <span class="pack-name">{pack.name}</span>
+                </label>
+
+                <div class="pack-actions">
+                  {#if quantity > 0}
+                    <label class="quantity">
+                      <span class="visually-hidden">{t.copiesOwned}</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="9"
+                        value={quantity}
+                        onchange={(event) =>
+                          setPackQuantity(
+                            pack.code,
+                            Number.parseInt(event.currentTarget.value, 10) || 1,
+                          )}
+                      />
+                    </label>
+                  {/if}
+
+                  {#if quantity > 0 && hasContents}
+                    <button
+                      type="button"
+                      class="expand"
+                      aria-expanded={expanded === pack.code}
+                      onclick={() =>
+                        (expanded = expanded === pack.code ? null : pack.code)}
+                    >
+                      {expanded === pack.code ? t.hideContents : t.showContents}
+                    </button>
+                  {/if}
+                </div>
+              </div>
+
+              {#if quantity > 0 && expanded === pack.code}
+                <div class="contents">
+                  <p class="muted contents-hint">{t.contentsHint}</p>
+
+                  {#if villains.length > 0}
+                    <h2>{t.scenarios}</h2>
+                    <ul class="sets">
+                      {#each villains as set (set.code)}
+                        <li>
+                          <label class="tick">
+                            <input
+                              type="checkbox"
+                              checked={!excludedScenarios.value.has(set.code)}
+                              onchange={(event) =>
+                                setScenarioExcluded(
+                                  set.code,
+                                  !event.currentTarget.checked,
+                                )}
+                            />
+                            <span>{set.name}</span>
+                          </label>
+                        </li>
+                    {/each}
+                  </ul>
+                {/if}
+
+                {#if modular.length > 0}
+                  <h2>{t.modularSets}</h2>
+                  <ul class="sets">
+                    {#each modular as set (set.code)}
+                      <li>
+                        <label class="tick">
+                          <input
+                            type="checkbox"
+                            checked={!excludedSets.value.has(set.code)}
+                            onchange={(event) =>
+                              setModularSetExcluded(
+                                set.code,
+                                !event.currentTarget.checked,
+                              )}
+                          />
+                          <span>{set.name}</span>
+                        </label>
+                      </li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
+            {/if}
+          </li>
+          {/each}
+        </ul>
+      </section>
+    {/each}
+  {/if}
+</section>
+
+<style>
+  h1 {
+    font-size: 1.6rem;
+    margin: var(--space-5) 0 var(--space-2);
+  }
+
+  .wave {
+    margin-top: var(--space-5);
+  }
+
+  .wave-heading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    font-size: 1.05rem;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--md-on-surface);
+    border-bottom: 2px solid var(--md-outline-variant);
+    padding-bottom: var(--space-2);
+    margin: 0;
+  }
+
+  .wave-count {
+    font-size: 0.85rem;
+    font-weight: 400;
+  }
+
+  h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--md-on-surface-variant);
+    margin: var(--space-4) 0 var(--space-2);
+  }
+
+  .intro {
+    max-width: var(--prose-max);
+  }
+
+  .notice {
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+  }
+
+  .packs,
+  .sets {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-3) 0 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  /* Two columns of packs once there is room; the contents panel that expands
+     underneath one of them spans both, so it is not squeezed. */
+  .packs {
+    grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
+  }
+
+  .sets {
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    margin-top: 0;
+  }
+
+  .pack {
+    padding: var(--space-3);
+  }
+
+  .pack.owned {
+    border-color: var(--md-primary);
+  }
+
+  .pack-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .tick {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .tick input {
+    flex: 0 0 auto;
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--md-primary);
+  }
+
+  .pack-name {
+    font-weight: 600;
+  }
+
+  .pack-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 0 0 auto;
+  }
+
+  .quantity input {
+    width: 3.2rem;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--md-outline);
+    background: var(--md-surface);
+    color: var(--md-on-surface);
+  }
+
+  .expand {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-outline);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .expand:hover {
+    background: var(--md-surface-container-high);
+  }
+
+  .contents {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--md-outline-variant);
+  }
+
+  .contents-hint {
+    font-size: 0.85rem;
+    margin: 0;
+    max-width: var(--prose-max);
+  }
+</style>

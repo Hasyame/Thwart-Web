@@ -7,9 +7,19 @@
     card: Card;
     cardLocale: Locale;
     t: Strings;
+    isFavourite: boolean;
+    canFavourite: boolean;
+    onToggleFavourite: () => void;
   }
 
-  const { card, cardLocale, t }: Props = $props();
+  const {
+    card,
+    cardLocale,
+    t,
+    isFavourite,
+    canFavourite,
+    onToggleFavourite,
+  }: Props = $props();
 
   const image = $derived(cardImageUrl(card.imagesrc));
   const backImage = $derived(cardImageUrl(card.backimagesrc));
@@ -70,6 +80,19 @@
       <p class="classification muted">
         {card.type_name} · {card.faction_name}
       </p>
+
+      {#if canFavourite}
+        <button
+          type="button"
+          class="favourite"
+          class:on={isFavourite}
+          aria-pressed={isFavourite}
+          onclick={onToggleFavourite}
+        >
+          <span aria-hidden="true">{isFavourite ? '★' : '☆'}</span>
+          {isFavourite ? t.unfavourite : t.favourite}
+        </button>
+      {/if}
     </header>
 
     {#if card.traits !== null && card.traits !== undefined && card.traits !== ''}
@@ -163,6 +186,29 @@
   .subname,
   .classification {
     margin: var(--space-1) 0 0;
+  }
+
+  .favourite {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-outline);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .favourite:hover {
+    background: var(--md-surface-container-high);
+  }
+
+  .favourite.on {
+    border-color: var(--md-primary);
+    color: var(--md-primary);
   }
 
   .traits {

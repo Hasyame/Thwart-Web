@@ -13,6 +13,9 @@
     onCardLocale: (locale: Locale) => void;
     onTheme: (theme: ThemeChoice) => void;
     onHome: () => void;
+    onNavigate: (name: 'search' | 'collection') => void;
+    hrefFor: (name: 'search' | 'collection') => string;
+    active: 'search' | 'collection' | 'card';
   }
 
   const {
@@ -24,7 +27,19 @@
     onCardLocale,
     onTheme,
     onHome,
+    onNavigate,
+    hrefFor,
+    active,
   }: Props = $props();
+
+  /** Plain clicks route in-app; modified clicks stay the browser's business. */
+  function go(event: MouseEvent, name: 'search' | 'collection'): void {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    onNavigate(name);
+  }
 </script>
 
 <header>
@@ -36,6 +51,23 @@
         <span class="tagline muted">{t.tagline}</span>
       </span>
     </button>
+
+    <nav>
+      <a
+        href={hrefFor('search')}
+        class:current={active === 'search' || active === 'card'}
+        onclick={(event) => go(event, 'search')}
+      >
+        {t.navCards}
+      </a>
+      <a
+        href={hrefFor('collection')}
+        class:current={active === 'collection'}
+        onclick={(event) => go(event, 'collection')}
+      >
+        {t.navCollection}
+      </a>
+    </nav>
 
     <div class="controls">
       <label class="control">
@@ -140,6 +172,28 @@
 
   .tagline {
     font-size: 0.82rem;
+  }
+
+  nav {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  nav a {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  nav a:hover {
+    background: color-mix(in srgb, var(--md-heading-ink) 14%, transparent);
+  }
+
+  nav a.current {
+    background: color-mix(in srgb, var(--md-heading-ink) 22%, transparent);
   }
 
   .controls {

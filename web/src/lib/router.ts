@@ -10,9 +10,11 @@
 
 export type Route =
   | { readonly name: 'search' }
+  | { readonly name: 'collection' }
   | { readonly name: 'card'; readonly code: string };
 
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
+const COLLECTION_PATH = /^\/collection\/?$/;
 
 export function routeFromPath(pathname: string, base: string): Route {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
@@ -20,9 +22,14 @@ export function routeFromPath(pathname: string, base: string): Route {
     ? pathname.slice(trimmedBase.length)
     : pathname;
 
-  const match = CARD_PATH.exec(path === '' ? '/' : path);
+  const normalised = path === '' ? '/' : path;
+
+  const match = CARD_PATH.exec(normalised);
   if (match !== null && match[1] !== undefined) {
     return { name: 'card', code: decodeURIComponent(match[1]) };
+  }
+  if (COLLECTION_PATH.test(normalised)) {
+    return { name: 'collection' };
   }
   return { name: 'search' };
 }
@@ -31,6 +38,9 @@ export function pathForRoute(route: Route, base: string): string {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
   if (route.name === 'card') {
     return `${trimmedBase}/card/${encodeURIComponent(route.code)}`;
+  }
+  if (route.name === 'collection') {
+    return `${trimmedBase}/collection`;
   }
   return trimmedBase === '' ? '/' : `${trimmedBase}/`;
 }

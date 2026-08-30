@@ -24,7 +24,14 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
 
-  --page-max: 68rem;
+  /*
+   * Wide, because the main view is a list of four thousand cards and a
+   * centred 68rem column on a large monitor wastes most of the screen.
+   * Running text is held narrower where it appears (--prose-max), since the
+   * argument for a short measure applies to prose, not to a results grid.
+   */
+  --page-max: 92rem;
+  --prose-max: 46rem;
 }
 
 /* The aspect colours are generated alongside the palette, straight from the

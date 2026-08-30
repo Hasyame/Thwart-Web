@@ -97,6 +97,30 @@ export interface Pack {
   readonly available: string | null;
   readonly known: number | null;
   readonly total: number | null;
+  /**
+   * Release wave, from the curated `data/pack-metadata.json` — MarvelCDB does
+   * not expose it. `0` means the file does not mention this pack, matching the
+   * app's `UNCURATED_WAVE`.
+   */
+  readonly wave: number;
+  /** `CORE`, `HERO_PACK`, `SCENARIO_PACK`, `CAMPAIGN_BOX`, or null if unknown. */
+  readonly type: string | null;
+  readonly waveInferred: boolean;
+}
+
+/**
+ * A card set: a modular set, a villain, a hero's own set, a nemesis set.
+ *
+ * `type` is MarvelCDB's `card_set_type_name_code` — `modular`, `villain`,
+ * `hero`, `nemesis`, `standard`, `expert` and a few rarer ones. The collection
+ * screen cares about `modular` (sets a pack contains but a second-hand box may
+ * be missing) and `villain` (the scenarios in it), and ignores the rest.
+ */
+export interface CardSet {
+  readonly code: string;
+  readonly name: string;
+  readonly type: string | null;
+  readonly packCode: string;
 }
 
 export interface DataMeta {

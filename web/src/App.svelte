@@ -3,10 +3,13 @@
   import SearchControls from './components/SearchControls.svelte';
   import CardRow from './components/CardRow.svelte';
   import CardDetail from './components/CardDetail.svelte';
+  import CollectionPage from './components/CollectionPage.svelte';
 
-  import type { Card, DataMeta, IndexRow, Locale, Pack } from './lib/types';
+  import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
-  import { loadCard, loadIndex, loadMeta, loadPacks } from './lib/data';
+  import { loadCard, loadIndex, loadMeta, loadPacks, loadSets } from './lib/data';
+  import { db, storageAvailable, toggleFavourite } from './lib/db';
+  import { liveQuery } from 'dexie';
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import {
@@ -35,12 +38,47 @@
 
   let index = $state<readonly IndexRow[]>([]);
   let packs = $state<readonly Pack[]>([]);
+  let sets = $state<readonly CardSet[]>([]);
   let meta = $state<DataMeta | null>(null);
   let loading = $state(true);
   let loadError = $state<string | null>(null);
 
   let card = $state<Card | null>(null);
   let cardLoading = $state(false);
+
+  /**
+   * Whether the browser will let us store anything.
+   *
+   * Asked once. The card browser needs no storage at all, so a private window
+   * with IndexedDB blocked still gets a working site — it just cannot keep a
+   * collection, and the collection screen says so rather than failing.
+   */
+  let storageOk = $state(false);
+  const favourites = $state<{ value: Set<string> }>({ value: new Set() });
+
+  $effect(() => {
+    let cancelled = false;
+    storageAvailable().then((ok) => {
+      if (!cancelled) {
+        storageOk = ok;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const subscription = liveQuery(() => db.favouriteCards.toArray()).subscribe(
+      (rows) => {
+        favourites.value = new Set(rows.map((row) => row.cardCode));
+      },
+    );
+    return () => subscription.unsubscribe();
+  });
 
   const t = $derived(strings(uiLocale));
 
@@ -71,13 +109,14 @@
     loading = true;
     loadError = null;
 
-    Promise.all([loadIndex(locale), loadPacks(locale), loadMeta()])
-      .then(([loadedIndex, loadedPacks, loadedMeta]) => {
+    Promise.all([loadIndex(locale), loadPacks(locale), loadSets(locale), loadMeta()])
+      .then(([loadedIndex, loadedPacks, loadedSets, loadedMeta]) => {
         if (cancelled) {
           return;
         }
         index = loadedIndex;
         packs = loadedPacks;
+        sets = loadedSets;
         meta = loadedMeta;
         loading = false;
       })
@@ -173,6 +212,9 @@
   onCardLocale={setCardLocale}
   onTheme={setTheme}
   onHome={() => navigate({ name: 'search' })}
+  onNavigate={(name) => navigate({ name })}
+  hrefFor={(name) => pathForRoute({ name }, BASE)}
+  active={route.name}
 />
 
 <main class="page">
@@ -205,8 +247,21 @@
     {:else if card === null}
       <p class="notice muted">{t.cardNotFound}</p>
     {:else}
-      <CardDetail {card} {cardLocale} {t} />
+      <!-- Bound to a const so the callback keeps the narrowing: `card` is
+           reassignable state, so a closure over it is not known to be non-null
+           even where the branch has just proved it is. -->
+      {@const openCard = card}
+      <CardDetail
+        card={openCard}
+        {cardLocale}
+        {t}
+        canFavourite={storageOk}
+        isFavourite={favourites.value.has(openCard.code)}
+        onToggleFavourite={() => void toggleFavourite(openCard.code)}
+      />
     {/if}
+  {:else if route.name === 'collection'}
+    <CollectionPage {t} {packs} {sets} {storageOk} />
   {:else}
     <SearchControls
       {t}
@@ -284,8 +339,14 @@
     margin: 0 0 var(--space-3);
   }
 
+  /*
+   * Columns as the window allows: one on a phone, more on a desktop. The
+   * minimum is set by the longest thing a row must show without truncating
+   * awkwardly — a card name over its type, faction and pack.
+   */
   .results {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
     gap: var(--space-2);
     padding: 0;
     margin: 0;
@@ -303,6 +364,6 @@
   }
 
   .legal {
-    max-width: 46rem;
+    max-width: var(--prose-max);
   }
 </style>

@@ -52,6 +52,31 @@ const MINIMUM_CARDS = 1500;
 /** Tags MarvelCDB genuinely uses in card text. Everything else is stripped. */
 const ALLOWED_TAGS = new Set(['b', 'i', 'em', 'strong', 'br', 'p', 'u']);
 
+/**
+ * Curated pack type and wave, copied from the Android app's
+ * `assets/pack_metadata.json`.
+ *
+ * MarvelCDB's `/api/public/packs/` exposes neither, so this cannot be derived
+ * from the API — it is hand-maintained, and the collection screen groups by
+ * wave exactly as the app's does.
+ *
+ * This is the first real instance of the shared-data problem doc 04 predicted:
+ * one curated file, now with two consumers, kept in step by hand. When
+ * Thwart-Data is extracted this is the first thing that should move into it.
+ */
+const PACK_METADATA = JSON.parse(
+  readFileSync(join(HERE, '..', 'data', 'pack-metadata.json'), 'utf8'),
+);
+
+/**
+ * The wave given to a pack the curated file does not mention.
+ *
+ * Matches `CardDataRepository.UNCURATED_WAVE` in the app, so both clients place
+ * an unknown pack the same way rather than each inventing an answer. It happens:
+ * MarvelCDB adds a pack before the metadata catches up.
+ */
+const UNCURATED_WAVE = 0;
+
 const USER_AGENT =
   'Thwart-Web/0.1 (+https://github.com/Hasyame/Thwart-Web) card data build';
 
@@ -187,15 +212,33 @@ async function buildLocale(locale) {
 
   const cards = rawCards.map(sanitizeCard);
   const index = rawCards.map(toIndexRow);
-  const packs = rawPacks.map((pack) => ({
-    code: pack.code,
-    name: pack.name,
-    position: pack.position,
-    cyclePosition: pack.cycle_position ?? null,
-    available: pack.available ?? null,
-    known: pack.known ?? null,
-    total: pack.total ?? null,
-  }));
+  const metaByCode = new Map(PACK_METADATA.packs.map((entry) => [entry.code, entry]));
+  const packs = rawPacks.map((pack) => {
+    const meta = metaByCode.get(pack.code);
+    return {
+      code: pack.code,
+      name: pack.name,
+      position: pack.position,
+      cyclePosition: pack.cycle_position ?? null,
+      available: pack.available ?? null,
+      known: pack.known ?? null,
+      total: pack.total ?? null,
+      wave: meta?.wave ?? UNCURATED_WAVE,
+      type: meta?.type ?? null,
+      // True when the wave was derived from release-date adjacency rather than
+      // read off the cards, and true by default for a pack we know nothing
+      // about — which is the honest answer in both cases.
+      waveInferred: meta?.waveInferred ?? true,
+    };
+  });
+
+  const uncurated = packs.filter((pack) => pack.wave === UNCURATED_WAVE);
+  if (uncurated.length > 0 && locale.code === LOCALES[0].code) {
+    console.log(
+      `  note: ${uncurated.length} packs are not in pack-metadata.json and have no wave: ` +
+        uncurated.map((pack) => pack.code).join(', '),
+    );
+  }
 
   // One file per pack. A card whose pack_code is missing from the pack list
   // still has to land somewhere findable, so it is grouped under its own code
@@ -222,8 +265,32 @@ async function buildLocale(locale) {
     );
   }
 
+  // Card sets — modular sets, villains, heroes, nemeses and the rest.
+  //
+  // Derived here rather than in the browser: the collection screen needs to
+  // list the modular sets and scenarios in a pack, and working that out at
+  // runtime would mean downloading all 63 pack files to draw one page.
+  const sets = new Map();
+  for (const card of cards) {
+    const code = card.card_set_code;
+    if (code === null || code === undefined || sets.has(code)) {
+      continue;
+    }
+    sets.set(code, {
+      code,
+      name: card.card_set_name ?? code,
+      type: card.card_set_type_name_code ?? null,
+      packCode: card.pack_code,
+    });
+  }
+
   writeFileSync(join(OUT_DIR, `index.${locale.code}.json`), JSON.stringify(index), 'utf8');
   writeFileSync(join(OUT_DIR, `packs.${locale.code}.json`), JSON.stringify(packs), 'utf8');
+  writeFileSync(
+    join(OUT_DIR, `sets.${locale.code}.json`),
+    JSON.stringify([...sets.values()]),
+    'utf8',
+  );
 
   return {
     locale: locale.code,

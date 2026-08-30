@@ -1,4 +1,4 @@
-import type { Card, DataMeta, IndexRow, Locale, Pack } from './types';
+import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './types';
 
 /**
  * Loads the files written by `scripts/fetch-cards.mjs`.
@@ -53,6 +53,23 @@ export function loadPacks(locale: Locale): Promise<readonly Pack[]> {
     },
   );
   packsCache.set(locale, promise);
+  return promise;
+}
+
+const setsCache = new Map<Locale, Promise<readonly CardSet[]>>();
+
+export function loadSets(locale: Locale): Promise<readonly CardSet[]> {
+  const cached = setsCache.get(locale);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const promise = getJson<CardSet[]>(`${BASE}/sets.${locale}.json`).catch(
+    (error: unknown) => {
+      setsCache.delete(locale);
+      throw error;
+    },
+  );
+  setsCache.set(locale, promise);
   return promise;
 }
 
