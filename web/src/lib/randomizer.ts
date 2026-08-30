@@ -102,6 +102,15 @@ export interface Pools {
   readonly heroes: readonly { readonly code: string; readonly name: string }[];
   readonly difficulties: readonly DifficultyId[];
   readonly aspects: readonly Aspect[];
+  /**
+   * Every difficulty the collection allows, never narrowed by the filters.
+   *
+   * Kept because two draws need what is *ownable* rather than what is wanted.
+   * Owning the pack a difficulty came in is not a preference, and the game
+   * still needs a Standard set shuffled in with an Expert one however the
+   * filter panel is set. See `roll`.
+   */
+  readonly ownedDifficulties: readonly DifficultyId[];
 }
 
 function pick<T>(items: readonly T[]): T | null {
@@ -189,7 +198,14 @@ export function buildPools(input: PoolInput): Pools {
     return required === undefined || ownedPackCodes.has(required);
   });
 
-  return { scenarios, modularSets, heroes, difficulties, aspects };
+  return {
+    scenarios,
+    modularSets,
+    heroes,
+    difficulties,
+    aspects,
+    ownedDifficulties: difficulties,
+  };
 }
 
 /**
@@ -247,6 +263,8 @@ export function applyFilters(pools: Pools, filters: DrawFilters): Pools {
       filters.allowedDifficulties.has(id),
     ),
     aspects: pools.aspects.filter((aspect) => !filters.excludedAspects.has(aspect)),
+    // Deliberately untouched: what the collection allows is not a preference.
+    ownedDifficulties: pools.ownedDifficulties,
   };
 }
 
@@ -270,23 +288,37 @@ function modularCountFor(rule: ScenarioRule, playerCount: number): number {
 export function roll(input: RollInput): Draw {
   const { pools, previous, locked, playerCount } = input;
 
+  // Nothing both ownable and allowed means the filter and the collection
+  // disagree. The collection wins: a draw the player cannot put on the table
+  // is not a draw.
   const difficulty = locked.has('difficulty')
     ? previous.difficulty
-    : pick(pools.difficulties);
+    : (pick(pools.difficulties) ?? pick(pools.ownedDifficulties));
 
-  // An Expert set is never played on its own: Expert mode is the Expert set
-  // shuffled in *with* a Standard one, so choosing Expert leaves a second
-  // question to answer.
+  const isStandard = (id: DifficultyId): boolean =>
+    DIFFICULTIES.find((entry) => entry.id === id)?.expert === false;
+
+  /*
+   * An Expert set is never played on its own: Expert mode is the Expert set
+   * shuffled into the encounter deck *with* a Standard one, not in place of
+   * it. So drawing Expert leaves a second draw to make.
+   *
+   * The companion is preferred from the allowed Standards, but falls back to
+   * any Standard the collection has. Excluding every Standard in the filter
+   * panel is a statement about what you want to *play*, and it cannot repeal
+   * the setup rules — the game still needs one, and a draw that cannot be set
+   * up is not a draw.
+   */
   const isExpert =
+    difficulty !== null &&
     DIFFICULTIES.find((entry) => entry.id === difficulty)?.expert === true;
-  const standards = pools.difficulties.filter(
-    (id) => DIFFICULTIES.find((entry) => entry.id === id)?.expert === false,
-  );
-  const standardSet = isExpert
-    ? locked.has('difficulty') && previous.standardSet !== null
+
+  const standardSet = !isExpert
+    ? null
+    : locked.has('difficulty') && previous.standardSet !== null
       ? previous.standardSet
-      : pick(standards)
-    : null;
+      : (pick(pools.difficulties.filter(isStandard)) ??
+        pick(pools.ownedDifficulties.filter(isStandard)));
 
   const scenarioRule = locked.has('scenario')
     ? (pools.scenarios.find((rule) => rule.code === previous.scenarioCode) ?? null)
@@ -306,7 +338,12 @@ export function roll(input: RollInput): Draw {
   let drawn: readonly string[] = [];
 
   if (scenarioRule !== null) {
-    mandatory = scenarioRule.mandatoryModulars;
+    // A mandatory set from a pack the player does not own, or one they have
+    // told the collection is missing, cannot go on the table — so it is
+    // dropped rather than silently pretended.
+    mandatory = scenarioRule.mandatoryModulars.filter((code) =>
+      pools.modularSets.some((set) => set.code === code),
+    );
 
     if (locked.has('modularSets')) {
       drawn = previous.modularSetCodes;
