@@ -1,0 +1,46 @@
+# Secrets and local configuration. The repository ships .env.example only;
+# a real .env holds the session signing key and must never be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local databases and their write-ahead logs. The server keeps its state in
+# one SQLite file; a developer's copy holds real user rows and is not sample
+# data, so none of it is committed.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+/data/
+/backups/
+
+# Go build output.
+/bin/
+*.exe
+*.test
+*.out
+
+# Node and the web build.
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+coverage/
+.eslintcache
+
+# Card data. Fantasy Flight's card text and images are theirs; the Android
+# repository already refuses to commit its MarvelCDB seed for this reason, and
+# nothing here re-hosts it either. Anything fetched at build time lands in
+# these paths and stays out of git.
+/web/public/data/
+/server/testdata/cards/
+
+# Editors and operating systems.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
