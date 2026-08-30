@@ -44,3 +44,6 @@ coverage/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Generated from the seed colours by web/scripts/generate-theme.mjs.
+/web/src/theme.generated.css

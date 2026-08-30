@@ -1,0 +1,32 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    /* normalize.js is shared verbatim between the browser and the Node build
+       script, so it is plain JS with JSDoc types. Checked, not merely allowed. */
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    /* The app rule from CLAUDE.md carried over: never `any`, everything typed. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  /* Application source only. The Node build scripts under scripts/ are plain
+     ESM run by node directly — they are not part of the bundle, and checking
+     them against the browser config produces noise rather than safety. */
+  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

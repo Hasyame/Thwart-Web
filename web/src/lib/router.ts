@@ -1,0 +1,36 @@
+/**
+ * The smallest router that gives real URLs.
+ *
+ * Real paths rather than hash fragments, because doc 04's whole argument for
+ * building the card browser first is that a card is an indexable page. A
+ * crawler will not follow `#/card/01001a`.
+ *
+ * Two routes is not enough to justify a routing library.
+ */
+
+export type Route =
+  | { readonly name: 'search' }
+  | { readonly name: 'card'; readonly code: string };
+
+const CARD_PATH = /^\/card\/([^/]+)\/?$/;
+
+export function routeFromPath(pathname: string, base: string): Route {
+  const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const path = pathname.startsWith(trimmedBase)
+    ? pathname.slice(trimmedBase.length)
+    : pathname;
+
+  const match = CARD_PATH.exec(path === '' ? '/' : path);
+  if (match !== null && match[1] !== undefined) {
+    return { name: 'card', code: decodeURIComponent(match[1]) };
+  }
+  return { name: 'search' };
+}
+
+export function pathForRoute(route: Route, base: string): string {
+  const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  if (route.name === 'card') {
+    return `${trimmedBase}/card/${encodeURIComponent(route.code)}`;
+  }
+  return trimmedBase === '' ? '/' : `${trimmedBase}/`;
+}

@@ -1,0 +1,116 @@
+@import './theme.generated.css';
+
+/*
+ * Base styles and the few tokens the generated palette does not cover.
+ *
+ * Everything colour-related comes from `--md-*`, which is written by
+ * scripts/generate-theme.mjs from the app's own seed colours. Nothing here
+ * hard-codes a colour except the faction accents below, which are the game's
+ * own and not ours to derive.
+ */
+
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial,
+    sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --page-max: 68rem;
+
+  /* The aspects, in the game's own colours. Not derived from our seeds:
+     a Justice card is yellow because Fantasy Flight says so. */
+  --faction-leadership: #4a90d9;
+  --faction-justice: #d8b93c;
+  --faction-aggression: #c0392b;
+  --faction-protection: #4b9b5f;
+  --faction-basic: #8d8d8d;
+  --faction-hero: #7b5ea7;
+  --faction-encounter: #6d5744;
+  --faction-campaign: #8a6d3b;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Tells the browser which scrollbar and form-control palette to paint. */
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  background: var(--md-background);
+  color: var(--md-on-background);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0;
+}
+
+a {
+  color: var(--md-primary);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* A visible focus ring everywhere, because this is a keyboard-navigable list
+   of four thousand things and losing the cursor in it is miserable. */
+:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--space-4) var(--space-6);
+}
+
+.surface {
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant, var(--md-outline));
+  border-radius: var(--radius-md);
+}
+
+.muted {
+  color: var(--md-on-surface-variant);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

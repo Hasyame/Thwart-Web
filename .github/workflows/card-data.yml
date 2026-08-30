@@ -1,0 +1,115 @@
+name: Card data
+
+# Keeps the published card database in step with MarvelCDB.
+#
+# The schedule is a *check*, not a rebuild. `npm run data` fetches both
+# languages, digests the result and reports whether anything actually changed;
+# the build and deploy only run when it did. MarvelCDB is a volunteer-run site
+# and the card database moves in weeks, not hours — the Android repository's own
+# data workflow says as much — so a job that redeployed nightly regardless would
+# be spending somebody else's bandwidth to publish an identical site.
+#
+# Times are UTC and GitHub does not shift them for daylight saving, so this runs
+# at 01:23 in Paris in winter and 02:23 in summer. Overnight either way, which is
+# all that was wanted. It is deliberately not on the hour: the top of the hour is
+# the busiest slot on GitHub's scheduler and the most likely to be delayed.
+on:
+  schedule:
+    - cron: "23 0 * * *"
+  # For when a pack drops and waiting until tonight is silly.
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Build and deploy even if the card data is unchanged"
+        type: boolean
+        default: false
+  # A change to the fetching or the build must be exercised before it is merged,
+  # not discovered at 01:23.
+  pull_request:
+    paths:
+      - "web/scripts/**"
+      - "web/package.json"
+      - "web/package-lock.json"
+      - ".github/workflows/card-data.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: Fetch, verify and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.fetch.outputs.changed }}
+      digest: ${{ steps.fetch.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      # Refuses to write a dataset that is implausibly small, so a bad day at
+      # MarvelCDB cannot replace the card database with forty cards. That check
+      # lives in the script rather than here, because it must protect a local
+      # run too.
+      - name: Fetch card data
+        id: fetch
+        working-directory: web
+        run: npm run data
+
+      - name: Type-check
+        working-directory: web
+        run: npm run check
+
+      - name: Build
+        if: >-
+          steps.fetch.outputs.changed == 'true' ||
+          inputs.force == true ||
+          github.event_name == 'pull_request'
+        working-directory: web
+        run: npm run build
+
+      - name: Report
+        run: |
+          echo "changed=${{ steps.fetch.outputs.changed }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "digest=${{ steps.fetch.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload site
+        if: >-
+          steps.fetch.outputs.changed == 'true' || inputs.force == true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: site
+          path: web/dist
+          retention-days: 7
+
+  # Deployment is not wired up yet, because where this is hosted has not been
+  # decided — GitHub Pages needs the repository to be public, and the VPS in
+  # docs/design/05-operations.md does not exist. Setting the repository variable
+  # DEPLOY_TARGET turns this on without touching the workflow.
+  deploy:
+    name: Deploy
+    needs: refresh
+    if: >-
+      vars.DEPLOY_TARGET != '' &&
+      (needs.refresh.outputs.changed == 'true' || inputs.force == true) &&
+      github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Not configured
+        run: |
+          echo "DEPLOY_TARGET is set to '${{ vars.DEPLOY_TARGET }}' but no"
+          echo "deployment step has been written yet. See docs/design/04-roadmap.md."
+          exit 1
