@@ -4,7 +4,7 @@
   import { LANGUAGE_NAMES, type Strings } from '../lib/i18n';
   import Logo from './Logo.svelte';
 
-  type NavTarget = 'search' | 'collection' | 'randomizer';
+  type NavTarget = 'search' | 'collection' | 'decks' | 'randomizer';
 
   interface Props {
     t: Strings;
@@ -68,6 +68,13 @@
         onclick={(event) => go(event, 'collection')}
       >
         {t.navCollection}
+      </a>
+      <a
+        href={hrefFor('decks')}
+        class:current={active === 'decks'}
+        onclick={(event) => go(event, 'decks')}
+      >
+        {t.navDecks}
       </a>
       <a
         href={hrefFor('randomizer')}

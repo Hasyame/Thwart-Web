@@ -56,6 +56,22 @@ export interface Strings {
   readonly statBoost: string;
   readonly statThreat: string;
 
+  readonly navDecks: string;
+  readonly decksTitle: string;
+  readonly importDeck: string;
+  readonly importDeckNote: string;
+  readonly importAction: string;
+  readonly importing: string;
+  readonly deckImportNotFound: string;
+  readonly deckImportNetwork: string;
+  readonly noDecks: string;
+  readonly removeDeck: string;
+  readonly cardCount: (n: number) => string;
+  readonly deckMissing: (cards: number, packs: number) => string;
+  readonly deckBuildable: string;
+  readonly deckUnknownCards: (n: number) => string;
+  readonly notOwned: string;
+  readonly deckLocaleNote: (locale: string) => string;
   readonly navRandomizer: string;
   readonly filters: string;
   readonly filtersNote: string;
@@ -164,6 +180,27 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Boost',
     statThreat: 'Threat',
 
+    navDecks: 'Decks',
+    decksTitle: 'Decks',
+    importDeck: 'Import from MarvelCDB',
+    importDeckNote:
+      'Paste a decklist link, or just its number. The deck is stored in this browser, keyed the same way the Android app keys it, so importing it in both places gives you one deck rather than two.',
+    importAction: 'Import',
+    importing: 'Importing…',
+    deckImportNotFound:
+      'No deck there. Published decklists always work; a personal deck only works if its owner has shared it.',
+    deckImportNetwork: 'Could not reach MarvelCDB.',
+    noDecks: 'No decks yet.',
+    removeDeck: 'Remove',
+    cardCount: (n) => `${n} cards`,
+    deckMissing: (cards, packs) =>
+      `${cards} cards in this deck are not in your collection, from ${packs} packs you do not own.`,
+    deckBuildable: 'You own everything in this deck.',
+    deckUnknownCards: (n) =>
+      `${n} cards in this deck are not in the card database yet. MarvelCDB enters new cards as volunteers get to them.`,
+    notOwned: 'not owned',
+    deckLocaleNote: (locale) =>
+      `Card names are shown in ${locale === 'fr' ? 'French' : 'English'}, following the card language above.`,
     navRandomizer: 'Randomiser',
     filters: 'Filters',
     filtersNote:
@@ -297,6 +334,27 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Bonus',
     statThreat: 'Menace',
 
+    navDecks: 'Decks',
+    decksTitle: 'Decks',
+    importDeck: 'Importer depuis MarvelCDB',
+    importDeckNote:
+      "Collez le lien d'une decklist, ou simplement son numéro. Le deck est enregistré dans ce navigateur, avec la même clé que l'application Android : l'importer des deux côtés donne un seul deck et non deux.",
+    importAction: 'Importer',
+    importing: 'Import en cours…',
+    deckImportNotFound:
+      "Aucun deck à cette adresse. Les decklists publiées fonctionnent toujours ; un deck personnel ne fonctionne que si son auteur l'a partagé.",
+    deckImportNetwork: 'Impossible de joindre MarvelCDB.',
+    noDecks: 'Aucun deck pour le moment.',
+    removeDeck: 'Supprimer',
+    cardCount: (n) => `${n} cartes`,
+    deckMissing: (cards, packs) =>
+      `${cards} cartes de ce deck ne sont pas dans votre collection, réparties dans ${packs} paquets que vous ne possédez pas.`,
+    deckBuildable: 'Vous possédez toutes les cartes de ce deck.',
+    deckUnknownCards: (n) =>
+      `${n} cartes de ce deck ne sont pas encore dans la base. MarvelCDB saisit les nouvelles cartes au rythme des bénévoles.`,
+    notOwned: 'non possédée',
+    deckLocaleNote: (locale) =>
+      `Les noms de cartes sont affichés en ${locale === 'fr' ? 'français' : 'anglais'}, selon la langue des cartes choisie ci-dessus.`,
     navRandomizer: 'Aléatoire',
     filters: 'Filtres',
     filtersNote:

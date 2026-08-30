@@ -5,6 +5,7 @@
   import CardDetail from './components/CardDetail.svelte';
   import CollectionPage from './components/CollectionPage.svelte';
   import RandomizerPage from './components/RandomizerPage.svelte';
+  import DecksPage from './components/DecksPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
@@ -265,6 +266,15 @@
     <CollectionPage {t} {packs} {sets} {storageOk} />
   {:else if route.name === 'randomizer'}
     <RandomizerPage {t} {sets} {index} {storageOk} />
+  {:else if route.name === 'decks'}
+    <DecksPage
+      {t}
+      {index}
+      {cardLocale}
+      {storageOk}
+      openCard={(code) => navigate({ name: 'card', code })}
+      cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
+    />
   {:else}
     <SearchControls
       {t}
