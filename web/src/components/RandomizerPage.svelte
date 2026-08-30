@@ -5,11 +5,16 @@
   import { db } from '../lib/db';
   import { loadScenarioRules } from '../lib/data';
   import {
+    applyFilters,
     buildPools,
     EMPTY_DRAW,
+    noFilters,
     roll,
+    type Aspect,
+    type DifficultyId,
     type Draw,
     type DrawField,
+    type DrawFilters,
     type Pools,
     type ScenarioRulesFile,
   } from '../lib/randomizer';
@@ -76,12 +81,39 @@
     };
   });
 
+  /** Saved draws, newest first, so a scenario can be marked beaten. */
+  const history = $state<{ rows: readonly { id: string; scenarioCode: string; createdAt: number; beaten: boolean }[] }>({ rows: [] });
+
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const sub = liveQuery(() =>
+      db.randomizerHistory.orderBy('createdAt').reverse().limit(25).toArray(),
+    ).subscribe((rows) => {
+      history.rows = rows.map((r) => ({
+        id: r.id,
+        scenarioCode: r.scenarioCode,
+        createdAt: r.createdAt,
+        beaten: r.beaten,
+      }));
+    });
+    return () => sub.unsubscribe();
+  });
+
+  const beatenScenarios = $derived(
+    new Set(history.rows.filter((r) => r.beaten).map((r) => r.scenarioCode)),
+  );
+
+  let filters = $state.raw<DrawFilters | null>(null);
+  let showFilters = $state(false);
   let playerCount = $state(1);
   let draw = $state.raw<Draw>(EMPTY_DRAW);
   let locked = $state.raw<ReadonlySet<DrawField>>(new Set());
   let saved = $state(false);
 
-  const pools = $derived.by((): Pools | null => {
+  /** What the collection allows, before tonight's preferences. */
+  const ownedPools = $derived.by((): Pools | null => {
     if (rules === null) {
       return null;
     }
@@ -93,6 +125,35 @@
       excludedModularSets: collection.excludedSets,
       excludedScenarios: collection.excludedScenarios,
     });
+  });
+
+  // Defaults are derived from the pools, so a difficulty that arrives with a
+  // newly ticked pack starts allowed rather than silently excluded.
+  $effect(() => {
+    if (ownedPools !== null && filters === null) {
+      filters = noFilters(ownedPools);
+    }
+  });
+
+  const pools = $derived.by((): Pools | null => {
+    if (ownedPools === null) {
+      return null;
+    }
+    if (filters === null) {
+      return ownedPools;
+    }
+    // Beaten scenarios are folded in here rather than in the filter object,
+    // mirroring the app's effectiveFilters().
+    const effective: DrawFilters = filters.excludeBeaten
+      ? {
+          ...filters,
+          excludedScenarios: new Set([
+            ...filters.excludedScenarios,
+            ...beatenScenarios,
+          ]),
+        }
+      : filters;
+    return applyFilters(ownedPools, effective);
   });
 
   /** Names come from the card database, already in the reader's language. */
@@ -109,6 +170,77 @@
     draw = roll({ pools, previous: draw, locked, playerCount });
     saved = false;
   }
+
+  function toggleIn<T>(set: ReadonlySet<T>, value: T): Set<T> {
+    const next = new Set(set);
+    if (next.has(value)) {
+      next.delete(value);
+    } else {
+      next.add(value);
+    }
+    return next;
+  }
+
+  function toggleDifficulty(id: DifficultyId): void {
+    if (filters === null) {
+      return;
+    }
+    filters = { ...filters, allowedDifficulties: toggleIn(filters.allowedDifficulties, id) };
+  }
+
+  function toggleAspect(aspect: Aspect): void {
+    if (filters === null) {
+      return;
+    }
+    filters = { ...filters, excludedAspects: toggleIn(filters.excludedAspects, aspect) };
+  }
+
+  function toggleHero(code: string): void {
+    if (filters === null) {
+      return;
+    }
+    filters = { ...filters, excludedHeroes: toggleIn(filters.excludedHeroes, code) };
+  }
+
+  function toggleScenario(code: string): void {
+    if (filters === null) {
+      return;
+    }
+    filters = { ...filters, excludedScenarios: toggleIn(filters.excludedScenarios, code) };
+  }
+
+  function setExcludeBeaten(value: boolean): void {
+    if (filters === null) {
+      return;
+    }
+    filters = { ...filters, excludeBeaten: value };
+  }
+
+  function resetFilters(): void {
+    if (ownedPools !== null) {
+      filters = noFilters(ownedPools);
+    }
+  }
+
+  async function setBeaten(id: string, beaten: boolean): Promise<void> {
+    await db.randomizerHistory.update(id, { beaten });
+  }
+
+  /** How many choices the panel is currently taking away. */
+  const activeFilterCount = $derived.by((): number => {
+    const current = filters;
+    if (current === null || ownedPools === null) {
+      return 0;
+    }
+    return (
+      ownedPools.difficulties.filter((d) => !current.allowedDifficulties.has(d))
+        .length +
+      current.excludedAspects.size +
+      current.excludedHeroes.size +
+      current.excludedScenarios.size +
+      (current.excludeBeaten ? 1 : 0)
+    );
+  });
 
   function toggleLock(field: DrawField): void {
     const next = new Set(locked);
@@ -180,7 +312,98 @@
       <p class="muted pool-note">
         {t.poolNote(pools.scenarios.length, pools.heroes.length, pools.modularSets.length)}
       </p>
+
+      <button
+        type="button"
+        class="filters-toggle"
+        aria-expanded={showFilters}
+        onclick={() => (showFilters = !showFilters)}
+      >
+        {t.filters}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+      </button>
     </div>
+
+    {#if showFilters && filters !== null && ownedPools !== null}
+      <div class="filters surface">
+        <p class="muted filters-note">{t.filtersNote}</p>
+
+        <fieldset>
+          <legend>{t.difficultyLabel}</legend>
+          <div class="options">
+            {#each ownedPools.difficulties as id (id)}
+              <label class="tick">
+                <input
+                  type="checkbox"
+                  checked={filters.allowedDifficulties.has(id)}
+                  onchange={() => toggleDifficulty(id)}
+                />
+                <span>{t.difficulty(id)}</span>
+              </label>
+            {/each}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>{t.aspects}</legend>
+          <div class="options">
+            {#each ownedPools.aspects as aspect (aspect)}
+              <label class="tick">
+                <input
+                  type="checkbox"
+                  checked={!filters.excludedAspects.has(aspect)}
+                  onchange={() => toggleAspect(aspect)}
+                />
+                <span>{t.aspect(aspect)}</span>
+              </label>
+            {/each}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>{t.scenarios}</legend>
+          <label class="tick beaten-toggle">
+            <input
+              type="checkbox"
+              checked={filters.excludeBeaten}
+              onchange={(e) => setExcludeBeaten(e.currentTarget.checked)}
+            />
+            <span>{t.excludeBeaten(beatenScenarios.size)}</span>
+          </label>
+          <div class="options">
+            {#each ownedPools.scenarios as rule (rule.code)}
+              <label class="tick">
+                <input
+                  type="checkbox"
+                  checked={!filters.excludedScenarios.has(rule.code)}
+                  onchange={() => toggleScenario(rule.code)}
+                />
+                <span>{setNames.get(rule.code) ?? rule.code}</span>
+              </label>
+            {/each}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>{t.heroes}</legend>
+          <div class="options">
+            {#each ownedPools.heroes as hero (hero.code)}
+              <label class="tick">
+                <input
+                  type="checkbox"
+                  checked={!filters.excludedHeroes.has(hero.code)}
+                  onchange={() => toggleHero(hero.code)}
+                />
+                <span>{hero.name}</span>
+              </label>
+            {/each}
+          </div>
+        </fieldset>
+
+        <div class="filters-actions">
+          <button type="button" onclick={resetFilters}>{t.resetFilters}</button>
+        </div>
+      </div>
+    {/if}
 
     {#if !canRoll}
       <div class="notice surface">
@@ -290,6 +513,32 @@
           </button>
         </div>
       {/if}
+    {/if}
+
+    {#if storageOk && history.rows.length > 0}
+      <section class="history">
+        <h2 class="history-heading">{t.savedDraws}</h2>
+        <p class="muted filters-note">{t.beatenNote}</p>
+        <ul>
+          {#each history.rows as row (row.id)}
+            <li class="surface">
+              <label class="tick">
+                <input
+                  type="checkbox"
+                  checked={row.beaten}
+                  onchange={(e) => setBeaten(row.id, e.currentTarget.checked)}
+                />
+                <span class:done={row.beaten}>
+                  {setNames.get(row.scenarioCode) ?? row.scenarioCode}
+                </span>
+              </label>
+              <span class="muted when">
+                {new Date(row.createdAt).toLocaleDateString()}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      </section>
     {/if}
   {/if}
 </section>
@@ -458,5 +707,116 @@
   .actions button:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+  .filters-toggle {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-outline);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .filters {
+    padding: var(--space-4);
+    margin-top: var(--space-3);
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .filters-note {
+    font-size: 0.85rem;
+    margin: 0;
+    max-width: var(--prose-max);
+  }
+
+  fieldset {
+    border: 0;
+    border-top: 1px solid var(--md-outline-variant);
+    padding: var(--space-3) 0 0;
+    margin: 0;
+  }
+
+  legend {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--md-on-surface-variant);
+    padding: 0 var(--space-2) 0 0;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--space-1) var(--space-3);
+    margin-top: var(--space-2);
+  }
+
+  .tick {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    font-size: 0.92rem;
+  }
+
+  .tick input {
+    accent-color: var(--md-primary);
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+  }
+
+  .beaten-toggle {
+    margin-top: var(--space-2);
+    font-weight: 600;
+  }
+
+  .filters-actions button {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-outline);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .history {
+    margin-top: var(--space-6);
+  }
+
+  .history-heading {
+    font-size: 1.05rem;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--md-on-surface);
+    margin-bottom: var(--space-1);
+  }
+
+  .history ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-3) 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-2);
+  }
+
+  .history li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .history .done {
+    text-decoration: line-through;
+    color: var(--md-on-surface-variant);
+  }
+
+  .when {
+    font-size: 0.85rem;
   }
 </style>

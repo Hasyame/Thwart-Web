@@ -192,6 +192,64 @@ export function buildPools(input: PoolInput): Pools {
   return { scenarios, modularSets, heroes, difficulties, aspects };
 }
 
+/**
+ * What the player wants *tonight*, as distinct from what they own.
+ *
+ * Two different questions, kept apart here as the app keeps them apart. The
+ * collection says a modular set cannot be fielded — a second-hand box, a set
+ * lent out — and that is a lasting fact stored in the database and carried in
+ * a backup. These say "not this evening": no Expert, not Ultron again, nobody
+ * plays Leadership. They live for as long as the page is open and are stored
+ * nowhere, matching `RandomizerFilters`, which the app holds in a
+ * `MutableStateFlow` and never persists.
+ */
+export interface DrawFilters {
+  readonly allowedDifficulties: ReadonlySet<DifficultyId>;
+  readonly excludedAspects: ReadonlySet<Aspect>;
+  readonly excludedHeroes: ReadonlySet<string>;
+  readonly excludedScenarios: ReadonlySet<string>;
+  /**
+   * Skip scenarios already beaten, per the saved draws.
+   *
+   * Held here for the panel's sake but merged into `excludedScenarios` before
+   * the draw sees it, exactly as the app's `effectiveFilters()` does — the
+   * pools have no business knowing *why* a scenario is out.
+   */
+  readonly excludeBeaten: boolean;
+}
+
+/** Everything allowed, which is what an untouched filter panel means. */
+export function noFilters(pools: Pools): DrawFilters {
+  return {
+    allowedDifficulties: new Set(pools.difficulties),
+    excludedAspects: new Set(),
+    excludedHeroes: new Set(),
+    excludedScenarios: new Set(),
+    excludeBeaten: false,
+  };
+}
+
+/**
+ * Narrows the pools by the evening's filters.
+ *
+ * A separate pass rather than another argument to `buildPools`, so the two
+ * kinds of exclusion cannot be confused for one another: what you own is
+ * rebuilt when the collection changes, what you fancy is applied on top.
+ */
+export function applyFilters(pools: Pools, filters: DrawFilters): Pools {
+  return {
+    scenarios: pools.scenarios.filter(
+      (rule) => !filters.excludedScenarios.has(rule.code),
+    ),
+    modularSets: pools.modularSets,
+    heroes: pools.heroes.filter((hero) => !filters.excludedHeroes.has(hero.code)),
+    difficulties: pools.difficulties.filter((id) =>
+      filters.allowedDifficulties.has(id),
+    ),
+    aspects: pools.aspects.filter((aspect) => !filters.excludedAspects.has(aspect)),
+  };
+}
+
 export interface RollInput {
   readonly pools: Pools;
   readonly previous: Draw;

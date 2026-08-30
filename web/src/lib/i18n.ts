@@ -57,6 +57,13 @@ export interface Strings {
   readonly statThreat: string;
 
   readonly navRandomizer: string;
+  readonly filters: string;
+  readonly filtersNote: string;
+  readonly aspects: string;
+  readonly excludeBeaten: (n: number) => string;
+  readonly resetFilters: string;
+  readonly savedDraws: string;
+  readonly beatenNote: string;
   readonly randomizerTitle: string;
   readonly randomizerNoCollection: string;
   readonly randomizerNotEnough: (players: number) => string;
@@ -158,6 +165,15 @@ const STRINGS: Record<Locale, Strings> = {
     statThreat: 'Threat',
 
     navRandomizer: 'Randomiser',
+    filters: 'Filters',
+    filtersNote:
+      'These apply to this session only and are not saved. What you own lives on the Collection page; this is what you fancy tonight.',
+    aspects: 'Aspects',
+    excludeBeaten: (n) =>
+      n === 0 ? 'Skip scenarios I have beaten' : `Skip scenarios I have beaten (${n})`,
+    resetFilters: 'Allow everything again',
+    savedDraws: 'Saved draws',
+    beatenNote: 'Tick a scenario once you have beaten it, and the filter above can skip it.',
     randomizerTitle: 'Randomiser',
     randomizerNoCollection:
       'Tick the packs you own on the Collection page first. The draw only offers what you can actually put on the table.',
@@ -281,18 +297,28 @@ const STRINGS: Record<Locale, Strings> = {
     statBoost: 'Bonus',
     statThreat: 'Menace',
 
-    navRandomizer: 'Tirage',
-    randomizerTitle: 'Tirage aléatoire',
+    navRandomizer: 'Aléatoire',
+    filters: 'Filtres',
+    filtersNote:
+      "Ces filtres ne valent que pour cette session et ne sont pas enregistrés. Ce que vous possédez se règle sur la page Collection ; ici, c'est ce dont vous avez envie ce soir.",
+    aspects: 'Aspects',
+    excludeBeaten: (n) =>
+      n === 0 ? 'Ignorer les scénarios déjà battus' : `Ignorer les scénarios déjà battus (${n})`,
+    resetFilters: 'Tout réautoriser',
+    savedDraws: 'Résultats enregistrés',
+    beatenNote:
+      "Cochez un scénario une fois battu, et le filtre ci-dessus pourra l'ignorer.",
+    randomizerTitle: 'Aléatoire',
     randomizerNoCollection:
-      "Cochez d'abord les paquets que vous possédez sur la page Collection. Le tirage ne propose que ce que vous pouvez réellement mettre sur la table.",
+      "Cochez d'abord les paquets que vous possédez sur la page Collection. Seul ce que vous pouvez réellement mettre sur la table est proposé.",
     randomizerNotEnough: (players) =>
       `Votre collection ne suffit pas pour ${players} joueurs. Ajoutez des paquets, ou jouez à moins.`,
     poolNote: (scenarios, heroes, modulars) =>
-      `Tirage parmi ${scenarios} scénarios, ${heroes} héros et ${modulars} modules.`,
+      `Parmi ${scenarios} scénarios, ${heroes} héros et ${modulars} modules.`,
     players: 'Joueurs',
-    roll: 'Tirer',
-    reroll: 'Retirer',
-    lockField: 'Conserver lors du prochain tirage',
+    roll: 'Lancer',
+    reroll: 'Relancer',
+    lockField: 'Conserver au prochain lancer',
     scenario: 'Scénario',
     difficultyLabel: 'Difficulté',
     difficulty: (id) =>
@@ -314,7 +340,7 @@ const STRINGS: Record<Locale, Strings> = {
       })[id] ?? id,
     required: 'obligatoire',
     noModularSets: 'Ce scénario ne prend aucun module.',
-    saveToHistory: 'Enregistrer ce tirage',
+    saveToHistory: 'Enregistrer ce résultat',
     savedToHistory: 'Enregistré',
     wave: (n) => `Vague ${n}`,
     waveUnknown: 'Non classés',
@@ -330,7 +356,7 @@ const STRINGS: Record<Locale, Strings> = {
     showContents: 'Contenu',
     hideContents: 'Masquer',
     contentsHint:
-      "Posséder un paquet ne veut pas dire posséder tout ce qu'il contient. Décochez ce qui manque à votre exemplaire et le tirage aléatoire ne le proposera pas.",
+      "Posséder un paquet ne veut pas dire posséder tout ce qu'il contient. Décochez ce qui manque à votre exemplaire et il ne sera plus proposé.",
     scenarios: 'Scénarios',
     modularSets: 'Modules',
     cancel: 'Annuler',
