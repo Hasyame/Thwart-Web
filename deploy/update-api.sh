@@ -22,6 +22,19 @@ DATA="${DATA:-/srv/thwart/data}"
 
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
+# Resolve with libc rather than Go's own resolver.
+#
+# Go's resolver does not read /etc/gai.conf, so on a host whose IPv6 is
+# half-working it will open an IPv6 connection that succeeds at the TCP level
+# and then returns 403 from the other end. Happy eyeballs does not save you
+# there: the connection worked, only the answer was wrong.
+#
+# The deployment host is exactly such a machine (docs/deployment.md section 8),
+# and the symptom is "reading https://proxy.golang.org/...zip: 403 Forbidden"
+# on a module that downloads fine over IPv4. Using libc makes the gai.conf
+# preference apply. Harmless on a healthy host.
+export GODEBUG=netdns=cgo
+
 cd "$REPO"
 
 log "fetching"

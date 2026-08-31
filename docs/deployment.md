@@ -157,7 +157,9 @@ running accounts yet.
 Go is needed on the server, and only for building.
 
 ```bash
-curl -fsSL https://go.dev/dl/go1.27.0.linux-amd64.tar.gz -o /tmp/go.tgz
+# -4 deliberately, and the checksum is from https://go.dev/dl/?mode=json.
+curl -4 -fsSL https://dl.google.com/go/go1.27.0.linux-amd64.tar.gz -o /tmp/go.tgz
+echo "675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685  /tmp/go.tgz" | sha256sum -c
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf /tmp/go.tgz
 echo 'export PATH=$PATH:/usr/local/go/bin' | sudo tee /etc/profile.d/go.sh
 ```
@@ -172,9 +174,38 @@ sudo systemctl enable --now thwart-api
 ```
 
 The service listens on `127.0.0.1:8787` and nothing outside the box can reach
-it. nginx is the only way in, through the `location /api/` block already in
-`deploy/nginx-thwart.app.conf`, so re-copy that file and reload if you set the
-site up before this section existed.
+it. nginx is the only way in, through the `location /api/` block in
+`deploy/nginx-thwart.app.conf`.
+
+**Do not copy that file over the live one.** The repository holds the config as
+it looks *before* certbot has touched it; the live file has certbot's additions
+(the `listen 443` lines, the certificate paths and the whole port 80 redirect
+block), and overwriting it takes TLS down. Insert the block instead:
+
+```bash
+cp /etc/nginx/sites-available/thwart.app{,.bak-$(date -u +%Y%m%d%H%M%S)}
+# paste the "# ---- the API" block from the repository file in before
+# "# ---- routing", then:
+nginx -t && systemctl reload nginx
+```
+
+### This host and IPv6
+
+Worth knowing before something else fails mysteriously. The machine has a
+global IPv6 address whose routing works to some networks and not others:
+github.com and marvelcdb.com both fail over IPv6 and succeed over IPv4, and
+Google Cloud Storage answers 403 over IPv6 for a file it serves over IPv4.
+
+Most things hide it. curl, git and Node go through glibc, so
+`/etc/gai.conf` now carries `precedence ::ffff:0:0/96 100` and they prefer
+IPv4. Go does not: its own resolver ignores gai.conf, and because the bad IPv6
+connections *succeed* at the TCP level and only return the wrong answer, happy
+eyeballs never falls back. That is why `update-api.sh` exports
+`GODEBUG=netdns=cgo`.
+
+The real fix is with the provider. Until then, anything new that fetches from
+the internet on this box should be tested over both families before it is
+trusted.
 
 Check it from outside:
 
@@ -198,6 +229,7 @@ This is the first thing on the server that is not rebuildable. One SQLite file,
 a few megabytes at most:
 
 ```bash
+apt-get install -y sqlite3   # not installed by default
 sudo -u thwart sqlite3 /srv/thwart/data/thwart.sqlite     ".backup '/srv/thwart/data/backup-$(date -u +%Y%m%d).sqlite'"
 ```
 
