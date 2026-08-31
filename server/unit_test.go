@@ -166,15 +166,28 @@ func TestClientIP(t *testing.T) {
 		name      string
 		remote    string
 		forwarded string
+		realIP    string
 		want      string
 	}{
-		{"direct, no header", "203.0.113.7:1234", "", "203.0.113.7"},
-		{"direct, header ignored", "203.0.113.7:1234", "198.51.100.9", "203.0.113.7"},
-		{"behind loopback proxy", "127.0.0.1:1234", "198.51.100.9", "198.51.100.9"},
-		{"behind private proxy", "10.0.0.2:1234", "198.51.100.9", "198.51.100.9"},
-		{"proxy chain takes the first", "127.0.0.1:1234", "198.51.100.9, 10.0.0.2", "198.51.100.9"},
-		{"proxy sent rubbish", "127.0.0.1:1234", "not-an-ip", "127.0.0.1"},
-		{"proxy sent nothing", "127.0.0.1:1234", "", "127.0.0.1"},
+		{"direct, no header", "203.0.113.7:1234", "", "", "203.0.113.7"},
+		{"direct, headers ignored", "203.0.113.7:1234", "198.51.100.9", "198.51.100.9", "203.0.113.7"},
+		{"behind loopback proxy", "127.0.0.1:1234", "198.51.100.9", "", "198.51.100.9"},
+		{"behind private proxy", "10.0.0.2:1234", "198.51.100.9", "", "198.51.100.9"},
+
+		// The one that matters. nginx appends the real peer to whatever the
+		// caller sent, so the first entry is the caller's own invention and
+		// the last is the only one the proxy vouches for. Taking the first
+		// gave every request a fresh bucket, measured on the live server.
+		{"spoofed prefix is ignored", "127.0.0.1:1234", "198.51.100.9, 203.0.113.7", "", "203.0.113.7"},
+		{"long spoofed chain", "127.0.0.1:1234", "1.1.1.1, 2.2.2.2, 3.3.3.3, 203.0.113.7", "", "203.0.113.7"},
+
+		// X-Real-IP wins: nginx sets it from $remote_addr and it cannot be
+		// extended the way a list can.
+		{"real-ip preferred", "127.0.0.1:1234", "198.51.100.9, 10.0.0.2", "203.0.113.7", "203.0.113.7"},
+		{"real-ip rubbish falls through", "127.0.0.1:1234", "203.0.113.7", "nonsense", "203.0.113.7"},
+
+		{"proxy sent rubbish", "127.0.0.1:1234", "not-an-ip", "", "127.0.0.1"},
+		{"proxy sent nothing", "127.0.0.1:1234", "", "", "127.0.0.1"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -183,10 +196,43 @@ func TestClientIP(t *testing.T) {
 			if c.forwarded != "" {
 				req.Header.Set("X-Forwarded-For", c.forwarded)
 			}
+			if c.realIP != "" {
+				req.Header.Set("X-Real-IP", c.realIP)
+			}
 			if got := clientIP(req); got != c.want {
 				t.Errorf("clientIP = %q, want %q", got, c.want)
 			}
 		})
+	}
+}
+
+// The end-to-end version of the same bug: a caller must not be able to choose
+// its own rate-limit bucket by sending a header.
+func TestRateLimitBucketCannotBeChosenByTheCaller(t *testing.T) {
+	s := newTestServer(t)
+	register(t, s, "taken.handle", "a long enough password")
+
+	// Every attempt claims a different origin. They all pass validation and
+	// fail on the handle, so each one consumes a slot; the limit must still
+	// bite.
+	limited := false
+	for i := 0; i < registerPerIP.limit+3; i++ {
+		req := httptest.NewRequest("POST", "/v1/auth/register",
+			strings.NewReader(`{"handle":"taken.handle","password":"a long enough password"}`))
+		// As nginx would deliver it: the caller's invention, then the peer.
+		req.RemoteAddr = "127.0.0.1:1234"
+		req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.%d, 203.0.113.7", i+1))
+
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, req)
+		if rec.Code == http.StatusTooManyRequests {
+			limited = true
+			break
+		}
+	}
+	if !limited {
+		t.Errorf("no limit applied across %d attempts with rotating X-Forwarded-For prefixes",
+			registerPerIP.limit+3)
 	}
 }
 

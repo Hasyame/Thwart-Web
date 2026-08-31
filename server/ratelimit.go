@@ -101,15 +101,30 @@ func (l *limiter) sweep() {
 clientIP works out who is being limited.
 
 Behind nginx every request arrives from 127.0.0.1, so taking RemoteAddr alone
-would put the whole world in one bucket and lock everybody out together. Taking
-X-Forwarded-For alone is worse: it is a request header, so anyone reaching the
-server directly could pick a fresh identity per attempt and never be limited at
-all.
+would put the whole world in one bucket and lock everybody out together. So a
+forwarding header has to be read, and reading one carelessly is worse than not
+reading it at all.
 
-So the header is trusted only when the immediate peer is loopback or a private
-address, which is exactly the case where a reverse proxy set it. No flag to get
-wrong, and the failure mode of a misconfiguration is over-limiting rather than
-no limiting.
+**The left-most entry is not the client.** It is whatever the client typed.
+nginx's `$proxy_add_x_forwarded_for` appends the real peer to the header the
+client sent, so `X-Forwarded-For: 198.51.100.1` arrives as
+`198.51.100.1, 203.0.113.7`. Taking the first entry hands every caller a fresh
+rate-limit bucket per request, which was measured against the live server:
+eight attempts against a limit of five, none refused.
+
+What is trustworthy is the entry the trusted proxy itself added, which is the
+**last** one, and `X-Real-IP`, which nginx sets from `$remote_addr` and
+therefore always overwrites. X-Real-IP is preferred because it cannot be
+extended; the last X-Forwarded-For entry is the fallback for a proxy that only
+sets that one.
+
+Either way the header is read only when the immediate peer is loopback or
+private, which is where a reverse proxy actually is. No flag to get wrong, and
+a misconfiguration over-limits rather than not limiting.
+
+A chain of more than one proxy (a CDN in front of nginx, say) needs the number
+of trusted hops to be configurable. There is one hop here, so there is no
+setting; do not add a CDN without revisiting this.
 */
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -121,16 +136,18 @@ func clientIP(r *http.Request) string {
 		return host
 	}
 
+	if real := strings.TrimSpace(r.Header.Get("X-Real-IP")); net.ParseIP(real) != nil {
+		return real
+	}
+
 	forwarded := r.Header.Get("X-Forwarded-For")
 	if forwarded == "" {
 		return host
 	}
-	// Left-most entry is the original client. A proxy that appends rather than
-	// replaces is the normal configuration, and nginx's proxy_set_header in
-	// deploy/ does exactly that.
-	first := strings.TrimSpace(strings.Split(forwarded, ",")[0])
-	if net.ParseIP(first) == nil {
+	parts := strings.Split(forwarded, ",")
+	last := strings.TrimSpace(parts[len(parts)-1])
+	if net.ParseIP(last) == nil {
 		return host
 	}
-	return first
+	return last
 }
