@@ -46,24 +46,44 @@ apt-get install -y nodejs git nginx
 The repository is private, so the server needs its own read-only key rather
 than yours.
 
+**Use `sudo -H -u thwart`, not `sudo -u thwart`.** Without `-H`, sudo leaves
+`$HOME` pointing at root's home, so ssh looks for the key in `/root/.ssh`,
+finds nothing, and the clone fails with `Permission denied (publickey)` even
+though the key exists and is registered. The systemd unit is unaffected: it
+sets `HOME` from the account itself.
+
 ```bash
-sudo -u thwart ssh-keygen -t ed25519 -f /srv/thwart/.ssh/id_ed25519 -N ''
-sudo -u thwart cat /srv/thwart/.ssh/id_ed25519.pub
+install -d -m 700 -o thwart -g thwart /srv/thwart/.ssh
+sudo -H -u thwart ssh-keygen -t ed25519 -f /srv/thwart/.ssh/id_ed25519 -N '' -C 'thwart.app deploy'
+cat /srv/thwart/.ssh/id_ed25519.pub
 ```
 
 Add that public key to the repository on GitHub as a **deploy key**, read-only:
 Settings, Deploy keys, Add deploy key. A deploy key is scoped to one
 repository, which a personal access token is not.
 
+Check it before cloning, because this reports the two failures differently:
+
 ```bash
-sudo -u thwart git clone git@github.com:Hasyame/Thwart-Web.git /srv/thwart/repo
-chmod +x /srv/thwart/repo/deploy/update.sh
+sudo -H -u thwart ssh -o StrictHostKeyChecking=accept-new -T git@github.com
 ```
+
+- `Hi Hasyame/Thwart-Web! You've successfully authenticated...` means it works.
+- `Permission denied (publickey)` **with no key offered** in `-v` output means
+  ssh did not find the key: the `$HOME` problem above.
+- A key offered and still denied means the key is not on GitHub yet, or was
+  added to the wrong repository.
+
+```bash
+sudo -H -u thwart git clone git@github.com:Hasyame/Thwart-Web.git /srv/thwart/repo
+```
+
+The exec bit on `deploy/update.sh` is committed, so no `chmod` is needed.
 
 ## 4. First build
 
 ```bash
-sudo -u thwart /srv/thwart/repo/deploy/update.sh
+sudo -H -u thwart /srv/thwart/repo/deploy/update.sh
 ```
 
 It fetches both card databases from MarvelCDB, builds, writes a timestamped
