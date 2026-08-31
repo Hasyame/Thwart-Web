@@ -29,6 +29,7 @@
     resumeGame,
     session,
     startGame,
+    setElapsed,
     goToBriefing,
     backToSetup,
   } from '../lib/session.svelte';
@@ -258,6 +259,62 @@
   let recorded = $state(false);
   let recording = $state(false);
 
+  // --- the clock, corrected by hand ------------------------------------------
+
+  let editingClock = $state(false);
+  let clockMinutes = $state(0);
+
+  function openClockEdit(): void {
+    clockMinutes = Math.round(elapsed / 60_000);
+    editingClock = true;
+  }
+
+  function applyClockEdit(): void {
+    setElapsed(Math.max(0, clockMinutes) * 60_000);
+    editingClock = false;
+  }
+
+  /**
+   * Keeping the screen on, where the browser allows it.
+   *
+   * A phone propped against the box goes dark every thirty seconds otherwise,
+   * and the counter it is showing is the reason it is there. The Wake Lock API
+   * is not everywhere and is dropped whenever the tab is hidden, so the lock is
+   * taken again on return rather than assumed to have survived.
+   */
+  let keepAwake = $state(false);
+  let wakeLock: WakeLockSentinel | null = null;
+
+  async function setKeepAwake(on: boolean): Promise<void> {
+    keepAwake = on;
+    if (!on) {
+      await wakeLock?.release().catch(() => undefined);
+      wakeLock = null;
+      return;
+    }
+    try {
+      wakeLock = await navigator.wakeLock?.request('screen');
+    } catch {
+      // Refused, or unsupported. The toggle stays on so the intent is kept and
+      // the next visibility change can try again; nothing else depends on it.
+      wakeLock = null;
+    }
+  }
+
+  $effect(() => {
+    const reacquire = (): void => {
+      if (keepAwake && document.visibilityState === 'visible' && wakeLock === null) {
+        void setKeepAwake(true);
+      }
+    };
+    document.addEventListener('visibilitychange', reacquire);
+    return () => {
+      document.removeEventListener('visibilitychange', reacquire);
+      void wakeLock?.release().catch(() => undefined);
+      wakeLock = null;
+    };
+  });
+
   function finish(won: boolean): void {
     pauseGame();
     outcome = won;
@@ -474,21 +531,41 @@
     <p class="muted note">{t.clockStartsNote}</p>
   {:else if outcome === null}
     <div class="running surface">
-      <p class="clock">{formatElapsed(elapsed)}</p>
-      <p class="muted">
-        {session.current.scenarioName} · {t.difficulty(session.current.difficulty)}{session
-          .current.standardSet === null
-          ? ''
-          : ` + ${t.difficulty(session.current.standardSet)}`}
-      </p>
-      <ul class="chips">
-        {#each session.current.seats as seat, i (i)}
-          <li class="chip" data-faction={seat.aspect.split(',')[0]?.trim() ?? ''}>
-            <strong>{seat.deckName}</strong>
-            <span>{seat.heroName}</span>
-          </li>
-        {/each}
-      </ul>
+      <!-- Name, heroes and encounter deck at the top, as the app has it: the
+           three things somebody glances up to check mid-game. -->
+      <p class="scenario">{session.current.scenarioName}</p>
+      <p class="heroes">{session.current.seats.map((seat) => seat.heroName).join(', ')}</p>
+      {#if session.current.modularSetCodes.length > 0}
+        <p class="muted">
+          {session.current.modularSetCodes.map((code) => setNames.get(code) ?? code).join(', ')}
+        </p>
+      {/if}
+
+      <button class="clock" type="button" onclick={openClockEdit}>
+        {formatElapsed(elapsed)}
+      </button>
+      <p class="muted note tap">{t.tapToCorrect}</p>
+
+      {#if editingClock}
+        <label class="field">
+          <span class="muted">{t.correctTheClock}</span>
+          <input
+            type="number"
+            min="0"
+            inputmode="numeric"
+            bind:value={clockMinutes}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') {
+                applyClockEdit();
+              }
+            }}
+          />
+        </label>
+        <div class="clock-actions">
+          <button class="primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
+          <button type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
+        </div>
+      {/if}
 
       <div class="clock-actions">
         {#if session.current.runningSince === null}
@@ -497,22 +574,23 @@
           <button type="button" onclick={pauseGame}>{t.pauseClock}</button>
         {/if}
       </div>
+
+      <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
     </div>
 
     <Tracker {t} {cardLocale} {index} expert={isExpert} />
 
-    <div class="setup surface">
-      <h2>{t.howDidItEnd}</h2>
-      <div class="result-actions">
-        <button class="primary" type="button" onclick={() => finish(true)}>{t.won}</button>
-        <button type="button" onclick={() => finish(false)}>{t.lost}</button>
-      </div>
+    <label class="awake surface">
+      <span>{t.keepScreenOn}</span>
+      <input type="checkbox" checked={keepAwake} onchange={(e) => setKeepAwake(e.currentTarget.checked)} />
+    </label>
 
-      <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
-
-      <p class="muted note">{t.discardNote}</p>
-      <button type="button" onclick={newGame}>{t.discardGame}</button>
+    <div class="ending">
+      <button class="primary big" type="button" onclick={() => finish(true)}>{t.won}</button>
+      <button class="big" type="button" onclick={() => finish(false)}>{t.lost}</button>
     </div>
+    <button class="forget" type="button" onclick={newGame}>{t.discardGame}</button>
+
   {:else}
     <!-- The end of the game, and the only place the questions that need an
          ending belong: nobody knows their victory points until it is over. -->
@@ -681,11 +759,74 @@
     flex: 0 0 auto;
   }
 
+  .tap {
+    text-align: center;
+    font-size: 0.8rem;
+  }
+
+  .scenario {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--md-primary);
+    text-align: center;
+  }
+
+  .heroes {
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .awake {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    margin: var(--space-3) 0;
+  }
+
+  .ending {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .ending .big {
+    flex: 1 1 10rem;
+  }
+
+  /* A text link rather than a button: forgetting a game is not a thing to
+     reach for by accident. */
+  .forget {
+    display: block;
+    margin: var(--space-4) auto 0;
+    border: 0;
+    background: none;
+    color: var(--md-error);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* A button now, because tapping it corrects it, but it must not look like
+     one: it is the biggest thing on the screen and the game is what it counts. */
   .clock {
-    font-size: 2.6rem;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 3.4rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    margin: 0;
+    text-align: center;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+  }
+
+  .clock:hover {
+    color: var(--md-primary);
   }
 
   .clock-actions,
@@ -696,41 +837,8 @@
     margin-top: var(--space-3);
   }
 
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    list-style: none;
-    padding: 0;
-    margin: var(--space-3) 0 0;
-  }
 
-  .chip {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-lg);
-    background: var(--md-surface-container-high);
-    border-inline-start: 4px solid var(--md-outline-variant);
-    font-size: 0.95rem;
-  }
 
-  .chip[data-faction='aggression'] {
-    border-inline-start-color: var(--faction-aggression);
-  }
-  .chip[data-faction='justice'] {
-    border-inline-start-color: var(--faction-justice);
-  }
-  .chip[data-faction='leadership'] {
-    border-inline-start-color: var(--faction-leadership);
-  }
-  .chip[data-faction='protection'] {
-    border-inline-start-color: var(--faction-protection);
-  }
-  .chip[data-faction='pool'] {
-    border-inline-start-color: var(--faction-pool);
-  }
 
   .ok {
     color: var(--md-primary);

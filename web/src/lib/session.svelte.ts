@@ -146,6 +146,21 @@ export function resumeSession(restored: Partial<Session>): void {
   session.current = { ...empty(), ...restored, phase: 'playing', runningSince: null };
 }
 
+/**
+ * Manual correction, because the stop button gets forgotten.
+ *
+ * The clock is wall-clock based, so it also drifts if the device's own clock
+ * jumps. Either way the honest answer is to let somebody type what the game
+ * actually took, which is what the app does.
+ */
+export function setElapsed(millis: number): void {
+  const safe = Math.max(0, millis);
+  const s = session.current;
+  s.accumulatedMillis = safe;
+  // Running stays running: correcting the total should not stop the game.
+  s.runningSince = s.runningSince === null ? null : Date.now();
+}
+
 export function endGame(): void {
   session.current = empty();
 }

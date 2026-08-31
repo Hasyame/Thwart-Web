@@ -224,6 +224,14 @@ export interface Strings {
   readonly briefingTitle: string;
   readonly briefingIntro: string;
   readonly briefingGather: string;
+  readonly mainSchemeDeck: string;
+  readonly encounterDeck: string;
+  readonly schemeSetupTitle: string;
+  readonly damageOnVillain: string;
+  readonly threatOnScheme: string;
+  readonly tapToCorrect: string;
+  readonly correctTheClock: string;
+  readonly keepScreenOn: string;
   readonly briefingNoSetup: string;
   readonly howDidItEnd: string;
   readonly timePlayedLabel: string;
@@ -350,7 +358,7 @@ const STRINGS: Record<Locale, Strings> = {
     notes: 'Notes',
     won: 'Won',
     lost: 'Lost',
-    discardGame: 'Discard',
+    discardGame: 'Forget this game',
     discardNote:
       'Discarding records nothing: no play in your history and nothing in your statistics.',
     playRecorded: 'Recorded.',
@@ -485,7 +493,7 @@ const STRINGS: Record<Locale, Strings> = {
     trackerNote:
       "Counters only. It does not know that drones enter play or that a Crisis icon stops thwarting, because a tracker that half-adjudicates rules is wrong at somebody's table, and then the numbers it is keeping stop being trusted either.",
     round: (n) => `Round ${n}`,
-    endRound: 'End of round',
+    endRound: 'End the round',
     advanceVillain: 'Flip the villain',
     advanceScheme: 'Advance the scheme',
     whichScheme: 'Which one is on the table',
@@ -517,11 +525,19 @@ const STRINGS: Record<Locale, Strings> = {
 
     goToSetup: 'Go to setup',
     play: 'Play',
-    backToSetup: 'Change the game',
+    backToSetup: 'Change the setup',
     clockStartsNote: 'The clock starts when you press Play, not before. Laying a game out takes several minutes and counting them made every game look longer than it was.',
-    briefingTitle: 'Setup',
+    briefingTitle: 'Preparation',
     briefingIntro: 'What to fetch, and what the scenario says to do with it. The setup is read off the main scheme card, in the language your cards are in.',
     briefingGather: 'Gather',
+    mainSchemeDeck: 'Main scheme deck',
+    encounterDeck: 'Encounter deck',
+    schemeSetupTitle: 'Main scheme setup',
+    damageOnVillain: 'Damage on the villain',
+    threatOnScheme: 'Threat on the main scheme',
+    tapToCorrect: 'Tap the time to correct it',
+    correctTheClock: 'Time played, as minutes',
+    keepScreenOn: 'Keep the screen on',
     briefingNoSetup: 'This scenario prints no setup on its main scheme; it is in the rules insert or the campaign book.',
     howDidItEnd: 'How did it end?',
     timePlayedLabel: 'Time played',
@@ -653,7 +669,7 @@ const STRINGS: Record<Locale, Strings> = {
     notes: 'Notes',
     won: 'Victoire',
     lost: 'Défaite',
-    discardGame: 'Abandonner',
+    discardGame: 'Ignorer cette partie',
     discardNote:
       "Abandonner n'enregistre rien : aucune partie dans votre historique ni dans vos statistiques.",
     playRecorded: 'Enregistrée.',
@@ -791,7 +807,7 @@ const STRINGS: Record<Locale, Strings> = {
     trackerNote:
       "Des compteurs, rien de plus. L'application ne sait pas que les drones entrent en jeu ni qu'une icône Crise empêche de contrer : un compteur qui arbitre à moitié se trompe à une table, et les nombres qu'il tient vraiment cessent alors d'être crus.",
     round: (n) => `Tour ${n}`,
-    endRound: 'Fin du tour',
+    endRound: 'Terminer le tour',
     advanceVillain: 'Retourner le Méchant',
     advanceScheme: 'Faire avancer la manigance',
     whichScheme: 'Laquelle est sur la table',
@@ -823,11 +839,19 @@ const STRINGS: Record<Locale, Strings> = {
 
     goToSetup: 'Aller à la mise en place',
     play: 'Jouer',
-    backToSetup: 'Changer de partie',
+    backToSetup: 'Modifier la mise en place',
     clockStartsNote: "Le chrono démarre quand vous appuyez sur Jouer, pas avant. Installer une partie prend plusieurs minutes, et les compter faisait paraître chaque partie plus longue qu'elle ne l'était.",
-    briefingTitle: 'Mise en place',
+    briefingTitle: 'Préparation',
     briefingIntro: "Ce qu'il faut sortir, et ce que le scénario dit d'en faire. La mise en place est lue sur la carte de manigance principale, dans la langue de vos cartes.",
     briefingGather: 'À sortir',
+    mainSchemeDeck: 'Deck manigance principale',
+    encounterDeck: 'Deck Rencontre',
+    schemeSetupTitle: 'Mise en place de la manigance principale',
+    damageOnVillain: 'Dégâts sur le Méchant',
+    threatOnScheme: 'Menace sur la manigance principale',
+    tapToCorrect: 'Touchez le temps pour le corriger',
+    correctTheClock: 'Temps de jeu, en minutes',
+    keepScreenOn: "Garder l'écran allumé",
     briefingNoSetup: "Ce scénario n'imprime aucune mise en place sur sa manigance principale : elle se trouve dans le livret de règles ou le livret de campagne.",
     howDidItEnd: "Comment cela s'est-il terminé ?",
     timePlayedLabel: 'Temps de jeu',

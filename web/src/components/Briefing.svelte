@@ -72,56 +72,67 @@
   );
 </script>
 
+<!--
+  Two cards, as the app has them: what is on the table, then what the scenario
+  says to do with it. The order of the rows is the app's too, because somebody
+  reading it on a phone in one hand and holding cards in the other should find
+  the same line in the same place.
+-->
 <div class="briefing surface">
   <h2>{t.briefingTitle}</h2>
-  <p class="muted note">{t.briefingIntro}</p>
 
-  <h3>{t.briefingGather}</h3>
-  <ul class="gather">
-    <li>
-      <span class="muted">{t.scenario}</span>
-      <strong>{session.current.scenarioName}</strong>
-    </li>
-    <li>
-      <span class="muted">{t.difficultyLabel}</span>
-      <strong>{difficultySets.map((id) => t.difficulty(id)).join(' + ')}</strong>
-    </li>
-    <li>
-      <span class="muted">{t.modularSets}</span>
-      <strong>
-        {#if session.current.modularSetCodes.length === 0}
-          {t.noModularSets}
-        {:else}
-          {session.current.modularSetCodes.map((code) => setNames.get(code) ?? code).join(', ')}
-        {/if}
-      </strong>
-    </li>
-    <li>
-      <span class="muted">{t.seats}</span>
-      <strong>
-        {session.current.seats.map((seat) => `${seat.heroName} (${seat.deckName})`).join(', ')}
-      </strong>
-    </li>
-  </ul>
+  <dl class="gather">
+    <dt>{t.scenario}</dt>
+    <dd>{session.current.scenarioName}</dd>
 
-  {#if loading}
-    <p class="muted note">{t.trackerLoading}</p>
-  {:else if briefing !== null && briefing.schemeName !== null}
-    <h3>{briefing.schemeName}</h3>
-    {#if briefing.steps.length > 0}
-      <ol class="steps">
-        {#each briefing.steps as step, i (i)}
-          <li>{step}</li>
-        {/each}
-      </ol>
-    {:else}
-      <!-- Ebony Maw and Thanos put theirs in the rules insert, and the older
-           campaign scenarios leave it to the book. Saying so beats an empty
-           list that reads as a bug. -->
-      <p class="muted note">{t.briefingNoSetup}</p>
+    {#if briefing !== null && briefing.schemeName !== null}
+      <dt>{t.mainSchemeDeck}</dt>
+      <dd>{briefing.schemeName}</dd>
     {/if}
-  {/if}
+
+    <dt>{t.difficultyLabel}</dt>
+    <dd>{difficultySets.map((id) => t.difficulty(id)).join(' + ')}</dd>
+
+    <!-- The modular sets are what the encounter deck is made of, which is what
+         the table is actually being asked to fetch. -->
+    <dt>{t.encounterDeck}</dt>
+    <dd>
+      {#if session.current.modularSetCodes.length === 0}
+        {t.noModularSets}
+      {:else}
+        {session.current.modularSetCodes.map((code) => setNames.get(code) ?? code).join(', ')}
+      {/if}
+    </dd>
+
+    <dt>{t.heroes}</dt>
+    <dd>
+      {session.current.seats
+        .map((seat) => (seat.aspect === '' ? seat.heroName : `${seat.heroName} · ${t.aspect(seat.aspect)}`))
+        .join(', ')}
+    </dd>
+  </dl>
 </div>
+
+{#if loading}
+  <p class="muted note">{t.trackerLoading}</p>
+{:else if briefing !== null && briefing.steps.length > 0}
+  <div class="briefing surface">
+    <h2>{t.schemeSetupTitle}</h2>
+    <ul class="steps">
+      {#each briefing.steps as step, i (i)}
+        <li>{step}</li>
+      {/each}
+    </ul>
+  </div>
+{:else if briefing !== null}
+  <div class="briefing surface">
+    <h2>{t.schemeSetupTitle}</h2>
+    <!-- Ebony Maw and Thanos put theirs in the rules insert, and the older
+         campaign scenarios leave it to the book. Saying so beats an empty list
+         that reads as a bug. -->
+    <p class="muted note">{t.briefingNoSetup}</p>
+  </div>
+{/if}
 
 <style>
   .briefing {
@@ -134,34 +145,44 @@
     margin-bottom: var(--space-1);
   }
 
-  h3 {
-    font-size: 0.95rem;
-    margin-top: var(--space-4);
-    margin-bottom: var(--space-2);
+  .gather {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-3);
   }
 
-  .gather {
+  dt {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  dd {
+    margin: 0 0 var(--space-3);
+  }
+
+  dd:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Bulleted, not numbered. The steps on a main scheme are a list of things to
+     do, not an order to do them in, and numbering them would claim otherwise. */
+  .steps {
     list-style: none;
     display: grid;
-    gap: var(--space-2);
-  }
-
-  .gather li {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-  }
-
-  .gather .muted {
-    flex: 0 0 9rem;
-    font-size: 0.85rem;
-  }
-
-  .steps {
-    padding-inline-start: var(--space-5);
-    display: grid;
-    gap: var(--space-2);
+    gap: var(--space-3);
     max-width: var(--prose-max);
+    margin-top: var(--space-3);
+  }
+
+  .steps li {
+    padding-inline-start: var(--space-4);
+    position: relative;
+  }
+
+  .steps li::before {
+    content: "•";
+    position: absolute;
+    inset-inline-start: 0;
   }
 
   .note {
@@ -169,9 +190,4 @@
     max-width: var(--prose-max);
   }
 
-  @media (max-width: 34rem) {
-    .gather .muted {
-      flex-basis: 100%;
-    }
-  }
 </style>

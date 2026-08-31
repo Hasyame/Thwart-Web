@@ -107,7 +107,7 @@
   const health = $derived(encounter === null ? null : villainHealth(encounter));
   const limit = $derived(encounter === null ? null : schemeLimit(encounter));
 
-  const STEPS = [1, 2, 3, 5] as const;
+  const STEPS = [-5, -1, 1, 5] as const;
 </script>
 
 {#if loading}
@@ -118,25 +118,11 @@
   <p class="muted note">{t.trackerUnavailable}</p>
 {:else}
   <div class="tracker surface">
-    <div class="head">
-      <h2>{t.tracker}</h2>
-      <div class="round">
-        <span class="muted">{t.round(encounter.progress.round)}</span>
-        <!-- The one piece of arithmetic worth automating: acceleration is per
-             player, happens every round, and forgetting it is the commonest
-             way a game ends up somewhere it should not be. -->
-        <button type="button" onclick={() => updateEncounter(roundEnded)}>
-          {t.endRound}
-        </button>
-      </div>
-    </div>
+    <h2>{t.round(encounter.progress.round)}</h2>
 
     {#if villain !== null}
       <div class="counter">
-        <div class="label">
-          <strong>{villain.name}</strong>
-          <span class="muted">{villain.stage}</span>
-        </div>
+        <p class="name">{villain.name} {villain.stage}</p>
 
         {#if health === null}
           <!-- Five cards print a star instead of a number, so the scenario
@@ -159,15 +145,18 @@
             <span class="big">{encounter.progress.damage}</span>
             <span class="muted">/ {health}</span>
           </p>
+          <!-- A bar as well as the numbers: across a table, at arm's length,
+               the shape says how far along the game is faster than reading
+               two figures does. -->
+          <div class="bar villain" role="presentation">
+            <span style={`width: ${Math.min(100, (encounter.progress.damage / Math.max(1, health)) * 100)}%`}
+            ></span>
+          </div>
+          <p class="muted what">{t.damageOnVillain}</p>
           <div class="steps">
             {#each STEPS as step (step)}
-              <button type="button" onclick={() => updateEncounter((c) => damaged(c, -step))}>
-                −{step}
-              </button>
-            {/each}
-            {#each STEPS as step (step)}
               <button type="button" onclick={() => updateEncounter((c) => damaged(c, step))}>
-                +{step}
+                {step > 0 ? `+${step}` : `−${-step}`}
               </button>
             {/each}
           </div>
@@ -191,10 +180,7 @@
 
     {#if scheme !== null && stage !== null}
       <div class="counter">
-        <div class="label">
-          <strong>{scheme.name}</strong>
-          <span class="muted">{scheme.stage}</span>
-        </div>
+        <p class="name">{scheme.name}</p>
 
         {#if stage.options.length > 1}
           <!-- Mansion Attack draws a room out of four, Kang a realm out of
@@ -235,15 +221,15 @@
             <span class="big">{encounter.progress.threat}</span>
             <span class="muted">/ {limit}</span>
           </p>
+          <div class="bar scheme" role="presentation">
+            <span style={`width: ${Math.min(100, (encounter.progress.threat / Math.max(1, limit)) * 100)}%`}
+            ></span>
+          </div>
+          <p class="muted what">{t.threatOnScheme}</p>
           <div class="steps">
             {#each STEPS as step (step)}
-              <button type="button" onclick={() => updateEncounter((c) => threatened(c, -step))}>
-                −{step}
-              </button>
-            {/each}
-            {#each STEPS as step (step)}
               <button type="button" onclick={() => updateEncounter((c) => threatened(c, step))}>
-                +{step}
+                {step > 0 ? `+${step}` : `−${-step}`}
               </button>
             {/each}
           </div>
@@ -262,6 +248,10 @@
       </div>
     {/if}
 
+    <button class="primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
+      {t.endRound}
+    </button>
+
     <p class="muted note">{t.trackerNote}</p>
   </div>
 {/if}
@@ -272,35 +262,55 @@
     margin: var(--space-4) 0;
   }
 
-  .head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-2);
-  }
-
   h2 {
     font-size: 1.05rem;
   }
 
-  .round {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
+  .name {
+    font-weight: 700;
+    margin-bottom: var(--space-1);
+  }
+
+  .what {
+    font-size: 0.85rem;
+    margin: var(--space-1) 0 var(--space-2);
+  }
+
+  .bar {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--md-surface-container-high);
+    overflow: hidden;
+  }
+
+  .bar span {
+    display: block;
+    height: 100%;
+    transition: width 120ms ease-out;
+  }
+
+  .bar.villain span {
+    background: var(--md-villain, var(--md-error));
+  }
+
+  .bar.scheme span {
+    background: var(--md-scheme, var(--md-primary));
+  }
+
+  .end-round {
+    width: 100%;
+    margin-top: var(--space-4);
+    padding-block: var(--space-3);
+    font-weight: 700;
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    border-color: var(--md-primary);
   }
 
   .counter {
     margin-top: var(--space-4);
     padding-top: var(--space-3);
     border-top: 1px solid var(--md-outline-variant);
-  }
-
-  .label {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-2);
   }
 
   .reading {
