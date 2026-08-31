@@ -82,8 +82,10 @@ export interface Strings {
   readonly playSetupNote: string;
   readonly choose: string;
   readonly standardSetWith: string;
-  readonly addHero: string;
-  readonly noHeroesYet: string;
+  readonly seats: string;
+  readonly addDeck: string;
+  readonly noSeatsYet: string;
+  readonly noDecksForPlay: string;
   readonly modularChooseNote: string;
   readonly startGame: string;
   readonly pauseClock: string;
@@ -289,8 +291,11 @@ const STRINGS: Record<Locale, Strings> = {
     playSetupNote: 'Choose everything yourself. The clock runs while you play.',
     choose: 'Choose…',
     standardSetWith: 'Standard set played with it',
-    addHero: 'Add a hero',
-    noHeroesYet: 'Add at least one hero.',
+    seats: 'Seats',
+    addDeck: 'Seat a deck',
+    noSeatsYet: 'Seat at least one deck.',
+    noDecksForPlay:
+      'A seat is a deck, so there is nothing to seat yet. Import one on the Decks page and it will appear here.',
     modularChooseNote:
       'Whatever you actually shuffled in. Only sets from packs you own are listed.',
     startGame: 'Start the game',
@@ -539,8 +544,11 @@ const STRINGS: Record<Locale, Strings> = {
     playSetupNote: 'Choisissez tout vous-même. Le chronomètre tourne pendant la partie.',
     choose: 'Choisir…',
     standardSetWith: 'Set Standard joué avec',
-    addHero: 'Ajouter un héros',
-    noHeroesYet: 'Ajoutez au moins un héros.',
+    seats: 'Sièges',
+    addDeck: 'Asseoir un deck',
+    noSeatsYet: 'Asseyez au moins un deck.',
+    noDecksForPlay:
+      "Un siège est un deck, il n'y a donc rien à asseoir pour le moment. Importez-en un sur la page Decks et il apparaîtra ici.",
     modularChooseNote:
       'Ce que vous avez réellement mélangé. Seuls les modules des paquets que vous possédez sont listés.',
     startGame: 'Commencer la partie',

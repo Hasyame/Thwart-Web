@@ -1,4 +1,4 @@
-import type { Aspect, DifficultyId } from './randomizer';
+import type { DifficultyId } from './randomizer';
 
 /**
  * The game currently on the table.
@@ -10,10 +10,26 @@ import type { Aspect, DifficultyId } from './randomizer';
  * ends the game, which is the honest behaviour for something this transient.
  */
 
+/**
+ * One seat at the table, which is a deck rather than a hero.
+ *
+ * Asking for a hero and then an aspect makes somebody describe a deck they
+ * already have, and gets the aspect wrong for a two-aspect deck. A deck
+ * carries both, so the deck is what is chosen and the row leads with its name,
+ * because that is what its owner recognises.
+ *
+ * `heroName` is the name the *deck* states, not one looked up from the card
+ * database: a deck imported from MarvelCDB can name a hero this collection has
+ * never heard of, and without carrying it the seat reads as a bare card code
+ * and the play is filed under that.
+ */
 export interface Seat {
+  readonly deckId: string;
+  readonly deckName: string;
   readonly heroCode: string;
   readonly heroName: string;
-  readonly aspect: Aspect;
+  /** The deck's aspects, joined, since a deck can carry two. */
+  readonly aspect: string;
 }
 
 export interface Session {

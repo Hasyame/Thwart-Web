@@ -5,14 +5,13 @@
   import { db } from '../lib/db';
   import { loadScenarioRules } from '../lib/data';
   import {
-    ASPECTS,
     buildPools,
     DIFFICULTIES,
-    type Aspect,
     type DifficultyId,
     type Pools,
     type ScenarioRulesFile,
   } from '../lib/randomizer';
+  import type { SavedDeck } from '../lib/records';
   import {
     elapsedMillis,
     endGame,
@@ -55,6 +54,20 @@
       }),
     ];
     return () => subs.forEach((s) => s.unsubscribe());
+  });
+
+  const decks = $state<{ saved: readonly SavedDeck[] }>({ saved: [] });
+
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    // Sorted here rather than by Dexie: `name` is not an index, and orderBy on
+    // an unindexed field fails, which liveQuery reports as no rows at all.
+    const sub = liveQuery(() => db.decks.toArray()).subscribe((rows) => {
+      decks.saved = [...rows].sort((a, b) => a.name.localeCompare(b.name));
+    });
+    return () => sub.unsubscribe();
   });
 
   let rules = $state<ScenarioRulesFile | null>(null);
@@ -122,32 +135,29 @@
     }
   }
 
-  function addSeat(): void {
-    const taken = new Set(session.current.seats.map((s) => s.heroCode));
-    const hero = pools?.heroes.find((h) => !taken.has(h.code));
-    if (hero === undefined) {
+  /**
+   * Seats a deck.
+   *
+   * The same deck twice is allowed on purpose: two people at one table can
+   * bring the same list, and refusing it would be the app inventing a rule.
+   */
+  function addSeat(deckId: string): void {
+    const deck = decks.saved.find((d) => d.id === deckId);
+    if (deck === undefined) {
       return;
     }
     session.current.seats = [
       ...session.current.seats,
-      { heroCode: hero.code, heroName: hero.name, aspect: 'justice' },
+      {
+        deckId: deck.id,
+        deckName: deck.name,
+        heroCode: deck.heroCode,
+        // The name the deck states, not one looked up: an imported deck can
+        // name a hero this collection has never heard of.
+        heroName: deck.heroName,
+        aspect: deck.aspects === '' ? '' : deck.aspects.split(',').join(', '),
+      },
     ];
-  }
-
-  function setSeatHero(seatIndex: number, code: string): void {
-    const hero = pools?.heroes.find((h) => h.code === code);
-    if (hero === undefined) {
-      return;
-    }
-    session.current.seats = session.current.seats.map((seat, i) =>
-      i === seatIndex ? { ...seat, heroCode: hero.code, heroName: hero.name } : seat,
-    );
-  }
-
-  function setSeatAspect(seatIndex: number, aspect: Aspect): void {
-    session.current.seats = session.current.seats.map((seat, i) =>
-      i === seatIndex ? { ...seat, aspect } : seat,
-    );
   }
 
   function removeSeat(seatIndex: number): void {
@@ -280,31 +290,50 @@
 
     <div class="setup surface">
       <div class="head">
-        <h2>{t.heroes}</h2>
-        <button type="button" onclick={addSeat} disabled={session.current.seats.length >= 4}>
-          {t.addHero}
-        </button>
+        <h2>{t.seats}</h2>
       </div>
 
+      {#if decks.saved.length === 0}
+        <!-- Seats are decks, so with no decks there is nothing to seat. -->
+        <p class="muted note">{t.noDecksForPlay}</p>
+      {:else}
+        <label class="field">
+          <span class="muted">{t.addDeck}</span>
+          <select
+            value=""
+            onchange={(e) => {
+              addSeat(e.currentTarget.value);
+              e.currentTarget.value = '';
+            }}
+            disabled={session.current.seats.length >= 4}
+          >
+            <option value="">{t.choose}</option>
+            {#each decks.saved as deck (deck.id)}
+              <option value={deck.id}>{deck.name} · {deck.heroName}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+
       {#if session.current.seats.length === 0}
-        <p class="muted note">{t.noHeroesYet}</p>
+        <p class="muted note">{t.noSeatsYet}</p>
       {/if}
 
       {#each session.current.seats as seat, i (i)}
-        <div class="seat">
-          <select value={seat.heroCode} onchange={(e) => setSeatHero(i, e.currentTarget.value)}>
-            {#each pools.heroes as hero (hero.code)}
-              <option value={hero.code}>{hero.name}</option>
-            {/each}
-          </select>
-          <select
-            value={seat.aspect}
-            onchange={(e) => setSeatAspect(i, e.currentTarget.value as Aspect)}
-          >
-            {#each ASPECTS.filter((a) => pools.aspects.includes(a)) as aspect (aspect)}
-              <option value={aspect}>{t.aspect(aspect)}</option>
-            {/each}
-          </select>
+        <div class="seat surface">
+          <span class="seat-body">
+            <!-- The deck name leads, because that is what its owner
+                 recognises; the hero and aspects follow. -->
+            <strong>{seat.deckName}</strong>
+            <span class="muted seat-sub">
+              {seat.heroName}{seat.aspect === ''
+                ? ''
+                : ` · ${seat.aspect
+                    .split(',')
+                    .map((a) => t.aspect(a.trim()))
+                    .join(' / ')}`}
+            </span>
+          </span>
           <button type="button" class="small" onclick={() => removeSeat(i)}>×</button>
         </div>
       {/each}
@@ -342,10 +371,10 @@
           : ` + ${t.difficulty(session.current.standardSet)}`}
       </p>
       <ul class="chips">
-        {#each session.current.seats as seat (seat.heroCode)}
-          <li class="chip" data-faction={seat.aspect}>
-            <strong>{seat.heroName}</strong>
-            <span>{t.aspect(seat.aspect)}</span>
+        {#each session.current.seats as seat, i (i)}
+          <li class="chip" data-faction={seat.aspect.split(',')[0]?.trim() ?? ''}>
+            <strong>{seat.deckName}</strong>
+            <span>{seat.heroName}</span>
           </li>
         {/each}
       </ul>
@@ -441,12 +470,20 @@
 
   .seat {
     display: flex;
-    gap: var(--space-2);
+    gap: var(--space-3);
     align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
   }
 
-  .seat select {
-    flex: 1 1 10rem;
+  .seat-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .seat-sub {
+    font-size: 0.85rem;
   }
 
   select,
