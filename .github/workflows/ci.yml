@@ -113,6 +113,14 @@ jobs:
         working-directory: web
         run: npm run test:paused
 
+      # The setup text is Fantasy Flight's, read off the cards at runtime and
+      # never committed here, so the only way to test the parser is against the
+      # real database. Both languages, because the heading is spelled three
+      # ways across them.
+      - name: Scenario setup text
+        working-directory: web
+        run: npm run test:setup
+
 
   server:
     name: Server

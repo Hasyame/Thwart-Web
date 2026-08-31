@@ -215,6 +215,20 @@ export interface Strings {
   readonly discardSaved: string;
   readonly savedGame: (scenario: string, when: string) => string;
   readonly savedGameNote: string;
+
+  // The three steps of a game: choose it, lay it out, play it.
+  readonly goToSetup: string;
+  readonly play: string;
+  readonly backToSetup: string;
+  readonly clockStartsNote: string;
+  readonly briefingTitle: string;
+  readonly briefingIntro: string;
+  readonly briefingGather: string;
+  readonly briefingNoSetup: string;
+  readonly howDidItEnd: string;
+  readonly timePlayedLabel: string;
+  readonly saveResult: string;
+  readonly backToGame: string;
   readonly cancel: string;
   readonly favourite: string;
   readonly unfavourite: string;
@@ -476,7 +490,7 @@ const STRINGS: Record<Locale, Strings> = {
     advanceScheme: 'Advance the scheme',
     whichScheme: 'Which one is on the table',
 
-    longBreak: 'Put the game away',
+    longBreak: 'Take a long break?',
     longBreakIntro:
       'For a table that has to be cleared, or left for a week. The clock stops and where everything stood is written down. One game at a time: saving replaces whatever was already put away.',
     longBreakPhase: 'It stopped in',
@@ -493,13 +507,26 @@ const STRINGS: Record<Locale, Strings> = {
     heroLives: 'Hit points left',
     villainLifeLeft: 'Hit points left on the villain',
     villainStageLabel: 'Which villain card is face up',
-    putAway: 'Put it away',
+    putAway: 'Take the break',
     savePutAway: 'Save and leave the table',
     resumeSaved: 'Pick it up again',
     discardSaved: 'Throw it away',
     savedGame: (scenario, when) => `${scenario}, put away ${when}`,
     savedGameNote:
       'Picking it up puts the cards and the clock back where they were. The clock comes back stopped, because getting the cards out again is not play time.',
+
+    goToSetup: 'Go to setup',
+    play: 'Play',
+    backToSetup: 'Change the game',
+    clockStartsNote: 'The clock starts when you press Play, not before. Laying a game out takes several minutes and counting them made every game look longer than it was.',
+    briefingTitle: 'Setup',
+    briefingIntro: 'What to fetch, and what the scenario says to do with it. The setup is read off the main scheme card, in the language your cards are in.',
+    briefingGather: 'Gather',
+    briefingNoSetup: 'This scenario prints no setup on its main scheme; it is in the rules insert or the campaign book.',
+    howDidItEnd: 'How did it end?',
+    timePlayedLabel: 'Time played',
+    saveResult: 'Save the game',
+    backToGame: 'Back to the game',
     cancel: 'Cancel',
     favourite: 'Add to favourites',
     unfavourite: 'Remove from favourites',
@@ -769,7 +796,7 @@ const STRINGS: Record<Locale, Strings> = {
     advanceScheme: 'Faire avancer la manigance',
     whichScheme: 'Laquelle est sur la table',
 
-    longBreak: 'Ranger la partie',
+    longBreak: 'Faire une longue pause ?',
     longBreakIntro:
       "Pour une table qu'il faut débarrasser, ou laisser une semaine. Le chrono s'arrête et la position de chacun est notée. Une partie à la fois : enregistrer remplace celle qui était rangée.",
     longBreakPhase: "Arrêtée pendant",
@@ -786,13 +813,26 @@ const STRINGS: Record<Locale, Strings> = {
     heroLives: 'Points de vie restants',
     villainLifeLeft: 'Points de vie restants du Méchant',
     villainStageLabel: 'Quelle carte Méchant est face visible',
-    putAway: 'Ranger',
+    putAway: 'Faire la pause',
     savePutAway: 'Enregistrer et quitter la table',
     resumeSaved: 'Reprendre la partie',
     discardSaved: 'Jeter',
     savedGame: (scenario, when) => `${scenario}, rangée ${when}`,
     savedGameNote:
       'Reprendre remet les cartes et le chrono là où ils étaient. Le chrono revient arrêté : ressortir le matériel ne compte pas comme du temps de jeu.',
+
+    goToSetup: 'Aller à la mise en place',
+    play: 'Jouer',
+    backToSetup: 'Changer de partie',
+    clockStartsNote: "Le chrono démarre quand vous appuyez sur Jouer, pas avant. Installer une partie prend plusieurs minutes, et les compter faisait paraître chaque partie plus longue qu'elle ne l'était.",
+    briefingTitle: 'Mise en place',
+    briefingIntro: "Ce qu'il faut sortir, et ce que le scénario dit d'en faire. La mise en place est lue sur la carte de manigance principale, dans la langue de vos cartes.",
+    briefingGather: 'À sortir',
+    briefingNoSetup: "Ce scénario n'imprime aucune mise en place sur sa manigance principale : elle se trouve dans le livret de règles ou le livret de campagne.",
+    howDidItEnd: "Comment cela s'est-il terminé ?",
+    timePlayedLabel: 'Temps de jeu',
+    saveResult: 'Enregistrer la partie',
+    backToGame: 'Revenir à la partie',
     cancel: 'Annuler',
     favourite: 'Ajouter aux favoris',
     unfavourite: 'Retirer des favoris',

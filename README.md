@@ -21,7 +21,8 @@ made public once the account server has run somewhere other than a laptop.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own.
-- **My own setup.** Choose everything yourself, run the clock, and count the
+- **My own setup.** Choose everything yourself, read the scenario's own setup
+  off its main scheme card, then run the clock and count the
   villain and the main scheme while you play: damage against the printed
   health, threat against the limit, and an end-of-round button that applies the
   acceleration. Counters only, deliberately; it does not adjudicate rules.
@@ -78,6 +79,7 @@ Other scripts:
 | `npm run test:settings` | Check the app's settings survive a round trip through here |
 | `npm run test:encounter` | Check the ported tracker rules against the real card database |
 | `npm run test:paused` | Check a game put away comes back the same |
+| `npm run test:setup` | Check the scenario setup text is read correctly, in both languages |
 
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run
 theme` is only needed on its own after changing a seed colour.

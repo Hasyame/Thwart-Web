@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import type { CardSet, IndexRow, Locale } from '../lib/types';
   import Tracker from './Tracker.svelte';
+  import Briefing from './Briefing.svelte';
   import LongBreak from './LongBreak.svelte';
   import type { PausedGame } from '../lib/records';
   import {
@@ -10,7 +11,7 @@
     splitHeroes,
   } from '../lib/pausedGame';
   import type { Strings } from '../lib/i18n';
-  import { db } from '../lib/db';
+  import { db, SETTINGS_KEY } from '../lib/db';
   import { loadScenarioRules } from '../lib/data';
   import {
     buildPools,
@@ -28,6 +29,8 @@
     resumeGame,
     session,
     startGame,
+    goToBriefing,
+    backToSetup,
   } from '../lib/session.svelte';
   import { buildPlay } from '../lib/plays';
   import { resumeSession } from '../lib/session.svelte';
@@ -226,23 +229,55 @@
   // --- recording -----------------------------------------------------------
 
   let notes = $state('');
+  /**
+   * Where games get played, from the app's preferences.
+   *
+   * Not asked for per game: the app keeps it as a setting, and a question the
+   * answer to which is the same every time is a question worth not asking.
+   * Empty unless a backup brought the setting over.
+   */
   let location = $state('');
+
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    void db.appSettings.get(SETTINGS_KEY).then((settings) => {
+      location = settings?.playLocation ?? '';
+    });
+  });
   let victoryPoints = $state(0);
+  /**
+   * Won or lost, once the game is over and before it is written down.
+   *
+   * A separate step from playing, because the questions that belong at the end
+   * are not questions to have on screen during the game: nobody knows their
+   * victory points until it is over.
+   */
+  let outcome = $state<boolean | null>(null);
   let recorded = $state(false);
   let recording = $state(false);
 
-  async function record(won: boolean): Promise<void> {
-    if (recording) {
+  function finish(won: boolean): void {
+    pauseGame();
+    outcome = won;
+  }
+
+  async function record(): Promise<void> {
+    if (recording || outcome === null) {
       return;
     }
+    const won = outcome;
     recording = true;
-    pauseGame();
     try {
       const play = buildPlay({
         session: session.current,
         elapsedMillis: elapsedMillis(Date.now()),
         won,
         notes,
+        // Not asked for here. The app keeps it as a preference rather than a
+        // question per game, and this browser has it only if a backup brought
+        // it over.
         location,
         victoryPoints,
         modularSetNames: session.current.modularSetCodes.map(
@@ -259,8 +294,8 @@
   function newGame(): void {
     endGame();
     notes = '';
-    location = '';
     victoryPoints = 0;
+    outcome = null;
     recorded = false;
   }
 
@@ -289,7 +324,7 @@
       <p class="ok">{t.playRecorded}</p>
       <button type="button" class="primary" onclick={newGame}>{t.playAnother}</button>
     </div>
-  {:else if !session.current.started}
+  {:else if session.current.phase === 'setup'}
     <p class="muted note">{t.playSetupNote}</p>
 
     <div class="setup surface">
@@ -426,10 +461,18 @@
       </div>
     {/if}
 
-    <button class="primary big" type="button" onclick={startGame} disabled={!canStart}>
-      {t.startGame}
+    <button class="primary big" type="button" onclick={goToBriefing} disabled={!canStart}>
+      {t.goToSetup}
     </button>
-  {:else}
+  {:else if session.current.phase === 'briefing'}
+    <Briefing {t} {cardLocale} {index} setNames={setNames} />
+
+    <div class="result-actions">
+      <button class="primary big" type="button" onclick={startGame}>{t.play}</button>
+      <button type="button" onclick={backToSetup}>{t.backToSetup}</button>
+    </div>
+    <p class="muted note">{t.clockStartsNote}</p>
+  {:else if outcome === null}
     <div class="running surface">
       <p class="clock">{formatElapsed(elapsed)}</p>
       <p class="muted">
@@ -459,16 +502,37 @@
     <Tracker {t} {cardLocale} {index} expert={isExpert} />
 
     <div class="setup surface">
-      <h2>{t.recordResult}</h2>
-      <label class="field">
-        <span class="muted">{t.location}</span>
-        <input type="text" value={location} oninput={(e) => (location = e.currentTarget.value)} />
-      </label>
+      <h2>{t.howDidItEnd}</h2>
+      <div class="result-actions">
+        <button class="primary" type="button" onclick={() => finish(true)}>{t.won}</button>
+        <button type="button" onclick={() => finish(false)}>{t.lost}</button>
+      </div>
+
+      <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
+
+      <p class="muted note">{t.discardNote}</p>
+      <button type="button" onclick={newGame}>{t.discardGame}</button>
+    </div>
+  {:else}
+    <!-- The end of the game, and the only place the questions that need an
+         ending belong: nobody knows their victory points until it is over. -->
+    <div class="setup surface">
+      <h2>{outcome ? t.won : t.lost}</h2>
+      <p class="muted">
+        {session.current.scenarioName} · {t.difficulty(session.current.difficulty)}{session
+          .current.standardSet === null
+          ? ''
+          : ` + ${t.difficulty(session.current.standardSet)}`}
+      </p>
+      <p class="clock">{formatElapsed(elapsed)}</p>
+      <p class="muted note">{t.timePlayedLabel}</p>
+
       <label class="field">
         <span class="muted">{t.victoryPoints}</span>
         <input
           type="number"
           min="0"
+          inputmode="numeric"
           value={victoryPoints}
           oninput={(e) => (victoryPoints = Number.parseInt(e.currentTarget.value, 10) || 0)}
         />
@@ -480,17 +544,13 @@
       </label>
 
       <div class="result-actions">
-        <button class="primary" type="button" onclick={() => record(true)} disabled={recording}>
-          {t.won}
+        <button class="primary" type="button" onclick={record} disabled={recording}>
+          {t.saveResult}
         </button>
-        <button type="button" onclick={() => record(false)} disabled={recording}>
-          {t.lost}
+        <button type="button" onclick={() => (outcome = null)} disabled={recording}>
+          {t.backToGame}
         </button>
-        <button type="button" onclick={newGame} disabled={recording}>{t.discardGame}</button>
       </div>
-      <p class="muted note">{t.discardNote}</p>
-
-      <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
     </div>
   {/if}
 </section>

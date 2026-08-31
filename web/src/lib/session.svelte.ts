@@ -33,6 +33,9 @@ export interface Seat {
   readonly aspect: string;
 }
 
+/** Choosing the game, laying it out, playing it. */
+export type SessionPhase = 'setup' | 'briefing' | 'playing';
+
 export interface Session {
   scenarioCode: string;
   scenarioName: string;
@@ -44,7 +47,14 @@ export interface Session {
   accumulatedMillis: number;
   /** When the clock last started, or null when it is stopped. */
   runningSince: number | null;
-  started: boolean;
+  /**
+   * Where the game is.
+   *
+   * Three, not two. Between choosing a game and playing it there is laying it
+   * out, and it takes several minutes: counting them made every game longer
+   * than it was, so the clock does not start until the cards are on the table.
+   */
+  phase: SessionPhase;
   /**
    * The counters, once the scenario's cards have been read.
    *
@@ -65,7 +75,7 @@ function empty(): Session {
     modularSetCodes: [],
     accumulatedMillis: 0,
     runningSince: null,
-    started: false,
+    phase: 'setup',
     encounter: null,
   };
 }
@@ -79,8 +89,18 @@ export function elapsedMillis(now: number): number {
     : s.accumulatedMillis + Math.max(0, now - s.runningSince);
 }
 
+/** Chosen, and being laid out. The clock is deliberately not running. */
+export function goToBriefing(): void {
+  session.current.phase = 'briefing';
+}
+
+export function backToSetup(): void {
+  session.current.phase = 'setup';
+}
+
+/** The cards are out. This is where play, and the clock, begin. */
 export function startGame(): void {
-  session.current.started = true;
+  session.current.phase = 'playing';
   session.current.runningSince = Date.now();
 }
 
@@ -123,7 +143,7 @@ export function updateEncounter(change: (current: Encounter) => Encounter): void
  * again, and counting that as play time is the same mistake as counting setup.
  */
 export function resumeSession(restored: Partial<Session>): void {
-  session.current = { ...empty(), ...restored, started: true, runningSince: null };
+  session.current = { ...empty(), ...restored, phase: 'playing', runningSince: null };
 }
 
 export function endGame(): void {
