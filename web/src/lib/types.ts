@@ -82,8 +82,28 @@ export interface Card {
   readonly recover?: number | null;
   readonly scheme?: number | null;
   readonly boost?: number | null;
+  /**
+   * The encounter tracker's numbers.
+   *
+   * Two spellings for the same idea, and they disagree: a villain's health
+   * carries `health_per_hero`, where **true** means multiply by the number of
+   * players, while a scheme's threat carries `threat_fixed`, where **false**
+   * means multiply. Normalised once in lib/encounter.ts so nothing downstream
+   * has to remember which is which.
+   *
+   * A `*_star` card prints a star instead of a number, so the scenario decides
+   * it and the player types it in.
+   */
+  readonly stage?: string | null;
+  readonly health_per_hero?: boolean;
+  readonly health_star?: boolean;
   readonly threat?: number | null;
+  readonly threat_fixed?: boolean;
+  readonly threat_star?: boolean;
   readonly base_threat?: number | null;
+  readonly base_threat_fixed?: boolean;
+  readonly escalation_threat?: number | null;
+  readonly escalation_threat_fixed?: boolean;
 
   readonly quantity?: number | null;
   readonly deck_limit?: number | null;

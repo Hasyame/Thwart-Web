@@ -291,11 +291,11 @@ const STRINGS: Record<Locale, Strings> = {
     playSetupNote: 'Choose everything yourself. The clock runs while you play.',
     choose: 'Choose…',
     standardSetWith: 'Standard set played with it',
-    seats: 'Seats',
-    addDeck: 'Seat a deck',
-    noSeatsYet: 'Seat at least one deck.',
+    seats: 'Decks & players',
+    addDeck: 'Add a deck',
+    noSeatsYet: 'Add at least one deck.',
     noDecksForPlay:
-      'A seat is a deck, so there is nothing to seat yet. Import one on the Decks page and it will appear here.',
+      'A player is a deck, so there is nothing to add yet. Import one on the Decks page and it will appear here.',
     modularChooseNote:
       'Whatever you actually shuffled in. Only sets from packs you own are listed.',
     startGame: 'Start the game',
@@ -544,13 +544,13 @@ const STRINGS: Record<Locale, Strings> = {
     playSetupNote: 'Choisissez tout vous-même. Le chronomètre tourne pendant la partie.',
     choose: 'Choisir…',
     standardSetWith: 'Set Standard joué avec',
-    seats: 'Sièges',
-    addDeck: 'Asseoir un deck',
-    noSeatsYet: 'Asseyez au moins un deck.',
+    seats: 'Decks & nombre de joueurs',
+    addDeck: 'Ajouter un deck',
+    noSeatsYet: 'Ajoutez au moins un deck.',
     noDecksForPlay:
-      "Un siège est un deck, il n'y a donc rien à asseoir pour le moment. Importez-en un sur la page Decks et il apparaîtra ici.",
+      "Un joueur est un deck, il n'y a donc rien à ajouter pour le moment. Importez-en un sur la page Decks et il apparaîtra ici.",
     modularChooseNote:
-      'Ce que vous avez réellement mélangé. Seuls les modules des paquets que vous possédez sont listés.',
+      'Ce que vous avez réellement mélangé. Seuls les sets modulaires des paquets que vous possédez sont listés.',
     startGame: 'Commencer la partie',
     pauseClock: 'Mettre en pause',
     resumeClock: 'Reprendre',
@@ -645,7 +645,7 @@ const STRINGS: Record<Locale, Strings> = {
     randomizerNotEnough: (players) =>
       `Votre collection ne suffit pas pour ${players} joueurs. Ajoutez des paquets, ou jouez à moins.`,
     poolNote: (scenarios, heroes, modulars) =>
-      `Parmi ${scenarios} scénarios, ${heroes} héros et ${modulars} modules.`,
+      `Parmi ${scenarios} scénarios, ${heroes} héros et ${modulars} sets modulaires.`,
     players: 'Joueurs',
     roll: 'Lancer',
     reroll: 'Relancer',
@@ -670,7 +670,7 @@ const STRINGS: Record<Locale, Strings> = {
         pool: 'Pool',
       })[id] ?? id,
     required: 'obligatoire',
-    noModularSets: 'Ce scénario ne prend aucun module.',
+    noModularSets: 'Ce scénario ne prend aucun set modulaire.',
     saveToHistory: 'Enregistrer ce résultat',
     savedToHistory: 'Enregistré',
     wave: (n) => `Vague ${n}`,
@@ -689,7 +689,7 @@ const STRINGS: Record<Locale, Strings> = {
     contentsHint:
       "Posséder un paquet ne veut pas dire posséder tout ce qu'il contient. Décochez ce qui manque à votre exemplaire et il ne sera plus proposé.",
     scenarios: 'Scénarios',
-    modularSets: 'Modules',
+    modularSets: 'Sets modulaires',
     cancel: 'Annuler',
     favourite: 'Ajouter aux favoris',
     unfavourite: 'Retirer des favoris',
