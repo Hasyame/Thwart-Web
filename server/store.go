@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -24,49 +25,55 @@ the replacement is a few hundred lines in one file rather than a search through
 handlers.
 */
 
-// Schema is applied at startup, in order, inside a transaction. Forward only:
-// rolling back means restoring the backup taken just before, which is a
-// procedure that works, unlike a down migration nobody has ever run.
-var migrations = []string{
-	`CREATE TABLE IF NOT EXISTS schema_version (
-		version INTEGER NOT NULL
-	)`,
+/*
+Schema.
 
-	// There is deliberately no email column.
+One entry per version, applied in order, each inside its own transaction. The
+version lives in SQLite's own `user_version` pragma rather than a table of our
+own: it is read and written in the same transaction as the statements it
+guards, so a half-applied migration cannot leave the recorded version ahead of
+the schema.
+
+Forward only. Rolling back means restoring the backup taken just before, which
+is a procedure that works, unlike a down migration nobody has ever run.
+*/
+var migrations = []string{
+	// v1: accounts and devices.
 	//
-	// Not a nullable one, not an empty string: absent. "This instance holds no
-	// email address for this user" is then a structural fact about the schema
-	// rather than a policy somebody has to remember to honour. If optional
-	// email is ever added it goes in its own table, with no row for the vast
-	// majority of accounts.
-	`CREATE TABLE IF NOT EXISTS account (
-		id            TEXT PRIMARY KEY,
-		handle        TEXT NOT NULL,
-		password_hash TEXT NOT NULL,
-		recovery_hash TEXT NOT NULL,
-		created_at    INTEGER NOT NULL,
+	// There is deliberately no email column. Not a nullable one, not an empty
+	// string: absent. "This instance holds no email address for this user" is
+	// then a structural fact about the schema rather than a policy somebody has
+	// to remember to honour. If optional email is ever added it goes in its own
+	// table, with no row for the vast majority of accounts.
+	`CREATE TABLE account (
+		id                 TEXT PRIMARY KEY,
+		handle             TEXT NOT NULL,
+		password_hash      TEXT NOT NULL,
+		recovery_hash      TEXT NOT NULL,
+		recovery_issued_at INTEGER NOT NULL,
+		created_at         INTEGER NOT NULL,
 		-- The per-account revision counter the sync protocol will allocate
 		-- from. Unused until sync lands; here now so that adding it later is
 		-- not a migration on live accounts.
-		revision      INTEGER NOT NULL DEFAULT 0
-	)`,
+		revision           INTEGER NOT NULL DEFAULT 0
+	);
 
-	// Handles are compared case-insensitively, so "Benoit" and "benoit" cannot
-	// both exist and be confused for one another at a login prompt.
-	`CREATE UNIQUE INDEX IF NOT EXISTS account_handle ON account (handle COLLATE NOCASE)`,
+	-- Handles are compared case-insensitively, so "Benoit" and "benoit" cannot
+	-- both exist and be confused for one another at a login prompt.
+	CREATE UNIQUE INDEX account_handle ON account (handle COLLATE NOCASE);
 
-	// One row per signed-in device. The token itself is never stored, only its
-	// SHA-256: a database dump then yields nothing that can be replayed.
-	`CREATE TABLE IF NOT EXISTS device (
+	-- One row per signed-in device. The token itself is never stored, only its
+	-- SHA-256: a database dump then yields nothing that can be replayed.
+	CREATE TABLE device (
 		id         TEXT PRIMARY KEY,
 		account_id TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,
 		token_hash TEXT NOT NULL,
 		name       TEXT NOT NULL DEFAULT '',
 		created_at INTEGER NOT NULL,
 		last_seen  INTEGER NOT NULL
-	)`,
-	`CREATE UNIQUE INDEX IF NOT EXISTS device_token ON device (token_hash)`,
-	`CREATE INDEX IF NOT EXISTS device_account ON device (account_id)`,
+	);
+	CREATE UNIQUE INDEX device_token ON device (token_hash);
+	CREATE INDEX device_account ON device (account_id);`,
 }
 
 type Store struct {
@@ -78,7 +85,10 @@ type Account struct {
 	Handle       string
 	PasswordHash string
 	RecoveryHash string
-	CreatedAt    time.Time
+	// When the current recovery code was issued. Returned to the client so it
+	// can say how old the code the user wrote down is.
+	RecoveryIssuedAt time.Time
+	CreatedAt        time.Time
 }
 
 type Device struct {
@@ -126,29 +136,55 @@ func OpenStore(path string) (*Store, error) {
 }
 
 func (s *Store) migrate() error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
+	var version int
+	if err := s.db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+		return fmt.Errorf("read schema version: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	if version > len(migrations) {
+		return fmt.Errorf(
+			"database is at schema %d but this binary only knows %d: it was written by a newer version",
+			version, len(migrations))
+	}
 
-	for _, stmt := range migrations {
-		if _, err := tx.Exec(stmt); err != nil {
-			return fmt.Errorf("migration failed: %w", err)
+	for i := version; i < len(migrations); i++ {
+		tx, err := s.db.Begin()
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(migrations[i]); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("migration %d: %w", i+1, err)
+		}
+		// Not a placeholder: PRAGMA does not take one.
+		if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, i+1)); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("stamp version %d: %w", i+1, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return err
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
 func (s *Store) Close() error { return s.db.Close() }
+
+// Ping is what /v1/health actually checks. A process that is running but whose
+// database file has gone is not healthy, and answering "ok" from memory would
+// hide exactly the failure the check exists to catch.
+func (s *Store) Ping(ctx context.Context) error {
+	var one int
+	return s.db.QueryRowContext(ctx, `SELECT 1`).Scan(&one)
+}
 
 // CreateAccount stores a new account. The caller has already hashed both
 // secrets: this layer never sees a password or a recovery code in clear.
 func (s *Store) CreateAccount(ctx context.Context, a Account) error {
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO account (id, handle, password_hash, recovery_hash, created_at)
-		 VALUES (?, ?, ?, ?, ?)`,
-		a.ID, a.Handle, a.PasswordHash, a.RecoveryHash, a.CreatedAt.UnixMilli(),
+		`INSERT INTO account (id, handle, password_hash, recovery_hash, recovery_issued_at, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		a.ID, a.Handle, a.PasswordHash, a.RecoveryHash,
+		a.RecoveryIssuedAt.UnixMilli(), a.CreatedAt.UnixMilli(),
 	)
 	if err != nil {
 		// modernc reports this as a message rather than a typed error, so the
@@ -163,27 +199,28 @@ func (s *Store) CreateAccount(ctx context.Context, a Account) error {
 
 func (s *Store) AccountByHandle(ctx context.Context, handle string) (Account, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, handle, password_hash, recovery_hash, created_at
+		`SELECT id, handle, password_hash, recovery_hash, recovery_issued_at, created_at
 		   FROM account WHERE handle = ? COLLATE NOCASE`, handle)
 	return scanAccount(row)
 }
 
 func (s *Store) AccountByID(ctx context.Context, id string) (Account, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, handle, password_hash, recovery_hash, created_at
+		`SELECT id, handle, password_hash, recovery_hash, recovery_issued_at, created_at
 		   FROM account WHERE id = ?`, id)
 	return scanAccount(row)
 }
 
 func scanAccount(row *sql.Row) (Account, error) {
 	var a Account
-	var created int64
-	if err := row.Scan(&a.ID, &a.Handle, &a.PasswordHash, &a.RecoveryHash, &created); err != nil {
+	var issued, created int64
+	if err := row.Scan(&a.ID, &a.Handle, &a.PasswordHash, &a.RecoveryHash, &issued, &created); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Account{}, ErrNotFound
 		}
 		return Account{}, err
 	}
+	a.RecoveryIssuedAt = time.UnixMilli(issued).UTC()
 	a.CreatedAt = time.UnixMilli(created).UTC()
 	return a, nil
 }
@@ -194,10 +231,29 @@ func (s *Store) SetPasswordHash(ctx context.Context, accountID, hash string) err
 	return err
 }
 
-func (s *Store) SetRecoveryHash(ctx context.Context, accountID, hash string) error {
+func (s *Store) SetRecoveryHash(ctx context.Context, accountID, hash string, issuedAt time.Time) error {
 	_, err := s.db.ExecContext(ctx,
-		`UPDATE account SET recovery_hash = ? WHERE id = ?`, hash, accountID)
+		`UPDATE account SET recovery_hash = ?, recovery_issued_at = ? WHERE id = ?`,
+		hash, issuedAt.UnixMilli(), accountID)
 	return err
+}
+
+// DeleteAccount erases the account and, by the foreign key, every device on it.
+// Doc 02 is explicit that this is real rather than a flag: an account that
+// cannot be left is a trap.
+func (s *Store) DeleteAccount(ctx context.Context, accountID string) error {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM account WHERE id = ?`, accountID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (s *Store) CreateDevice(ctx context.Context, d Device, tokenHash string) error {
@@ -287,18 +343,9 @@ func (s *Store) DeleteOtherDevices(ctx context.Context, accountID, keepDeviceID 
 
 func containsAny(s string, subs ...string) bool {
 	for _, sub := range subs {
-		if len(sub) <= len(s) && indexOf(s, sub) >= 0 {
+		if strings.Contains(s, sub) {
 			return true
 		}
 	}
 	return false
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }

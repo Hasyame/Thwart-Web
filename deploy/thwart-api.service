@@ -1,0 +1,81 @@
+# /etc/systemd/system/thwart-api.service
+#
+#   sudo systemctl enable --now thwart-api
+#
+# One Go binary, one SQLite file, listening on loopback. nginx terminates TLS
+# and proxies /api/ to it; nothing outside the box can reach this port.
+
+[Unit]
+Description=Thwart account and sync API
+Documentation=https://github.com/Hasyame/Thwart-Web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=thwart
+Group=thwart
+WorkingDirectory=/srv/thwart
+
+ExecStart=/srv/thwart/bin/thwart-api -addr 127.0.0.1:8787 -db /srv/thwart/data/thwart.sqlite
+
+# The binary handles SIGTERM by draining in-flight requests, which for a
+# password change is the difference between a clear outcome and one nobody can
+# explain afterwards. Give it room to finish.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+Restart=on-failure
+RestartSec=5s
+
+# Logs are JSON on stdout, so journalctl has them and nothing writes a file
+# that needs rotating.
+StandardOutput=journal
+StandardError=journal
+
+# ---- memory ----------------------------------------------------------------
+# Argon2id is configured at 64 MiB per hash (auth.go), and a login runs one. On
+# a small VPS the cap has to leave room for several at once plus the Go heap
+# and SQLite's page cache. MemoryHigh throttles before MemoryMax kills, so a
+# burst slows down instead of the service disappearing.
+#
+# Doc 05 says to tune these on the actual machine. If logins start failing
+# under load, this is the first number to look at.
+MemoryHigh=384M
+MemoryMax=512M
+
+# ---- hardening -------------------------------------------------------------
+# It needs to write exactly one directory and open exactly one socket.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+# The database, the WAL and the shared-memory file all live here.
+ReadWritePaths=/srv/thwart/data
+
+# Loopback only, so no need for anything but IPv4 and IPv6.
+RestrictAddressFamilies=AF_INET AF_INET6
+IPAddressAllow=localhost
+IPAddressDeny=any
+
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

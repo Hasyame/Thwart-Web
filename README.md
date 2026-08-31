@@ -5,8 +5,8 @@ offline-first Android app for the Marvel Champions living card game. Bilingual
 in French and English, works with no account, and keeps its data in your own
 browser.
 
-**Work in progress.** Nothing is deployed yet and the repository is private for
-now; it will be made public once there is something worth running.
+Live at **<https://thwart.app>**. The repository is private for now; it will be
+made public once the account server has run somewhere other than a laptop.
 
 ## What it does
 
@@ -32,9 +32,12 @@ export from your phone, import here, and export back. The records are stored in
 the same shapes the Android app uses, so a round trip loses nothing, including
 the decks, plays and campaigns this site cannot yet display.
 
-A sync server is designed but deferred; see
-[`docs/design/`](docs/design/) for the data audit, the sync protocol, the stack
-decision, the roadmap and the operations plan.
+An **account server** lives in [`server/`](server/): registration without an
+email address, login, recovery by written-down code, and device management. It
+is optional, and the site works without it. Sync itself is designed but not
+built yet; see [`docs/design/`](docs/design/) for the data audit, the sync
+protocol, the stack decision, the roadmap and the operations plan, and
+[`docs/deployment.md`](docs/deployment.md) for the runbook.
 
 ## Running the web app
 
@@ -62,6 +65,8 @@ Other scripts:
 | `npm run check` | Type-check (`svelte-check`, strict, no `any`) |
 | `npm run build` | Production build into `web/dist/` |
 | `npm run preview` | Serve the production build |
+| `npm run test:sw` | Check the service worker's routing rules |
+| `npm run test:backup` | Check that both backup formats import; pass a real export as an argument |
 
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run
 theme` is only needed on its own after changing a seed colour.
@@ -69,6 +74,28 @@ theme` is only needed on its own after changing a seed colour.
 The card data refreshes automatically through
 [`.github/workflows/card-data.yml`](.github/workflows/card-data.yml), which
 checks MarvelCDB nightly and only rebuilds when something actually changed.
+
+## Running the account server
+
+Needs Go 1.25 or later. Pure Go throughout, so there is no C compiler, no
+shared library and no database server to install; the whole of it is one binary
+and one SQLite file.
+
+```bash
+cd server
+go test ./...
+go run . -addr 127.0.0.1:8787 -db ./thwart.sqlite
+```
+
+```bash
+curl -s http://127.0.0.1:8787/v1/health
+```
+
+The server holds **no email address**, not as a nullable column but as a fact
+about the schema: there is nowhere to put one. An account is a handle, a
+password and a recovery code that is shown exactly once. Passwords and recovery
+codes are hashed with Argon2id; device tokens are random and stored only as a
+SHA-256, so a database dump yields nothing replayable.
 
 ## Legal
 

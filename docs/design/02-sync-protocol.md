@@ -123,11 +123,22 @@ Content-Type: application/json
 anything unique on the instance; the client should offer a generated one so a
 user can create an account without inventing anything.
 
-`recoveryCode` is 128 bits of CSPRNG output, rendered in a grouped alphabet that
-excludes look-alike characters. **It is shown exactly once**, and the client must
-insist the user saves it — offer a download as a plain text file, which is the
-part that makes this work without SMTP. The server stores only its Argon2id
-hash, so a database dump does not yield recovery codes.
+`recoveryCode` is CSPRNG output rendered in a grouped alphabet that excludes
+look-alike characters. **It is shown exactly once**, and the client must insist
+the user saves it (offer a download as a plain text file), which is the part
+that makes this work without SMTP. The server stores only its Argon2id hash, so
+a database dump does not yield recovery codes.
+
+> **Amended during implementation: 80 bits, not the 128 first written here.**
+> Sixteen characters from a 32-symbol alphabet is 80 bits. This is the one
+> secret in the system a person has to copy by hand, and the length at which
+> they stop doing that accurately is a real failure mode.
+>
+> Eighty bits is not a concession. Guessing one means defeating Argon2id at
+> 64 MiB per attempt through a limiter that allows five tries an hour: the
+> expected search runs longer than the age of the universe by many orders of
+> magnitude. The binding constraint is the limiter, not the code, which is why
+> the limiter's numbers are load-bearing rather than decorative.
 
 Email is not a column with a `NULL` in it. It is **absent from the schema
 entirely** in the first release. If optional email notification is ever added,
