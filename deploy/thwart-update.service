@@ -1,0 +1,26 @@
+[Unit]
+# Rebuilds the site from the repository and swaps it in.
+# Paired with thwart-update.timer; see docs/deployment.md.
+Description=Rebuild the Thwart web site
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=thwart
+Group=thwart
+WorkingDirectory=/srv/thwart/repo
+ExecStart=/srv/thwart/repo/deploy/update.sh
+
+# MarvelCDB can be slow, and the build fetches both languages.
+TimeoutStartSec=20min
+
+# Nothing here needs privilege beyond its own directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/thwart
+
+[Install]
+WantedBy=multi-user.target

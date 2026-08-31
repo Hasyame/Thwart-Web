@@ -1,0 +1,20 @@
+[Unit]
+Description=Rebuild the Thwart web site overnight
+
+[Timer]
+# 01:23 local time. Local rather than UTC, deliberately: the server keeps
+# Europe/Paris, so this stays at half past one through the summer change
+# instead of drifting to half past two the way a UTC cron would.
+#
+# Not on the hour, and not at midnight, because those are when every other
+# scheduled job on every other machine runs, and MarvelCDB is a volunteer-run
+# site being asked for two full card databases.
+OnCalendar=*-*-* 01:23:00
+# Spreads the start over a few minutes, so a fleet of these would not arrive
+# together. Harmless with one server and correct if there is ever another.
+RandomizedDelaySec=5min
+# Runs on the next boot if the machine was off when it was due.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
