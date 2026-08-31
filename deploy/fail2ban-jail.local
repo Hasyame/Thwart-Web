@@ -1,0 +1,34 @@
+# Bans addresses that keep guessing.
+#
+# The journal is the source, not a log file, which is how Debian ships sshd
+# now. The port matters: the ban action writes a rule for the port named here,
+# and naming the default would ban attempts on a port nothing listens on.
+
+[DEFAULT]
+backend = systemd
+bantime = 1h
+findtime = 10m
+maxretry = 5
+
+# Each repeat offence bans for longer, up to a week. The addresses in the log
+# are not passing tourists; they come back.
+bantime.increment = true
+bantime.maxtime = 1w
+
+# Never the machine itself.
+# iptables, not the nftables default.
+#
+# Debian ships fail2ban 1.1 with banaction = nftables, and does not ship the
+# nft command. Every ban then fails with "nft: not found" and exit 127, while
+# fail2ban-client cheerfully reports the address as banned: the counter goes
+# up and nothing is blocked. The rest of this machine is managed with iptables
+# and iptables-persistent, so the ban action is too.
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+
+# Never the machine itself.
+ignoreip = 127.0.0.1/8 ::1
+
+[sshd]
+enabled = true
+port = 57022

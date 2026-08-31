@@ -288,13 +288,79 @@ revision `/api/v1/version` reported before the bad deploy, rebuild, restart. A
 schema migration does not roll back, by design (doc 02); restore the SQLite
 backup taken beforehand instead.
 
-## Firewall
+## Firewall, SSH and fail2ban
+
+**SSH is on port 57022, not 22.** Port 22 is closed at both sshd and the
+firewall. That is not security by itself, but it takes the machine out of the
+path of the untargeted scanning that produced 1333 failed logins in a day from
+18 addresses.
+
+The rules live in [`deploy/firewall.sh`](../deploy/firewall.sh), installed at
+`/usr/local/sbin/thwart-firewall`. It is one script rather than a list of
+commands to type because the order is the whole safety of it: every ACCEPT is
+in place before the policy becomes DROP, so the SSH connection running it
+survives its own execution.
 
 ```bash
-ufw allow OpenSSH
-ufw allow 'Nginx Full'
-ufw enable
+cp deploy/firewall.sh /usr/local/sbin/thwart-firewall
+chmod 700 /usr/local/sbin/thwart-firewall
+/usr/local/sbin/thwart-firewall
 ```
+
+Open inbound: 57022, 80, 443, ping at 5/second, and ICMPv6 in full because
+neighbour discovery is how IPv6 works at all. Everything else is dropped, on
+both families. Outbound is unrestricted.
+
+Rules do not survive a reboot on their own, so `iptables-persistent` saves
+them. Save the **base** set only, with fail2ban stopped, or the boot restores
+stale bans that fail2ban does not know it owns:
+
+```bash
+systemctl stop fail2ban
+/usr/local/sbin/thwart-firewall
+iptables-save > /etc/iptables/rules.v4
+ip6tables-save > /etc/iptables/rules.v6
+systemctl start fail2ban
+```
+
+### fail2ban
+
+Config in [`deploy/fail2ban-jail.local`](../deploy/fail2ban-jail.local), copied
+to `/etc/fail2ban/jail.local`. Five failures in ten minutes earns an hour, and
+repeat offenders earn longer, up to a week.
+
+**Check that a ban actually happens, because it silently did not.** Debian
+ships fail2ban 1.1 with `banaction = nftables` and does not ship the `nft`
+command. Every ban failed with `nft: not found` and exit 127 while
+`fail2ban-client status` reported the addresses as banned. The counter went up
+and nothing was blocked. The jail therefore sets `banaction =
+iptables-multiport`, matching the rest of the machine.
+
+The test that would have caught it:
+
+```bash
+fail2ban-client set sshd banip 203.0.113.99
+iptables -S | grep 203.0.113.99      # must print a REJECT rule
+fail2ban-client set sshd unbanip 203.0.113.99
+```
+
+### Changing the SSH port again
+
+Arm a rollback before touching sshd, and never remove the old port until the
+new one is proven from a **fresh** connection; an existing session keeps
+working through a configuration that would refuse to accept it.
+
+```bash
+systemd-run --unit=rescue --on-active=10min /usr/local/sbin/thwart-rescue
+```
+
+where `thwart-rescue` flushes the firewall to ACCEPT and restores the backed-up
+`sshd_config`. Cancel it with `systemctl stop rescue.timer` once a new
+connection has succeeded.
+
+**Password authentication is still on**, because `debian` (uid 1000) has no key
+and root's only key is the deployment one. Give yourself a key before turning
+it off.
 
 ## What this costs
 
@@ -315,6 +381,9 @@ the sync server arrives beside it.
   overnight run is the whole of it. A failed build is silent, and the site
   keeps serving the previous release, which is the safe failure but not an
   obvious one.
+- **Password SSH authentication is still enabled**, and the `debian` account
+  has no key. Turning it off is the real gain against the brute-force traffic;
+  fail2ban is the mitigation until somebody has a key of their own.
 - **No automatic backups.** Without the account API there is nothing to back
   up: every byte on the server is rebuildable from the repository and
   MarvelCDB. With it there is exactly one file that is not, and taking a copy
