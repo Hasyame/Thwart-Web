@@ -10,6 +10,7 @@
     EMPTY_DRAW,
     noFilters,
     roll,
+    standardSetFor,
     type Aspect,
     type DifficultyId,
     type Draw,
@@ -242,6 +243,81 @@
     );
   });
 
+  /**
+   * Choosing a value locks the field.
+   *
+   * Without this, picking Ultron and pressing reroll throws the choice away,
+   * which reads as the button ignoring you. Choosing something *is* saying you
+   * want to keep it, so the padlock follows rather than being a second step
+   * nobody realises they have to take.
+   */
+  function chose(field: DrawField): void {
+    if (!locked.has(field)) {
+      locked = new Set(locked).add(field);
+    }
+  }
+
+  function chooseScenario(code: string): void {
+    if (pools === null) {
+      return;
+    }
+    const rule = pools.scenarios.find((s) => s.code === code);
+    draw = {
+      ...draw,
+      scenarioCode: code,
+      // The scenario decides these, so they follow it rather than surviving
+      // from whatever was drawn before.
+      mandatoryModularCodes: rule?.mandatoryModulars ?? [],
+    };
+    chose('scenario');
+  }
+
+  function chooseDifficulty(id: DifficultyId): void {
+    draw = {
+      ...draw,
+      difficulty: id,
+      standardSet: standardSetFor(
+        id,
+        pools?.difficulties ?? [],
+        ownedPools?.difficulties ?? [],
+      ),
+    };
+    chose('difficulty');
+  }
+
+  function chooseHero(position: number, code: string): void {
+    if (pools === null) {
+      return;
+    }
+    const hero = pools.heroes.find((h) => h.code === code);
+    if (hero === undefined) {
+      return;
+    }
+    draw = {
+      ...draw,
+      heroes: draw.heroes.map((current, i) =>
+        i === position ? { ...current, code: hero.code, name: hero.name } : current,
+      ),
+    };
+    chose('heroes');
+  }
+
+  function chooseAspect(position: number, aspect: Aspect): void {
+    draw = {
+      ...draw,
+      heroes: draw.heroes.map((current, i) => (i === position ? { ...current, aspect } : current)),
+    };
+    chose('heroes');
+  }
+
+  function chooseModularSet(position: number, code: string): void {
+    draw = {
+      ...draw,
+      modularSetCodes: draw.modularSetCodes.map((current, i) => (i === position ? code : current)),
+    };
+    chose('modularSets');
+  }
+
   function toggleLock(field: DrawField): void {
     const next = new Set(locked);
     if (next.has(field)) {
@@ -271,15 +347,6 @@
     saved = true;
   }
 
-  const difficultyLabel = $derived((): string => {
-    if (draw.difficulty === null) {
-      return '—';
-    }
-    const main = t.difficulty(draw.difficulty);
-    return draw.standardSet === null
-      ? main
-      : `${main} + ${t.difficulty(draw.standardSet)}`;
-  });
 </script>
 
 <section>
@@ -427,7 +494,15 @@
               <span class="visually-hidden">{t.lockField}</span>
             </button>
           </div>
-          <p class="value">{setNames.get(draw.scenarioCode) ?? draw.scenarioCode}</p>
+          <select
+            class="value-select"
+            value={draw.scenarioCode}
+            onchange={(e) => chooseScenario(e.currentTarget.value)}
+          >
+            {#each pools?.scenarios ?? [] as rule (rule.code)}
+              <option value={rule.code}>{setNames.get(rule.code) ?? rule.code}</option>
+            {/each}
+          </select>
         </div>
 
         <div class="field surface">
@@ -444,7 +519,18 @@
               <span class="visually-hidden">{t.lockField}</span>
             </button>
           </div>
-          <p class="value">{difficultyLabel()}</p>
+          <select
+            class="value-select"
+            value={draw.difficulty}
+            onchange={(e) => chooseDifficulty(e.currentTarget.value as DifficultyId)}
+          >
+            {#each pools?.difficulties ?? [] as id (id)}
+              <option value={id}>{t.difficulty(id)}</option>
+            {/each}
+          </select>
+          {#if draw.standardSet !== null}
+            <p class="value muted">+ {t.difficulty(draw.standardSet)}</p>
+          {/if}
         </div>
 
         <div class="field surface wide">
@@ -462,10 +548,24 @@
             </button>
           </div>
           <ul class="chips">
-            {#each draw.heroes as hero (hero.code)}
-              <li class="chip" data-faction={hero.aspect}>
-                <strong>{hero.name}</strong>
-                <span>{t.aspect(hero.aspect)}</span>
+            {#each draw.heroes as hero, position (position)}
+              <li class="chip picker" data-faction={hero.aspect}>
+                <select
+                  value={hero.code}
+                  onchange={(e) => chooseHero(position, e.currentTarget.value)}
+                >
+                  {#each pools?.heroes ?? [] as option (option.code)}
+                    <option value={option.code}>{option.name}</option>
+                  {/each}
+                </select>
+                <select
+                  value={hero.aspect}
+                  onchange={(e) => chooseAspect(position, e.currentTarget.value as Aspect)}
+                >
+                  {#each pools?.aspects ?? [] as option (option)}
+                    <option value={option}>{t.aspect(option)}</option>
+                  {/each}
+                </select>
               </li>
             {/each}
           </ul>
@@ -498,8 +598,17 @@
                   <span class="muted">{t.required}</span>
                 </li>
               {/each}
-              {#each draw.modularSetCodes as code (code)}
-                <li class="chip">{setNames.get(code) ?? code}</li>
+              {#each draw.modularSetCodes as code, position (position)}
+                <li class="chip picker">
+                  <select
+                    value={code}
+                    onchange={(e) => chooseModularSet(position, e.currentTarget.value)}
+                  >
+                    {#each pools?.modularSets ?? [] as option (option.code)}
+                      <option value={option.code}>{option.name}</option>
+                    {/each}
+                  </select>
+                </li>
               {/each}
             </ul>
           {/if}
@@ -627,6 +736,33 @@
     justify-content: space-between;
     gap: var(--space-3);
     margin-bottom: var(--space-2);
+  }
+
+  .value-select,
+  .picker select {
+    background: var(--md-surface);
+    color: var(--md-on-surface);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    max-width: 100%;
+  }
+
+  .value-select {
+    font-size: 1.05rem;
+    font-weight: 600;
+    width: 100%;
+  }
+
+  .picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  .picker select {
+    font-size: 0.9rem;
   }
 
   .lock {

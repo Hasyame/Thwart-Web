@@ -1,6 +1,7 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
-  import type { CardSet, IndexRow } from '../lib/types';
+  import type { CardSet, IndexRow, Locale } from '../lib/types';
+  import Tracker from './Tracker.svelte';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { loadScenarioRules } from '../lib/data';
@@ -27,10 +28,12 @@
     t: Strings;
     sets: readonly CardSet[];
     index: readonly IndexRow[];
+    /** Which language the tracker reads the scenario's cards in. */
+    cardLocale: Locale;
     storageOk: boolean;
   }
 
-  const { t, sets, index, storageOk }: Props = $props();
+  const { t, sets, index, cardLocale, storageOk }: Props = $props();
 
   const owned = $state<{ packs: Set<string>; excludedSets: Set<string>; excludedScenarios: Set<string> }>({
     packs: new Set(),
@@ -387,6 +390,8 @@
         {/if}
       </div>
     </div>
+
+    <Tracker {t} {cardLocale} {index} expert={isExpert} />
 
     <div class="setup surface">
       <h2>{t.recordResult}</h2>

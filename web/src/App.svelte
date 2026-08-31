@@ -271,7 +271,7 @@
   {:else if route.name === 'randomizer'}
     <RandomizerPage {t} {sets} {index} {storageOk} />
   {:else if route.name === 'play'}
-    <PlayPage {t} {sets} {index} {storageOk} />
+    <PlayPage {t} {sets} {index} {cardLocale} {storageOk} />
   {:else if route.name === 'stats'}
     <StatsPage {t} {index} {storageOk} />
   {:else if route.name === 'campaigns'}

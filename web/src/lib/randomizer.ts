@@ -219,6 +219,33 @@ export function buildPools(input: PoolInput): Pools {
  * nowhere, matching `RandomizerFilters`, which the app holds in a
  * `MutableStateFlow` and never persists.
  */
+const isStandard = (id: DifficultyId): boolean =>
+  DIFFICULTIES.find((entry) => entry.id === id)?.expert === false;
+
+/**
+ * The Standard set an Expert difficulty is played with, or null.
+ *
+ * Exported because choosing a difficulty by hand has to obey the same setup
+ * rule as drawing one: an Expert set is shuffled in *with* a Standard, and a
+ * draw that cannot be set up is not a draw. Preferring the allowed Standards
+ * and falling back to any the collection has, because excluding every Standard
+ * in the filter panel is a statement about what you want to play and cannot
+ * repeal the rules of setup.
+ */
+export function standardSetFor(
+  difficulty: DifficultyId | null,
+  allowed: readonly DifficultyId[],
+  owned: readonly DifficultyId[],
+): DifficultyId | null {
+  const expert =
+    difficulty !== null &&
+    DIFFICULTIES.find((entry) => entry.id === difficulty)?.expert === true;
+  if (!expert) {
+    return null;
+  }
+  return pick(allowed.filter(isStandard)) ?? pick(owned.filter(isStandard)) ?? null;
+}
+
 export interface DrawFilters {
   readonly allowedDifficulties: ReadonlySet<DifficultyId>;
   readonly excludedAspects: ReadonlySet<Aspect>;
@@ -295,9 +322,6 @@ export function roll(input: RollInput): Draw {
     ? previous.difficulty
     : (pick(pools.difficulties) ?? pick(pools.ownedDifficulties));
 
-  const isStandard = (id: DifficultyId): boolean =>
-    DIFFICULTIES.find((entry) => entry.id === id)?.expert === false;
-
   /*
    * An Expert set is never played on its own: Expert mode is the Expert set
    * shuffled into the encounter deck *with* a Standard one, not in place of
@@ -309,16 +333,9 @@ export function roll(input: RollInput): Draw {
    * the setup rules — the game still needs one, and a draw that cannot be set
    * up is not a draw.
    */
-  const isExpert =
-    difficulty !== null &&
-    DIFFICULTIES.find((entry) => entry.id === difficulty)?.expert === true;
-
-  const standardSet = !isExpert
-    ? null
-    : locked.has('difficulty') && previous.standardSet !== null
-      ? previous.standardSet
-      : (pick(pools.difficulties.filter(isStandard)) ??
-        pick(pools.ownedDifficulties.filter(isStandard)));
+  const keepStandard = locked.has('difficulty') ? previous.standardSet : null;
+  const standardSet =
+    keepStandard ?? standardSetFor(difficulty, pools.difficulties, pools.ownedDifficulties);
 
   const scenarioRule = locked.has('scenario')
     ? (pools.scenarios.find((rule) => rule.code === previous.scenarioCode) ?? null)

@@ -186,6 +186,18 @@ export interface Strings {
   readonly contentsHint: string;
   readonly scenarios: string;
   readonly modularSets: string;
+
+  // The encounter tracker.
+  readonly tracker: string;
+  readonly trackerLoading: string;
+  readonly trackerUnavailable: string;
+  readonly trackerStarred: string;
+  readonly trackerNote: string;
+  readonly round: (n: number) => string;
+  readonly endRound: string;
+  readonly advanceVillain: string;
+  readonly advanceScheme: string;
+  readonly whichScheme: string;
   readonly cancel: string;
   readonly favourite: string;
   readonly unfavourite: string;
@@ -434,6 +446,18 @@ const STRINGS: Record<Locale, Strings> = {
       'Owning a pack is not the same as owning everything in it. Untick anything missing from your copy and the randomiser will not offer it.',
     scenarios: 'Scenarios',
     modularSets: 'Modular sets',
+
+    tracker: 'Villain and scheme',
+    trackerLoading: 'Reading the scenario…',
+    trackerUnavailable: 'This scenario has no numbers to count.',
+    trackerStarred: 'The card prints a star, so type the number',
+    trackerNote:
+      "Counters only. It does not know that drones enter play or that a Crisis icon stops thwarting, because a tracker that half-adjudicates rules is wrong at somebody's table, and then the numbers it is keeping stop being trusted either.",
+    round: (n) => `Round ${n}`,
+    endRound: 'End of round',
+    advanceVillain: 'Flip the villain',
+    advanceScheme: 'Advance the scheme',
+    whichScheme: 'Which one is on the table',
     cancel: 'Cancel',
     favourite: 'Add to favourites',
     unfavourite: 'Remove from favourites',
@@ -690,6 +714,18 @@ const STRINGS: Record<Locale, Strings> = {
       "Posséder un paquet ne veut pas dire posséder tout ce qu'il contient. Décochez ce qui manque à votre exemplaire et il ne sera plus proposé.",
     scenarios: 'Scénarios',
     modularSets: 'Sets modulaires',
+
+    tracker: 'Méchant et manigance',
+    trackerLoading: 'Lecture du scénario…',
+    trackerUnavailable: "Ce scénario n'a aucun compteur à tenir.",
+    trackerStarred: 'La carte imprime une étoile : saisissez le nombre',
+    trackerNote:
+      "Des compteurs, rien de plus. L'application ne sait pas que les drones entrent en jeu ni qu'une icône Crise empêche de contrer : un compteur qui arbitre à moitié se trompe à une table, et les nombres qu'il tient vraiment cessent alors d'être crus.",
+    round: (n) => `Tour ${n}`,
+    endRound: 'Fin du tour',
+    advanceVillain: 'Retourner le Méchant',
+    advanceScheme: 'Faire avancer la manigance',
+    whichScheme: 'Laquelle est sur la table',
     cancel: 'Annuler',
     favourite: 'Ajouter aux favoris',
     unfavourite: 'Retirer des favoris',

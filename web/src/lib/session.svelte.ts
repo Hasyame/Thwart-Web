@@ -1,4 +1,5 @@
 import type { DifficultyId } from './randomizer';
+import type { Encounter } from './encounter';
 
 /**
  * The game currently on the table.
@@ -44,6 +45,14 @@ export interface Session {
   /** When the clock last started, or null when it is stopped. */
   runningSince: number | null;
   started: boolean;
+  /**
+   * The counters, once the scenario's cards have been read.
+   *
+   * Null while they load, and null for a scenario the card database cannot
+   * describe. A tracker that shows nothing is better than one that shows
+   * numbers it made up, so the panel simply does not appear.
+   */
+  encounter: Encounter | null;
 }
 
 function empty(): Session {
@@ -57,6 +66,7 @@ function empty(): Session {
     accumulatedMillis: 0,
     runningSince: null,
     started: false,
+    encounter: null,
   };
 }
 
@@ -86,6 +96,23 @@ export function pauseGame(): void {
 export function resumeGame(): void {
   if (session.current.runningSince === null) {
     session.current.runningSince = Date.now();
+  }
+}
+
+export function setEncounter(encounter: Encounter | null): void {
+  session.current.encounter = encounter;
+}
+
+/**
+ * Applies a move to the counters.
+ *
+ * The domain functions return new values rather than mutating, so this is the
+ * one place the session state is reassigned and every screen reads the result.
+ */
+export function updateEncounter(change: (current: Encounter) => Encounter): void {
+  const current = session.current.encounter;
+  if (current !== null) {
+    session.current.encounter = change(current);
   }
 }
 
