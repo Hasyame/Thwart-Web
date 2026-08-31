@@ -417,6 +417,49 @@ func TestExportUsesTheBackupShape(t *testing.T) {
 	}
 }
 
+/*
+settings is an object, not a list.
+
+Backup declares `settings: BackupSettings?`. kotlinx.serialization ignores
+unknown keys but not a value of the wrong type, so emitting an array makes the
+app refuse the entire file: the export would restore nowhere, which is the one
+thing the shared shape exists to prevent.
+
+Absent when there is none, because the app reads null as "leave the device's own
+settings alone" and an empty object as "use the defaults", and resetting
+somebody's language on a restore is not a small bug.
+*/
+func TestSettingsExportAsAnObject(t *testing.T) {
+	s := newTestServer(t)
+	token := register(t, s, "benoit", "a long enough password").str("token")
+
+	before := call(t, s, "GET", "/v1/account/export", token, nil)
+	if raw, present := before.body["settings"]; present && raw != nil {
+		t.Errorf("settings emitted before any were synced: %v", raw)
+	}
+
+	push(t, s, token, "batch-1", record("settings", "settings", map[string]any{
+		"cardLocale": "fr", "themeChoice": "dark", "dismissedPacks": []any{"mts"},
+	}))
+
+	after := call(t, s, "GET", "/v1/account/export", token, nil)
+	settings, ok := after.body["settings"].(map[string]any)
+	if !ok {
+		t.Fatalf("settings is %T, want an object: %v", after.body["settings"], after.body["settings"])
+	}
+	if settings["cardLocale"] != "fr" || settings["themeChoice"] != "dark" {
+		t.Errorf("settings did not survive: %v", settings)
+	}
+
+	// The list collections stay lists, which is the other half of the same
+	// claim.
+	for _, field := range []string{"plays", "decks", "ownedPacks", "excludedScenarios"} {
+		if _, ok := after.body[field].([]any); !ok {
+			t.Errorf("%s is %T, want a list", field, after.body[field])
+		}
+	}
+}
+
 // --- the revision counter ----------------------------------------------------
 
 /*

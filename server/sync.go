@@ -37,6 +37,8 @@ type collectionSpec struct {
 	backupField string
 	// Union-merged and never rewritten: campaign_events only. Doc 02 section 4.
 	immutable bool
+	// One record, and an object rather than a list in Backup. Only settings.
+	single bool
 }
 
 /*
@@ -61,12 +63,14 @@ var collections = map[string]collectionSpec{
 	"randomizer_history":    {backupField: "randomizerHistory"},
 	"favourite_cards":       {backupField: "favouriteCards"},
 
-	// Not in Backup today. Doc 01 section 8 items 5 and 6 add both on the
-	// Android side; the keys are emitted now because the format ignores
-	// unknown ones by design, so an older build reads the export and merely
-	// loses these rather than refusing the file.
 	"excluded_scenarios": {backupField: "excludedScenarios"},
-	"settings":           {backupField: "settings"},
+
+	// Not a list. Backup declares `settings: BackupSettings?`, a single
+	// nullable object, and kotlinx.serialization ignores unknown *keys* but
+	// not a value of the wrong type: emitting an array here makes the app
+	// refuse the whole file. Doc 02 section 4 agrees on the shape, calling
+	// settings "one record, last-write-wins per key".
+	"settings": {backupField: "settings", single: true},
 }
 
 // --- pull --------------------------------------------------------------------
@@ -307,28 +311,37 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request, sess sessi
 		return
 	}
 
-	// Every known collection gets a key, empty or not, so a restore never has
-	// to distinguish "no decks" from "this server does not do decks".
-	grouped := map[string][]json.RawMessage{}
-	for _, spec := range collections {
-		grouped[spec.backupField] = []json.RawMessage{}
-	}
-	for _, rec := range records {
-		field := collections[rec.Collection].backupField
-		if field == "" {
-			continue
-		}
-		grouped[field] = append(grouped[field], rec.Body)
-	}
-
 	out := map[string]any{
 		"formatVersion": 1,
 		"createdAt":     time.Now().UnixMilli(),
 		"appVersion":    "thwart-server/" + s.build,
-		"photos":        []string{},
+		// Never anything else: the server does not receive photographs.
+		"photos": []string{},
 	}
-	for field, bodies := range grouped {
-		out[field] = bodies
+
+	// Every list collection gets a key, empty or not, so a restore never has to
+	// distinguish "no decks" from "this server does not do decks".
+	//
+	// settings is the exception and is left absent rather than emitted empty.
+	// The app reads null as "this file has no settings, leave the device's own
+	// alone", which is the right answer for an account that has never synced
+	// them; an empty object would say "use the defaults" and quietly reset
+	// somebody's language and theme.
+	for _, spec := range collections {
+		if !spec.single {
+			out[spec.backupField] = []json.RawMessage{}
+		}
+	}
+	for _, rec := range records {
+		spec := collections[rec.Collection]
+		if spec.backupField == "" {
+			continue
+		}
+		if spec.single {
+			out[spec.backupField] = rec.Body
+			continue
+		}
+		out[spec.backupField] = append(out[spec.backupField].([]json.RawMessage), rec.Body)
 	}
 
 	w.Header().Set("Content-Disposition",
