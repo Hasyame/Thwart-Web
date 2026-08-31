@@ -226,9 +226,19 @@
     font-size: 0.82rem;
   }
 
+  /*
+   * Wraps, and that is the whole point.
+   *
+   * Eight destinations on one unbreakable row runs off the side of a phone and
+   * takes the last three or four with it: not merely ugly, unreachable. There
+   * is no horizontal scroll on the page to find them with either, so wrapping
+   * is the only arrangement where every section can be tapped.
+   */
   nav {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-1);
+    min-width: 0;
   }
 
   nav a {
@@ -274,9 +284,45 @@
     padding: var(--space-1) var(--space-2);
   }
 
+  @media (max-width: 52rem) {
+    /* Below this the three groups stack, so each takes the full width and the
+       nav gets a row of its own to wrap within. */
+    .bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-2);
+    }
+
+    nav {
+      order: 3;
+    }
+
+    .controls {
+      order: 2;
+      gap: var(--space-2);
+    }
+
+    .control {
+      flex: 1 1 6rem;
+    }
+
+    .control select {
+      width: 100%;
+    }
+  }
+
   @media (max-width: 40rem) {
     .tagline {
       display: none;
+    }
+
+    nav a {
+      padding: var(--space-1) var(--space-2);
+      font-size: 0.9rem;
+    }
+
+    .title {
+      font-size: 1.2rem;
     }
   }
 </style>
