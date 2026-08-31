@@ -59,6 +59,10 @@ jobs:
         working-directory: web
         run: npm run check
 
+      - name: Build
+        working-directory: web
+        run: npm run build
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw
@@ -109,9 +113,6 @@ jobs:
         working-directory: web
         run: npm run test:paused
 
-      - name: Build
-        working-directory: web
-        run: npm run build
 
   server:
     name: Server
