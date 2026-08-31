@@ -71,9 +71,12 @@ Other scripts:
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run
 theme` is only needed on its own after changing a seed colour.
 
-The card data refreshes automatically through
-[`.github/workflows/card-data.yml`](.github/workflows/card-data.yml), which
-checks MarvelCDB nightly and only rebuilds when something actually changed.
+The card data refreshes on the server, nightly, and a new release is published
+only when the data or the code actually changed; see
+[`docs/deployment.md`](docs/deployment.md).
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) type-checks, tests and
+builds both halves on every push, and deliberately publishes nothing: the built
+site is mostly card text, and uploading it would be re-hosting it.
 
 ## Running the account server
 

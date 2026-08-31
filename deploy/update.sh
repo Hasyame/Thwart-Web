@@ -6,12 +6,20 @@
 # because a deploy path that differs from the automated one is a deploy path
 # that breaks the first time you need it at two in the morning.
 #
-#   sudo -u thwart /srv/thwart/repo/deploy/update.sh
+#   sudo -H -u thwart /srv/thwart/repo/deploy/update.sh
 #
 # It builds into a fresh directory and moves a symlink, so nginx is never
 # reading a directory that is half-written. If any step fails the live site is
 # untouched, which matters because the card fetch talks to somebody else's
 # server and that server is sometimes unwell.
+#
+# It publishes only when something actually changed. That is not about saving
+# the thirteen seconds a rebuild costs; it is about the three kept releases
+# being three different things. Publishing nightly regardless fills all three
+# slots with identical copies within three quiet nights, and the release you
+# would want to roll back to is the one that has just been deleted.
+#
+#   --force   publish even if nothing changed
 
 set -eu
 
@@ -20,13 +28,27 @@ RELEASES="${RELEASES:-/srv/thwart/releases}"
 CURRENT="${CURRENT:-/srv/thwart/current}"
 KEEP="${KEEP:-3}"
 
+FORCE=0
+[ "${1:-}" = "--force" ] && FORCE=1
+
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
+# Digest of the card data as it stands, or nothing if it has never been
+# fetched. meta.json is written by scripts/fetch-cards.mjs.
+data_digest() {
+    sed -n 's/.*"digest": "\([0-9a-f]*\)".*/\1/p' "$REPO/web/public/data/meta.json" 2>/dev/null | tail -1
+}
+
 cd "$REPO"
+
+WAS_HEAD="$(git rev-parse HEAD 2>/dev/null || echo none)"
+WAS_DIGEST="$(data_digest)"
 
 log "fetching"
 git fetch --quiet origin main
 git reset --quiet --hard origin/main
+
+NOW_HEAD="$(git rev-parse HEAD)"
 
 cd "$REPO/web"
 
@@ -41,6 +63,16 @@ npm ci --include=dev --no-audit --no-fund --silent
 # cards. Failing here leaves the previous release serving.
 log "fetching card data"
 npm run --silent data
+
+NOW_DIGEST="$(data_digest)"
+
+if [ "$FORCE" -eq 0 ] &&
+   [ "$WAS_HEAD" = "$NOW_HEAD" ] &&
+   [ "$WAS_DIGEST" = "$NOW_DIGEST" ] &&
+   [ -e "$CURRENT" ]; then
+    log "nothing changed; keeping $(basename "$(readlink -f "$CURRENT")")"
+    exit 0
+fi
 
 log "building"
 npm run --silent build

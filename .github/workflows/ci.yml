@@ -1,0 +1,117 @@
+name: CI
+
+# Proves the code builds and the tests pass. It does not deploy, and it does
+# not publish the built site.
+#
+# **Why no artifact.** The build output is 18 MB, and 17.7 MB of that is
+# Fantasy Flight's card text fetched from MarvelCDB. Uploading it would be
+# re-hosting somebody else's copyrighted material, which this project does not
+# do anywhere else; the repository refuses to commit the same data for the same
+# reason. The server fetches its own copy straight from MarvelCDB.
+#
+# **Why no schedule.** The nightly refresh belongs to the server, which is the
+# only machine that needs the result. Running it here as well meant two fetches
+# from a volunteer-run site every night to produce the same answer twice.
+#
+# **Why the card fetch is not run on every push.** It downloads the whole
+# database in both languages. Once a night from the server is enough to notice
+# the script breaking, and a failure there leaves the previous release serving.
+# Use the manual trigger to exercise it after changing the fetching code.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      fetchCardData:
+        description: "Also fetch from MarvelCDB, to exercise the fetching code"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Type-check
+        working-directory: web
+        run: npm run check
+
+      - name: Service worker routing
+        working-directory: web
+        run: npm run test:sw
+
+      # Both shapes the Android app exports: plain JSON, and a zip holding
+      # backup.json. The archive fixture is built by the test, so no binary
+      # lives in the repository.
+      - name: Backup import
+        working-directory: web
+        run: npm run test:backup
+
+      # Only when asked. The build does not need the data (it lands in
+      # public/data and is copied verbatim), which is why this can sit after
+      # the tests and before the build without affecting either.
+      - name: Fetch card data
+        if: inputs.fetchCardData
+        working-directory: web
+        run: npm run data
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Vet
+        working-directory: server
+        run: go vet ./...
+
+      - name: Formatting
+        working-directory: server
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "gofmt would change these files:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      # With the race detector, which is the only reason the concurrency tests
+      # exist. It needs cgo, and therefore a C compiler; the runner has one,
+      # which is more than can be said for every development machine.
+      - name: Test
+        working-directory: server
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race ./...

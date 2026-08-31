@@ -132,6 +132,22 @@ systemctl start thwart-update.service
 journalctl -u thwart-update.service -f
 ```
 
+**A run usually publishes nothing, and that is the point.** The script compares
+the git revision and the card-data digest against what it already had, and if
+neither moved it keeps the release that is live. Publishing every night
+regardless is not merely wasteful: three quiet nights fill all three kept
+release slots with identical copies, and the release you would want to roll
+back to is the one that has just been pruned.
+
+The card database moves in weeks, not hours, so most nights the log reads:
+
+```
+nothing changed; keeping 20260831071115
+```
+
+Use `update.sh --force` to publish anyway, which is worth doing after changing
+the build itself.
+
 ## 8. The account API
 
 Optional. The site works without it: everything is local to the browser until
