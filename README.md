@@ -87,6 +87,13 @@ go test ./...
 go run . -addr 127.0.0.1:8787 -db ./thwart.sqlite
 ```
 
+The concurrency tests are only worth much with the race detector, which needs
+cgo and therefore a C compiler:
+
+```bash
+CGO_ENABLED=1 go test -race ./...
+```
+
 ```bash
 curl -s http://127.0.0.1:8787/v1/health
 ```

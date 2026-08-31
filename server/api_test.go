@@ -51,6 +51,8 @@ func (r response) str(key string) string {
 	return value
 }
 
+// Safe to call from a spawned goroutine: it reports failures with Errorf
+// rather than Fatalf, which may only be used on the test's own goroutine.
 func call(t *testing.T, s *Server, method, path, token string, body any, headers ...string) response {
 	t.Helper()
 
@@ -58,7 +60,8 @@ func call(t *testing.T, s *Server, method, path, token string, body any, headers
 	if body != nil {
 		encoded, err := json.Marshal(body)
 		if err != nil {
-			t.Fatalf("marshal: %v", err)
+			t.Errorf("marshal: %v", err)
+			return response{}
 		}
 		reader = bytes.NewReader(encoded)
 	}
@@ -80,7 +83,7 @@ func call(t *testing.T, s *Server, method, path, token string, body any, headers
 	out := response{status: rec.Code}
 	if rec.Body.Len() > 0 {
 		if err := json.Unmarshal(rec.Body.Bytes(), &out.body); err != nil {
-			t.Fatalf("%s %s: body is not JSON: %q", method, path, rec.Body.String())
+			t.Errorf("%s %s: body is not JSON: %q", method, path, rec.Body.String())
 		}
 	}
 	return out
