@@ -63,7 +63,8 @@ export interface Strings {
   readonly rulesLoadError: string;
   readonly rulesLoading: string;
   readonly rulesCount: (shown: number, total: number) => string;
-  readonly rulesCredit: (credit: string, licence: string) => string;
+  readonly rulesCreditBefore: string;
+  readonly rulesCreditAfter: (licence: string) => string;
   readonly navCampaigns: string;
   readonly campaignsTitle: string;
   readonly campaignsEmpty: string;
@@ -210,7 +211,7 @@ export interface Strings {
 const STRINGS: Record<Locale, Strings> = {
   en: {
     appName: 'Thwart',
-    tagline: 'Marvel Champions card browser',
+    tagline: 'Cards, collection, decks and statistics for Marvel Champions',
     searchPlaceholder: 'Search cards…',
     searchLabel: 'Search cards',
     interfaceLanguage: 'Interface',
@@ -260,8 +261,9 @@ const STRINGS: Record<Locale, Strings> = {
     rulesLoading: 'Loading the rules reference…',
     rulesCount: (shown, total) =>
       shown === total ? `${total} entries` : `${shown} of ${total} entries`,
-    rulesCredit: (credit, licence) =>
-      `Rules reference compiled by ${credit}, released under ${licence}. Unofficial, and not endorsed by Fantasy Flight Games.`,
+    rulesCreditBefore: 'Compiled by',
+    rulesCreditAfter: (licence) =>
+      `and released under ${licence}, which is the only reason it can be included here. Unofficial, and not endorsed by Fantasy Flight Games.`,
     navCampaigns: 'Campaigns',
     campaignsTitle: 'Campaigns',
     campaignsEmpty: 'No campaigns here.',
@@ -457,7 +459,7 @@ const STRINGS: Record<Locale, Strings> = {
   },
   fr: {
     appName: 'Thwart',
-    tagline: 'Recherche de cartes Marvel Champions',
+    tagline: 'Cartes, collection, decks et statistiques pour Marvel Champions',
     searchPlaceholder: 'Rechercher des cartes…',
     searchLabel: 'Rechercher des cartes',
     interfaceLanguage: 'Interface',
@@ -509,8 +511,9 @@ const STRINGS: Record<Locale, Strings> = {
       shown === total
         ? `${total} entrées`
         : `${shown} ${shown === 1 ? 'entrée' : 'entrées'} sur ${total}`,
-    rulesCredit: (credit, licence) =>
-      `Guide des règles compilé par ${credit}, publié sous ${licence}. Non officiel, sans lien avec Fantasy Flight Games.`,
+    rulesCreditBefore: 'Compilé par',
+    rulesCreditAfter: (licence) =>
+      `et publié sous ${licence}, ce qui est la seule raison pour laquelle il peut figurer ici. Non officiel, sans lien avec Fantasy Flight Games.`,
     navCampaigns: 'Campagnes',
     campaignsTitle: 'Campagnes',
     campaignsEmpty: 'Aucune campagne ici.',

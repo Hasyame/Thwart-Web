@@ -1,7 +1,7 @@
 {
   "name": "Thwart",
   "short_name": "Thwart",
-  "description": "Companion for the Marvel Champions card game: cards, collection, decks, randomiser and statistics.",
+  "description": "Search cards, track your collection, check decks against what you own, draw a random game and keep your play statistics. Bilingual and offline.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

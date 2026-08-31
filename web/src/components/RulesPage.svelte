@@ -62,6 +62,12 @@
   {:else if file === null}
     <p class="notice muted">{t.rulesLoading}</p>
   {:else}
+    <p class="credit">
+      {t.rulesCreditBefore}
+      <a href={file.source} target="_blank" rel="noopener">{file.sourceCredit}</a>
+      {t.rulesCreditAfter(file.sourceLicence)}
+    </p>
+
     <label class="search">
       <span class="visually-hidden">{t.rulesSearchHint}</span>
       <input
@@ -106,11 +112,6 @@
         {/each}
       </ul>
     {/if}
-
-    <p class="muted credit">
-      {t.rulesCredit(file.sourceCredit, file.sourceLicence)}
-      <a href={file.source} target="_blank" rel="noopener">{file.source}</a>
-    </p>
   {/if}
 </section>
 
@@ -211,11 +212,20 @@
     font-size: 0.95rem;
   }
 
+  /*
+   * Above the search rather than under the last entry. The glossary is 247
+   * entries long, so a credit at the bottom is a credit nobody reaches, and
+   * this text is somebody else's work given away for free.
+   */
   .credit {
-    margin-top: var(--space-6);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
-    font-size: 0.85rem;
+    margin: 0 0 var(--space-4);
+    padding-inline-start: var(--space-3);
+    border-inline-start: 3px solid var(--md-secondary);
+    font-size: 0.9rem;
     max-width: var(--prose-max);
+  }
+
+  .credit a {
+    font-weight: 600;
   }
 </style>

@@ -32,6 +32,25 @@ async function requestPersistentStorage(): Promise<void> {
 
 void requestPersistentStorage();
 
+/**
+ * Registers the service worker, in production only.
+ *
+ * In development it would sit between the browser and the dev server and fight
+ * hot reloading for no benefit, so the build emits it and dev does not.
+ */
+function registerServiceWorker(): void {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) {
+    return;
+  }
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch(() => {
+      // An unregistered worker costs offline support and nothing else.
+    });
+  });
+}
+
+registerServiceWorker();
+
 const target = document.getElementById('app');
 if (target === null) {
   throw new Error('index.html is missing the #app element');

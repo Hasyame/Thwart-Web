@@ -28,5 +28,10 @@
      ESM run by node directly — they are not part of the bundle, and checking
      them against the browser config produces noise rather than safety. */
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+  /* The service worker runs in the worker global scope, not the page's. It is
+     checked against the DOM lib here and would report that Event has no
+     respondWith, which is true of the DOM Event and irrelevant to a
+     FetchEvent. It is emitted by the build, not bundled. */
+  "exclude": ["src/sw.js"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
