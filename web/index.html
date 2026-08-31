@@ -12,6 +12,18 @@
     <!-- The app's own mark. See web/public/icon.svg. -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="theme-color" content="#E30022" />
+
+    <!--
+      Installable on a phone. Android reads the manifest; iOS reads almost none
+      of it and wants these three tags instead, including a PNG it will not
+      substitute an SVG for.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Thwart" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <!--
       Card images are referenced from MarvelCDB at their canonical URLs and are
       never copied here. Warming the connection early keeps the first card view

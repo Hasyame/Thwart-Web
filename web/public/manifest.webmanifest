@@ -1,0 +1,39 @@
+{
+  "name": "Thwart",
+  "short_name": "Thwart",
+  "description": "Companion for the Marvel Champions card game: cards, collection, decks, randomiser and statistics.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF8F6",
+  "theme_color": "#E30022",
+  "lang": "en",
+  "categories": ["games", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Cards", "url": "/" },
+    { "name": "Collection", "url": "/collection" },
+    { "name": "Decks", "url": "/decks" },
+    { "name": "Rules", "url": "/rules" }
+  ]
+}
