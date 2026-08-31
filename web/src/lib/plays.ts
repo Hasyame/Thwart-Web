@@ -160,6 +160,17 @@ export interface Statistics {
 export interface StatLabels {
   readonly aspect: (code: string) => string;
   readonly difficulty: (code: string) => string;
+  /**
+   * Resolves a hero identifier recorded by an older version of the app.
+   *
+   * Plays used to store the hero's **set** code (`daredevil`) where they now
+   * store its **card** code (`60001a`). Counting them apart splits one hero
+   * into two rows: a real backup showed Daredevil as 6/9 and 0/1 at once.
+   *
+   * Merging by name instead would be wrong, because two different heroes can
+   * share one: Spider-Man is both Peter Parker and Miles Morales.
+   */
+  readonly canonicalHero?: (code: string) => string;
 }
 
 export function computeStatistics(
@@ -175,7 +186,10 @@ export function computeStatistics(
     // from heroCode alone credited the first player and ignored three.
     byHero: sortTallies(
       tally(plays, (play) =>
-        seatsOf(play).map((seat) => ({ key: seat.code, label: seat.name })),
+        seatsOf(play).map((seat) => ({
+          key: labels.canonicalHero?.(seat.code) ?? seat.code,
+          label: seat.name,
+        })),
       ),
     ),
     byAspect: sortTallies(
@@ -193,7 +207,7 @@ export function computeStatistics(
         seatsOf(play)
           .filter((seat) => seat.aspect !== '')
           .map((seat) => ({
-            key: `${seat.code}|${seat.aspect}`,
+            key: `${labels.canonicalHero?.(seat.code) ?? seat.code}|${seat.aspect}`,
             label: `${seat.name} · ${labels.aspect(seat.aspect)}`,
           })),
       ),

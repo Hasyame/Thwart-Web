@@ -1,6 +1,7 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
   import type { Play } from '../lib/records';
+  import type { IndexRow } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { computeStatistics, type Tally } from '../lib/plays';
@@ -8,10 +9,27 @@
 
   interface Props {
     t: Strings;
+    index: readonly IndexRow[];
     storageOk: boolean;
   }
 
-  const { t, storageOk }: Props = $props();
+  const { t, index, storageOk }: Props = $props();
+
+  /**
+   * Hero set code to hero card code.
+   *
+   * Older plays recorded the set code where newer ones record the card code,
+   * so without this one hero is counted as two.
+   */
+  const heroBySetCode = $derived.by(() => {
+    const map = new Map<string, string>();
+    for (const row of index) {
+      if (row.typeCode === 'hero' && row.setCode !== null && !map.has(row.setCode)) {
+        map.set(row.setCode, row.code);
+      }
+    }
+    return map;
+  });
 
   const store = $state<{ plays: readonly Play[] }>({ plays: [] });
 
@@ -46,6 +64,7 @@
     computeStatistics(store.plays, {
       aspect: (code) => t.aspect(code),
       difficulty: difficultyLabel,
+      canonicalHero: (code) => heroBySetCode.get(code) ?? code,
     }),
   );
 

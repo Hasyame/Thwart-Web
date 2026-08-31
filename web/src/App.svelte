@@ -273,7 +273,7 @@
   {:else if route.name === 'play'}
     <PlayPage {t} {sets} {index} {storageOk} />
   {:else if route.name === 'stats'}
-    <StatsPage {t} {storageOk} />
+    <StatsPage {t} {index} {storageOk} />
   {:else if route.name === 'campaigns'}
     <CampaignsPage {t} {uiLocale} {storageOk} />
   {:else if route.name === 'rules'}
