@@ -74,7 +74,10 @@ export function loadSets(locale: Locale): Promise<readonly CardSet[]> {
   return promise;
 }
 
-function loadPackCards(locale: Locale, packCode: string): Promise<readonly Card[]> {
+export function loadPackCards(
+  locale: Locale,
+  packCode: string,
+): Promise<readonly Card[]> {
   const key = `${locale}/${packCode}`;
   const cached = packCardsCache.get(key);
   if (cached !== undefined) {
@@ -88,6 +91,33 @@ function loadPackCards(locale: Locale, packCode: string): Promise<readonly Card[
   });
   packCardsCache.set(key, promise);
   return promise;
+}
+
+/**
+ * Full card records for a set of packs, keyed by code.
+ *
+ * A deck draws on several packs at once and needs more than the search index
+ * carries — images for the previews, resource icons for the composition, the
+ * deck-building fields for legality. Pack files are cached after the first
+ * load, so opening a second deck from the same boxes costs nothing.
+ */
+export async function loadCardsByCode(
+  locale: Locale,
+  packCodes: Iterable<string>,
+): Promise<Map<string, Card>> {
+  const packs = [...new Set(packCodes)];
+  const loaded = await Promise.all(
+    // A pack that fails to load must not take the whole deck view with it:
+    // the cards from it simply stay unresolved, which the view reports.
+    packs.map((pack) => loadPackCards(locale, pack).catch((): readonly Card[] => [])),
+  );
+  const byCode = new Map<string, Card>();
+  for (const cards of loaded) {
+    for (const card of cards) {
+      byCode.set(card.code, card);
+    }
+  }
+  return byCode;
 }
 
 /**

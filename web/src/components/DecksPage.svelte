@@ -1,27 +1,33 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
-  import type { IndexRow, Locale } from '../lib/types';
+  import type { IndexRow, Locale, Pack } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
+  import { loadCardsByCode } from '../lib/data';
+  import type { Card } from '../lib/types';
+  import DeckContents from './DeckContents.svelte';
   import {
     DeckImportError,
-    deckViewUrl,
     importDeck,
     parseDeckReference,
-    resolveDeck,
+    parseSlots,
   } from '../lib/decks';
 
   interface Props {
     t: Strings;
     index: readonly IndexRow[];
+    packs: readonly Pack[];
     cardLocale: Locale;
     storageOk: boolean;
     openCard: (code: string) => void;
     cardHref: (code: string) => string;
   }
 
-  const { t, index, cardLocale, storageOk, openCard, cardHref }: Props = $props();
+  const { t, index, packs, cardLocale, storageOk, openCard, cardHref }: Props =
+    $props();
+
+  const packNames = $derived(new Map(packs.map((p) => [p.code, p.name] as const)));
 
   // Not named `state`: Svelte reads `$name` as a store subscription, so a
   // variable called `state` turns the `$state` rune into a reference to it.
@@ -56,9 +62,45 @@
     saved.decks.find((deck) => deck.id === openDeckId) ?? null,
   );
 
-  const contents = $derived(
-    openDeck === null ? null : resolveDeck(openDeck, index, saved.owned),
-  );
+  /**
+   * Full records for the packs the open deck draws on.
+   *
+   * The search index is not enough here: previews need images, the composition
+   * needs resource icons, and legality needs the deck-building fields. Loaded
+   * per deck and cached, so a second deck from the same boxes is free.
+   */
+  let deckCards = $state.raw<ReadonlyMap<string, Card>>(new Map());
+
+  $effect(() => {
+    const deck = openDeck;
+    if (deck === null) {
+      deckCards = new Map();
+      return;
+    }
+    const byCode = new Map(index.map((row) => [row.code, row] as const));
+    const packCodes = new Set<string>();
+    for (const code of parseSlots(deck.slots).keys()) {
+      const row = byCode.get(code);
+      if (row !== undefined) {
+        packCodes.add(row.packCode);
+      }
+    }
+    // The hero's own pack, which carries its signature cards and its rules.
+    const heroRow = byCode.get(deck.heroCode);
+    if (heroRow !== undefined) {
+      packCodes.add(heroRow.packCode);
+    }
+
+    let cancelled = false;
+    loadCardsByCode(cardLocale, packCodes).then((loaded) => {
+      if (!cancelled) {
+        deckCards = loaded;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
 
   async function doImport(): Promise<void> {
     const ref = reference;
@@ -155,73 +197,19 @@
       </ul>
     {/if}
 
-    {#if openDeck !== null && contents !== null}
-      <div class="contents surface">
-        <header class="contents-head">
-          <div>
-            <h2>{openDeck.name}</h2>
-            <p class="muted">
-              {openDeck.heroName} · {t.cardCount(contents.totalCards)}
-            </p>
-          </div>
-          <a href={deckViewUrl(openDeck)} target="_blank" rel="noopener">
-            {t.viewOnMarvelCdb} ↗
-          </a>
-        </header>
-
-        <!--
-          The reason this page beats looking the deck up on MarvelCDB: it knows
-          what is in your boxes. A deck you cannot build is worth being told
-          about before you sit down, not while shuffling.
-        -->
-        {#if contents.missing.length > 0}
-          <p class="warn">
-            {t.deckMissing(
-              contents.missing.reduce((n, c) => n + c.quantity, 0),
-              new Set(contents.missing.map((c) => c.card.packCode)).size,
-            )}
-          </p>
-        {:else}
-          <p class="ok">{t.deckBuildable}</p>
-        {/if}
-
-        {#if contents.unknownCodes.length > 0}
-          <p class="muted note">{t.deckUnknownCards(contents.unknownCodes.length)}</p>
-        {/if}
-
-        {#each contents.byType as group (group.type)}
-          <h3>{group.type}</h3>
-          <ul class="cards">
-            {#each group.cards as entry (entry.card.code)}
-              <li class:missing={entry.missingFromCollection}>
-                <span class="qty">{entry.quantity}×</span>
-                <a
-                  href={cardHref(entry.card.code)}
-                  data-faction={entry.card.factionCode}
-                  onclick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-                      return;
-                    }
-                    e.preventDefault();
-                    openCard(entry.card.code);
-                  }}
-                >
-                  {entry.card.name}
-                </a>
-                {#if entry.card.cost !== null}
-                  <span class="muted cost">{entry.card.cost}</span>
-                {/if}
-                {#if entry.missingFromCollection}
-                  <span class="tag">{t.notOwned}</span>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        {/each}
-
-        <p class="muted note locale-note">{t.deckLocaleNote(cardLocale)}</p>
-      </div>
+    {#if openDeck !== null}
+      <DeckContents
+        {t}
+        deck={openDeck}
+        {cardLocale}
+        cards={deckCards}
+        ownedPackCodes={saved.owned}
+        {packNames}
+        {openCard}
+        {cardHref}
+      />
     {/if}
+
   {/if}
 </section>
 
@@ -236,19 +224,23 @@
     margin: 0 0 var(--space-1);
   }
 
-  h3 {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
-    margin: var(--space-4) 0 var(--space-2);
+  .notice,
+  .import {
+    padding: var(--space-4);
   }
 
-  .notice,
-  .import,
-  .contents {
-    padding: var(--space-4);
+  .notice {
     margin: var(--space-4) 0;
+  }
+
+  /*
+   * Held to a readable measure rather than stretched across the page: the
+   * panel is one paragraph and one field, and a paragraph set ninety
+   * characters wide is hard to read however much room there is.
+   */
+  .import {
+    max-width: 52rem;
+    margin: var(--space-4) 0 var(--space-6);
   }
 
   .note {
@@ -336,97 +328,6 @@
     padding: var(--space-1) var(--space-2);
   }
 
-  .contents-head {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--space-3);
-  }
-
-  .warn {
-    color: var(--md-error);
-    font-weight: 600;
-  }
-
-  .ok {
-    color: var(--md-primary);
-    font-weight: 600;
-  }
-
-  .cards {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-    gap: var(--space-1) var(--space-4);
-  }
-
-  .cards li {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    padding: 2px 0;
-  }
-
-  .cards li.missing a {
-    opacity: 0.65;
-  }
-
-  .qty {
-    min-width: 1.8rem;
-    font-variant-numeric: tabular-nums;
-    color: var(--md-on-surface-variant);
-  }
-
-  .cards a {
-    color: inherit;
-    text-decoration: none;
-    border-inline-start: 3px solid transparent;
-    padding-inline-start: var(--space-2);
-  }
-
-  .cards a:hover {
-    text-decoration: underline;
-  }
-
-  .cards a[data-faction='aggression'] {
-    border-inline-start-color: var(--faction-aggression);
-  }
-  .cards a[data-faction='justice'] {
-    border-inline-start-color: var(--faction-justice);
-  }
-  .cards a[data-faction='leadership'] {
-    border-inline-start-color: var(--faction-leadership);
-  }
-  .cards a[data-faction='protection'] {
-    border-inline-start-color: var(--faction-protection);
-  }
-  .cards a[data-faction='pool'] {
-    border-inline-start-color: var(--faction-pool);
-  }
-  .cards a[data-faction='basic'] {
-    border-inline-start-color: var(--faction-basic);
-  }
-  .cards a[data-faction='hero'] {
-    border-inline-start-color: var(--faction-hero);
-  }
-
-  .cost {
-    font-size: 0.85rem;
-  }
-
-  .tag {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--md-error);
-    border: 1px solid currentColor;
-    border-radius: var(--radius-sm);
-    padding: 0 var(--space-1);
-  }
-
   .empty {
     margin: var(--space-4) 0;
   }
@@ -437,9 +338,4 @@
     margin-bottom: 0;
   }
 
-  .locale-note {
-    margin-top: var(--space-5);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
-  }
 </style>

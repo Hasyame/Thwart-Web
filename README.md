@@ -17,7 +17,7 @@ now; it will be made public once there is something worth running.
   groups them, and say which modular sets or scenarios your boxes are actually
   missing.
 - **Decks.** Import a decklist from MarvelCDB by link or number, and read it
-  against your collection — it tells you whether you can build it.
+  against your collection; it tells you whether you can build it.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own.
@@ -29,7 +29,7 @@ now; it will be made public once there is something worth running.
 
 Until there is an account to sync with, the app's **backup file** is the bridge:
 export from your phone, import here, and export back. The records are stored in
-the same shapes the Android app uses, so a round trip loses nothing — including
+the same shapes the Android app uses, so a round trip loses nothing, including
 the decks, plays and campaigns this site cannot yet display.
 
 A sync server is designed but deferred; see
@@ -38,7 +38,7 @@ decision, the roadmap and the operations plan.
 
 ## Running the web app
 
-Needs Node 20 or later and nothing else. No database, no server, no Docker —
+Needs Node 20 or later and nothing else. No database, no server, no Docker;
 it is a static site, so it runs the same on Windows as anywhere.
 
 ```bash
@@ -78,8 +78,8 @@ Marvel Champions card text and images belong to Fantasy Flight Games and to
 Marvel. Nothing in this repository bundles or re-hosts them: the card database
 is fetched from MarvelCDB at build time and never committed, and card images
 are referenced at their canonical URLs rather than copied. What is stored is
-what a player has made — which packs they own, which decks they saved, which
-games they played — and cards are referred to by code, the same way the Android
+what a player has made (which packs they own, which decks they saved, which
+games they played), and cards are referred to by code, the same way the Android
 app does.
 
 This is an unofficial fan project, not affiliated with Fantasy Flight Games or

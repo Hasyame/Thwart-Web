@@ -53,6 +53,7 @@ export interface Card {
   readonly faction_name: string;
   readonly pack_code: string;
   readonly pack_name: string;
+  readonly card_set_code?: string | null;
   readonly card_set_name?: string | null;
   readonly traits?: string | null;
 

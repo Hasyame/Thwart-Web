@@ -282,6 +282,7 @@
     <DecksPage
       {t}
       {index}
+      {packs}
       {cardLocale}
       {storageOk}
       openCard={(code) => navigate({ name: 'card', code })}

@@ -5,7 +5,7 @@ import type { Locale } from './types';
  *
  * A typed dictionary rather than an i18n framework. With two languages, no
  * pluralisation worth the name and no runtime locale loading, a framework
- * would add a build step and a lookup indirection to buy nothing — whereas
+ * would add a build step and a lookup indirection to buy nothing, whereas
  * this gets a compile error the moment a key is missing from either language,
  * which is the only guarantee that actually matters here.
  *
@@ -110,6 +110,22 @@ export interface Strings {
   readonly byScenario: string;
   readonly byDifficulty: string;
   readonly byPlayerCount: string;
+  readonly deckLegal: string;
+  readonly deckIllegal: (n: number) => string;
+  readonly deckLegalityUnknown: string;
+  readonly deckComposition: string;
+  readonly deckByType: string;
+  readonly deckByAspect: string;
+  readonly averageCost: (avg: string) => string;
+  readonly resourceName: (key: string) => string;
+  readonly problemAspectCount: (chosen: number, expected: number) => string;
+  readonly problemTooFew: (actual: number, minimum: number) => string;
+  readonly problemTooMany: (actual: number, maximum: number) => string;
+  readonly problemRequired: (card: string, required: number, actual: number) => string;
+  readonly problemOffAspect: (card: string, faction: string) => string;
+  readonly problemCopyLimit: (title: string, total: number, limit: number) => string;
+  readonly problemDuplicateUnique: (title: string, total: number) => string;
+  readonly problemUnbalanced: (counts: string) => string;
   readonly navDecks: string;
   readonly decksTitle: string;
   readonly importDeck: string;
@@ -263,7 +279,7 @@ const STRINGS: Record<Locale, Strings> = {
         ? "1 event in this campaign's log is not read by this page."
         : `${n} events in this campaign's log are not read by this page.`,
     attempts: (n) => `${n} attempts`,
-    navPlay: 'Play',
+    navPlay: 'My own setup',
     navStats: 'Stats',
     playTitle: 'My own setup',
     playSetupNote: 'Choose everything yourself. The clock runs while you play.',
@@ -304,6 +320,29 @@ const STRINGS: Record<Locale, Strings> = {
     byPlayerCount: 'By number of players',
     navDecks: 'Decks',
     decksTitle: 'Decks',
+    deckLegal: 'This deck is legal.',
+    deckIllegal: (n) =>
+      n === 1 ? '1 problem with this deck:' : `${n} problems with this deck:`,
+    deckLegalityUnknown:
+      'The hero card is not in the database, so this deck cannot be checked against the rules.',
+    deckComposition: 'Composition',
+    deckByType: 'By type',
+    deckByAspect: 'By aspect',
+    averageCost: (avg) => `Average cost ${avg}`,
+    resourceName: (key) =>
+      ({ physical: 'physical', mental: 'mental', energy: 'energy', wild: 'wild' })[key] ?? key,
+    problemAspectCount: (chosen, expected) =>
+      `This hero takes ${expected} aspects; the deck names ${chosen}.`,
+    problemTooFew: (actual, minimum) => `${actual} cards, fewer than the ${minimum} minimum.`,
+    problemTooMany: (actual, maximum) => `${actual} cards, more than the ${maximum} maximum.`,
+    problemRequired: (card, required, actual) =>
+      `${card}: the hero's own cards are not optional (${required} required, ${actual} present).`,
+    problemOffAspect: (card, faction) =>
+      `${card} is ${faction}, which this deck has not taken.`,
+    problemCopyLimit: (title, total, limit) =>
+      `${total} copies of ${title}; the limit is ${limit}.`,
+    problemDuplicateUnique: (title, total) => `${total} copies of ${title}, which is unique.`,
+    problemUnbalanced: (counts) => `This hero's aspects must contribute equally: ${counts}.`,
     importDeck: 'Import from MarvelCDB',
     importDeckNote:
       'Paste a decklist link, or just its number. The deck is stored in this browser, keyed the same way the Android app keys it, so importing it in both places gives you one deck rather than two.',
@@ -323,7 +362,7 @@ const STRINGS: Record<Locale, Strings> = {
     notOwned: 'not owned',
     deckLocaleNote: (locale) =>
       `Card names are shown in ${locale === 'fr' ? 'French' : 'English'}, following the card language above.`,
-    navRandomizer: 'Randomiser',
+    navRandomizer: 'Random game',
     filters: 'Filters',
     filtersNote:
       'These apply to this session only and are not saved. What you own lives on the Collection page; this is what you fancy tonight.',
@@ -333,7 +372,7 @@ const STRINGS: Record<Locale, Strings> = {
     resetFilters: 'Allow everything again',
     savedDraws: 'Saved draws',
     beatenNote: 'Tick a scenario once you have beaten it, and the filter above can skip it.',
-    randomizerTitle: 'Randomiser',
+    randomizerTitle: 'Random game',
     randomizerNoCollection:
       'Tick the packs you own on the Collection page first. The draw only offers what you can actually put on the table.',
     randomizerNotEnough: (players) =>
@@ -373,7 +412,7 @@ const STRINGS: Record<Locale, Strings> = {
     navCollection: 'Collection',
     collectionTitle: 'Collection',
     collectionIntro:
-      'Tick the packs you own. This is stored in this browser only — nothing is sent anywhere, and there is no account. Use the export below to carry it to another device.',
+      'Tick the packs you own. This is stored in this browser only; nothing is sent anywhere, and there is no account. Use the export below to carry it to another device.',
     collectionOwned: (owned, total) => `${owned} of ${total} packs owned`,
     storageUnavailable:
       'This browser will not let the site store data, so the collection cannot be saved. A private window or blocked site data is the usual cause.',
@@ -528,6 +567,31 @@ const STRINGS: Record<Locale, Strings> = {
     byPlayerCount: 'Par nombre de joueurs',
     navDecks: 'Decks',
     decksTitle: 'Decks',
+    deckLegal: 'Ce deck est légal.',
+    deckIllegal: (n) =>
+      n === 1 ? '1 problème dans ce deck :' : `${n} problèmes dans ce deck :`,
+    deckLegalityUnknown:
+      "La carte du héros n'est pas dans la base, ce deck ne peut donc pas être vérifié.",
+    deckComposition: 'Composition',
+    deckByType: 'Par type',
+    deckByAspect: 'Par aspect',
+    averageCost: (avg) => `Coût moyen ${avg}`,
+    resourceName: (key) =>
+      ({ physical: 'physique', mental: 'mental', energy: 'énergie', wild: 'joker' })[key] ?? key,
+    problemAspectCount: (chosen, expected) =>
+      `Ce héros prend ${expected} aspects ; le deck en annonce ${chosen}.`,
+    problemTooFew: (actual, minimum) => `${actual} cartes, moins que le minimum de ${minimum}.`,
+    problemTooMany: (actual, maximum) => `${actual} cartes, plus que le maximum de ${maximum}.`,
+    problemRequired: (card, required, actual) =>
+      `${card} : les cartes du héros ne sont pas optionnelles (${required} requises, ${actual} présentes).`,
+    problemOffAspect: (card, faction) =>
+      `${card} est ${faction}, un aspect que ce deck n'a pas pris.`,
+    problemCopyLimit: (title, total, limit) =>
+      `${total} exemplaires de ${title} ; la limite est de ${limit}.`,
+    problemDuplicateUnique: (title, total) =>
+      `${total} exemplaires de ${title}, qui est unique.`,
+    problemUnbalanced: (counts) =>
+      `Les aspects de ce héros doivent contribuer à parts égales : ${counts}.`,
     importDeck: 'Importer depuis MarvelCDB',
     importDeckNote:
       "Collez le lien d'une decklist, ou simplement son numéro. Le deck est enregistré dans ce navigateur, avec la même clé que l'application Android : l'importer des deux côtés donne un seul deck et non deux.",
