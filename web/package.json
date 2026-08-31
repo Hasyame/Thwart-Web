@@ -17,7 +17,8 @@
     "test:sw": "node scripts/test-sw.mjs",
     "test:backup": "node --experimental-strip-types scripts/test-backup-archive.mjs",
     "test:settings": "vite-node scripts/test-backup-settings.mjs",
-    "test:encounter": "node --experimental-strip-types scripts/test-encounter.mjs"
+    "test:encounter": "node --experimental-strip-types scripts/test-encounter.mjs",
+    "test:paused": "vite-node scripts/test-paused-game.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

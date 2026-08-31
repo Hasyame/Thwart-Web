@@ -7,6 +7,7 @@ import type {
   ExcludedScenario,
   FavouriteCard,
   OwnedPack,
+  PausedGame,
   Play,
   RandomizerHistoryRow,
   SavedDeck,
@@ -54,6 +55,8 @@ class ThwartDatabase extends Dexie {
   // One row, keyed by a constant. The app's settings are carried through this
   // site without being applied to it.
   appSettings!: Table<StoredSettings, string>;
+  /** At most one row. See the PausedGame comment for why. */
+  pausedGames!: Table<PausedGame, string>;
 
   constructor() {
     super('thwart');
@@ -78,6 +81,12 @@ class ThwartDatabase extends Dexie {
     // A new store rather than a changed one, so no existing row is touched.
     this.version(2).stores({
       appSettings: 'id',
+    });
+
+    // v3 adds the game put away mid-play. Not in the backup and never synced:
+    // a game in progress describes the table in front of one person.
+    this.version(3).stores({
+      pausedGames: 'id, savedAt',
     });
   }
 }

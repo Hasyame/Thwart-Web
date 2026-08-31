@@ -198,6 +198,23 @@ export interface Strings {
   readonly advanceVillain: string;
   readonly advanceScheme: string;
   readonly whichScheme: string;
+
+  // Putting a game away for longer than a pause.
+  readonly longBreak: string;
+  readonly longBreakIntro: string;
+  readonly longBreakPhase: string;
+  readonly phasePlayer: string;
+  readonly phaseVillain: string;
+  readonly villainStep: (step: string) => string;
+  readonly heroLives: string;
+  readonly villainLifeLeft: string;
+  readonly villainStageLabel: string;
+  readonly putAway: string;
+  readonly savePutAway: string;
+  readonly resumeSaved: string;
+  readonly discardSaved: string;
+  readonly savedGame: (scenario: string, when: string) => string;
+  readonly savedGameNote: string;
   readonly cancel: string;
   readonly favourite: string;
   readonly unfavourite: string;
@@ -458,6 +475,31 @@ const STRINGS: Record<Locale, Strings> = {
     advanceVillain: 'Flip the villain',
     advanceScheme: 'Advance the scheme',
     whichScheme: 'Which one is on the table',
+
+    longBreak: 'Put the game away',
+    longBreakIntro:
+      'For a table that has to be cleared, or left for a week. The clock stops and where everything stood is written down. One game at a time: saving replaces whatever was already put away.',
+    longBreakPhase: 'It stopped in',
+    phasePlayer: 'The player phase',
+    phaseVillain: 'The villain phase',
+    villainStep: (step) =>
+      ({
+        PLACE_THREAT: 'Placing threat on the main scheme',
+        ACTIVATE_MINIONS: 'Activating minions',
+        DEAL_ENCOUNTERS: 'Dealing encounter cards',
+        REVEAL_ENCOUNTERS: 'Revealing encounter cards',
+        PASS_FIRST_PLAYER: 'Passing the first player token',
+      })[step] ?? step,
+    heroLives: 'Hit points left',
+    villainLifeLeft: 'Hit points left on the villain',
+    villainStageLabel: 'Which villain card is face up',
+    putAway: 'Put it away',
+    savePutAway: 'Save and leave the table',
+    resumeSaved: 'Pick it up again',
+    discardSaved: 'Throw it away',
+    savedGame: (scenario, when) => `${scenario}, put away ${when}`,
+    savedGameNote:
+      'Picking it up puts the cards and the clock back where they were. The clock comes back stopped, because getting the cards out again is not play time.',
     cancel: 'Cancel',
     favourite: 'Add to favourites',
     unfavourite: 'Remove from favourites',
@@ -726,6 +768,31 @@ const STRINGS: Record<Locale, Strings> = {
     advanceVillain: 'Retourner le Méchant',
     advanceScheme: 'Faire avancer la manigance',
     whichScheme: 'Laquelle est sur la table',
+
+    longBreak: 'Ranger la partie',
+    longBreakIntro:
+      "Pour une table qu'il faut débarrasser, ou laisser une semaine. Le chrono s'arrête et la position de chacun est notée. Une partie à la fois : enregistrer remplace celle qui était rangée.",
+    longBreakPhase: "Arrêtée pendant",
+    phasePlayer: 'La phase des joueurs',
+    phaseVillain: 'La phase du Méchant',
+    villainStep: (step) =>
+      ({
+        PLACE_THREAT: 'Placer la Menace sur la manigance principale',
+        ACTIVATE_MINIONS: 'Activer les Sbires',
+        DEAL_ENCOUNTERS: 'Distribuer les cartes Rencontre',
+        REVEAL_ENCOUNTERS: 'Révéler les cartes Rencontre',
+        PASS_FIRST_PLAYER: 'Passer le jeton Premier Joueur',
+      })[step] ?? step,
+    heroLives: 'Points de vie restants',
+    villainLifeLeft: 'Points de vie restants du Méchant',
+    villainStageLabel: 'Quelle carte Méchant est face visible',
+    putAway: 'Ranger',
+    savePutAway: 'Enregistrer et quitter la table',
+    resumeSaved: 'Reprendre la partie',
+    discardSaved: 'Jeter',
+    savedGame: (scenario, when) => `${scenario}, rangée ${when}`,
+    savedGameNote:
+      'Reprendre remet les cartes et le chrono là où ils étaient. Le chrono revient arrêté : ressortir le matériel ne compte pas comme du temps de jeu.',
     cancel: 'Annuler',
     favourite: 'Ajouter aux favoris',
     unfavourite: 'Retirer des favoris',

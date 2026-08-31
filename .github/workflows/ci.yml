@@ -13,10 +13,11 @@ name: CI
 # only machine that needs the result. Running it here as well meant two fetches
 # from a volunteer-run site every night to produce the same answer twice.
 #
-# **Why the card fetch is not run on every push.** It downloads the whole
-# database in both languages. Once a night from the server is enough to notice
-# the script breaking, and a failure there leaves the previous release serving.
-# Use the manual trigger to exercise it after changing the fetching code.
+# **Why the card data is cached rather than fetched every push.** It is the
+# whole database in both languages, from a volunteer-run site, and it moves in
+# weeks rather than hours. The cache key is the fetching script, so a change to
+# that refetches; otherwise the data is reused until GitHub evicts it, which it
+# does after a week unused. Use the manual trigger to force a fetch.
 
 on:
   push:
@@ -76,13 +77,37 @@ jobs:
         working-directory: web
         run: npm run test:settings
 
-      # Only when asked. The build does not need the data (it lands in
-      # public/data and is copied verbatim), which is why this can sit after
-      # the tests and before the build without affecting either.
+      # The card data, cached.
+      #
+      # The tracker tests are the most valuable in the repository, because they
+      # cover rules ported from the Android app, and they are only worth
+      # anything against the real card database: this data spells "per player"
+      # two contradictory ways, and a hand-written fixture gets that wrong in
+      # the same direction as the code.
+      #
+      # Cached rather than fetched every push. The key is the fetching script,
+      # so the cache survives until that changes, and GitHub evicts what has
+      # not been used for a week. MarvelCDB is run by volunteers and the card
+      # database moves in weeks, not hours.
+      - name: Restore card data
+        id: cards
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: web/public/data
+          key: cards-${{ hashFiles('web/scripts/fetch-cards.mjs') }}
+
       - name: Fetch card data
-        if: inputs.fetchCardData
+        if: steps.cards.outputs.cache-hit != 'true' || inputs.fetchCardData
         working-directory: web
         run: npm run data
+
+      - name: Encounter tracker
+        working-directory: web
+        run: npm run test:encounter
+
+      - name: Paused games
+        working-directory: web
+        run: npm run test:paused
 
       - name: Build
         working-directory: web

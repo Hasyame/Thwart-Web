@@ -21,8 +21,12 @@ made public once the account server has run somewhere other than a laptop.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own.
-- **My own setup.** Choose everything yourself and let the clock run, then
-  record the result.
+- **My own setup.** Choose everything yourself, run the clock, and count the
+  villain and the main scheme while you play: damage against the printed
+  health, threat against the limit, and an end-of-round button that applies the
+  acceleration. Counters only, deliberately; it does not adjudicate rules.
+  A game that has to be cleared off the table can be put away with where
+  everything stood, and picked up later.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
 - **Campaigns.** Read-only progress for campaigns imported from the app.
@@ -72,6 +76,8 @@ Other scripts:
 | `npm run test:sw` | Check the service worker's routing rules |
 | `npm run test:backup` | Check that both backup formats import; pass a real export as an argument |
 | `npm run test:settings` | Check the app's settings survive a round trip through here |
+| `npm run test:encounter` | Check the ported tracker rules against the real card database |
+| `npm run test:paused` | Check a game put away comes back the same |
 
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run
 theme` is only needed on its own after changing a seed colour.

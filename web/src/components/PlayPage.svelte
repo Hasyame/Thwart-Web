@@ -2,6 +2,13 @@
   import { liveQuery } from 'dexie';
   import type { CardSet, IndexRow, Locale } from '../lib/types';
   import Tracker from './Tracker.svelte';
+  import LongBreak from './LongBreak.svelte';
+  import type { PausedGame } from '../lib/records';
+  import {
+    discardPausedGame,
+    loadPausedGame,
+    splitHeroes,
+  } from '../lib/pausedGame';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { loadScenarioRules } from '../lib/data';
@@ -23,6 +30,7 @@
     startGame,
   } from '../lib/session.svelte';
   import { buildPlay } from '../lib/plays';
+  import { resumeSession } from '../lib/session.svelte';
 
   interface Props {
     t: Strings;
@@ -112,6 +120,47 @@
   });
 
   const elapsed = $derived(elapsedMillis(now));
+
+  let putAway = $state.raw<PausedGame | null>(null);
+
+  async function refreshPutAway(): Promise<void> {
+    putAway = storageOk ? ((await loadPausedGame()) ?? null) : null;
+  }
+
+  $effect(() => {
+    void refreshPutAway();
+  });
+
+  /**
+   * Puts a written-down game back on the table.
+   *
+   * The counters are left to the tracker to rebuild from the scenario's own
+   * cards: it has to load them anyway, and asking it to trust a number typed a
+   * week ago over the card in front of the player would be the wrong way round.
+   */
+  async function resume(game: PausedGame): Promise<void> {
+    resumeSession({
+      scenarioCode: game.scenarioCode,
+      scenarioName: game.scenarioName,
+      difficulty: game.difficulty as typeof session.current.difficulty,
+      seats: splitHeroes(game.heroes).map((hero) => ({
+        deckId: hero.code,
+        deckName: hero.name,
+        heroCode: hero.code,
+        heroName: hero.name,
+        aspect: '',
+      })),
+      modularSetCodes: game.modularSetCodes.split(',').filter((code) => code !== ''),
+      accumulatedMillis: game.elapsedMillis,
+    });
+    await discardPausedGame();
+    await refreshPutAway();
+  }
+
+  async function throwAway(): Promise<void> {
+    await discardPausedGame();
+    await refreshPutAway();
+  }
 
   const isExpert = $derived(
     DIFFICULTIES.find((d) => d.id === session.current.difficulty)?.expert === true,
@@ -342,6 +391,22 @@
       {/each}
     </div>
 
+    {#if putAway !== null}
+      {@const saved = putAway}
+      <div class="notice surface">
+        <p>
+          <strong>{t.savedGame(saved.scenarioName, new Date(saved.savedAt).toLocaleDateString())}</strong>
+        </p>
+        <p class="muted note">{t.savedGameNote}</p>
+        <div class="result-actions">
+          <button class="primary" type="button" onclick={() => resume(saved)}>
+            {t.resumeSaved}
+          </button>
+          <button type="button" onclick={throwAway}>{t.discardSaved}</button>
+        </div>
+      </div>
+    {/if}
+
     {#if session.current.scenarioCode !== ''}
       <div class="setup surface">
         <h2>{t.modularSets}</h2>
@@ -424,6 +489,8 @@
         <button type="button" onclick={newGame} disabled={recording}>{t.discardGame}</button>
       </div>
       <p class="muted note">{t.discardNote}</p>
+
+      <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
     </div>
   {/if}
 </section>

@@ -116,6 +116,16 @@ export function updateEncounter(change: (current: Encounter) => Encounter): void
   }
 }
 
+/**
+ * Puts a written-down game back on the table.
+ *
+ * The clock comes back stopped. Somebody resuming is getting the cards out
+ * again, and counting that as play time is the same mistake as counting setup.
+ */
+export function resumeSession(restored: Partial<Session>): void {
+  session.current = { ...empty(), ...restored, started: true, runningSince: null };
+}
+
 export function endGame(): void {
   session.current = empty();
 }

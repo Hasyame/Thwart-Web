@@ -139,6 +139,63 @@ export interface RandomizerHistoryRow {
 }
 
 /**
+ * A game put down mid-play, with enough of the table written down to rebuild it.
+ *
+ * A short pause is the clock stopping. This is the other kind: the table is
+ * cleared, or left for a week, and what matters is not the clock but where
+ * everything stood.
+ *
+ * One at a time, by design. Two saved games would need naming, choosing between
+ * and tidying up, which is a filing system for a thing that happens when
+ * somebody has to go and eat.
+ *
+ * Field for field as `PausedGameEntity` declares it, including the joined
+ * strings, even though this table is local to one device and never travels:
+ * the same shape means the same reasoning applies in both places, and it costs
+ * nothing to keep.
+ */
+export interface PausedGame {
+  readonly id: string;
+  readonly savedAt: number;
+  readonly scenarioCode: string;
+  readonly scenarioName: string;
+  readonly difficulty: string;
+  /** Hero codes and names, as `code|name` entries, comma separated. */
+  readonly heroes: string;
+  readonly modularSetCodes: string;
+  readonly elapsedMillis: number;
+  /** Which half of the round it stopped in: PLAYER or VILLAIN. */
+  readonly phase: PausedPhase;
+  /** The villain phase step, or an empty string in the player phase. */
+  readonly villainStep: VillainStep | '';
+  /** Hit points left, as `heroCode|points` entries, comma separated. */
+  readonly heroLives: string;
+  readonly villainLife: number;
+  /** Which villain card is face up: 1, 2 or 3. */
+  readonly villainStage: number;
+  readonly campaignRunId: string;
+}
+
+/** The two halves of a round a game can be stopped in. */
+export type PausedPhase = 'PLAYER' | 'VILLAIN';
+
+/**
+ * The steps of the villain phase, in the order they are resolved.
+ *
+ * Written down because coming back to a table after a week, the question is
+ * never "whose turn" but "how far through the villain's turn were we".
+ */
+export const VILLAIN_STEPS = [
+  'PLACE_THREAT',
+  'ACTIVATE_MINIONS',
+  'DEAL_ENCOUNTERS',
+  'REVEAL_ENCOUNTERS',
+  'PASS_FIRST_PLAYER',
+] as const;
+
+export type VillainStep = (typeof VILLAIN_STEPS)[number];
+
+/**
  * The app's own preferences, as `BackupSettings` declares them.
  *
  * Carried through this site, never applied to it. They are the phone's
