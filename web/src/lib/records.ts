@@ -139,6 +139,22 @@ export interface RandomizerHistoryRow {
 }
 
 /**
+ * The app's own preferences, as `BackupSettings` declares them.
+ *
+ * Carried through this site, never applied to it. They are the phone's
+ * settings, and this site has its own; adopting somebody's Android theme
+ * because they imported a backup would be a surprise, and writing them back
+ * unchanged is what keeps a phone to phone round trip through here lossless.
+ */
+export interface BackupSettings {
+  readonly cardLocale: string;
+  readonly themeChoice: string;
+  readonly playLocation: string;
+  readonly trackEncounter: boolean;
+  readonly dismissedPacks: readonly string[];
+}
+
+/**
  * The export bundle, exactly as `data/backup/BackupModels.kt` declares it.
  *
  * `formatVersion` stays at 1. The app's own comment explains the convention:
@@ -160,6 +176,12 @@ export interface Backup {
   readonly randomizerHistory: readonly RandomizerHistoryRow[];
   readonly favouriteCards: readonly FavouriteCard[];
   readonly photos: readonly string[];
+  /**
+   * Null, not absent, is meaningful: the app reads it as "this file has no
+   * settings, leave the device's own alone", where an empty object would mean
+   * "use the defaults" and reset somebody's language.
+   */
+  readonly settings?: BackupSettings | null;
 }
 
 export const BACKUP_FORMAT_VERSION = 1;

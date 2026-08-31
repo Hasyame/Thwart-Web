@@ -1,7 +1,8 @@
-import { db } from './db';
+import { db, SETTINGS_KEY } from './db';
 import {
   BACKUP_FORMAT_VERSION,
   type Backup,
+  type BackupSettings,
   type CampaignEvent,
   type CampaignRun,
   type ExcludedModularSet,
@@ -98,6 +99,30 @@ export function parseBackup(text: string): Backup {
     randomizerHistory: asArray<RandomizerHistoryRow>(record['randomizerHistory']),
     favouriteCards: asArray<FavouriteCard>(record['favouriteCards']),
     photos: asArray<string>(record['photos']),
+    settings: asSettings(record['settings']),
+  };
+}
+
+/**
+ * Reads the app's settings block, or null.
+ *
+ * Null and absent mean the same thing here and both mean "this file carries
+ * none", which is not the same as "these are the defaults": the app leaves the
+ * device alone in the first case and would overwrite it in the second.
+ */
+function asSettings(value: unknown): BackupSettings | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  return {
+    cardLocale: typeof record['cardLocale'] === 'string' ? record['cardLocale'] : '',
+    themeChoice: typeof record['themeChoice'] === 'string' ? record['themeChoice'] : '',
+    playLocation: typeof record['playLocation'] === 'string' ? record['playLocation'] : '',
+    trackEncounter: record['trackEncounter'] === true,
+    dismissedPacks: Array.isArray(record['dismissedPacks'])
+      ? record['dismissedPacks'].filter((entry): entry is string => typeof entry === 'string')
+      : [],
   };
 }
 
@@ -151,6 +176,14 @@ export async function importBackup(
     await db.campaignRuns.bulkPut([...backup.campaignRuns]);
     await db.campaignEvents.bulkPut([...backup.campaignEvents]);
     await db.randomizerHistory.bulkPut([...backup.randomizerHistory]);
+
+    // Stored, never applied. These are the phone's preferences; this site has
+    // its own, and adopting somebody's Android theme because they imported a
+    // backup would be a surprise. Keeping them is what makes a phone to phone
+    // round trip through here lossless.
+    if (backup.settings != null) {
+      await db.appSettings.put({ ...backup.settings, id: SETTINGS_KEY });
+    }
   });
 
   return summarise(backup);
@@ -178,6 +211,7 @@ export async function exportBackup(): Promise<Backup> {
     campaignRuns,
     campaignEvents,
     randomizerHistory,
+    storedSettings,
   ] = await Promise.all([
     db.ownedPacks.toArray(),
     db.excludedModularSets.toArray(),
@@ -188,6 +222,7 @@ export async function exportBackup(): Promise<Backup> {
     db.campaignRuns.toArray(),
     db.campaignEvents.toArray(),
     db.randomizerHistory.toArray(),
+    db.appSettings.get(SETTINGS_KEY),
   ]);
 
   return {
@@ -203,6 +238,19 @@ export async function exportBackup(): Promise<Backup> {
     plays,
     randomizerHistory,
     favouriteCards,
+    // Null when this browser has never been handed any, which the app reads as
+    // "leave the device's own settings alone". Emitting an empty object instead
+    // would tell it to reset them to the defaults.
+    settings:
+      storedSettings === undefined
+        ? null
+        : {
+            cardLocale: storedSettings.cardLocale,
+            themeChoice: storedSettings.themeChoice,
+            playLocation: storedSettings.playLocation,
+            trackEncounter: storedSettings.trackEncounter,
+            dismissedPacks: storedSettings.dismissedPacks,
+          },
     photos: [],
   };
 }

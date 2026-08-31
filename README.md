@@ -30,7 +30,10 @@ made public once the account server has run somewhere other than a laptop.
 Until there is an account to sync with, the app's **backup file** is the bridge:
 export from your phone, import here, and export back. The records are stored in
 the same shapes the Android app uses, so a round trip loses nothing, including
-the decks, plays and campaigns this site cannot yet display.
+the decks, plays, campaigns and preferences this site does not display. The
+phone's own settings are carried through untouched rather than applied here:
+this site has its own theme and language, and adopting somebody's Android ones
+because they imported a backup would be a surprise.
 
 An **account server** lives in [`server/`](server/): registration without an
 email address, login, recovery by written-down code, device management, and the
@@ -68,6 +71,7 @@ Other scripts:
 | `npm run preview` | Serve the production build |
 | `npm run test:sw` | Check the service worker's routing rules |
 | `npm run test:backup` | Check that both backup formats import; pass a real export as an argument |
+| `npm run test:settings` | Check the app's settings survive a round trip through here |
 
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run
 theme` is only needed on its own after changing a seed colour.

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type {
+  BackupSettings,
   CampaignEvent,
   CampaignRun,
   ExcludedModularSet,
@@ -30,6 +31,13 @@ import type {
  * cannot draw is cheap, and quietly dropping somebody's play history because
  * the statistics screen does not exist yet would be unforgivable.
  */
+/** The single settings row, with the constant key it is stored under. */
+export interface StoredSettings extends BackupSettings {
+  readonly id: typeof SETTINGS_KEY;
+}
+
+export const SETTINGS_KEY = 'app';
+
 class ThwartDatabase extends Dexie {
   // Written by this version.
   ownedPacks!: Table<OwnedPack, string>;
@@ -43,6 +51,9 @@ class ThwartDatabase extends Dexie {
   campaignRuns!: Table<CampaignRun, string>;
   campaignEvents!: Table<CampaignEvent, string>;
   randomizerHistory!: Table<RandomizerHistoryRow, string>;
+  // One row, keyed by a constant. The app's settings are carried through this
+  // site without being applied to it.
+  appSettings!: Table<StoredSettings, string>;
 
   constructor() {
     super('thwart');
@@ -61,6 +72,12 @@ class ThwartDatabase extends Dexie {
       campaignRuns: 'id, createdAt',
       campaignEvents: 'id, runId, timestamp',
       randomizerHistory: 'id, createdAt',
+    });
+
+    // v2 adds the app's own settings, which backups started carrying in 1.39.0.
+    // A new store rather than a changed one, so no existing row is touched.
+    this.version(2).stores({
+      appSettings: 'id',
     });
   }
 }

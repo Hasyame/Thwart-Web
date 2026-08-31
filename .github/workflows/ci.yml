@@ -69,6 +69,13 @@ jobs:
         working-directory: web
         run: npm run test:backup
 
+      # The app started carrying its preferences in 1.39.0. Dropping them here
+      # would break a round trip silently: a phone reading a file with no
+      # settings leaves its own alone, so nothing looks wrong.
+      - name: Backup settings
+        working-directory: web
+        run: npm run test:settings
+
       # Only when asked. The build does not need the data (it lands in
       # public/data and is copied verbatim), which is why this can sit after
       # the tests and before the build without affecting either.
