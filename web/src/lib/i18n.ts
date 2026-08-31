@@ -111,6 +111,8 @@ export interface Strings {
   readonly byDifficulty: string;
   readonly byPlayerCount: string;
   readonly deckLegal: string;
+  readonly deckLegalShort: string;
+  readonly deckIllegalShort: string;
   readonly deckIllegal: (n: number) => string;
   readonly deckLegalityUnknown: string;
   readonly deckComposition: string;
@@ -321,6 +323,8 @@ const STRINGS: Record<Locale, Strings> = {
     navDecks: 'Decks',
     decksTitle: 'Decks',
     deckLegal: 'This deck is legal.',
+    deckLegalShort: 'legal',
+    deckIllegalShort: 'not legal',
     deckIllegal: (n) =>
       n === 1 ? '1 problem with this deck:' : `${n} problems with this deck:`,
     deckLegalityUnknown:
@@ -332,7 +336,7 @@ const STRINGS: Record<Locale, Strings> = {
     resourceName: (key) =>
       ({ physical: 'physical', mental: 'mental', energy: 'energy', wild: 'wild' })[key] ?? key,
     problemAspectCount: (chosen, expected) =>
-      `This hero takes ${expected} aspects; the deck names ${chosen}.`,
+      `This hero takes ${expected} ${expected === 1 ? 'aspect' : 'aspects'}; the deck names ${chosen}.`,
     problemTooFew: (actual, minimum) => `${actual} cards, fewer than the ${minimum} minimum.`,
     problemTooMany: (actual, maximum) => `${actual} cards, more than the ${maximum} maximum.`,
     problemRequired: (card, required, actual) =>
@@ -568,6 +572,8 @@ const STRINGS: Record<Locale, Strings> = {
     navDecks: 'Decks',
     decksTitle: 'Decks',
     deckLegal: 'Ce deck est légal.',
+    deckLegalShort: 'légal',
+    deckIllegalShort: 'non légal',
     deckIllegal: (n) =>
       n === 1 ? '1 problème dans ce deck :' : `${n} problèmes dans ce deck :`,
     deckLegalityUnknown:
@@ -579,7 +585,7 @@ const STRINGS: Record<Locale, Strings> = {
     resourceName: (key) =>
       ({ physical: 'physique', mental: 'mental', energy: 'énergie', wild: 'joker' })[key] ?? key,
     problemAspectCount: (chosen, expected) =>
-      `Ce héros prend ${expected} aspects ; le deck en annonce ${chosen}.`,
+      `Ce héros prend ${expected} ${expected === 1 ? 'aspect' : 'aspects'} ; le deck en annonce ${chosen}.`,
     problemTooFew: (actual, minimum) => `${actual} cartes, moins que le minimum de ${minimum}.`,
     problemTooMany: (actual, maximum) => `${actual} cartes, plus que le maximum de ${maximum}.`,
     problemRequired: (card, required, actual) =>

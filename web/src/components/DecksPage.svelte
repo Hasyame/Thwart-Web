@@ -13,6 +13,7 @@
     parseDeckReference,
     parseSlots,
   } from '../lib/decks';
+  import { heroRules, validateDeck } from '../lib/deckRules';
 
   interface Props {
     t: Strings;
@@ -63,44 +64,84 @@
   );
 
   /**
-   * Full records for the packs the open deck draws on.
+   * Full records for every pack any saved deck draws on.
    *
-   * The search index is not enough here: previews need images, the composition
-   * needs resource icons, and legality needs the deck-building fields. Loaded
-   * per deck and cached, so a second deck from the same boxes is free.
+   * Loaded for all decks rather than only the open one, because each box shows
+   * its own verdict and a verdict needs the cards. Pack files are cached, and
+   * decks overwhelmingly share boxes, so the union is far smaller than the sum.
    */
   let deckCards = $state.raw<ReadonlyMap<string, Card>>(new Map());
+  let cardsLoading = $state(false);
+
+  const rowByCode = $derived(new Map(index.map((row) => [row.code, row] as const)));
 
   $effect(() => {
-    const deck = openDeck;
-    if (deck === null) {
+    const decks = saved.decks;
+    const byCode = rowByCode;
+    if (decks.length === 0 || byCode.size === 0) {
       deckCards = new Map();
       return;
     }
-    const byCode = new Map(index.map((row) => [row.code, row] as const));
+
     const packCodes = new Set<string>();
-    for (const code of parseSlots(deck.slots).keys()) {
-      const row = byCode.get(code);
-      if (row !== undefined) {
-        packCodes.add(row.packCode);
+    for (const deck of decks) {
+      for (const code of parseSlots(deck.slots).keys()) {
+        const row = byCode.get(code);
+        if (row !== undefined) {
+          packCodes.add(row.packCode);
+        }
       }
-    }
-    // The hero's own pack, which carries its signature cards and its rules.
-    const heroRow = byCode.get(deck.heroCode);
-    if (heroRow !== undefined) {
-      packCodes.add(heroRow.packCode);
+      // The hero's own pack, which carries its signature cards and its rules.
+      const heroRow = byCode.get(deck.heroCode);
+      if (heroRow !== undefined) {
+        packCodes.add(heroRow.packCode);
+      }
     }
 
     let cancelled = false;
+    cardsLoading = true;
     loadCardsByCode(cardLocale, packCodes).then((loaded) => {
       if (!cancelled) {
         deckCards = loaded;
+        cardsLoading = false;
       }
     });
     return () => {
       cancelled = true;
     };
   });
+
+  /**
+   * Legality per deck, once the cards are in.
+   *
+   * Null while loading or where the hero card is unknown, which the box shows
+   * as nothing rather than as a guess.
+   */
+  const verdicts = $derived.by((): ReadonlyMap<string, boolean | null> => {
+    const out = new Map<string, boolean | null>();
+    for (const deck of saved.decks) {
+      const hero = deckCards.get(deck.heroCode);
+      if (hero === undefined) {
+        out.set(deck.id, null);
+        continue;
+      }
+      const heroPack = [...deckCards.values()].filter(
+        (c) => c.pack_code === hero.pack_code,
+      );
+      const rules = heroRules(hero, heroPack);
+      const aspects = deck.aspects === '' ? [] : deck.aspects.split(',');
+      out.set(
+        deck.id,
+        validateDeck(rules, aspects, parseSlots(deck.slots), deckCards).legal,
+      );
+    }
+    return out;
+  });
+
+  /** The aspects a deck names, for the colour down its edge. */
+  function aspectsOf(deck: SavedDeck): string[] {
+    return deck.aspects === '' ? [] : deck.aspects.split(',');
+  }
 
   async function doImport(): Promise<void> {
     const ref = reference;
@@ -172,7 +213,17 @@
     {:else}
       <ul class="decks">
         {#each saved.decks as deck (deck.id)}
-          <li class="surface deck" class:open={deck.id === openDeckId}>
+          {@const verdict = verdicts.get(deck.id) ?? null}
+          {@const aspects = aspectsOf(deck)}
+          <li
+            class="surface deck"
+            class:open={deck.id === openDeckId}
+            style:--deck-aspect-1={`var(--faction-${aspects[0] ?? 'basic'})`}
+            style:--deck-aspect-2={aspects.length > 1
+              ? `var(--faction-${aspects[1]})`
+              : `var(--faction-${aspects[0] ?? 'basic'})`}
+            class:two-aspects={aspects.length > 1}
+          >
             <button
               type="button"
               class="deck-head"
@@ -181,13 +232,17 @@
             >
               <span class="deck-name">{deck.name}</span>
               <span class="muted deck-sub">
-                {deck.heroName}{deck.aspects === ''
+                {deck.heroName}{aspects.length === 0
                   ? ''
-                  : ` · ${deck.aspects
-                      .split(',')
-                      .map((a) => t.aspect(a))
-                      .join(' / ')}`}
+                  : ` · ${aspects.map((a) => t.aspect(a)).join(' / ')}`}
               </span>
+              {#if verdict !== null}
+                <span class="verdict" class:illegal={!verdict}>
+                  {verdict ? t.deckLegalShort : t.deckIllegalShort}
+                </span>
+              {:else if cardsLoading}
+                <span class="verdict muted">…</span>
+              {/if}
             </button>
             <button type="button" class="remove" onclick={() => remove(deck.id)}>
               {t.removeDeck}
@@ -338,4 +393,39 @@
     margin-bottom: 0;
   }
 
+  /*
+   * The aspect down the edge of the box, so a shelf of decks reads at a
+   * glance. Two-aspect heroes get both, split down the same strip rather than
+   * blended: Spider-Woman plays two aspects, she does not play an average of
+   * them.
+   */
+  .deck {
+    border-inline-start: 5px solid var(--deck-aspect-1, var(--faction-basic));
+  }
+
+  .deck.two-aspects {
+    border-inline-start-color: transparent;
+    border-image: linear-gradient(
+        to bottom,
+        var(--deck-aspect-1) 0 50%,
+        var(--deck-aspect-2) 50% 100%
+      )
+      1;
+  }
+
+  .verdict {
+    align-self: flex-start;
+    margin-top: var(--space-1);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-1);
+  }
+
+  .verdict.illegal {
+    color: var(--md-error);
+  }
 </style>
