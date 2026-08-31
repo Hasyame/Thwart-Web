@@ -10,6 +10,7 @@
     summarise,
     type ImportSummary,
   } from '../lib/backup';
+  import { ArchiveError, readBackupDocument } from '../lib/backupArchive';
 
   interface Props {
     t: Strings;
@@ -45,12 +46,15 @@
     error = null;
     done = null;
     try {
-      const backup = parseBackup(await file.text());
+      // Sniffed, not taken from the name: the app writes a file named .zip
+      // containing plain JSON whenever photos were asked for and none existed.
+      const backup = parseBackup(await readBackupDocument(file));
       pending = { backup, summary: summarise(backup) };
     } catch (caught) {
       pending = null;
       error =
-        caught instanceof BackupError && caught.message === 'not-json'
+        caught instanceof ArchiveError ||
+        (caught instanceof BackupError && caught.message === 'not-json')
           ? t.backupNotJson
           : t.backupUnreadable;
     }
@@ -105,7 +109,7 @@
     <input
       bind:this={fileInput}
       type="file"
-      accept="application/json,.json"
+      accept=".json,.zip,application/json,application/zip"
       class="visually-hidden"
       onchange={onFile}
     />

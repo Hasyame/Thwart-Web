@@ -14,7 +14,8 @@
     "build": "npm run theme && npm run icons && vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test:sw": "node scripts/test-sw.mjs"
+    "test:sw": "node scripts/test-sw.mjs",
+    "test:backup": "node --experimental-strip-types scripts/test-backup-archive.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
