@@ -74,10 +74,58 @@ var migrations = []string{
 	);
 	CREATE UNIQUE INDEX device_token ON device (token_hash);
 	CREATE INDEX device_account ON device (account_id);`,
+
+	// v2: the record feed.
+	//
+	// One table for every collection, with an opaque body. Doc 02 is explicit
+	// that the server must not understand the data: adding an entity to
+	// Android would otherwise need a server release, and the server cannot
+	// merge what it does not understand anyway. The per-field conflict rules
+	// in doc 02 section 4 live in the client, which does understand it.
+	`CREATE TABLE record (
+		account_id TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,
+		collection TEXT NOT NULL,
+		id         TEXT NOT NULL,
+		revision   INTEGER NOT NULL,
+		-- The client's own timestamp, carried so it can show "edited 2 hours
+		-- ago" and break ties on first sign-in. The server never orders by it:
+		-- device clocks lie, and a phone a day fast would win every conflict
+		-- forever.
+		updated_at TEXT NOT NULL,
+		deleted    INTEGER NOT NULL DEFAULT 0,
+		body       TEXT,
+		-- Server time, for the retention sweep only.
+		deleted_at INTEGER,
+		PRIMARY KEY (account_id, collection, id)
+	);
+
+	-- The pull query, and the only index it needs: everything above a cursor,
+	-- in revision order.
+	CREATE INDEX record_feed ON record (account_id, revision);
+	CREATE INDEX record_sweep ON record (deleted, deleted_at);
+
+	-- Stored push responses, so a retry after a lost reply returns what the
+	-- first attempt returned instead of applying the batch twice.
+	CREATE TABLE batch (
+		account_id TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,
+		batch_id   TEXT NOT NULL,
+		response   TEXT NOT NULL,
+		created_at INTEGER NOT NULL,
+		PRIMARY KEY (account_id, batch_id)
+	);
+	CREATE INDEX batch_age ON batch (created_at);
+
+	-- The tombstone horizon: the highest revision that has been swept away.
+	-- A client at or below it may have missed a delete that no longer exists
+	-- to be sent.
+	ALTER TABLE account ADD COLUMN min_cursor INTEGER NOT NULL DEFAULT 0;`,
 }
 
 type Store struct {
 	db *sql.DB
+	// Serialises pushes per account. See writeLocks in sync_store.go for why
+	// it exists even though one connection already serialises everything.
+	writes *writeLocks
 }
 
 type Account struct {
@@ -128,7 +176,7 @@ func OpenStore(path string) (*Store, error) {
 		return nil, fmt.Errorf("ping %s: %w", path, err)
 	}
 
-	s := &Store{db: db}
+	s := &Store{db: db, writes: newWriteLocks()}
 	if err := s.migrate(); err != nil {
 		return nil, err
 	}

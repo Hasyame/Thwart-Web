@@ -230,10 +230,19 @@ GET /v1/sync/changes?since=1840&limit=500
   new `cursor`.
 - `deleted: true` records carry `body: null`. A tombstone is a revision like any
   other, which is what lets a delete propagate at all.
-- **`minCursor` is the tombstone horizon** — the oldest revision the server can
-  still describe honestly. A client whose stored cursor is below it has been
-  away too long and must resynchronise fully. Publishing it on every pull means
-  the client can detect this without a special error, and it costs one integer.
+- **`minCursor` is the tombstone horizon**, the highest revision that has been
+  swept away. A client whose stored cursor is below it has been away too long
+  and must resynchronise fully. It is published on every pull, and it costs one
+  integer.
+
+  > **Amended during implementation.** This section originally said the point of
+  > publishing it was that the client could detect the situation "without a
+  > special error". The implementation publishes it *and* refuses the pull with
+  > `cursor_too_old`, which section 8 already defined. Publishing alone relies
+  > on every client remembering to compare two numbers; a client that forgets
+  > receives a feed that looks complete and is not, and the deletions it never
+  > hears about come back from the dead. Refusing makes it impossible to
+  > miss. `since=0` is exempt, being the full resync itself.
 - `since=0` means "everything", which is both first sign-in and full resync.
 
 ### Push

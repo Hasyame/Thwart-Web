@@ -16,8 +16,8 @@ import (
 /*
 The HTTP surface, account half.
 
-Doc 02 §1 lists eleven endpoints. Seven of them are here; the four sync ones
-land when sync does. Everything below holds to three rules:
+Doc 02 §1 lists eleven endpoints. The account half is here; the sync half is in
+sync.go. Everything below holds to three rules:
 
   - The `code` is the contract. Clients switch on it, never on the message.
   - Nothing distinguishes "no such handle" from "wrong password", in the body
@@ -69,6 +69,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/auth/password", s.authenticated(s.handlePassword))
 	mux.HandleFunc("GET /v1/auth/devices", s.authenticated(s.handleListDevices))
 	mux.HandleFunc("DELETE /v1/auth/devices/{id}", s.authenticated(s.handleDeleteDevice))
+	mux.HandleFunc("GET /v1/sync/changes", s.authenticated(s.handlePull))
+	mux.HandleFunc("POST /v1/sync/changes", s.authenticated(s.handlePush))
+	mux.HandleFunc("GET /v1/account/export", s.authenticated(s.handleExport))
 	mux.HandleFunc("DELETE /v1/account", s.authenticated(s.handleDeleteAccount))
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
@@ -511,6 +514,14 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"build":    s.build,
 		"protocol": protocolVersion,
+		// Published so a client does not have to guess, and enforced on push
+		// so one that guesses wrong is told rather than half-served.
+		"limits": map[string]any{
+			"batchRecords": maxBatchRecords,
+			"batchBytes":   maxBatchBytes,
+			"recordBytes":  maxRecordBytes,
+			"pageSize":     maxPageSize,
+		},
 	})
 }
 

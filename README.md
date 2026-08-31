@@ -33,10 +33,11 @@ the same shapes the Android app uses, so a round trip loses nothing, including
 the decks, plays and campaigns this site cannot yet display.
 
 An **account server** lives in [`server/`](server/): registration without an
-email address, login, recovery by written-down code, and device management. It
-is optional, and the site works without it. Sync itself is designed but not
-built yet; see [`docs/design/`](docs/design/) for the data audit, the sync
-protocol, the stack decision, the roadmap and the operations plan, and
+email address, login, recovery by written-down code, device management, and the
+sync feed. It is optional, and the site works without it. No client speaks to
+it yet; the Android app needs its soft-delete groundwork first (doc 01 §8).
+See [`docs/design/`](docs/design/) for the data audit, the sync protocol, the
+stack decision, the roadmap and the operations plan, and
 [`docs/deployment.md`](docs/deployment.md) for the runbook.
 
 ## Running the web app
@@ -106,6 +107,16 @@ about the schema: there is nowhere to put one. An account is a handle, a
 password and a recovery code that is shown exactly once. Passwords and recovery
 codes are hashed with Argon2id; device tokens are random and stored only as a
 SHA-256, so a database dump yields nothing replayable.
+
+It also holds **no understanding of the data it syncs**. A record is a
+collection name, an id and a JSON body the server never parses, so adding an
+entity to Android needs no server release. Every rule that requires knowing what
+a play or a deck is lives in the client.
+
+`GET /v1/account/export` emits the app's own `Backup` shape, so an export from
+the server restores into the app through the import path that already exists.
+That is deliberate: an account must never become a place data goes and cannot
+leave. `DELETE /v1/account` is real erasure, not a flag.
 
 ## Legal
 

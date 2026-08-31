@@ -65,6 +65,12 @@ func run(addr, dbPath string, log *slog.Logger) error {
 	defer stop()
 	go sweepUntil(ctx, server.limiter, 10*time.Minute)
 
+	// Tombstones and stored push responses expire. Doc 02 §5: a delete stays
+	// describable for 180 days, long enough that a phone left in a drawer over
+	// a summer still merges correctly, and the sweep raises the horizon a
+	// client is measured against.
+	go sweepRecords(ctx, store, log, 6*time.Hour)
+
 	errs := make(chan error, 1)
 	go func() {
 		log.Info("listening", "addr", addr, "db", dbPath, "build", server.build)
@@ -97,6 +103,26 @@ func sweepUntil(ctx context.Context, l *limiter, every time.Duration) {
 			return
 		case <-ticker.C:
 			l.sweep()
+		}
+	}
+}
+
+func sweepRecords(ctx context.Context, store *Store, log *slog.Logger, every time.Duration) {
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			tombstones, batches, err := store.Sweep(ctx, time.Now())
+			if err != nil {
+				log.Error("sweep", "error", err)
+				continue
+			}
+			if tombstones > 0 || batches > 0 {
+				log.Info("swept", "tombstones", tombstones, "batches", batches)
+			}
 		}
 	}
 }
