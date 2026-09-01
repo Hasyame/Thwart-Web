@@ -15,6 +15,13 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fold } from '../src/lib/campaign/engine.ts';
+import {
+  canPurchase,
+  choosableScenarios,
+  deal,
+  drawPool,
+  offersFor,
+} from '../src/lib/campaign/rules.ts';
 import { EMPTY_STATE } from '../src/lib/campaign/types.ts';
 
 let failures = 0;
@@ -220,6 +227,112 @@ const started = { id: 'e0', timestamp: 1, type: 'setup', templateId: 't', diffic
   ];
   const state = fold(template, shuffled);
   check('events fold in timestamp order', state.currentScenarioId === 's2' && state.counters.credits === 4);
+}
+
+// --- draw pools ---------------------------------------------------------------
+
+{
+  const draw = { id: 'd', from: ['a', 'b', 'c'], excluding: 'spent' };
+  const fresh = { ...EMPTY_STATE, heroes };
+  check('a fresh pool is everything', drawPool(draw, fresh).join(',') === 'a,b,c');
+
+  const partly = { ...fresh, cardLists: { spent: ['b'] } };
+  check('a spent card is out', drawPool(draw, partly).join(',') === 'a,c');
+
+  // Emptied by what has been spent, the pool refills: a scenario that needs a
+  // card must still get one, and an empty setup step reads as a bug.
+  const emptied = { ...fresh, cardLists: { spent: ['a', 'b', 'c'] } };
+  check('an emptied pool refills', drawPool(draw, emptied).join(',') === 'a,b,c');
+}
+
+{
+  // A per-hero pool is chosen by the marker that hero recorded, and does not
+  // refill: running out of role upgrades is the rule working.
+  const draw = {
+    id: 'role',
+    perHeroPoolList: 'roles',
+    perHeroPools: { tank: ['t1', 't2'], scout: ['s1'] },
+    excludingPerHero: 'taken',
+  };
+  const state = {
+    ...EMPTY_STATE,
+    heroes,
+    heroCardLists: { roles: { h1: ['tank'], h2: ['scout'] }, taken: { h1: ['t1'] } },
+  };
+  check('a per-hero pool follows its marker', drawPool(draw, state, 'h1').join(',') === 't2');
+  check('another hero gets their own', drawPool(draw, state, 'h2').join(',') === 's1');
+  // A hero with no marker gets nothing rather than somebody else's upgrade.
+  check('no marker means no pool', drawPool(draw, state, 'h3').length === 0);
+  // Spent to empty, and it stays empty.
+  const spent = { ...state, heroCardLists: { ...state.heroCardLists, taken: { h2: ['s1'] } } };
+  check('a per-hero pool does not refill', drawPool(draw, spent, 'h2').length === 0);
+}
+
+{
+  // Dealing takes without replacement, and never more than there is.
+  const pool = ['a', 'b', 'c'];
+  const drawn = deal(pool, 2, () => 0);
+  check('deals the asked-for count', drawn.length === 2);
+  check('without replacement', new Set(drawn).size === 2);
+  check('and never more than the pool holds', deal(pool, 9, () => 0).length === 3);
+  check('the pool is not mutated', pool.join(',') === 'a,b,c');
+}
+
+// --- what to play next ----------------------------------------------------------
+
+{
+  const branching = {
+    id: 'b', schemaVersion: 1, name: { en: 'B' },
+    finaleScenarioId: 'finale',
+    scenarios: [{ id: 's1' }, { id: 's2' }, { id: 'finale' }],
+  };
+  const fresh = { ...EMPTY_STATE, heroes };
+  check('the finale is held back', choosableScenarios(branching, fresh).map((s) => s.id).join(',') === 's1,s2');
+
+  // A loss does not settle a scenario: it may be attempted again.
+  const lost = {
+    ...fresh,
+    completedScenarios: [{ eventId: 'e', scenarioId: 's1', victory: false, answers: {}, elapsedMillis: 0, timestamp: 1 }],
+  };
+  check('a lost scenario is still offered', choosableScenarios(branching, lost).map((s) => s.id).join(',') === 's1,s2');
+
+  const won = {
+    ...fresh,
+    completedScenarios: [
+      { eventId: 'e', scenarioId: 's1', victory: true, answers: {}, elapsedMillis: 0, timestamp: 1 },
+      { eventId: 'f', scenarioId: 's2', victory: true, answers: {}, elapsedMillis: 0, timestamp: 2 },
+    ],
+  };
+  check('the finale arrives when nothing else is left', choosableScenarios(branching, won).map((s) => s.id).join(',') === 'finale');
+}
+
+// --- the market -----------------------------------------------------------------
+
+{
+  const shop = {
+    id: 'm', schemaVersion: 1, name: { en: 'M' },
+    market: { counterId: 'credits', entries: [{ cardCode: '01050', cost: 2 }, { cardCode: '01051', cost: 5 }] },
+  };
+  const state = { ...EMPTY_STATE, heroes, heroCounters: { credits: { h1: 3, h2: 9 } } };
+
+  const offers = offersFor(shop, state, 'h1');
+  check('an affordable card is offered', offers[0].affordable === true && offers[0].refusal === null);
+  check('an unaffordable one is refused', offers[1].refusal?.kind === 'not_enough_credits');
+
+  // One copy per campaign across the whole group, not per hero. The rule the
+  // app's own comment calls out as easy to get wrong.
+  const bought = {
+    ...state,
+    purchases: [{ eventId: 'p', heroId: 'h1', cardCode: '01050', cost: 2, cardListId: 'purchases' }],
+  };
+  const refusal = canPurchase(shop, bought, 'h2', '01050');
+  check('a card bought by one hero is closed to the group', refusal?.kind === 'already_owned_by_group', JSON.stringify(refusal));
+  check('and it names who has it', refusal?.heroId === 'h1');
+  // Even for somebody who can easily afford it.
+  check('wealth does not reopen it', offersFor(shop, bought, 'h2')[0].refusal?.kind === 'already_owned_by_group');
+
+  check('no market means nothing to buy', canPurchase({ id: 'x', schemaVersion: 1, name: {} }, state, 'h1', '01050')?.kind === 'no_market');
+  check('an unknown card is refused', canPurchase(shop, state, 'h1', '99999')?.kind === 'unknown_card');
 }
 
 // --- the real runs -------------------------------------------------------------
