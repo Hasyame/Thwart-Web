@@ -81,6 +81,7 @@ Other scripts:
 | `npm run test:paused` | Check a game put away comes back the same |
 | `npm run test:setup` | Check the scenario setup text is read correctly, in both languages |
 | `npm run test:campaign` | Check the campaign condition evaluator, and that the types cover every template |
+| `npm run test:engine` | Fold campaign logs; pass a backup path to fold your own runs |
 | `npm run campaigns` | Fetch the campaign templates from the Android repository |
 
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run

@@ -21,7 +21,8 @@
     "test:encounter": "node --experimental-strip-types scripts/test-encounter.mjs",
     "test:paused": "vite-node scripts/test-paused-game.mjs",
     "test:setup": "node --experimental-strip-types scripts/test-scheme-setup.mjs",
-    "test:campaign": "vite-node scripts/test-campaign-conditions.mjs"
+    "test:campaign": "vite-node scripts/test-campaign-conditions.mjs",
+    "test:engine": "vite-node scripts/test-campaign-engine.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

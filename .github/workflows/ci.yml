@@ -129,6 +129,13 @@ jobs:
         working-directory: web
         run: npm run test:campaign
 
+      # Without a backup this runs the synthetic half only, which is where the
+      # op-token regression guard lives. The real runs are folded locally,
+      # where somebody's private campaign log is allowed to be.
+      - name: Campaign engine
+        working-directory: web
+        run: npm run test:engine
+
 
   server:
     name: Server
