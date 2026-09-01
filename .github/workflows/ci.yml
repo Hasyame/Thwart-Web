@@ -98,7 +98,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: web/public/data
-          key: cards-${{ hashFiles('web/scripts/fetch-cards.mjs') }}
+          key: data-${{ hashFiles('web/scripts/fetch-cards.mjs', 'web/scripts/fetch-campaigns.mjs') }}
 
       - name: Fetch card data
         if: steps.cards.outputs.cache-hit != 'true' || inputs.fetchCardData
@@ -120,6 +120,14 @@ jobs:
       - name: Scenario setup text
         working-directory: web
         run: npm run test:setup
+
+      # The evaluator, plus a sweep asserting that every key in all nine
+      # templates is declared in the port. A key that is not declared is not a
+      # type error: it is silently dropped, and the rule it expressed stops
+      # happening several scenarios later.
+      - name: Campaign conditions
+        working-directory: web
+        run: npm run test:campaign
 
 
   server:

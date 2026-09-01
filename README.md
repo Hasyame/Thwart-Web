@@ -80,6 +80,8 @@ Other scripts:
 | `npm run test:encounter` | Check the ported tracker rules against the real card database |
 | `npm run test:paused` | Check a game put away comes back the same |
 | `npm run test:setup` | Check the scenario setup text is read correctly, in both languages |
+| `npm run test:campaign` | Check the campaign condition evaluator, and that the types cover every template |
+| `npm run campaigns` | Fetch the campaign templates from the Android repository |
 
 `npm run dev` and `npm run build` regenerate the theme for you, so `npm run
 theme` is only needed on its own after changing a seed colour.

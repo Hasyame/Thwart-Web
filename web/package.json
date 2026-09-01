@@ -6,7 +6,8 @@
   "description": "Web companion for Thwart, the Marvel Champions card game app.",
   "license": "MIT",
   "scripts": {
-    "data": "node scripts/fetch-cards.mjs",
+    "data": "node scripts/fetch-cards.mjs && node scripts/fetch-campaigns.mjs",
+    "campaigns": "node scripts/fetch-campaigns.mjs",
     "theme": "node scripts/generate-theme.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "prepare-assets": "npm run theme && npm run data",
@@ -19,7 +20,8 @@
     "test:settings": "vite-node scripts/test-backup-settings.mjs",
     "test:encounter": "node --experimental-strip-types scripts/test-encounter.mjs",
     "test:paused": "vite-node scripts/test-paused-game.mjs",
-    "test:setup": "node --experimental-strip-types scripts/test-scheme-setup.mjs"
+    "test:setup": "node --experimental-strip-types scripts/test-scheme-setup.mjs",
+    "test:campaign": "vite-node scripts/test-campaign-conditions.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
