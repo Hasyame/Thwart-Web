@@ -235,6 +235,33 @@ export interface Strings {
   readonly briefingNoSetup: string;
   readonly howDidItEnd: string;
   readonly timePlayedLabel: string;
+
+  // Campaigns you can actually play.
+  readonly startCampaign: string;
+  readonly campaign: string;
+  readonly campaignName: string;
+  readonly campaignRoster: string;
+  readonly campaignRosterNote: string;
+  readonly campaignWip: string;
+  readonly campaignsUnavailable: string;
+  readonly campaignDifficulty: (id: string) => string;
+  readonly campaignComplete: string;
+  readonly campaignLost: string;
+  readonly campaignSummary: (played: number, won: number) => string;
+  readonly campaignBetween: string;
+  readonly campaignContinue: string;
+  readonly campaignConcede: string;
+  readonly whatNext: string;
+  readonly drawCard: string;
+  readonly actionTaken: string;
+  readonly promptUnsupported: (type: string) => string;
+  readonly market: string;
+  readonly marketFor: string;
+  readonly creditsLeft: (n: number) => string;
+  readonly ownedBy: (name: string) => string;
+  readonly buy: string;
+  readonly refund: string;
+  readonly yes: string;
   readonly saveResult: string;
   readonly backToGame: string;
   readonly cancel: string;
@@ -541,6 +568,34 @@ const STRINGS: Record<Locale, Strings> = {
     briefingNoSetup: 'This scenario prints no setup on its main scheme; it is in the rules insert or the campaign book.',
     howDidItEnd: 'How did it end?',
     timePlayedLabel: 'Time played',
+
+    startCampaign: 'Start a campaign',
+    campaign: 'Campaign',
+    campaignName: 'Call it',
+    campaignRoster: 'Who is playing',
+    campaignRosterNote:
+      'The roster is fixed for the whole campaign. Each player keeps their own credits, scars and upgrades from the first scenario to the last, so this is asked once and never again.',
+    campaignWip: 'This campaign is marked unfinished by whoever wrote it. Parts of it may be missing.',
+    campaignsUnavailable: 'The campaigns could not be loaded.',
+    campaignDifficulty: (id) => (id === 'expert' ? 'Expert' : 'Standard'),
+    campaignComplete: 'Campaign complete',
+    campaignLost: 'The campaign is lost',
+    campaignSummary: (played, won) => `${played} scenarios played, ${won} won.`,
+    campaignBetween: 'Between scenarios',
+    campaignContinue: 'Carry on',
+    campaignConcede: 'Give up this campaign',
+    whatNext: 'What next?',
+    drawCard: 'Draw',
+    actionTaken: 'Done.',
+    promptUnsupported: (type) =>
+      `This build cannot ask this question yet (${type}). Record it by hand on the campaign sheet.`,
+    market: 'Market',
+    marketFor: 'Shopping for',
+    creditsLeft: (n) => `${n} credits`,
+    ownedBy: (name) => `taken by ${name}`,
+    buy: 'Buy',
+    refund: 'Give back',
+    yes: 'Yes',
     saveResult: 'Save the game',
     backToGame: 'Back to the game',
     cancel: 'Cancel',
@@ -855,6 +910,34 @@ const STRINGS: Record<Locale, Strings> = {
     briefingNoSetup: "Ce scénario n'imprime aucune mise en place sur sa manigance principale : elle se trouve dans le livret de règles ou le livret de campagne.",
     howDidItEnd: "Comment cela s'est-il terminé ?",
     timePlayedLabel: 'Temps de jeu',
+
+    startCampaign: 'Commencer une campagne',
+    campaign: 'Campagne',
+    campaignName: 'Nommez-la',
+    campaignRoster: 'Qui joue',
+    campaignRosterNote:
+      "L'équipe est fixée pour toute la campagne. Chaque joueur garde ses propres crédits, cicatrices et améliorations du premier scénario au dernier : la question est posée une fois et plus jamais.",
+    campaignWip: "Cette campagne est marquée inachevée par son auteur. Des passages peuvent manquer.",
+    campaignsUnavailable: "Les campagnes n'ont pas pu être chargées.",
+    campaignDifficulty: (id) => (id === 'expert' ? 'Expert' : 'Standard'),
+    campaignComplete: 'Campagne terminée',
+    campaignLost: 'La campagne est perdue',
+    campaignSummary: (played, won) => `${played} scénarios joués, ${won} gagnés.`,
+    campaignBetween: 'Entre deux scénarios',
+    campaignContinue: 'Continuer',
+    campaignConcede: 'Abandonner cette campagne',
+    whatNext: 'Et maintenant ?',
+    drawCard: 'Tirer',
+    actionTaken: 'Fait.',
+    promptUnsupported: (type) =>
+      `Cette version ne sait pas encore poser cette question (${type}). Notez-la à la main sur la feuille de campagne.`,
+    market: 'Marché',
+    marketFor: 'Achats pour',
+    creditsLeft: (n) => `${n} crédits`,
+    ownedBy: (name) => `pris par ${name}`,
+    buy: 'Acheter',
+    refund: 'Rendre',
+    yes: 'Oui',
     saveResult: 'Enregistrer la partie',
     backToGame: 'Revenir à la partie',
     cancel: 'Annuler',

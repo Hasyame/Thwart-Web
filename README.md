@@ -30,7 +30,12 @@ made public once the account server has run somewhere other than a laptop.
   everything stood, and picked up later.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
-- **Campaigns.** Read-only progress for campaigns imported from the app.
+- **Campaigns.** Playable. Start one of the nine campaigns, pick who is at the
+  table, read each scenario's setup as the campaign changes it, record what
+  happened, spend credits in the market, and let the branches decide what comes
+  next. A run is an append-only log and everything on screen is folded from it,
+  so undo is an appended revocation rather than an unpicked change, and a
+  campaign corrected on the app reads correctly here on the next build.
 
 Until there is an account to sync with, the app's **backup file** is the bridge:
 export from your phone, import here, and export back. The records are stored in

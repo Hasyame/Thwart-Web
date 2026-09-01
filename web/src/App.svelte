@@ -275,7 +275,7 @@
   {:else if route.name === 'stats'}
     <StatsPage {t} {index} {storageOk} />
   {:else if route.name === 'campaigns'}
-    <CampaignsPage {t} {uiLocale} {storageOk} />
+    <CampaignsPage {t} {uiLocale} {index} {storageOk} />
   {:else if route.name === 'rules'}
     <RulesPage {t} {cardLocale} />
   {:else if route.name === 'decks'}

@@ -6,14 +6,29 @@
   import { db } from '../lib/db';
   import { foldCampaign, type CampaignProgress } from '../lib/campaigns';
   import { formatElapsed } from '../lib/session.svelte';
+  import type { IndexRow } from '../lib/types';
+  import type { SavedDeck } from '../lib/records';
+  import StartCampaign from './StartCampaign.svelte';
+  import CampaignRunView from './CampaignRun.svelte';
 
   interface Props {
     t: Strings;
     uiLocale: Locale;
+    /** For turning a template's card codes into card names. */
+    index: readonly IndexRow[];
     storageOk: boolean;
   }
 
-  const { t, uiLocale, storageOk }: Props = $props();
+  const { t, uiLocale, index, storageOk }: Props = $props();
+
+  /** Nothing, the start form, or one run being played. */
+  let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'run'; id: string }>({
+    kind: 'list',
+  });
+
+  const decks = $state<{ saved: readonly SavedDeck[] }>({ saved: [] });
+
+  const cardNames = $derived(new Map(index.map((row) => [row.code, row.name] as const)));
 
   const store = $state<{
     runs: readonly CampaignRun[];
@@ -33,8 +48,16 @@
         (rows) => (store.events = rows),
       ),
       liveQuery(() => db.plays.toArray()).subscribe((rows) => (store.plays = rows)),
+      liveQuery(() => db.decks.toArray()).subscribe((rows) => (decks.saved = rows)),
     ];
     return () => subs.forEach((s) => s.unsubscribe());
+  });
+
+  const openRun = $derived.by(() => {
+    const current = view;
+    return current.kind === 'run'
+      ? (store.runs.find((run) => run.id === current.id) ?? null)
+      : null;
   });
 
   const eventsByRun = $derived.by(() => {
@@ -66,6 +89,30 @@
 
 <section>
   <h1>{t.campaignsTitle}</h1>
+
+  {#if storageOk && view.kind === 'list'}
+    <button class="start-button" type="button" onclick={() => (view = { kind: 'start' })}>
+      {t.startCampaign}
+    </button>
+  {/if}
+
+  {#if view.kind === 'start'}
+    <StartCampaign
+      {t}
+      {uiLocale}
+      decks={decks.saved}
+      onStarted={(id) => (view = { kind: 'run', id })}
+      onCancel={() => (view = { kind: 'list' })}
+    />
+  {:else if view.kind === 'run' && openRun !== null}
+    <CampaignRunView
+      {t}
+      {uiLocale}
+      run={openRun}
+      {cardNames}
+      onBack={() => (view = { kind: 'list' })}
+    />
+  {:else}
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
@@ -153,9 +200,22 @@
       {/each}
     </ul>
   {/if}
+  {/if}
 </section>
 
 <style>
+  .start-button {
+    display: block;
+    margin: var(--space-4) 0;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-primary);
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
   h1 {
     font-size: 1.6rem;
     margin: var(--space-5) 0 var(--space-3);
