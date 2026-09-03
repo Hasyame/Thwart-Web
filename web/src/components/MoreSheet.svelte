@@ -173,12 +173,26 @@
     background: var(--scrim);
   }
 
+  /*
+   * The same inset as every panel in the app, not less.
+   *
+   * This was `--space-4` where a panel is `--space-4 --space-5`, so the sheet
+   * ran its text and its fields nearer the edge of the phone than anything
+   * else on screen — and being full-bleed, there was no card edge to soften it.
+   *
+   * The insets matter on both sides here. A phone held in landscape puts the
+   * notch over one of them, and the sheet is the full width of the screen.
+   * `max()` rather than addition, because the inset is zero in portrait and
+   * adding it would leave the ordinary case with nothing.
+   */
   .sheet {
     display: grid;
     gap: var(--space-5);
-    padding: var(--space-4);
-    /* Clear of the home indicator, which sits over the bottom of the sheet. */
-    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+    padding-block: var(--space-5)
+      /* Clear of the home indicator, which sits over the bottom of the sheet. */
+      calc(var(--space-6) + env(safe-area-inset-bottom));
+    padding-inline: max(var(--space-5), env(safe-area-inset-left))
+      max(var(--space-5), env(safe-area-inset-right));
   }
 
   header {
@@ -198,12 +212,21 @@
     gap: var(--space-1);
   }
 
+  /*
+   * Pulled back out to the sheet's own inset.
+   *
+   * A row needs padding for its hover and selected states to have somewhere to
+   * sit, but that padding would otherwise indent the label past the headings
+   * above and below it. The negative margin cancels it, so the text lines up
+   * with everything else in the sheet and only the highlight extends.
+   */
   nav a {
     display: flex;
     align-items: center;
     gap: var(--space-3);
     min-height: var(--tap-min);
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-2);
+    margin-inline: calc(var(--space-2) * -1);
     border-radius: var(--radius-sm);
     color: inherit;
     text-decoration: none;
