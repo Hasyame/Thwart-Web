@@ -1,7 +1,8 @@
 @import './tokens.css';
 
 /*
- * Base styles.
+ * Base styles, and the handful of primitives a web app needs to behave like an
+ * app on a phone.
  *
  * Every value here reads a token from tokens.css. Nothing in this file, or in
  * any component, may hold a raw colour, size or duration.
@@ -16,34 +17,65 @@
 html {
   /* Tells the browser which scrollbar and form-control palette to paint. */
   color-scheme: light dark;
+
+  /*
+   * Safari on iOS enlarges text when the phone is turned to landscape unless
+   * this is set, which silently breaks a layout that was measured in portrait.
+   * It does not stop a reader zooming — pinch still works, and disabling that
+   * would fail WCAG 1.4.4.
+   */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.55;
-  background: var(--md-background);
-  color: var(--md-on-background);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
+
+  /*
+   * The grey flash iOS paints over anything tappable, removed in favour of the
+   * states the components draw themselves. It is a rectangle that ignores
+   * border radius, so on a pill button it flashes square corners.
+   */
+  -webkit-tap-highlight-color: transparent;
+
+  /*
+   * Stops a scroll that reaches the end of the page from becoming the
+   * browser's pull-to-refresh or back-swipe. Mid-game, a stray thumb should not
+   * reload the tracker.
+   */
+  overscroll-behavior-y: contain;
 }
 
 h1,
 h2,
 h3 {
-  line-height: 1.2;
+  line-height: var(--leading-tight);
   margin: 0;
+  letter-spacing: var(--tracking-tight);
 }
 
 a {
-  color: var(--md-primary);
+  color: var(--accent);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
+/*
+ * `textarea` belongs in this list.
+ *
+ * Without it the notes field kept the browser's own default, about 13px, and
+ * iOS zooms the page whenever a field under 16px takes focus — which throws
+ * the reader out of whatever they were doing and does not zoom back.
+ */
 button,
 select,
-input {
+input,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -51,35 +83,64 @@ input {
 /* A visible focus ring everywhere, because this is a keyboard-navigable list
    of four thousand things and losing the cursor in it is miserable. */
 :focus-visible {
-  outline: 2px solid var(--md-primary);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
 }
 
+/*
+ * Motion is a preference, and one people set for real reasons.
+ *
+ * Zeroing the tokens is most of it; this catches anything that animates
+ * without reading them, including a library or a browser default.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * The page column.
+ *
+ * The horizontal padding takes the safe-area inset into account so that a
+ * phone held in landscape does not run text under the notch. `max()` rather
+ * than addition: the inset is zero in portrait and on every desktop, and
+ * adding it would leave the normal case with no padding at all.
+ */
 .page {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 0 var(--space-4) var(--space-6);
+  padding-inline: max(var(--space-4), env(safe-area-inset-left))
+    max(var(--space-4), env(safe-area-inset-right));
+  padding-bottom: var(--space-6);
 }
 
 /*
  * A raised panel.
  *
- * Takes `surface-container` rather than `surface`, which is what the depth
- * ladder is for: in the dark theme the page is NightBase and this is
- * NightRaised, two rungs up, so a row reads as sitting on the page rather than
- * being painted on it. Theme.kt spells the ladder out and says why — with only
- * two tones everything landed at the same depth and the screen read flat.
+ * Depth comes from three things together, because in a dark scheme no one of
+ * them is enough: a surface a step above the page, a hairline that is actually
+ * visible against it, and a shadow. The tone step alone measures about 1.1:1 —
+ * that is what every dark interface uses, since a larger jump reads as a
+ * stripe rather than as height — so a panel without the hairline is a panel
+ * nobody can see the edge of.
  */
 .surface {
-  background: var(--md-surface-container);
-  color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant);
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
 }
 
 .muted {
-  color: var(--md-on-surface-variant);
+  color: var(--text-muted);
 }
 
 .visually-hidden {

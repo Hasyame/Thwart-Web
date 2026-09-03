@@ -103,6 +103,17 @@
     applyTheme(theme);
   });
 
+  /*
+   * The document's language, which index.html can only guess at.
+   *
+   * WCAG 2.2 SC 3.1.1 asks for it, and a screen reader honours it: left at the
+   * static "en" a French interface was read aloud with an English voice, which
+   * makes it close to unusable rather than merely wrong.
+   */
+  $effect(() => {
+    document.documentElement.lang = uiLocale;
+  });
+
   /**
    * Loads the index and pack list for the current card language.
    *

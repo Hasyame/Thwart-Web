@@ -2,7 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      `viewport-fit=cover` is load-bearing on iOS: without it every
+      env(safe-area-inset-*) resolves to zero, so the padding that keeps
+      content clear of the Dynamic Island and the home indicator does nothing
+      at all. It has to be here, not in the stylesheet.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>Thwart, a Marvel Champions companion</title>
     <meta
       name="description"
@@ -11,7 +20,13 @@
     <meta name="color-scheme" content="light dark" />
     <!-- The app's own mark. See web/public/icon.svg. -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <meta name="theme-color" content="#E30022" />
+<!--
+      The browser chrome and, on iOS, the area behind the status bar. It
+      follows the surface the page actually paints, so an installed app does
+      not sit a red band above a near-black screen.
+    -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F4F1EF" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0D0B0C" />
 
     <!--
       Installable on a phone. Android reads the manifest; iOS reads almost none
@@ -22,6 +37,11 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!--
+      `black-translucent` puts the web view under the status bar, which is what
+      makes the app look native. It only works with the safe-area padding
+      above: without both, the first line of every screen sits under the clock.
+    -->
     <meta name="apple-mobile-web-app-title" content="Thwart" />
     <meta name="mobile-web-app-capable" content="yes" />
     <!--
