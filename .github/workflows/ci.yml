@@ -112,6 +112,19 @@ jobs:
         working-directory: web
         run: npm run data
 
+      # The campaigns, always, cache hit or not.
+      #
+      # The cache key is the fetching scripts, which is right for the card
+      # database — 17.7 MB from a volunteer-run site that moves in weeks. It is
+      # wrong for the campaigns: those come from the Android repository, change
+      # when somebody edits a template there, and the script that fetches them
+      # does not change with them. A cached copy therefore went stale
+      # indefinitely, and the tracker tests were asserting against data this
+      # runner did not have. Nine files and a couple of seconds.
+      - name: Fetch campaign templates
+        working-directory: web
+        run: npm run campaigns
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

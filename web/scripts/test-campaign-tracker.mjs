@@ -45,7 +45,17 @@ if (!existsSync(FILE)) {
 }
 const fne = JSON.parse(readFileSync(FILE, 'utf8'));
 
+/*
+ * Everything below reads the template, so a copy without the block is a
+ * failure and not something to skip: it means the campaign data this runner
+ * has is older than the code, and the tests would otherwise pass by testing
+ * nothing.
+ */
 check('Fear No Evil carries its own numbers', fne.tracker != null);
+if (fne.tracker == null) {
+  console.error('  fne.json has no tracker block; run `npm run campaigns`.');
+  process.exit(1);
+}
 
 const heroes = [
   { id: 'h1', heroCardCode: '01001a', name: 'Peter' },
