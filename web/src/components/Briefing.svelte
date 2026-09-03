@@ -141,7 +141,7 @@
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin-bottom: var(--space-1);
   }
 
@@ -153,7 +153,7 @@
 
   dt {
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: var(--text-base);
   }
 
   dd {
@@ -186,7 +186,7 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 

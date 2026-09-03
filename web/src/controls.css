@@ -23,6 +23,25 @@
  *   which may be larger than the thing that looks like the control.
  */
 
+/*
+ * The tap floor, applied to every control rather than to a class.
+ *
+ * A class only reaches the controls that have been migrated to it, and the
+ * floor is the one thing that has to hold everywhere at once: it is an
+ * accessibility minimum, not a style. Twenty-six components declare their own
+ * padding for these elements and none of them declared a height.
+ *
+ * Inline buttons are untouched, because `min-height` does not apply to a
+ * non-replaced inline box — which is what keeps a card reference inside a
+ * sentence from becoming 44px tall and breaking the line.
+ */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+select,
+textarea,
+button {
+  min-height: var(--tap-min);
+}
+
 /* ==== Buttons ============================================================ */
 
 .btn {

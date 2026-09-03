@@ -85,10 +85,10 @@
 
 <style>
   dialog {
-    border: 1px solid var(--md-outline-variant);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-md);
-    background: var(--md-surface-container);
-    color: var(--md-on-surface);
+    background: var(--surface-1);
+    color: var(--text);
     padding: 0;
     width: min(60rem, calc(100vw - 2rem));
     max-height: calc(100vh - 2rem);
@@ -115,10 +115,10 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 50%;
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
+    border: 1px solid var(--border);
+    background: var(--surface-1);
     color: inherit;
-    font-size: 1.3rem;
+    font-size: var(--text-xl);
     line-height: 1;
     cursor: pointer;
     z-index: 1;

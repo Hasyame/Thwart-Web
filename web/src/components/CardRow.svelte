@@ -71,9 +71,9 @@
   }
 
   .row:hover {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
     /* One more rung up the ladder, so hover is a lift rather than a tint. */
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   .faction {
@@ -123,13 +123,13 @@
   }
 
   .unique {
-    color: var(--md-secondary);
+    color: var(--text);
     font-size: 0.8em;
   }
 
   .subname,
   .meta {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -143,8 +143,8 @@
     height: 2rem;
     padding: 0 var(--space-1);
     border-radius: 50%;
-    background: var(--md-secondary-container);
-    color: var(--md-on-secondary-container);
+    background: var(--surface-3);
+    color: var(--text);
     font-weight: 700;
   }
 </style>

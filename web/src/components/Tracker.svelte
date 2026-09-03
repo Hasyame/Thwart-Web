@@ -187,8 +187,8 @@
           <!-- Mansion Attack draws a room out of four, Kang a realm out of
                four. Kang's realms share a threat limit but start on different
                threat, so this is not cosmetic. -->
-          <label class="field">
-            <span class="muted">{t.whichScheme}</span>
+          <label class="field-group">
+            <span class="field-label">{t.whichScheme}</span>
             <select
               value={encounter.progress.schemeOption}
               onchange={(e) => {
@@ -264,7 +264,7 @@
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
   }
 
   .name {
@@ -273,14 +273,14 @@
   }
 
   .what {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: var(--space-1) 0 var(--space-2);
   }
 
   .bar {
     height: 10px;
     border-radius: 999px;
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
     overflow: hidden;
   }
 
@@ -291,11 +291,11 @@
   }
 
   .bar.villain span {
-    background: var(--md-villain, var(--md-error));
+    background: var(--danger);
   }
 
   .bar.scheme span {
-    background: var(--md-scheme, var(--md-primary));
+    background: var(--accent);
   }
 
   .end-round {
@@ -303,15 +303,15 @@
     margin-top: var(--space-4);
     padding-block: var(--space-3);
     font-weight: 700;
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
   }
 
   .counter {
     margin-top: var(--space-4);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .reading {
@@ -322,7 +322,7 @@
   }
 
   .big {
-    font-size: 2rem;
+    font-size: var(--text-2xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -330,7 +330,7 @@
   /* The counter having reached the number is the thing somebody glances for
      across a table, so it changes colour rather than only reading 17/17. */
   .reading.done .big {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .steps {
@@ -347,7 +347,7 @@
 
   button {
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     padding: var(--space-1) var(--space-3);
@@ -355,7 +355,7 @@
   }
 
   button:hover {
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   .advance {
@@ -363,31 +363,31 @@
   }
 
   .advance.ready {
-    border-color: var(--md-primary);
-    color: var(--md-primary);
+    border-color: var(--accent);
+    color: var(--accent);
     font-weight: 600;
   }
 
-  .field,
+  .field-group,
   .starred {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     margin: var(--space-2) 0;
     max-width: 20rem;
   }
 
   select,
   input {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
+    background: var(--surface-1);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
     margin-top: var(--space-3);
   }

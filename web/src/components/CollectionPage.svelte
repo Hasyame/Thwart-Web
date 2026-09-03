@@ -245,7 +245,7 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-2);
   }
 
@@ -257,25 +257,25 @@
     display: flex;
     align-items: baseline;
     gap: var(--space-3);
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     text-transform: none;
     letter-spacing: 0;
-    color: var(--md-on-surface);
-    border-bottom: 2px solid var(--md-outline-variant);
+    color: var(--text);
+    border-bottom: 2px solid var(--hairline);
     padding-bottom: var(--space-2);
     margin: 0;
   }
 
   .wave-count {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 400;
   }
 
   h2 {
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: var(--space-4) 0 var(--space-2);
   }
 
@@ -313,7 +313,7 @@
   }
 
   .pack.owned {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .pack-row {
@@ -335,7 +335,7 @@
     flex: 0 0 auto;
     width: 1.1rem;
     height: 1.1rem;
-    accent-color: var(--md-primary);
+    accent-color: var(--accent);
   }
 
   .pack-name {
@@ -353,33 +353,33 @@
     width: 3.2rem;
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
   }
 
   .expand {
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .expand:hover {
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   .contents {
     margin-top: var(--space-3);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .contents-hint {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: 0;
     max-width: var(--prose-max);
   }

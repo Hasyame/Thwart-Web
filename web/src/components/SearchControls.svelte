@@ -135,14 +135,14 @@
     width: 100%;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    font-size: 1.05rem;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
+    font-size: var(--text-lg);
   }
 
   .search input:focus-visible {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .filters {
@@ -155,8 +155,8 @@
     flex: 1 1 12rem;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
   }
 </style>

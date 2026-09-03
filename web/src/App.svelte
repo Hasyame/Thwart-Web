@@ -436,19 +436,19 @@
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
     border: 0;
-    background: var(--md-primary);
-    color: var(--md-on-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
     cursor: pointer;
   }
 
   .detail-text {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     word-break: break-word;
   }
 
   .count {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: 0 0 var(--space-3);
   }
 
@@ -470,10 +470,10 @@
   }
 
   footer {
-    border-top: 1px solid var(--md-outline-variant, var(--md-outline));
+    border-top: 1px solid var(--hairline);
     padding-top: var(--space-4);
     margin-top: var(--space-6);
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .legal {

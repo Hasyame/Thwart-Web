@@ -117,7 +117,7 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);
   }
 
@@ -132,14 +132,14 @@
     max-width: 40rem;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    font-size: 1.05rem;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
+    font-size: var(--text-lg);
   }
 
   .count {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: var(--space-3) 0;
   }
 
@@ -157,7 +157,7 @@
   }
 
   .entry.open {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .term {
@@ -173,16 +173,16 @@
     padding: var(--space-3) var(--space-4);
     cursor: pointer;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--text-base);
   }
 
   .term:hover {
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   .chevron {
-    color: var(--md-on-surface-variant);
-    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-size: var(--text-lg);
     line-height: 1;
   }
 
@@ -202,14 +202,14 @@
    */
   .line[data-depth='1'] {
     padding-inline-start: var(--space-4);
-    border-inline-start: 2px solid var(--md-outline-variant);
+    border-inline-start: 2px solid var(--hairline);
   }
 
   .line[data-depth='2'] {
     padding-inline-start: var(--space-6);
-    border-inline-start: 2px solid var(--md-secondary);
-    color: var(--md-on-surface-variant);
-    font-size: 0.95rem;
+    border-inline-start: 2px solid var(--text);
+    color: var(--text-muted);
+    font-size: var(--text-base);
   }
 
   /*
@@ -220,8 +220,8 @@
   .credit {
     margin: 0 0 var(--space-4);
     padding-inline-start: var(--space-3);
-    border-inline-start: 3px solid var(--md-secondary);
-    font-size: 0.9rem;
+    border-inline-start: 3px solid var(--text);
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 

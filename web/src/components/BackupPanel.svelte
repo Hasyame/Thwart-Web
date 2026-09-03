@@ -169,7 +169,7 @@
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin-bottom: var(--space-1);
   }
 
@@ -183,14 +183,14 @@
   button {
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
   }
 
   button:hover:not(:disabled) {
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   button:disabled {
@@ -199,20 +199,20 @@
   }
 
   button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
   }
 
   button.primary:hover:not(:disabled) {
-    background: var(--md-primary);
+    background: var(--accent);
     filter: brightness(1.08);
   }
 
   .confirm {
     margin-top: var(--space-4);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .counts {
@@ -221,18 +221,18 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
   .error {
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
   }
 
   .done {
     margin-top: var(--space-3);
-    color: var(--md-primary);
+    color: var(--accent);
     font-weight: 600;
   }
 </style>

@@ -84,7 +84,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--space-0-5);
 
     min-height: var(--tap-min);
     padding: var(--space-2) var(--space-1);
@@ -108,7 +108,7 @@
   }
 
   .glyph {
-    font-size: 1.15rem;
+    font-size: var(--text-lg);
     line-height: 1;
     padding: 2px var(--space-3);
     border-radius: var(--radius-pill);

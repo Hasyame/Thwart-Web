@@ -60,8 +60,8 @@
     </div>
 
     {#if campaign.heroes.length > 1}
-      <label class="field">
-        <span class="muted">{t.campaignWhoIsBuying}</span>
+      <label class="field-group">
+        <span class="field-label">{t.campaignWhoIsBuying}</span>
         <select value={chosen} onchange={(e) => (heroId = e.currentTarget.value)}>
           {#each campaign.heroes as hero (hero.id)}
             <option value={hero.id}>{hero.name}</option>
@@ -114,21 +114,21 @@
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     max-width: 18rem;
     margin: var(--space-3) 0;
   }
 
   .credits {
     font-weight: 700;
-    color: var(--md-primary);
+    color: var(--accent);
     margin: 0;
   }
 
@@ -146,7 +146,7 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-2) 0;
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .offers li.taken {
@@ -165,21 +165,21 @@
   }
 
   .owner {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   button {
     padding: var(--space-1) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
   }
 
   button.buy:not(:disabled) {
-    border-color: var(--md-primary);
-    color: var(--md-primary);
+    border-color: var(--accent);
+    color: var(--accent);
     font-weight: 600;
   }
 
@@ -189,9 +189,9 @@
   }
 
   select {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
+    background: var(--surface-1);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
   }

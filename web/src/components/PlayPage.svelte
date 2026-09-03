@@ -357,8 +357,8 @@
     <p class="muted note">{t.playSetupNote}</p>
 
     <div class="setup surface">
-      <label class="field">
-        <span class="muted">{t.scenario}</span>
+      <label class="field-group">
+        <span class="field-label">{t.scenario}</span>
         <select
           value={session.current.scenarioCode}
           onchange={(e) => setScenario(e.currentTarget.value)}
@@ -370,8 +370,8 @@
         </select>
       </label>
 
-      <label class="field">
-        <span class="muted">{t.difficultyLabel}</span>
+      <label class="field-group">
+        <span class="field-label">{t.difficultyLabel}</span>
         <select
           value={session.current.difficulty}
           onchange={(e) => setDifficulty(e.currentTarget.value as DifficultyId)}
@@ -385,8 +385,8 @@
       {#if isExpert}
         <!-- An Expert set is played with a Standard one, so choosing Expert
              leaves a second question to answer. -->
-        <label class="field">
-          <span class="muted">{t.standardSetWith}</span>
+        <label class="field-group">
+          <span class="field-label">{t.standardSetWith}</span>
           <select
             value={session.current.standardSet ?? ''}
             onchange={(e) =>
@@ -413,8 +413,8 @@
         <!-- Seats are decks, so with no decks there is nothing to seat. -->
         <p class="muted note">{t.noDecksForPlay}</p>
       {:else}
-        <label class="field">
-          <span class="muted">{t.addDeck}</span>
+        <label class="field-group">
+          <span class="field-label">{t.addDeck}</span>
           <select
             value=""
             onchange={(e) => {
@@ -519,8 +519,8 @@
       <p class="muted note tap">{t.tapToCorrect}</p>
 
       {#if editingClock}
-        <label class="field">
-          <span class="muted">{t.correctTheClock}</span>
+        <label class="field-group">
+          <span class="field-label">{t.correctTheClock}</span>
           <input
             type="number"
             min="0"
@@ -577,8 +577,8 @@
       <p class="clock">{formatElapsed(elapsed)}</p>
       <p class="muted note">{t.timePlayedLabel}</p>
 
-      <label class="field">
-        <span class="muted">{t.victoryPoints}</span>
+      <label class="field-group">
+        <span class="field-label">{t.victoryPoints}</span>
         <input
           type="number"
           min="0"
@@ -587,8 +587,8 @@
           oninput={(e) => (victoryPoints = Number.parseInt(e.currentTarget.value, 10) || 0)}
         />
       </label>
-      <label class="field">
-        <span class="muted">{t.notes}</span>
+      <label class="field-group">
+        <span class="field-label">{t.notes}</span>
         <textarea rows="2" value={notes} oninput={(e) => (notes = e.currentTarget.value)}
         ></textarea>
       </label>
@@ -607,15 +607,15 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);
   }
 
   h2 {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: 0;
   }
 
@@ -627,7 +627,7 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
@@ -643,7 +643,7 @@
     gap: var(--space-3);
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
@@ -665,7 +665,7 @@
   }
 
   .seat-sub {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   select,
@@ -673,16 +673,16 @@
   textarea {
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
     font-family: inherit;
   }
 
   button {
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
@@ -694,15 +694,15 @@
   }
 
   button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
     font-weight: 700;
   }
 
   button.big {
     padding: var(--space-3) var(--space-6);
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin-top: var(--space-2);
   }
 
@@ -721,11 +721,11 @@
     align-items: center;
     gap: var(--space-2);
     cursor: pointer;
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
   }
 
   .tick input {
-    accent-color: var(--md-primary);
+    accent-color: var(--accent);
     width: 1rem;
     height: 1rem;
     flex: 0 0 auto;
@@ -733,13 +733,13 @@
 
   .tap {
     text-align: center;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
   }
 
   .scenario {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
-    color: var(--md-primary);
+    color: var(--accent);
     text-align: center;
   }
 
@@ -775,7 +775,7 @@
     margin: var(--space-4) auto 0;
     border: 0;
     background: none;
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
     cursor: pointer;
   }
@@ -789,7 +789,7 @@
     background: none;
     color: inherit;
     cursor: pointer;
-    font-size: 3.4rem;
+    font-size: var(--text-4xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     text-align: center;
@@ -798,7 +798,7 @@
   }
 
   .clock:hover {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .clock-actions,
@@ -813,7 +813,7 @@
 
 
   .ok {
-    color: var(--md-primary);
+    color: var(--accent);
     font-weight: 600;
   }
 </style>

@@ -98,12 +98,12 @@
        reads as prose with things to point at, not as a list of links. */
     text-decoration: underline dotted;
     text-underline-offset: 3px;
-    text-decoration-color: var(--md-primary);
+    text-decoration-color: var(--accent);
   }
 
   .ref:hover,
   .ref:focus-visible {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .plain {
@@ -118,7 +118,7 @@
     border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   .peek.above {

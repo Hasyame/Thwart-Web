@@ -745,11 +745,11 @@
   }
 
   h2 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
     margin-bottom: var(--space-2);
   }
@@ -770,28 +770,28 @@
   }
 
   .counter .name {
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
 
   .counter .value {
     display: block;
-    font-size: 1.8rem;
+    font-size: var(--text-2xl);
     font-variant-numeric: tabular-nums;
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .counter .of {
-    font-size: 1rem;
-    color: var(--md-on-surface-variant);
+    font-size: var(--text-base);
+    color: var(--text-muted);
   }
 
   .per-hero {
     list-style: none;
     padding: 0;
     margin: var(--space-1) 0 0;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .per-hero li {
@@ -801,25 +801,25 @@
   }
 
   .per-hero strong {
-    color: var(--md-primary);
+    color: var(--accent);
     font-variant-numeric: tabular-nums;
   }
 
   .verdict {
     text-align: center;
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
     margin: 0;
-    color: var(--md-error);
+    color: var(--danger);
   }
 
   .verdict.won {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .clock {
     text-align: center;
-    font-size: 2.6rem;
+    font-size: var(--text-3xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin: var(--space-2) 0;
@@ -854,16 +854,16 @@
   button {
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
   }
 
   button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
     font-weight: 700;
   }
 
@@ -874,12 +874,12 @@
     margin: var(--space-5) auto 0;
     border: 0;
     background: none;
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
   }
 
   .note {
-    font-size: 0.95rem;
+    font-size: var(--text-base);
     max-width: var(--prose-max);
   }
 </style>

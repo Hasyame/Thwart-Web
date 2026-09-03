@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import { DESTINATIONS, destinationOf, type NavTarget } from '../lib/nav';
+  import { DESTINATIONS, type NavTarget } from '../lib/nav';
   import Logo from './Logo.svelte';
 
   interface Props {
@@ -22,15 +22,6 @@
     onNavigate(name);
   }
 
-  /**
-   * What this screen is, said once.
-   *
-   * On a phone the tab bar shows where you are but not what you are looking
-   * at, and the page headings below repeat it; naming it here lets those go.
-   */
-  const title = $derived(
-    active === 'card' ? t.navCards : (destinationOf(active)?.label(t) ?? t.appName),
-  );
 </script>
 
 <!--
@@ -48,9 +39,6 @@
       <span class="wordmark">{t.appName}</span>
     </button>
 
-    <!-- Phones get this; the tab bar is showing them where they are. -->
-    <h1 class="where">{title}</h1>
-
     <nav aria-label={t.appName}>
       {#each DESTINATIONS as destination (destination.id)}
         <a
@@ -64,6 +52,8 @@
         </a>
       {/each}
     </nav>
+
+    <span class="spacer"></span>
 
     <button class="settings" type="button" onclick={onSettings} aria-label={t.settingsTitle}>
       <span aria-hidden="true">⚙</span>
@@ -111,22 +101,19 @@
     letter-spacing: var(--tracking-tight);
   }
 
-  .where {
-    flex: 1;
-    min-width: 0;
-    font-size: var(--text-base);
-    font-weight: var(--weight-semibold);
-    color: var(--text-muted);
-    text-align: end;
-    /* One line, and the tab bar says the same thing, so an over-long French
-       page name is trimmed rather than pushing the settings button away. */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
+  /*
+   * Nothing between the brand and the settings on a phone.
+   *
+   * The bar carried the page name for a while, which put it on screen twice:
+   * every page already opens with its own heading, and that one is allowed to
+   * wrap where a bar is not.
+   */
   nav {
     display: none;
+  }
+
+  .spacer {
+    flex: 1;
   }
 
   .settings {
@@ -152,7 +139,7 @@
    * a pointer expects them. Below this the tab bar has them.
    */
   @media (min-width: 48rem) {
-    .where {
+    .spacer {
       display: none;
     }
 
