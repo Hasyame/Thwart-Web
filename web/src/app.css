@@ -1,42 +1,11 @@
-@import './theme.generated.css';
+@import './tokens.css';
 
 /*
- * Base styles and the few tokens the generated palette does not cover.
+ * Base styles.
  *
- * Everything colour-related comes from `--md-*`, which is written by
- * scripts/generate-theme.mjs from the app's own seed colours. Nothing here
- * hard-codes a colour except the faction accents below, which are the game's
- * own and not ours to derive.
+ * Every value here reads a token from tokens.css. Nothing in this file, or in
+ * any component, may hold a raw colour, size or duration.
  */
-
-:root {
-  --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial,
-    sans-serif;
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.5rem;
-  --space-6: 2rem;
-
-  /*
-   * Wide, because the main view is a list of four thousand cards and a
-   * centred 68rem column on a large monitor wastes most of the screen.
-   * Running text is held narrower where it appears (--prose-max), since the
-   * argument for a short measure applies to prose, not to a results grid.
-   */
-  --page-max: 92rem;
-  --prose-max: 46rem;
-}
-
-/* The aspect colours are generated alongside the palette, straight from the
-   app's Color.kt. They are the game's own and carry meaning a player already
-   knows, so they are not ours to restyle — and not ours to guess at either. */
 
 *,
 *::before,

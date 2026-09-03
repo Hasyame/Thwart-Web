@@ -1,0 +1,332 @@
+/*
+ * The design tokens. One source of truth for colour, type, space, shape,
+ * elevation and motion; nothing else in the project may hold a raw value.
+ *
+ * ## Why this file is written by hand
+ *
+ * It replaces `scripts/generate-theme.mjs`, which transcribed the Android
+ * app's `Color.kt` role for role. That transcription was the right call while
+ * the two clients were meant to look alike, and it is recorded here because
+ * deleting a deliberate decision without saying so is how the next person
+ * repeats the work.
+ *
+ * It was dropped because the transcribed scheme could not meet the goals set
+ * for the web app, measured rather than felt:
+ *
+ *   - Primary red on a panel was **4.41:1**, under the 4.5 AA floor for body
+ *     text, so every link and every counter on a card failed.
+ *   - The five-step dark surface ladder measured **1.08:1** between the page
+ *     and a panel, which is no step at all; the panels were held apart by a
+ *     border that was itself **2.20:1**, under the 3:1 floor for a component
+ *     boundary. The screen read flat because it was flat.
+ *   - Justice as text was **2.14:1**.
+ *
+ * Two things are still inherited from the app and are not ours to invent: the
+ * faction hues, which carry meaning a player already knows, and the mark in
+ * `Logo.svelte`.
+ *
+ * ## The scheme
+ *
+ * Warm near-black surfaces, red as an accent only. Red is an action colour
+ * here, never a large field: a filled bar across the top of every screen was
+ * a third of a phone viewport and made everything under it harder to read.
+ *
+ * Every pairing the interface produces is checked against WCAG 2.2 AA — 4.5:1
+ * for body text, 3:1 for large text and for the boundary of an interactive
+ * component. The measured ratios are in the comments beside the tokens that
+ * are close to a threshold, so a future edit can see what it is spending.
+ *
+ * Three blocks, so the scheme survives all three states the reader can be in:
+ * an explicit light choice, an explicit dark choice, and the default of
+ * following the system. Light is the bare `:root`, so no colour has its only
+ * definition inside a media query.
+ */
+
+:root {
+  /* ==== Light ============================================================ */
+
+  /* Surfaces. The page is the tinted one and panels are white: raising a
+     surface towards the light is what reads as "nearer" on a light ground,
+     the opposite of the dark scheme below. */
+  --bg: #f4f1ef;
+  --surface-1: #ffffff;
+  --surface-2: #fbf8f6;
+  --surface-3: #f4efec;
+
+  /* Ink. */
+  --text: #1b1618;         /* 17.88:1 on surface-1 */
+  --text-muted: #5b5250;   /*  7.59:1 on surface-1 */
+  --text-faint: #776d6a;   /*  5.02:1 on surface-1, large text and icons only */
+
+  /* The accent. Darker than the brand red, which measured 4.41:1 on a panel
+     and could not carry a link. */
+  --accent: #c4001c;       /*  6.24:1 on surface-1 */
+  --accent-ink: #ffffff;   /*  6.24:1 on accent */
+  --accent-soft: #fbe4e3;  /*  accent on it: 5.15:1 */
+
+  /* Lines. `--hairline` separates surfaces and is decorative; `--border` is
+     the edge of something you can operate and clears 3:1 for that reason. */
+  --hairline: #e4ddd9;
+  --border: #8c817e;       /*  3.78:1 on surface-1 */
+
+  --gold: #8a6300;         /*  5.43:1 on surface-1 */
+  --danger: #c4001c;
+  --ok: #1f6e45;           /*  6.22:1 on surface-1 */
+
+  /* Depth, which on a light ground comes from shadow rather than tone. */
+  --shadow-1: 0 1px 2px rgb(60 40 35 / 10%);
+  --shadow-2: 0 8px 24px -8px rgb(60 40 35 / 22%);
+  --scrim: rgb(30 20 18 / 45%);
+
+  /* Faction colours as **text**: the printed hue with its luminance moved
+     until it is readable. Justice printed is 2.38:1 on white, which is not a
+     colour anybody can read a card name in. The printed hue is kept for the
+     swatch and the row stripe below, so the meaning is not lost. */
+  --faction-aggression: #a32a1e;
+  --faction-justice: #7a5b00;
+  --faction-leadership: #245a87;
+  --faction-protection: #1f6e45;
+  --faction-pool: #7b349a;
+  --faction-basic: #5e5e5e;
+  --faction-hero: #5b5250;
+  --faction-encounter: #5b5250;
+  --faction-campaign: #766c69;
+
+  /* The same colours as printed, for a stripe or a swatch — a block of colour
+     large enough that the hue is the message and no text sits on it. */
+  --ink-aggression: #c0392b;
+  --ink-justice: #d4a017;
+  --ink-leadership: #2e6da4;
+  --ink-protection: #3e8e5a;
+  --ink-pool: #8e44ad;
+  --ink-basic: #7a7a7a;
+  --ink-hero: #534342;
+  --ink-encounter: #554a47;
+  --ink-campaign: #5a4a48;
+
+  /* ==== Type ============================================================= */
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /*
+   * Nine steps, in place of the twenty-eight distinct sizes this replaces.
+   *
+   * `--text-lg` is the one with a job rather than a size: card and scenario
+   * names take it, so the thing somebody reads with the phone flat on the
+   * table is the largest thing in its row. Nothing goes below 12px.
+   */
+  --text-2xs: 0.75rem;   /* 12px — uppercase labels, the floor */
+  --text-xs: 0.8125rem;  /* 13px — meta lines */
+  --text-sm: 0.875rem;   /* 14px — secondary */
+  --text-base: 1rem;     /* 16px — body, and the minimum for any input: below
+                                   this Safari zooms the page on focus */
+  --text-lg: 1.125rem;   /* 18px — card and scenario names */
+  --text-xl: 1.375rem;   /* 22px — section titles */
+  --text-2xl: 1.75rem;   /* 28px — page titles */
+  --text-3xl: 2.5rem;    /* 40px — result figures */
+  --text-4xl: 3.5rem;    /* 56px — the clock, read across a table */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-body: 1.55;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-label: 0.06em;
+  --tracking-tight: -0.01em;
+
+  /* ==== Space ============================================================ */
+
+  /* A 4px scale. The middle six keep the names they already had, because the
+     six hundred usages of them across the components are correct and moving
+     them would be churn with no reader benefit. */
+  --space-0-5: 0.125rem; /* 2px */
+  --space-1: 0.25rem;    /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-5: 1.5rem;     /* 24px */
+  --space-6: 2rem;       /* 32px */
+  --space-7: 2.5rem;     /* 40px */
+  --space-8: 3rem;       /* 48px */
+
+  /* ==== Shape ============================================================ */
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* ==== Touch ============================================================ */
+
+  /* 44pt, the Apple HIG minimum. Every control that can be tapped takes it as
+     a floor, which is what stops a nav item rendering 30px tall. */
+  --tap-min: 44px;
+
+  /* ==== Motion =========================================================== */
+
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ==== Measure ========================================================== */
+
+  /* Wide, because the main view is a list of four thousand cards and a centred
+     column on a large monitor wastes most of the screen. Running text is held
+     narrower where it appears, since a short measure is an argument about
+     prose, not about a results grid. */
+  --page-max: 92rem;
+  --prose-max: 46rem;
+  --column-max: 56rem;
+}
+
+/*
+ * Dark.
+ *
+ * Surfaces climb towards the light in four steps. The steps themselves are
+ * about 1.10:1 apart, which is what every dark interface does — larger jumps
+ * read as stripes rather than as depth — so the separation a reader actually
+ * sees comes from the hairline at 1.42:1 and from the shadow, not from tone
+ * alone. That is the correction to a ladder that previously had five rungs
+ * and no visible difference between any of them.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d0b0c;
+    --surface-1: #1b1718;
+    --surface-2: #262122;
+    --surface-3: #332c2d;
+
+    --text: #f6f1ee;        /* 15.85:1 on surface-1 */
+    --text-muted: #bcb1ad;  /*  8.48:1 on surface-1 */
+    --text-faint: #8e827e;  /*  4.82:1 on surface-1, large text and icons only */
+
+    --accent: #ff6a57;      /*  6.30:1 on surface-1 */
+    --accent-ink: #2e0703;  /*  6.49:1 on accent */
+    --accent-soft: #48211c; /*  accent on it: 4.94:1 */
+
+    --hairline: #3a3233;
+    --border: #746a68;      /*  3.39:1 on surface-1, 3.03:1 on surface-2 */
+
+    --gold: #e9bc49;
+    --danger: #ff6a57;
+    --ok: #5fbe86;
+
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 55%);
+    --shadow-2: 0 6px 20px -6px rgb(0 0 0 / 70%);
+    --scrim: rgb(0 0 0 / 60%);
+
+    --faction-aggression: #f08573;
+    --faction-justice: #e0b341;
+    --faction-leadership: #7fb6e6;
+    --faction-protection: #69c592;
+    --faction-pool: #c592de;
+    --faction-basic: #b3b3b3;
+    --faction-hero: #bcb1ad;
+    --faction-encounter: #bcb1ad;
+    --faction-campaign: #928682;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0d0b0c;
+  --surface-1: #1b1718;
+  --surface-2: #262122;
+  --surface-3: #332c2d;
+
+  --text: #f6f1ee;
+  --text-muted: #bcb1ad;
+  --text-faint: #8e827e;
+
+  --accent: #ff6a57;
+  --accent-ink: #2e0703;
+  --accent-soft: #48211c;
+
+  --hairline: #3a3233;
+  --border: #746a68;
+
+  --gold: #e9bc49;
+  --danger: #ff6a57;
+  --ok: #5fbe86;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 55%);
+  --shadow-2: 0 6px 20px -6px rgb(0 0 0 / 70%);
+  --scrim: rgb(0 0 0 / 60%);
+
+  --faction-aggression: #f08573;
+  --faction-justice: #e0b341;
+  --faction-leadership: #7fb6e6;
+  --faction-protection: #69c592;
+  --faction-pool: #c592de;
+  --faction-basic: #b3b3b3;
+  --faction-hero: #bcb1ad;
+  --faction-encounter: #bcb1ad;
+  --faction-campaign: #928682;
+}
+
+/*
+ * ==== Compatibility ======================================================
+ *
+ * The Material role names the components are currently written against,
+ * pointed at the tokens above.
+ *
+ * Temporary and load-bearing: it is what lets the palette change in one
+ * commit without touching twenty-six components in the same breath, so each
+ * screen can be migrated and reviewed on its own. **Delete this block once no
+ * `--md-*` name is left in src/** — a grep for `--md-` is the check.
+ */
+:root {
+  --md-background: var(--bg);
+  --md-on-background: var(--text);
+  --md-surface: var(--surface-1);
+  --md-on-surface: var(--text);
+  --md-surface-variant: var(--surface-2);
+  --md-on-surface-variant: var(--text-muted);
+  --md-surface-container-lowest: var(--bg);
+  --md-surface-container-low: var(--surface-1);
+  --md-surface-container: var(--surface-1);
+  --md-surface-container-high: var(--surface-2);
+  --md-surface-container-highest: var(--surface-3);
+
+  --md-primary: var(--accent);
+  --md-on-primary: var(--accent-ink);
+  --md-primary-container: var(--accent-soft);
+  --md-on-primary-container: var(--accent);
+  --md-inverse-primary: var(--accent);
+
+  --md-secondary: var(--text);
+  --md-on-secondary: var(--surface-1);
+  --md-secondary-container: var(--surface-3);
+  --md-on-secondary-container: var(--text);
+  --md-tertiary: var(--text-muted);
+  --md-on-tertiary: var(--surface-1);
+  --md-tertiary-container: var(--surface-3);
+  --md-on-tertiary-container: var(--text);
+
+  --md-outline: var(--border);
+  --md-outline-variant: var(--hairline);
+
+  --md-error: var(--danger);
+  --md-on-error: var(--accent-ink);
+  --md-error-container: var(--accent-soft);
+  --md-on-error-container: var(--accent);
+
+  --md-scrim: var(--scrim);
+
+  /* The app bar was a filled red strip. It is a surface now, so these resolve
+     to the surface pair and the red is spent on actions instead. */
+  --md-heading-fill: var(--surface-1);
+  --md-heading-ink: var(--text);
+  --md-arc-gold: var(--gold);
+  --md-brass-gold: var(--gold);
+
+  /* Named by the tracker for the two bars it draws. */
+  --md-villain: var(--danger);
+  --md-scheme: var(--accent);
+}

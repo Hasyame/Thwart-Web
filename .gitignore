@@ -47,9 +47,6 @@ coverage/
 Thumbs.db
 *.swp
 
-# Generated from the seed colours by web/scripts/generate-theme.mjs.
-/web/src/theme.generated.css
-
 # PWA icons, rasterised from public/icon.svg by web/scripts/generate-icons.mjs.
 /web/public/icon-512.png
 /web/public/apple-touch-icon.png
