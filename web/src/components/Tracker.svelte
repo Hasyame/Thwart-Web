@@ -130,7 +130,7 @@
                decides it and nobody can look it up. -->
           <label class="starred">
             <span class="muted">{t.trackerStarred}</span>
-            <input
+            <input class="field"
               type="number"
               min="1"
               onchange={(e) => {
@@ -156,7 +156,7 @@
           <p class="muted what">{t.damageOnVillain}</p>
           <div class="steps">
             {#each STEPS as step (step)}
-              <button type="button" onclick={() => updateEncounter((c) => damaged(c, step))}>
+              <button class="btn" type="button" onclick={() => updateEncounter((c) => damaged(c, step))}>
                 {step > 0 ? `+${step}` : `−${-step}`}
               </button>
             {/each}
@@ -168,7 +168,7 @@
                something the table does, sometimes with a choice, and a counter
                that jumped ahead would describe a board that does not exist. -->
           <button
-            class="advance"
+            class="btn advance"
             class:ready={villainDefeated(encounter)}
             type="button"
             onclick={() => updateEncounter(villainAdvanced)}
@@ -187,9 +187,9 @@
           <!-- Mansion Attack draws a room out of four, Kang a realm out of
                four. Kang's realms share a threat limit but start on different
                threat, so this is not cosmetic. -->
-          <label class="field">
-            <span class="muted">{t.whichScheme}</span>
-            <select
+          <label class="field-group">
+            <span class="field-label">{t.whichScheme}</span>
+            <select class="field"
               value={encounter.progress.schemeOption}
               onchange={(e) => {
                 const option = Number.parseInt(e.currentTarget.value, 10);
@@ -206,7 +206,7 @@
         {#if limit === null}
           <label class="starred">
             <span class="muted">{t.trackerStarred}</span>
-            <input
+            <input class="field"
               type="number"
               min="1"
               onchange={(e) => {
@@ -229,7 +229,7 @@
           <p class="muted what">{t.threatOnScheme}</p>
           <div class="steps">
             {#each STEPS as step (step)}
-              <button type="button" onclick={() => updateEncounter((c) => threatened(c, step))}>
+              <button class="btn" type="button" onclick={() => updateEncounter((c) => threatened(c, step))}>
                 {step > 0 ? `+${step}` : `−${-step}`}
               </button>
             {/each}
@@ -238,7 +238,7 @@
 
         {#if !isFinalSchemeStage(encounter)}
           <button
-            class="advance"
+            class="btn advance"
             class:ready={schemeComplete(encounter)}
             type="button"
             onclick={() => updateEncounter(schemeAdvanced)}
@@ -249,7 +249,7 @@
       </div>
     {/if}
 
-    <button class="primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
+    <button class="btn btn--primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
       {t.endRound}
     </button>
 
@@ -264,7 +264,7 @@
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
   }
 
   .name {
@@ -273,14 +273,14 @@
   }
 
   .what {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: var(--space-1) 0 var(--space-2);
   }
 
   .bar {
     height: 10px;
     border-radius: 999px;
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
     overflow: hidden;
   }
 
@@ -291,11 +291,11 @@
   }
 
   .bar.villain span {
-    background: var(--md-villain, var(--md-error));
+    background: var(--danger);
   }
 
   .bar.scheme span {
-    background: var(--md-scheme, var(--md-primary));
+    background: var(--accent);
   }
 
   .end-round {
@@ -303,15 +303,15 @@
     margin-top: var(--space-4);
     padding-block: var(--space-3);
     font-weight: 700;
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
   }
 
   .counter {
     margin-top: var(--space-4);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .reading {
@@ -322,7 +322,7 @@
   }
 
   .big {
-    font-size: 2rem;
+    font-size: var(--text-2xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -330,7 +330,7 @@
   /* The counter having reached the number is the thing somebody glances for
      across a table, so it changes colour rather than only reading 17/17. */
   .reading.done .big {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .steps {
@@ -345,49 +345,27 @@
     font-variant-numeric: tabular-nums;
   }
 
-  button {
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    padding: var(--space-1) var(--space-3);
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: var(--md-surface-container-high);
-  }
-
   .advance {
     margin-top: var(--space-2);
   }
 
   .advance.ready {
-    border-color: var(--md-primary);
-    color: var(--md-primary);
+    border-color: var(--accent);
+    color: var(--accent);
     font-weight: 600;
   }
 
-  .field,
+  .field-group,
   .starred {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     margin: var(--space-2) 0;
     max-width: 20rem;
   }
 
-  select,
-  input {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-  }
-
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
     margin-top: var(--space-3);
   }

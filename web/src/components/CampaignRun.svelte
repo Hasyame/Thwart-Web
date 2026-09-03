@@ -547,7 +547,7 @@
     {/if}
 
     {#if page === 'lost'}
-      <section class="panel surface">
+      <section class="panel">
         <h3>{t.campaignLost}</h3>
         <p class="muted note">{t.campaignSummary(
           campaign.completedScenarios.length,
@@ -555,7 +555,7 @@
         )}</p>
       </section>
     {:else if page === 'finished'}
-      <section class="panel surface">
+      <section class="panel">
         <h3>{t.campaignComplete}</h3>
         <p class="note">{t.campaignFinishedMessage}</p>
         <p class="muted note">{t.campaignSummary(
@@ -581,7 +581,7 @@
         onBack={() => (override = null)}
       />
     {:else if page === 'result'}
-      <section class="panel surface">
+      <section class="panel">
         <p class="verdict" class:won={lastResult?.victory === true}>
           {lastResult?.victory === true ? t.campaignBravo : t.campaignDefeatRecorded}
         </p>
@@ -596,30 +596,30 @@
 
         <div class="actions">
           {#if canContinue}
-            <button class="primary" type="button" onclick={moveOn}>
+            <button class="btn btn--primary" type="button" onclick={moveOn}>
               {nextName === null || nextName === '' ? t.campaignContinue : t.campaignGoToNext(nextName)}
             </button>
           {/if}
           {#if lastResult?.victory === false}
             <!-- Same scenario, clock from zero. Nothing is appended: the defeat
                  stands in the log and the campaign has not moved past it. -->
-            <button type="button" onclick={() => (override = null)}>{t.campaignRetry}</button>
+            <button class="btn" type="button" onclick={() => (override = null)}>{t.campaignRetry}</button>
           {/if}
           {#if template.market != null}
-            <button type="button" onclick={() => (override = 'market')}>{t.market}</button>
+            <button class="btn" type="button" onclick={() => (override = 'market')}>{t.market}</button>
           {/if}
-          <button type="button" onclick={onBack}>{t.campaignTakeABreak}</button>
+          <button class="btn" type="button" onclick={onBack}>{t.campaignTakeABreak}</button>
         </div>
       </section>
     {:else if page === 'market'}
       <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
       <div class="actions">
-        <button class="primary" type="button" onclick={() => (override = null)}>
+        <button class="btn btn--primary" type="button" onclick={() => (override = null)}>
           {t.campaignDoneShopping}
         </button>
       </div>
     {:else if page === 'environment'}
-      <section class="panel surface">
+      <section class="panel">
         <h3>
           {campaign.environmentOffer.length === 1
             ? t.campaignEnvironmentLast
@@ -640,17 +640,17 @@
           {/each}
         </ul>
         <div class="actions">
-          <button class="primary" type="button" onclick={readEnvironments}>
+          <button class="btn btn--primary" type="button" onclick={readEnvironments}>
             {t.campaignContinue}
           </button>
         </div>
       </section>
     {:else if page === 'choice'}
-      <section class="panel surface">
+      <section class="panel">
         <h3>{t.campaignChooseScenario}</h3>
         <div class="actions">
           {#each choices as option (option.id)}
-            <button type="button" onclick={() => pick(option.id)}>
+            <button class="btn" type="button" onclick={() => pick(option.id)}>
               {label(option.name) || option.id}
             </button>
           {/each}
@@ -698,10 +698,10 @@
         <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
       {/if}
     {:else}
-      <section class="panel surface">
+      <section class="panel">
         <h3>{t.campaignBetween}</h3>
         <div class="actions">
-          <button class="primary" type="button" onclick={moveOn}>{t.campaignContinue}</button>
+          <button class="btn btn--primary" type="button" onclick={moveOn}>{t.campaignContinue}</button>
         </div>
       </section>
       {#if template.market != null}
@@ -745,17 +745,16 @@
   }
 
   h2 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
     margin-bottom: var(--space-2);
   }
 
   .panel {
-    padding: var(--space-4) var(--space-5);
     margin: var(--space-3) 0;
   }
 
@@ -770,28 +769,28 @@
   }
 
   .counter .name {
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
 
   .counter .value {
     display: block;
-    font-size: 1.8rem;
+    font-size: var(--text-2xl);
     font-variant-numeric: tabular-nums;
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .counter .of {
-    font-size: 1rem;
-    color: var(--md-on-surface-variant);
+    font-size: var(--text-base);
+    color: var(--text-muted);
   }
 
   .per-hero {
     list-style: none;
     padding: 0;
     margin: var(--space-1) 0 0;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .per-hero li {
@@ -801,25 +800,25 @@
   }
 
   .per-hero strong {
-    color: var(--md-primary);
+    color: var(--accent);
     font-variant-numeric: tabular-nums;
   }
 
   .verdict {
     text-align: center;
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
     margin: 0;
-    color: var(--md-error);
+    color: var(--danger);
   }
 
   .verdict.won {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .clock {
     text-align: center;
-    font-size: 2.6rem;
+    font-size: var(--text-3xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin: var(--space-2) 0;
@@ -851,22 +850,6 @@
     margin-top: var(--space-4);
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
-    font-weight: 700;
-  }
-
   /* A text link rather than a button: giving up a campaign is not a thing to
      reach for by accident. */
   .forget {
@@ -874,12 +857,12 @@
     margin: var(--space-5) auto 0;
     border: 0;
     background: none;
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
   }
 
   .note {
-    font-size: 0.95rem;
+    font-size: var(--text-base);
     max-width: var(--prose-max);
   }
 </style>

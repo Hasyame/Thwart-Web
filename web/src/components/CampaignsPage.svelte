@@ -228,15 +228,15 @@
     margin: var(--space-4) 0;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-primary);
-    background: var(--md-primary);
-    color: var(--md-on-primary);
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
     font-weight: 700;
     cursor: pointer;
   }
 
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);
   }
 
@@ -247,7 +247,7 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
@@ -264,7 +264,7 @@
   }
 
   .run.open {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .run-head {
@@ -281,18 +281,18 @@
 
   .run-name {
     font-weight: 600;
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
   }
 
   .run-sub {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .progress {
     display: block;
     height: 0.5rem;
     border-radius: var(--radius-sm);
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
     overflow: hidden;
     margin-top: var(--space-1);
   }
@@ -300,13 +300,13 @@
   .fill {
     display: block;
     height: 100%;
-    background: var(--md-primary);
+    background: var(--accent);
   }
 
   .detail {
     margin-top: var(--space-3);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .scenarios {
@@ -325,23 +325,23 @@
 
   .mark {
     width: 1rem;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   .scenarios li.won .mark {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .scenarios li.attempted:not(.won) .mark {
-    color: var(--md-error);
+    color: var(--danger);
   }
 
   .scenarios li:not(.attempted) .scenario-name {
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   .attempts {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .open-run {
@@ -349,9 +349,9 @@
     margin: var(--space-3) 0 var(--space-2);
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-primary);
-    background: var(--md-primary);
-    color: var(--md-on-primary);
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
     font-weight: 700;
     cursor: pointer;
   }

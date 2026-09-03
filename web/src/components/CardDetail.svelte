@@ -174,11 +174,11 @@
   }
 
   h1 {
-    font-size: 1.8rem;
+    font-size: var(--text-2xl);
   }
 
   .unique {
-    color: var(--md-secondary);
+    color: var(--text);
     font-size: 0.7em;
     vertical-align: middle;
   }
@@ -195,26 +195,26 @@
     margin-top: var(--space-3);
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .favourite:hover {
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
   }
 
   .favourite.on {
-    border-color: var(--md-primary);
-    color: var(--md-primary);
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .traits {
     font-style: italic;
     font-weight: 600;
-    color: var(--md-secondary);
+    color: var(--text);
     margin: var(--space-4) 0 0;
   }
 
@@ -226,11 +226,7 @@
   }
 
   .chip {
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-lg);
-    background: var(--md-surface-variant);
-    color: var(--md-on-surface-variant);
-    font-size: 0.9rem;
+    color: var(--text-muted);
   }
 
   .resources {
@@ -252,30 +248,30 @@
     display: inline-block;
     font-size: 0.95em;
     line-height: 1;
-    color: var(--md-secondary);
+    color: var(--text);
   }
 
   .card-text :global([data-icon='star']),
   .flavor :global([data-icon='star']) {
-    color: var(--md-tertiary);
+    color: var(--text-muted);
   }
 
   .flavor {
     margin: var(--space-4) 0;
     padding-inline-start: var(--space-4);
-    border-inline-start: 3px solid var(--md-secondary);
+    border-inline-start: 3px solid var(--text);
     font-style: italic;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   .back {
     margin-top: var(--space-5);
     padding-top: var(--space-4);
-    border-top: 1px solid var(--md-outline-variant, var(--md-outline));
+    border-top: 1px solid var(--hairline);
   }
 
   .back h2 {
-    font-size: 1.2rem;
+    font-size: var(--text-xl);
   }
 
   .facts {
@@ -283,12 +279,12 @@
     grid-template-columns: auto 1fr;
     gap: var(--space-1) var(--space-4);
     margin: var(--space-5) 0;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .facts dt {
     font-weight: 600;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   .facts dd {
@@ -307,7 +303,7 @@
     width: 100%;
     height: auto;
     border-radius: var(--radius-md);
-    border: 1px solid var(--md-outline-variant, var(--md-outline));
+    border: 1px solid var(--hairline);
   }
 
   @media (max-width: 52rem) {

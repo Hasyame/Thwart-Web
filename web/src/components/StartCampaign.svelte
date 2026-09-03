@@ -133,9 +133,9 @@
   {:else if summaries.length === 0}
     <p class="muted note">{t.loading}</p>
   {:else}
-    <label class="field">
-      <span class="muted">{t.campaign}</span>
-      <select value={templateId} onchange={(e) => (templateId = e.currentTarget.value)}>
+    <label class="field-group">
+      <span class="field-label">{t.campaign}</span>
+      <select class="field" value={templateId} onchange={(e) => (templateId = e.currentTarget.value)}>
         <option value="">{t.choose}</option>
         {#each summaries as summary (summary.id)}
           <option value={summary.id}>{textOf(summary.name, uiLocale)}</option>
@@ -155,14 +155,14 @@
       <p class="muted note">{textOf(template.notice, uiLocale)}</p>
     {/if}
 
-    <label class="field">
-      <span class="muted">{t.campaignName}</span>
-      <input type="text" value={name} oninput={(e) => (name = e.currentTarget.value)} />
+    <label class="field-group">
+      <span class="field-label">{t.campaignName}</span>
+      <input class="field" type="text" value={name} oninput={(e) => (name = e.currentTarget.value)} />
     </label>
 
-    <label class="field">
-      <span class="muted">{t.difficultyLabel}</span>
-      <select value={difficulty} onchange={(e) => (difficulty = e.currentTarget.value)}>
+    <label class="field-group">
+      <span class="field-label">{t.difficultyLabel}</span>
+      <select class="field" value={difficulty} onchange={(e) => (difficulty = e.currentTarget.value)}>
         {#each template.difficulties ?? ['standard'] as id (id)}
           <option value={id}>{t.campaignDifficulty(id)}</option>
         {/each}
@@ -170,9 +170,9 @@
     </label>
 
     {#each template.setupChoices ?? [] as choice (choice.id)}
-      <label class="field">
-        <span class="muted">{textOf(choice.label, uiLocale)}</span>
-        <select
+      <label class="field-group">
+        <span class="field-label">{textOf(choice.label, uiLocale)}</span>
+        <select class="field"
           value={choices[choice.id] ?? ''}
           onchange={(e) => (choices = { ...choices, [choice.id]: e.currentTarget.value })}
         >
@@ -213,10 +213,10 @@
     </fieldset>
 
     <div class="actions">
-      <button class="primary" type="button" onclick={start} disabled={!canStart}>
+      <button class="btn btn--primary" type="button" onclick={start} disabled={!canStart}>
         {t.startCampaign}
       </button>
-      <button type="button" onclick={onCancel} disabled={starting}>{t.cancel}</button>
+      <button class="btn" type="button" onclick={onCancel} disabled={starting}>{t.cancel}</button>
     </div>
     <p class="muted note">{t.campaignRosterNote}</p>
   {/if}
@@ -229,29 +229,29 @@
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin-bottom: var(--space-2);
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     margin: var(--space-3) 0;
     max-width: 30rem;
   }
 
   select,
   input[type='text'] {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
+    background: var(--surface-1);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
   }
 
   fieldset {
-    border: 1px solid var(--md-outline-variant);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-sm);
     padding: var(--space-3);
     margin: var(--space-4) 0;
@@ -259,7 +259,7 @@
 
   legend {
     padding-inline: var(--space-1);
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
@@ -278,33 +278,13 @@
     margin-top: var(--space-3);
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
-  }
-
   .warning {
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 </style>

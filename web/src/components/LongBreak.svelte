@@ -69,9 +69,9 @@
 
 {#if storageOk}
   {#if !open}
-    <button type="button" class="start" onclick={begin}>{t.longBreak}</button>
+    <button type="button" class="btn start" onclick={begin}>{t.longBreak}</button>
   {:else if draft !== null}
-    <div class="panel surface">
+    <div class="panel">
       <h2>{t.longBreak}</h2>
       <p class="muted note">{t.longBreakIntro}</p>
 
@@ -100,9 +100,9 @@
              not, which is why this only appears for one of them. Coming back
              to a table after a week, the question is never "whose turn" but
              "how far through the villain's turn were we". -->
-        <label class="field">
-          <span class="muted">{t.phaseVillain}</span>
-          <select
+        <label class="field-group">
+          <span class="field-label">{t.phaseVillain}</span>
+          <select class="field"
             value={draft.villainStep}
             onchange={(e) => edit({ villainStep: e.currentTarget.value as VillainStep })}
           >
@@ -117,9 +117,9 @@
         <fieldset>
           <legend class="muted">{t.heroLives}</legend>
           {#each session.current.seats as seat (seat.deckId)}
-            <label class="field inline">
+            <label class="field-group inline">
               <span>{seat.heroName}</span>
-              <input
+              <input class="field"
                 type="number"
                 min="0"
                 inputmode="numeric"
@@ -131,9 +131,9 @@
         </fieldset>
       {/if}
 
-      <label class="field">
-        <span class="muted">{t.villainLifeLeft}</span>
-        <input
+      <label class="field-group">
+        <span class="field-label">{t.villainLifeLeft}</span>
+        <input class="field"
           type="number"
           min="0"
           inputmode="numeric"
@@ -142,9 +142,9 @@
         />
       </label>
 
-      <label class="field">
-        <span class="muted">{t.villainStageLabel}</span>
-        <select
+      <label class="field-group">
+        <span class="field-label">{t.villainStageLabel}</span>
+        <select class="field"
           value={String(draft.villainStage)}
           onchange={(e) => edit({ villainStage: Number.parseInt(e.currentTarget.value, 10) || 1 })}
         >
@@ -155,10 +155,10 @@
       </label>
 
       <div class="actions">
-        <button class="primary" type="button" onclick={save} disabled={saving}>
+        <button class="btn btn--primary" type="button" onclick={save} disabled={saving}>
           {t.savePutAway}
         </button>
-        <button type="button" onclick={() => (open = false)} disabled={saving}>{t.cancel}</button>
+        <button class="btn" type="button" onclick={() => (open = false)} disabled={saving}>{t.cancel}</button>
       </div>
     </div>
   {/if}
@@ -166,17 +166,16 @@
 
 <style>
   .panel {
-    padding: var(--space-4);
     margin: var(--space-4) 0;
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin-bottom: var(--space-1);
   }
 
   fieldset {
-    border: 1px solid var(--md-outline-variant);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-sm);
     padding: var(--space-3);
     margin: var(--space-3) 0;
@@ -184,7 +183,7 @@
 
   legend {
     padding-inline: var(--space-1);
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
@@ -196,15 +195,15 @@
     padding: var(--space-1) 0;
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     margin: var(--space-3) 0;
     max-width: 24rem;
   }
 
-  .field.inline {
+  .field-group.inline {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -212,17 +211,8 @@
     margin: var(--space-2) 0;
   }
 
-  .field.inline input {
+  .field-group.inline input {
     width: 6rem;
-  }
-
-  select,
-  input[type='number'] {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
   }
 
   .actions {
@@ -232,36 +222,12 @@
     margin-top: var(--space-3);
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    background: var(--md-surface-container-high);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
-  }
-
   .start {
     margin-top: var(--space-2);
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 </style>

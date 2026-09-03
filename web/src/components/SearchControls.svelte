@@ -73,7 +73,7 @@
 <div class="controls">
   <label class="search">
     <span class="visually-hidden">{t.searchLabel}</span>
-    <input
+    <input class="field"
       type="search"
       value={query}
       placeholder={t.searchPlaceholder}
@@ -85,7 +85,7 @@
   </label>
 
   <div class="filters">
-    <select
+    <select class="field"
       aria-label={t.allTypes}
       value={filters.typeCode ?? ''}
       onchange={(event) =>
@@ -97,7 +97,7 @@
       {/each}
     </select>
 
-    <select
+    <select class="field"
       aria-label={t.allFactions}
       value={filters.factionCode ?? ''}
       onchange={(event) =>
@@ -109,7 +109,7 @@
       {/each}
     </select>
 
-    <select
+    <select class="field"
       aria-label={t.allPacks}
       value={filters.packCode ?? ''}
       onchange={(event) =>
@@ -135,14 +135,14 @@
     width: 100%;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    font-size: 1.05rem;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
+    font-size: var(--text-lg);
   }
 
   .search input:focus-visible {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .filters {
@@ -155,8 +155,8 @@
     flex: 1 1 12rem;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
   }
 </style>

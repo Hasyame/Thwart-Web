@@ -84,9 +84,9 @@
   <p class="muted note tap">{t.tapToCorrect}</p>
 
   {#if editingClock}
-    <label class="field">
-      <span class="muted">{t.correctTheClock}</span>
-      <input
+    <label class="field-group">
+      <span class="field-label">{t.correctTheClock}</span>
+      <input class="field"
         type="number"
         min="0"
         inputmode="numeric"
@@ -99,16 +99,16 @@
       />
     </label>
     <div class="clock-actions">
-      <button class="primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
-      <button type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
+      <button class="btn btn--primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
+      <button class="btn" type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
     </div>
   {/if}
 
   <div class="clock-actions">
     {#if running}
-      <button type="button" onclick={onPause}>{t.pauseClock}</button>
+      <button class="btn" type="button" onclick={onPause}>{t.pauseClock}</button>
     {:else}
-      <button type="button" onclick={onResume}>{t.resumeClock}</button>
+      <button class="btn" type="button" onclick={onResume}>{t.resumeClock}</button>
     {/if}
   </div>
 
@@ -125,8 +125,8 @@
 </label>
 
 <div class="ending">
-  <button class="primary big" type="button" onclick={onVictory}>{t.won}</button>
-  <button class="big" type="button" onclick={onDefeat}>{t.lost}</button>
+  <button class="btn btn--primary big" type="button" onclick={onVictory}>{t.won}</button>
+  <button class="btn big" type="button" onclick={onDefeat}>{t.lost}</button>
 </div>
 
 <style>
@@ -136,9 +136,9 @@
   }
 
   .scenario {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
-    color: var(--md-primary);
+    color: var(--accent);
     text-align: center;
     margin: 0;
   }
@@ -151,7 +151,7 @@
 
   .sets {
     text-align: center;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: var(--space-1) 0 0;
   }
 
@@ -164,7 +164,7 @@
     background: none;
     color: inherit;
     cursor: pointer;
-    font-size: 3.4rem;
+    font-size: var(--text-4xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     text-align: center;
@@ -173,20 +173,20 @@
   }
 
   .clock:hover {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .tap {
     text-align: center;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
@@ -220,32 +220,8 @@
     flex: 1 1 10rem;
   }
 
-  input {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
-    font-weight: 700;
-  }
-
-  button.big {
+  .big {
     padding: var(--space-3) var(--space-6);
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
   }
 </style>

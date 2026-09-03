@@ -324,30 +324,30 @@
   }
 
   h2 {
-    font-size: 1.15rem;
+    font-size: var(--text-lg);
     margin: 0 0 var(--space-1);
   }
 
   h3 {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: var(--space-4) 0 var(--space-2);
   }
 
   h4 {
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: 0 0 var(--space-2);
     font-weight: 600;
   }
 
   .note,
   .small {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .note {
@@ -355,7 +355,7 @@
   }
 
   .warn {
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
     margin-bottom: var(--space-1);
   }
@@ -374,7 +374,7 @@
 
   .ok::before {
     content: '✓';
-    color: var(--md-secondary);
+    color: var(--text);
     margin-inline-end: var(--space-2);
   }
 
@@ -385,13 +385,13 @@
   .problems {
     margin: 0;
     padding-inline-start: var(--space-5);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .composition {
     margin: var(--space-4) 0;
     padding: var(--space-4) 0;
-    border-block: 1px solid var(--md-outline-variant);
+    border-block: 1px solid var(--hairline);
   }
 
   .curve .bars {
@@ -406,7 +406,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    gap: 2px;
+    gap: var(--space-0-5);
     flex: 0 0 2rem;
     height: 100%;
   }
@@ -414,14 +414,14 @@
   .column-bar {
     display: block;
     width: 100%;
-    background: var(--md-primary);
+    background: var(--accent);
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     min-height: 2px;
   }
 
   .column-count,
   .column-label {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     font-variant-numeric: tabular-nums;
   }
 
@@ -457,7 +457,7 @@
     align-items: center;
     gap: var(--space-2);
     padding: 1px 0;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .breakdown-label {
@@ -469,14 +469,14 @@
   .breakdown-bar {
     height: 0.55rem;
     border-radius: var(--radius-sm);
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
     overflow: hidden;
   }
 
   .breakdown-fill {
     display: block;
     height: 100%;
-    background: var(--md-secondary);
+    background: var(--text);
   }
 
   .cards {
@@ -502,7 +502,7 @@
   .qty {
     min-width: 1.8rem;
     font-variant-numeric: tabular-nums;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   .cards a {
@@ -539,16 +539,16 @@
   }
 
   .pack {
-    font-size: 0.72rem;
+    font-size: var(--text-2xs);
     letter-spacing: 0.03em;
     font-variant-numeric: tabular-nums;
   }
 
   .tag {
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--md-error);
+    color: var(--danger);
     border: 1px solid currentColor;
     border-radius: var(--radius-sm);
     padding: 0 var(--space-1);
@@ -557,7 +557,7 @@
   .locale-note {
     margin-top: var(--space-5);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .preview {
@@ -567,9 +567,9 @@
     width: 240px;
     border-radius: var(--radius-md);
     overflow: hidden;
-    box-shadow: 0 8px 28px var(--md-scrim);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface-container);
+    box-shadow: 0 8px 28px var(--scrim);
+    border: 1px solid var(--border);
+    background: var(--surface-1);
   }
 
   .preview img {

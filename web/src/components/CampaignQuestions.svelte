@@ -172,7 +172,7 @@
   };
 </script>
 
-<section class="panel surface">
+<section class="panel">
   <p class="verdict" class:won={victory}>{victory ? t.campaignBravo : t.campaignDefeatRecorded}</p>
   <p class="clock">{formatElapsed(elapsedMillis)}</p>
   <p class="muted note centre">{t.timePlayedLabel}</p>
@@ -182,7 +182,7 @@
   {/if}
 </section>
 
-<section class="panel surface">
+<section class="panel">
   <h3>{t.campaignQuestionsTitle}</h3>
 
   {#if prompts.length === 0}
@@ -197,7 +197,7 @@
       </p>
 
       {#if kind === 'number'}
-        <input
+        <input class="field"
           type="number"
           min={prompt.min ?? 0}
           max={prompt.max ?? undefined}
@@ -215,7 +215,7 @@
           <span>{t.yes}</span>
         </label>
       {:else if kind === 'choice'}
-        <select
+        <select class="field"
           value={answers.choices[prompt.id] ?? ''}
           onchange={(e) => setChoice(prompt.id, e.currentTarget.value)}
         >
@@ -228,7 +228,7 @@
         {#each campaign.heroes as hero (hero.id)}
           <label class="row">
             <span>{hero.name}</span>
-            <input
+            <input class="field"
               type="number"
               min={prompt.min ?? 0}
               inputmode="numeric"
@@ -289,7 +289,7 @@
           </div>
         {/each}
       {:else if kind === 'cardlist'}
-        <input
+        <input class="field"
           type="text"
           value={(answers.cardLists[prompt.id] ?? []).join(', ')}
           oninput={(e) => setTypedList(prompt.id, e.currentTarget.value)}
@@ -310,44 +310,43 @@
 
   <div class="actions">
     <button
-      class="primary"
+      class="btn btn--primary"
       type="button"
       disabled={submitting || missing.length > 0}
       onclick={() => onSubmit(built)}
     >
       {submitting ? t.campaignValidating : t.campaignValidate}
     </button>
-    <button type="button" disabled={submitting} onclick={onBack}>{t.backToGame}</button>
+    <button class="btn" type="button" disabled={submitting} onclick={onBack}>{t.backToGame}</button>
   </div>
 </section>
 
 <style>
   .panel {
-    padding: var(--space-4) var(--space-5);
     margin: var(--space-3) 0;
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
     margin-bottom: var(--space-2);
   }
 
   .verdict {
     text-align: center;
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
     margin: 0;
-    color: var(--md-error);
+    color: var(--danger);
   }
 
   .verdict.won {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .clock {
     text-align: center;
-    font-size: 2.6rem;
+    font-size: var(--text-3xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin: var(--space-2) 0 0;
@@ -364,7 +363,7 @@
 
   .prompt {
     padding: var(--space-3) 0;
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
     max-width: var(--prose-max);
   }
 
@@ -373,12 +372,11 @@
     margin: 0 0 var(--space-2);
   }
 
-  .tick,
   .row {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-1) 0;
+    min-height: var(--tap-min);
   }
 
   .row {
@@ -393,18 +391,18 @@
   }
 
   .who {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     margin: var(--space-2) 0 0;
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
   .warning {
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
     max-width: var(--prose-max);
   }
@@ -416,38 +414,9 @@
     margin-top: var(--space-4);
   }
 
-  input,
-  select {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-  }
-
   input[type='text'] {
     width: 100%;
     max-width: var(--prose-max);
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
-    font-weight: 700;
-  }
 </style>

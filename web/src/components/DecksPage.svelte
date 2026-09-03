@@ -187,7 +187,7 @@
       <div class="import-row">
         <label class="grow">
           <span class="visually-hidden">{t.importDeck}</span>
-          <input
+          <input class="field"
             type="text"
             placeholder="https://marvelcdb.com/decklist/view/12345"
             value={input}
@@ -199,7 +199,7 @@
             }}
           />
         </label>
-        <button type="button" onclick={doImport} disabled={reference === null || busy}>
+        <button class="btn" type="button" onclick={doImport} disabled={reference === null || busy}>
           {busy ? t.importing : t.importAction}
         </button>
       </div>
@@ -226,7 +226,7 @@
           >
             <button
               type="button"
-              class="deck-head"
+              class="btn deck-head"
               aria-expanded={deck.id === openDeckId}
               onclick={() => (openDeckId = openDeckId === deck.id ? null : deck.id)}
             >
@@ -244,7 +244,7 @@
                 <span class="verdict muted">…</span>
               {/if}
             </button>
-            <button type="button" class="remove" onclick={() => remove(deck.id)}>
+            <button type="button" class="btn remove" onclick={() => remove(deck.id)}>
               {t.removeDeck}
             </button>
           </li>
@@ -270,12 +270,12 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-4);
   }
 
   h2 {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin: 0 0 var(--space-1);
   }
 
@@ -299,7 +299,7 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
@@ -318,23 +318,9 @@
     width: 100%;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text);
   }
 
   .decks {
@@ -354,7 +340,7 @@
   }
 
   .deck.open {
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .deck-head {
@@ -362,7 +348,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 2px;
+    gap: var(--space-0-5);
     border: 0;
     background: none;
     text-align: start;
@@ -374,12 +360,12 @@
   }
 
   .deck-sub {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
   .remove {
     flex: 0 0 auto;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     padding: var(--space-1) var(--space-2);
   }
 
@@ -388,7 +374,7 @@
   }
 
   .error {
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
     margin-bottom: 0;
   }
@@ -416,7 +402,7 @@
   .verdict {
     align-self: flex-start;
     margin-top: var(--space-1);
-    font-size: 0.7rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 700;
@@ -426,6 +412,6 @@
   }
 
   .verdict.illegal {
-    color: var(--md-error);
+    color: var(--danger);
   }
 </style>

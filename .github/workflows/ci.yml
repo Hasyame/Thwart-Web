@@ -63,6 +63,13 @@ jobs:
         working-directory: web
         run: npm run build
 
+      # The palette is the one place "it looks fine" is not evidence. The
+      # scheme this replaced failed seven pairs while looking reasonable to
+      # everyone who shipped it, so the thresholds are asserted instead.
+      - name: Contrast and touch targets
+        working-directory: web
+        run: npm run test:contrast
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw

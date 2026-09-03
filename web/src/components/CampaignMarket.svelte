@@ -60,9 +60,9 @@
     </div>
 
     {#if campaign.heroes.length > 1}
-      <label class="field">
-        <span class="muted">{t.campaignWhoIsBuying}</span>
-        <select value={chosen} onchange={(e) => (heroId = e.currentTarget.value)}>
+      <label class="field-group">
+        <span class="field-label">{t.campaignWhoIsBuying}</span>
+        <select class="field" value={chosen} onchange={(e) => (heroId = e.currentTarget.value)}>
           {#each campaign.heroes as hero (hero.id)}
             <option value={hero.id}>{hero.name}</option>
           {/each}
@@ -82,10 +82,10 @@
                  a card somebody else took is closed to everyone and says who
                  has it. -->
             <span class="owner muted">{t.ownedBy(owner)}</span>
-            <button type="button" onclick={() => giveBack(offer.entry.cardCode)}>{t.refund}</button>
+            <button class="btn" type="button" onclick={() => giveBack(offer.entry.cardCode)}>{t.refund}</button>
           {:else}
             <button
-              class="buy"
+              class="btn buy"
               type="button"
               disabled={!canBuy(offer)}
               onclick={() => take(offer.entry.cardCode, offer.entry.cost, offer.entry.cardListId ?? 'purchases')}
@@ -114,21 +114,21 @@
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     max-width: 18rem;
     margin: var(--space-3) 0;
   }
 
   .credits {
     font-weight: 700;
-    color: var(--md-primary);
+    color: var(--accent);
     margin: 0;
   }
 
@@ -146,7 +146,7 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-2) 0;
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
   }
 
   .offers li.taken {
@@ -165,34 +165,13 @@
   }
 
   .owner {
-    font-size: 0.85rem;
-  }
-
-  button {
-    padding: var(--space-1) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
+    font-size: var(--text-sm);
   }
 
   button.buy:not(:disabled) {
-    border-color: var(--md-primary);
-    color: var(--md-primary);
+    border-color: var(--accent);
+    color: var(--accent);
     font-weight: 600;
   }
 
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  select {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-  }
 </style>

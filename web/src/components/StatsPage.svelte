@@ -143,15 +143,15 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);
   }
 
   h2 {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: 0 0 var(--space-2);
   }
 
@@ -170,17 +170,17 @@
   }
 
   .rate {
-    font-size: 3.4rem;
+    font-size: var(--text-4xl);
     font-weight: 700;
     line-height: 1;
     margin: 0;
-    color: var(--md-primary);
+    color: var(--accent);
     font-variant-numeric: tabular-nums;
   }
 
   .pc {
-    font-size: 1.4rem;
-    margin-inline-start: 2px;
+    font-size: var(--text-xl);
+    margin-inline-start: var(--space-0-5);
   }
 
   .headline-detail p {
@@ -217,24 +217,24 @@
     display: block;
     height: 0.7rem;
     border-radius: var(--radius-sm);
-    background: var(--md-surface-container-high);
+    background: var(--surface-2);
     overflow: hidden;
   }
 
   .fill {
     display: block;
     height: 100%;
-    background: var(--md-primary);
+    background: var(--accent);
   }
 
   .numbers {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     text-align: end;
     font-variant-numeric: tabular-nums;
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 

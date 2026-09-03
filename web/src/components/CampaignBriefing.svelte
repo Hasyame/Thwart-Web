@@ -216,7 +216,7 @@
 {#snippet panel(title: string, steps: readonly SetupStep[])}
   {@const shown = steps.filter(hasText)}
   {#if shown.length > 0}
-    <section class="panel surface">
+    <section class="panel">
       <h3>{title}</h3>
       <ul class="steps">
         {#each shown as step, i (i)}
@@ -230,13 +230,13 @@
 <!-- Four boxes, in the order the table works through them: the story, what to
      fetch, what to lay out, and what to know once it is laid out. -->
 {#if scenario.flavour != null && label(scenario.flavour) !== ''}
-  <section class="panel surface story">
+  <section class="panel story">
     <p><CampaignText segments={parseCampaignText(label(scenario.flavour), text)} /></p>
   </section>
 {/if}
 
 {#if hasChips}
-  <section class="panel surface">
+  <section class="panel">
     <h3>{t.campaignPreSetup}</h3>
     <dl class="gather">
       {#if villainDeck.length > 0}
@@ -284,7 +284,7 @@
        whatever the campaign changes, then follow the setup printed on the
        scheme itself. Read off the card rather than written into the template,
        so it arrives in the language the cards are in. -->
-  <section class="panel surface">
+  <section class="panel">
     <h3>{t.schemeSetupTitle}</h3>
     <ul class="steps">
       {#each schemeSteps as step, i (i)}
@@ -301,19 +301,18 @@
 
 <style>
   .panel {
-    padding: var(--space-4) var(--space-5);
     margin: var(--space-3) 0;
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-lg);
     font-weight: 700;
     margin-bottom: var(--space-3);
   }
 
   .story p {
     font-style: italic;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     max-width: var(--prose-max);
     margin: 0;
   }
@@ -325,10 +324,10 @@
   }
 
   dt {
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   dd {
@@ -358,7 +357,7 @@
     content: '•';
     position: absolute;
     inset-inline-start: 0;
-    color: var(--md-primary);
+    color: var(--accent);
     font-weight: 700;
   }
 
@@ -368,12 +367,12 @@
 
   .reading {
     margin: var(--space-1) 0 0;
-    color: var(--md-primary);
+    color: var(--accent);
     font-variant-numeric: tabular-nums;
   }
 
   .reading .big {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
   }
 
   .tally {
@@ -388,14 +387,6 @@
     margin-top: var(--space-1);
   }
 
-  .chip {
-    border: 1px solid var(--md-outline-variant);
-    border-radius: var(--radius-lg);
-    background: var(--md-surface-container-high);
-    padding: 2px var(--space-3);
-    font-size: 0.92rem;
-  }
-
   .drawn {
     display: flex;
     flex-wrap: wrap;
@@ -405,27 +396,24 @@
   }
 
   .who {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 600;
   }
 
   .pick {
-    font-size: 0.85rem;
-    color: var(--md-primary);
+    font-size: var(--text-sm);
+    color: var(--accent);
   }
 
   .chip.keep {
-    cursor: pointer;
-    border-color: var(--md-primary);
-    color: var(--md-primary);
-    font: inherit;
-    font-size: 0.92rem;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .taken {
     margin: var(--space-1) 0 0;
-    color: var(--md-primary);
-    font-size: 0.9rem;
+    color: var(--accent);
+    font-size: var(--text-sm);
     font-weight: 600;
   }
 
@@ -433,7 +421,7 @@
     margin-top: var(--space-2);
     padding: var(--space-1) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
@@ -452,18 +440,18 @@
 
   button.big {
     padding: var(--space-3) var(--space-5);
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
   }
 
   button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
     font-weight: 700;
   }
 </style>

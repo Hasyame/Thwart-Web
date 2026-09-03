@@ -1,48 +1,19 @@
 <script lang="ts">
-  import type { Locale } from '../lib/types';
-  import type { ThemeChoice } from '../lib/preferences';
-  import { LANGUAGE_NAMES, type Strings } from '../lib/i18n';
+  import type { Strings } from '../lib/i18n';
+  import { DESTINATIONS, type NavTarget } from '../lib/nav';
   import Logo from './Logo.svelte';
-
-  type NavTarget =
-    | 'search'
-    | 'collection'
-    | 'decks'
-    | 'randomizer'
-    | 'play'
-    | 'campaigns'
-    | 'stats'
-    | 'rules';
 
   interface Props {
     t: Strings;
-    uiLocale: Locale;
-    cardLocale: Locale;
-    theme: ThemeChoice;
-    onUiLocale: (locale: Locale) => void;
-    onCardLocale: (locale: Locale) => void;
-    onTheme: (theme: ThemeChoice) => void;
     onHome: () => void;
     onNavigate: (name: NavTarget) => void;
     hrefFor: (name: NavTarget) => string;
     active: NavTarget | 'card';
+    onSettings: () => void;
   }
 
-  const {
-    t,
-    uiLocale,
-    cardLocale,
-    theme,
-    onUiLocale,
-    onCardLocale,
-    onTheme,
-    onHome,
-    onNavigate,
-    hrefFor,
-    active,
-  }: Props = $props();
+  const { t, onHome, onNavigate, hrefFor, active, onSettings }: Props = $props();
 
-  /** Plain clicks route in-app; modified clicks stay the browser's business. */
   function go(event: MouseEvent, name: NavTarget): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
@@ -50,279 +21,164 @@
     event.preventDefault();
     onNavigate(name);
   }
+
 </script>
 
+<!--
+  A surface, not a filled red strip.
+
+  The old bar was #E30022 across the full width of every screen. Red at that
+  size is not an accent: it was 268px of a 812px viewport, it dragged every
+  contrast pairing on the page down with it, and long sessions with it are
+  tiring. The red is spent on actions now, where it means something.
+-->
 <header>
   <div class="page bar">
     <button class="brand" onclick={onHome} type="button">
-      <Logo size={40} />
-      <span class="names">
-        <span class="title">{t.appName}</span>
-        <span class="tagline muted">{t.tagline}</span>
-      </span>
+      <Logo size={28} />
+      <span class="wordmark">{t.appName}</span>
     </button>
 
-    <nav>
-      <a
-        href={hrefFor('search')}
-        class:current={active === 'search' || active === 'card'}
-        onclick={(event) => go(event, 'search')}
-      >
-        {t.navCards}
-      </a>
-      <a
-        href={hrefFor('collection')}
-        class:current={active === 'collection'}
-        onclick={(event) => go(event, 'collection')}
-      >
-        {t.navCollection}
-      </a>
-      <a
-        href={hrefFor('decks')}
-        class:current={active === 'decks'}
-        onclick={(event) => go(event, 'decks')}
-      >
-        {t.navDecks}
-      </a>
-      <a
-        href={hrefFor('randomizer')}
-        class:current={active === 'randomizer'}
-        onclick={(event) => go(event, 'randomizer')}
-      >
-        {t.navRandomizer}
-      </a>
-      <a
-        href={hrefFor('play')}
-        class:current={active === 'play'}
-        onclick={(event) => go(event, 'play')}
-      >
-        {t.navPlay}
-      </a>
-      <a
-        href={hrefFor('campaigns')}
-        class:current={active === 'campaigns'}
-        onclick={(event) => go(event, 'campaigns')}
-      >
-        {t.navCampaigns}
-      </a>
-      <a
-        href={hrefFor('stats')}
-        class:current={active === 'stats'}
-        onclick={(event) => go(event, 'stats')}
-      >
-        {t.navStats}
-      </a>
-      <a
-        href={hrefFor('rules')}
-        class:current={active === 'rules'}
-        onclick={(event) => go(event, 'rules')}
-      >
-        {t.navRules}
-      </a>
+    <nav aria-label={t.appName}>
+      {#each DESTINATIONS as destination (destination.id)}
+        <a
+          href={hrefFor(destination.id)}
+          class:current={active === destination.id ||
+            (destination.id === 'search' && active === 'card')}
+          aria-current={active === destination.id ? 'page' : undefined}
+          onclick={(event) => go(event, destination.id)}
+        >
+          {destination.label(t)}
+        </a>
+      {/each}
     </nav>
 
-    <div class="controls">
-      <label class="control">
-        <span class="label muted">{t.interfaceLanguage}</span>
-        <select
-          value={uiLocale}
-          onchange={(event) => onUiLocale(event.currentTarget.value as Locale)}
-        >
-          {#each Object.entries(LANGUAGE_NAMES) as [code, name] (code)}
-            <option value={code}>{name}</option>
-          {/each}
-        </select>
-      </label>
+    <span class="spacer"></span>
 
-      <label class="control">
-        <span class="label muted">{t.cardLanguage}</span>
-        <select
-          value={cardLocale}
-          onchange={(event) => onCardLocale(event.currentTarget.value as Locale)}
-        >
-          {#each Object.entries(LANGUAGE_NAMES) as [code, name] (code)}
-            <option value={code}>{name}</option>
-          {/each}
-        </select>
-      </label>
-
-      <label class="control">
-        <span class="label muted">{t.theme}</span>
-        <select
-          value={theme}
-          onchange={(event) => onTheme(event.currentTarget.value as ThemeChoice)}
-        >
-          <option value="system">{t.themeSystem}</option>
-          <option value="light">{t.themeLight}</option>
-          <option value="dark">{t.themeDark}</option>
-        </select>
-      </label>
-    </div>
+    <button class="settings" type="button" onclick={onSettings} aria-label={t.settingsTitle}>
+      <span aria-hidden="true">⚙</span>
+    </button>
   </div>
 </header>
 
 <style>
-  /*
-   * The heading pair, not primary/on-primary.
-   *
-   * In the dark scheme `primary` is the bright coral and Material pairs it with
-   * dark maroon — one hue twice with nothing between, which Color.kt describes
-   * as legible on a contrast table and mud on a phone. `HeadingFill` on
-   * `HeadingInk` separates in luminance *and* hue, and is the same pair in both
-   * themes, so the bar does not change character when the lights go out.
-   */
   header {
-    background: var(--md-heading-fill);
-    color: var(--md-heading-ink);
-    border-bottom: 3px solid var(--md-arc-gold);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--surface-1);
+    border-bottom: 1px solid var(--hairline);
+    /* The status bar sits over this on an installed iOS app, which declares
+       `black-translucent` precisely so the bar can extend under it. */
+    padding-top: env(safe-area-inset-top);
   }
 
   .bar {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
     gap: var(--space-3);
-    padding-block: var(--space-3);
+    min-height: 56px;
+    padding-bottom: 0;
   }
 
   .brand {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding-inline: var(--space-1);
+    margin-inline-start: calc(var(--space-1) * -1);
     background: none;
     border: 0;
-    padding: var(--space-1) var(--space-2);
-    margin-inline-start: calc(var(--space-2) * -1);
     border-radius: var(--radius-sm);
-    cursor: pointer;
     color: inherit;
-    text-align: start;
+    cursor: pointer;
   }
 
-  .brand:hover .title {
-    text-decoration: underline;
-  }
-
-  .names {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  /* The muted class is defined globally against surface text, which is the
-     wrong contrast on the heading strip, so it is overridden here. */
-  .tagline,
-  .label {
-    color: color-mix(in srgb, var(--md-heading-ink) 78%, transparent);
-  }
-
-  .tagline {
-    font-size: 0.82rem;
+  .wordmark {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-tight);
   }
 
   /*
-   * Wraps, and that is the whole point.
+   * Nothing between the brand and the settings on a phone.
    *
-   * Eight destinations on one unbreakable row runs off the side of a phone and
-   * takes the last three or four with it: not merely ugly, unreachable. There
-   * is no horizontal scroll on the page to find them with either, so wrapping
-   * is the only arrangement where every section can be tapped.
+   * The bar carried the page name for a while, which put it on screen twice:
+   * every page already opens with its own heading, and that one is allowed to
+   * wrap where a bar is not.
    */
   nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-    min-width: 0;
+    display: none;
   }
 
-  nav a {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-lg);
-    color: inherit;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
+  .spacer {
+    flex: 1;
   }
 
-  nav a:hover {
-    background: color-mix(in srgb, var(--md-heading-ink) 14%, transparent);
+  .settings {
+    display: grid;
+    place-items: center;
+    min-width: var(--tap-min);
+    min-height: var(--tap-min);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    cursor: pointer;
   }
 
-  nav a.current {
-    background: color-mix(in srgb, var(--md-heading-ink) 22%, transparent);
+  .settings:hover {
+    background: var(--surface-2);
+    color: var(--text);
   }
 
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-  }
-
-  .control {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  select {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--radius-sm);
-    padding: var(--space-1) var(--space-2);
-  }
-
-  @media (max-width: 52rem) {
-    /* Below this the three groups stack, so each takes the full width and the
-       nav gets a row of its own to wrap within. */
-    .bar {
-      flex-direction: column;
-      align-items: stretch;
-      gap: var(--space-2);
-    }
-
-    nav {
-      order: 3;
-    }
-
-    .controls {
-      order: 2;
-      gap: var(--space-2);
-    }
-
-    .control {
-      flex: 1 1 6rem;
-    }
-
-    .control select {
-      width: 100%;
-    }
-  }
-
-  @media (max-width: 40rem) {
-    .tagline {
+  /*
+   * Wide enough for the destinations to sit on the bar itself, which is where
+   * a pointer expects them. Below this the tab bar has them.
+   *
+   * 56rem, not 48: the breakpoint is where the eight labels fit on one line
+   * beside the brand and the settings button, measured rather than guessed.
+   * The French ones come to about 660px, which with everything else on the bar
+   * needs roughly 880px. At 48rem they wrapped to two rows and the header grew
+   * from 57px to 93px.
+   */
+  @media (min-width: 56rem) {
+    .spacer {
       display: none;
     }
 
-    nav a {
-      padding: var(--space-1) var(--space-2);
-      font-size: 0.9rem;
+    nav {
+      display: flex;
+      flex: 1;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+      justify-content: flex-end;
+      min-width: 0;
     }
 
-    .title {
-      font-size: 1.2rem;
+    nav a {
+      display: flex;
+      align-items: center;
+      min-height: var(--tap-min);
+      padding-inline: var(--space-3);
+      border-radius: var(--radius-pill);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: var(--weight-medium);
+      white-space: nowrap;
+    }
+
+    nav a:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    nav a.current {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: var(--weight-semibold);
     }
   }
 </style>

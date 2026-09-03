@@ -1,0 +1,293 @@
+/*
+ * The controls, written once.
+ *
+ * Ten components each declared their own button from scratch, and ten declared
+ * their own input; the same six rules appeared eighteen times with small
+ * differences nobody intended. That is how a type scale drifts to twenty-eight
+ * sizes and how a tap target ends up thirty pixels tall.
+ *
+ * These are global on purpose. Svelte scopes a component's own styles, which
+ * is right for layout and wrong for a button: a button should be the same
+ * object on every screen, and a component that wants a different one is
+ * usually a component that has got something wrong.
+ *
+ * Two rules hold everywhere here:
+ *
+ *   **Nothing is given a fixed width.** French runs about 24% longer than
+ *   English across the short labels in this interface, and individual ones
+ *   more than double — "won" becomes "Victoire". Every control sizes to its
+ *   content and is allowed to wrap.
+ *
+ *   **Everything tappable is at least --tap-min.** 44pt is the Apple HIG
+ *   floor, and it is a floor rather than a target: it applies to the hit area,
+ *   which may be larger than the thing that looks like the control.
+ */
+
+/*
+ * The tap floor, applied to every control rather than to a class.
+ *
+ * A class only reaches the controls that have been migrated to it, and the
+ * floor is the one thing that has to hold everywhere at once: it is an
+ * accessibility minimum, not a style. Twenty-six components declare their own
+ * padding for these elements and none of them declared a height.
+ *
+ * Inline buttons are untouched, because `min-height` does not apply to a
+ * non-replaced inline box — which is what keeps a card reference inside a
+ * sentence from becoming 44px tall and breaking the line.
+ */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+select,
+textarea,
+button {
+  min-height: var(--tap-min);
+}
+
+/* ==== Buttons ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  /* Height from the tap floor, not from the text, so a two-line French label
+     grows the button rather than being clipped by it. */
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-5);
+
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  text-align: center;
+  text-decoration: none;
+
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+
+  transition:
+    background var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/** The one action a screen is about. At most one per view. */
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: var(--weight-bold);
+}
+
+.btn--primary:hover:not(:disabled) {
+  /* Darkened rather than lightened, so it stays distinct from the ghost's
+     hover and keeps its contrast with the label either side of 4.5:1. */
+  background: color-mix(in srgb, var(--accent) 88%, black);
+}
+
+/** Present but not competing: the second option in a pair. */
+.btn--quiet {
+  border-color: var(--hairline);
+  color: var(--text-muted);
+}
+
+.btn--quiet:hover:not(:disabled) {
+  color: var(--text);
+}
+
+/**
+ * A text button, for something you should have to mean.
+ *
+ * Giving up a campaign or forgetting a game is not a thing to reach for by
+ * accident, so it reads as a link rather than as a button sitting next to the
+ * one you wanted.
+ */
+.btn--text {
+  min-height: var(--tap-min);
+  padding-inline: var(--space-3);
+  border-color: transparent;
+  background: none;
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
+.btn--text:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+/** Full width, for the bottom of a form or a sheet. */
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/** A row of buttons that wraps rather than overflowing. */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ==== Fields ============================================================= */
+
+/**
+ * `--text-base` is not decoration.
+ *
+ * Safari zooms the whole page when a field smaller than 16px takes focus, and
+ * does not zoom back out. On a phone that throws the reader out of whatever
+ * they were doing, so the size is stated here rather than inherited and hoped
+ * for.
+ */
+.field {
+  display: block;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-3);
+
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--text);
+
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.field::placeholder {
+  color: var(--text-faint);
+}
+
+select.field {
+  /* Room for the browser's own arrow, on the side the language reads towards. */
+  padding-inline-end: var(--space-6);
+}
+
+textarea.field {
+  min-height: calc(var(--tap-min) * 2);
+  resize: vertical;
+}
+
+/** A label above its control, which is the arrangement that survives a long
+    French string: side by side, the label pushes the field off the screen. */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field-label {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-muted);
+}
+
+/** A checkbox or radio and its label, as one target. */
+.tick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  cursor: pointer;
+}
+
+.tick input {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+}
+
+/* ==== Chips ============================================================== */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2rem;
+  padding: var(--space-1) var(--space-3);
+
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+}
+
+button.chip,
+a.chip {
+  /* A chip you can operate gets the tap floor; one that only labels something
+     does not, because a 44px tall static label wastes a phone screen. */
+  min-height: var(--tap-min);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.chip[aria-pressed='true'],
+.chip.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ==== Panels and sections ================================================ */
+
+/** `.surface` with the padding it always ends up wanting. */
+.panel {
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-4) var(--space-5);
+}
+
+/** The small uppercase heading that names a group of things. */
+.eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-muted);
+}
+
+/** The name of a card, a scenario or a deck: the most readable thing on screen. */
+.subject {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+/** A vertical rhythm that does not need a margin on every child. */
+.stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.stack-4 {
+  display: grid;
+  gap: var(--space-4);
+}

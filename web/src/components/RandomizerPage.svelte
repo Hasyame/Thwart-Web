@@ -362,7 +362,7 @@
     <div class="controls surface">
       <label class="players">
         <span class="muted">{t.players}</span>
-        <select
+        <select class="field"
           value={playerCount}
           onchange={(e) => (playerCount = Number.parseInt(e.currentTarget.value, 10))}
         >
@@ -480,8 +480,8 @@
 
     {#if draw.scenarioCode !== null}
       <div class="draw">
-        <div class="field surface">
-          <div class="field-head">
+        <div class="options surface">
+          <div class="options-head">
             <h2>{t.scenario}</h2>
             <button
               type="button"
@@ -505,8 +505,8 @@
           </select>
         </div>
 
-        <div class="field surface">
-          <div class="field-head">
+        <div class="options surface">
+          <div class="options-head">
             <h2>{t.difficultyLabel}</h2>
             <button
               type="button"
@@ -533,8 +533,8 @@
           {/if}
         </div>
 
-        <div class="field surface wide">
-          <div class="field-head">
+        <div class="options surface wide">
+          <div class="options-head">
             <h2>{t.heroes}</h2>
             <button
               type="button"
@@ -547,10 +547,10 @@
               <span class="visually-hidden">{t.lockField}</span>
             </button>
           </div>
-          <ul class="chips">
+          <ul class="drawn-list">
             {#each draw.heroes as hero, position (position)}
-              <li class="chip picker" data-faction={hero.aspect}>
-                <select
+              <li class="drawn picker" data-faction={hero.aspect}>
+                <select class="field"
                   value={hero.code}
                   onchange={(e) => chooseHero(position, e.currentTarget.value)}
                 >
@@ -558,7 +558,7 @@
                     <option value={option.code}>{option.name}</option>
                   {/each}
                 </select>
-                <select
+                <select class="field"
                   value={hero.aspect}
                   onchange={(e) => chooseAspect(position, e.currentTarget.value as Aspect)}
                 >
@@ -571,8 +571,8 @@
           </ul>
         </div>
 
-        <div class="field surface wide">
-          <div class="field-head">
+        <div class="options surface wide">
+          <div class="options-head">
             <h2>{t.modularSets}</h2>
             <button
               type="button"
@@ -589,18 +589,18 @@
           {#if draw.mandatoryModularCodes.length === 0 && draw.modularSetCodes.length === 0}
             <p class="value muted">{t.noModularSets}</p>
           {:else}
-            <ul class="chips">
+            <ul class="drawn-list">
               {#each draw.mandatoryModularCodes as code (code)}
                 <!-- Marked because it was not drawn: the scenario requires it,
                      and rerolling will never replace it. -->
-                <li class="chip required">
+                <li class="drawn is-required">
                   {setNames.get(code) ?? code}
                   <span class="muted">{t.required}</span>
                 </li>
               {/each}
               {#each draw.modularSetCodes as code, position (position)}
-                <li class="chip picker">
-                  <select
+                <li class="drawn picker">
+                  <select class="field"
                     value={code}
                     onchange={(e) => chooseModularSet(position, e.currentTarget.value)}
                   >
@@ -654,15 +654,15 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-4);
   }
 
   h2 {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: 0;
   }
 
@@ -686,21 +686,13 @@
     gap: var(--space-2);
   }
 
-  select {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-  }
-
   .roll {
     padding: var(--space-3) var(--space-6);
     border-radius: var(--radius-lg);
     border: 0;
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    font-size: 1.05rem;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: var(--text-lg);
     font-weight: 700;
     cursor: pointer;
   }
@@ -711,7 +703,7 @@
   }
 
   .pool-note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: 0;
   }
 
@@ -722,15 +714,15 @@
     margin-top: var(--space-4);
   }
 
-  .field {
+  .options {
     padding: var(--space-4);
   }
 
-  .field.wide {
+  .options.wide {
     grid-column: 1 / -1;
   }
 
-  .field-head {
+  .options-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -740,16 +732,16 @@
 
   .value-select,
   .picker select {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
+    background: var(--surface-1);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
     max-width: 100%;
   }
 
   .value-select {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     font-weight: 600;
     width: 100%;
   }
@@ -762,7 +754,7 @@
   }
 
   .picker select {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .lock {
@@ -770,7 +762,7 @@
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--text-base);
     line-height: 1;
     padding: var(--space-1) var(--space-2);
     opacity: 0.55;
@@ -778,16 +770,16 @@
 
   .lock.on {
     opacity: 1;
-    border-color: var(--md-primary);
+    border-color: var(--accent);
   }
 
   .value {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: var(--text-xl);
     font-weight: 600;
   }
 
-  .chips {
+  .drawn-list {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
@@ -796,34 +788,41 @@
     margin: 0;
   }
 
-  .chip {
+  /*
+   * One part of a drawn game — a hero, a modular set, the difficulty — with a
+   * rule down its leading edge in the colour of what it names.
+   *
+   * Deliberately not the shared chip: that is a small pill for a label or a
+   * filter, and these are full rows carrying two pieces of text apiece.
+   */
+  .drawn {
     display: flex;
     align-items: baseline;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-lg);
-    background: var(--md-surface-container-high);
-    border-inline-start: 4px solid var(--md-outline-variant);
-    font-size: 0.95rem;
+    background: var(--surface-2);
+    border-inline-start: 4px solid var(--hairline);
+    font-size: var(--text-base);
   }
 
-  .chip.required {
-    border-inline-start-color: var(--md-primary);
+  .drawn.is-required {
+    border-inline-start-color: var(--accent);
   }
 
-  .chip[data-faction='aggression'] {
+  .drawn[data-faction='aggression'] {
     border-inline-start-color: var(--faction-aggression);
   }
-  .chip[data-faction='justice'] {
+  .drawn[data-faction='justice'] {
     border-inline-start-color: var(--faction-justice);
   }
-  .chip[data-faction='leadership'] {
+  .drawn[data-faction='leadership'] {
     border-inline-start-color: var(--faction-leadership);
   }
-  .chip[data-faction='protection'] {
+  .drawn[data-faction='protection'] {
     border-inline-start-color: var(--faction-protection);
   }
-  .chip[data-faction='pool'] {
+  .drawn[data-faction='pool'] {
     border-inline-start-color: var(--faction-pool);
   }
 
@@ -834,7 +833,7 @@
   .actions button {
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
@@ -847,11 +846,11 @@
   .filters-toggle {
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
   }
 
   .filters {
@@ -862,23 +861,23 @@
   }
 
   .filters-note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     margin: 0;
     max-width: var(--prose-max);
   }
 
   fieldset {
     border: 0;
-    border-top: 1px solid var(--md-outline-variant);
+    border-top: 1px solid var(--hairline);
     padding: var(--space-3) 0 0;
     margin: 0;
   }
 
   legend {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     padding: 0 var(--space-2) 0 0;
   }
 
@@ -894,11 +893,11 @@
     align-items: center;
     gap: var(--space-2);
     cursor: pointer;
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
   }
 
   .tick input {
-    accent-color: var(--md-primary);
+    accent-color: var(--accent);
     width: 1rem;
     height: 1rem;
     flex: 0 0 auto;
@@ -912,7 +911,7 @@
   .filters-actions button {
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
+    border: 1px solid var(--border);
     background: transparent;
     color: inherit;
     cursor: pointer;
@@ -923,10 +922,10 @@
   }
 
   .history-heading {
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     text-transform: none;
     letter-spacing: 0;
-    color: var(--md-on-surface);
+    color: var(--text);
     margin-bottom: var(--space-1);
   }
 
@@ -949,10 +948,10 @@
 
   .history .done {
     text-decoration: line-through;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
   }
 
   .when {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 </style>

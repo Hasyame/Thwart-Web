@@ -351,15 +351,15 @@
   {:else if recorded}
     <div class="notice surface">
       <p class="ok">{t.playRecorded}</p>
-      <button type="button" class="primary" onclick={newGame}>{t.playAnother}</button>
+      <button type="button" class="btn btn--primary" onclick={newGame}>{t.playAnother}</button>
     </div>
   {:else if session.current.phase === 'setup'}
     <p class="muted note">{t.playSetupNote}</p>
 
     <div class="setup surface">
-      <label class="field">
-        <span class="muted">{t.scenario}</span>
-        <select
+      <label class="field-group">
+        <span class="field-label">{t.scenario}</span>
+        <select class="field"
           value={session.current.scenarioCode}
           onchange={(e) => setScenario(e.currentTarget.value)}
         >
@@ -370,9 +370,9 @@
         </select>
       </label>
 
-      <label class="field">
-        <span class="muted">{t.difficultyLabel}</span>
-        <select
+      <label class="field-group">
+        <span class="field-label">{t.difficultyLabel}</span>
+        <select class="field"
           value={session.current.difficulty}
           onchange={(e) => setDifficulty(e.currentTarget.value as DifficultyId)}
         >
@@ -385,9 +385,9 @@
       {#if isExpert}
         <!-- An Expert set is played with a Standard one, so choosing Expert
              leaves a second question to answer. -->
-        <label class="field">
-          <span class="muted">{t.standardSetWith}</span>
-          <select
+        <label class="field-group">
+          <span class="field-label">{t.standardSetWith}</span>
+          <select class="field"
             value={session.current.standardSet ?? ''}
             onchange={(e) =>
               (session.current.standardSet =
@@ -413,9 +413,9 @@
         <!-- Seats are decks, so with no decks there is nothing to seat. -->
         <p class="muted note">{t.noDecksForPlay}</p>
       {:else}
-        <label class="field">
-          <span class="muted">{t.addDeck}</span>
-          <select
+        <label class="field-group">
+          <span class="field-label">{t.addDeck}</span>
+          <select class="field"
             value=""
             onchange={(e) => {
               addSeat(e.currentTarget.value);
@@ -450,7 +450,7 @@
                     .join(' / ')}`}
             </span>
           </span>
-          <button type="button" class="small" onclick={() => removeSeat(i)}>×</button>
+          <button type="button" class="btn small" onclick={() => removeSeat(i)}>×</button>
         </div>
       {/each}
     </div>
@@ -463,10 +463,10 @@
         </p>
         <p class="muted note">{t.savedGameNote}</p>
         <div class="result-actions">
-          <button class="primary" type="button" onclick={() => resume(saved)}>
+          <button class="btn btn--primary" type="button" onclick={() => resume(saved)}>
             {t.resumeSaved}
           </button>
-          <button type="button" onclick={throwAway}>{t.discardSaved}</button>
+          <button class="btn" type="button" onclick={throwAway}>{t.discardSaved}</button>
         </div>
       </div>
     {/if}
@@ -490,15 +490,15 @@
       </div>
     {/if}
 
-    <button class="primary big" type="button" onclick={goToBriefing} disabled={!canStart}>
+    <button class="btn btn--primary big" type="button" onclick={goToBriefing} disabled={!canStart}>
       {t.goToSetup}
     </button>
   {:else if session.current.phase === 'briefing'}
     <Briefing {t} {cardLocale} {index} setNames={setNames} />
 
     <div class="result-actions">
-      <button class="primary big" type="button" onclick={startGame}>{t.play}</button>
-      <button type="button" onclick={backToSetup}>{t.backToSetup}</button>
+      <button class="btn btn--primary big" type="button" onclick={startGame}>{t.play}</button>
+      <button class="btn" type="button" onclick={backToSetup}>{t.backToSetup}</button>
     </div>
     <p class="muted note">{t.clockStartsNote}</p>
   {:else if outcome === null}
@@ -519,9 +519,9 @@
       <p class="muted note tap">{t.tapToCorrect}</p>
 
       {#if editingClock}
-        <label class="field">
-          <span class="muted">{t.correctTheClock}</span>
-          <input
+        <label class="field-group">
+          <span class="field-label">{t.correctTheClock}</span>
+          <input class="field"
             type="number"
             min="0"
             inputmode="numeric"
@@ -534,16 +534,16 @@
           />
         </label>
         <div class="clock-actions">
-          <button class="primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
-          <button type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
+          <button class="btn btn--primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
+          <button class="btn" type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
         </div>
       {/if}
 
       <div class="clock-actions">
         {#if session.current.runningSince === null}
-          <button type="button" onclick={resumeGame}>{t.resumeClock}</button>
+          <button class="btn" type="button" onclick={resumeGame}>{t.resumeClock}</button>
         {:else}
-          <button type="button" onclick={pauseGame}>{t.pauseClock}</button>
+          <button class="btn" type="button" onclick={pauseGame}>{t.pauseClock}</button>
         {/if}
       </div>
 
@@ -558,8 +558,8 @@
     </label>
 
     <div class="ending">
-      <button class="primary big" type="button" onclick={() => finish(true)}>{t.won}</button>
-      <button class="big" type="button" onclick={() => finish(false)}>{t.lost}</button>
+      <button class="btn btn--primary big" type="button" onclick={() => finish(true)}>{t.won}</button>
+      <button class="btn big" type="button" onclick={() => finish(false)}>{t.lost}</button>
     </div>
     <button class="forget" type="button" onclick={newGame}>{t.discardGame}</button>
 
@@ -577,9 +577,9 @@
       <p class="clock">{formatElapsed(elapsed)}</p>
       <p class="muted note">{t.timePlayedLabel}</p>
 
-      <label class="field">
-        <span class="muted">{t.victoryPoints}</span>
-        <input
+      <label class="field-group">
+        <span class="field-label">{t.victoryPoints}</span>
+        <input class="field"
           type="number"
           min="0"
           inputmode="numeric"
@@ -587,17 +587,17 @@
           oninput={(e) => (victoryPoints = Number.parseInt(e.currentTarget.value, 10) || 0)}
         />
       </label>
-      <label class="field">
-        <span class="muted">{t.notes}</span>
-        <textarea rows="2" value={notes} oninput={(e) => (notes = e.currentTarget.value)}
+      <label class="field-group">
+        <span class="field-label">{t.notes}</span>
+        <textarea class="field" rows="2" value={notes} oninput={(e) => (notes = e.currentTarget.value)}
         ></textarea>
       </label>
 
       <div class="result-actions">
-        <button class="primary" type="button" onclick={record} disabled={recording}>
+        <button class="btn btn--primary" type="button" onclick={record} disabled={recording}>
           {t.saveResult}
         </button>
-        <button type="button" onclick={() => (outcome = null)} disabled={recording}>
+        <button class="btn" type="button" onclick={() => (outcome = null)} disabled={recording}>
           {t.backToGame}
         </button>
       </div>
@@ -607,15 +607,15 @@
 
 <style>
   h1 {
-    font-size: 1.6rem;
+    font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);
   }
 
   h2 {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--md-on-surface-variant);
+    color: var(--text-muted);
     margin: 0;
   }
 
@@ -627,7 +627,7 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     max-width: var(--prose-max);
   }
 
@@ -643,7 +643,7 @@
     gap: var(--space-3);
   }
 
-  .field {
+  .field-group {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
@@ -665,48 +665,16 @@
   }
 
   .seat-sub {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
 
-  select,
-  input,
-  textarea {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--md-outline);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    font-family: inherit;
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--md-outline);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--md-primary);
-    color: var(--md-on-primary);
-    border-color: var(--md-primary);
-    font-weight: 700;
-  }
-
-  button.big {
+  .big {
     padding: var(--space-3) var(--space-6);
-    font-size: 1.05rem;
+    font-size: var(--text-lg);
     margin-top: var(--space-2);
   }
 
-  button.small {
+  .small {
     padding: var(--space-1) var(--space-3);
   }
 
@@ -717,29 +685,18 @@
   }
 
   .tick {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    cursor: pointer;
-    font-size: 0.92rem;
-  }
-
-  .tick input {
-    accent-color: var(--md-primary);
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 auto;
+    font-size: var(--text-sm);
   }
 
   .tap {
     text-align: center;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
   }
 
   .scenario {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
-    color: var(--md-primary);
+    color: var(--accent);
     text-align: center;
   }
 
@@ -775,7 +732,7 @@
     margin: var(--space-4) auto 0;
     border: 0;
     background: none;
-    color: var(--md-error);
+    color: var(--danger);
     font-weight: 600;
     cursor: pointer;
   }
@@ -789,7 +746,7 @@
     background: none;
     color: inherit;
     cursor: pointer;
-    font-size: 3.4rem;
+    font-size: var(--text-4xl);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     text-align: center;
@@ -798,7 +755,7 @@
   }
 
   .clock:hover {
-    color: var(--md-primary);
+    color: var(--accent);
   }
 
   .clock-actions,
@@ -809,11 +766,8 @@
     margin-top: var(--space-3);
   }
 
-
-
-
   .ok {
-    color: var(--md-primary);
+    color: var(--accent);
     font-weight: 600;
   }
 </style>

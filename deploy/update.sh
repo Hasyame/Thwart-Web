@@ -52,9 +52,10 @@ NOW_HEAD="$(git rev-parse HEAD)"
 
 cd "$REPO/web"
 
-# --include=dev explicitly: the build generates the theme and rasterises the
-# icons, and both of those tools are devDependencies. A server with
-# NODE_ENV=production set would otherwise install without them and fail.
+# --include=dev explicitly: the build rasterises the PWA icons, and that tool
+# is a devDependency. A server with NODE_ENV=production set would otherwise
+# install without it and fail. The theme used to be generated here too; it is
+# a source file now.
 log "installing"
 npm ci --include=dev --no-audit --no-fund --silent
 
