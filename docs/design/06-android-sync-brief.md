@@ -1,6 +1,9 @@
 # 06 — Brief: the sync client on Android
 
 **Status:** Written 2026-09-03, for the Android side of Thwart.
+**Amended 2026-09-04:** accounts now carry an email address, and signing in uses
+it. Section 3 and the new section 4 are the parts that changed; if you read the
+first version of this document, read those two again and nothing else.
 **Audience:** whoever implements sync in `Hasyame/Thwart`.
 
 This is not a design document. Doc 02 is the design and it is settled; this says
@@ -54,11 +57,13 @@ Steps 4 and 6 are where the risk is. Steps 1 to 3 are ordinary work.
 ### Auth
 
 ```
-POST /v1/auth/register   {handle, password, deviceName}
-     -> {accountId, handle, token, recoveryCode, recoveryCodeIssuedAt}   201
-POST /v1/auth/login      {handle, password, deviceName}
-     -> {accountId, handle, token, recoveryCodeIssuedAt}                 200
-POST /v1/auth/recover    {handle, recoveryCode, newPassword, deviceName}
+POST /v1/auth/register   {handle, email, password, deviceName}
+     -> {accountId, handle, email, token, recoveryCode,
+         recoveryCodeIssuedAt}                                           201
+POST /v1/auth/login      {email, handle, password, deviceName}
+     -> {accountId, handle, email, token, recoveryCodeIssuedAt}          200
+POST /v1/auth/recover    {email, handle, recoveryCode, newPassword,
+                          deviceName}
      -> as register, with a fresh recoveryCode                           200
 POST /v1/auth/password   {currentPassword, newPassword}                  auth
 GET  /v1/auth/devices    -> {devices: [{id, name, current, createdAt, lastSeen}]}
@@ -67,7 +72,9 @@ DELETE /v1/auth/devices/{id}                                             auth
 
 `recoveryCode` is returned **once** and the server keeps only its hash. The
 screen must refuse to move on until the user has saved it, and must offer it as
-a file. There is no email address on these accounts and no other way back in.
+a file. The server cannot send email yet, so until it can, that code is still
+the only way back into an account whose password has been forgotten — the
+address does not rescue anybody on its own.
 
 `registrationOpen` is published by `GET /v1/version`. thwart.app currently has
 registration closed; an instance that refuses will answer
@@ -98,9 +105,92 @@ records or 2 MB per batch, 256 KB per record, 1000 per page.
 
 ---
 
-## 4. The four things that will go wrong
+## 4. The address
 
-### 4.1 Batches in order, one at a time, and never in parallel
+Added after the first version of this document. It changes three screens and
+nothing else — sync is untouched, and no record body gains a field.
+
+### What goes on the wire
+
+**Registering takes both.** An address *and* a pseudonym, because they answer
+different questions: the address is how you get back in, the pseudonym is what
+you are called. Both are required; a registration without an address is refused
+with `invalid_email`.
+
+**Signing in and recovering take one field.** The server reads `email` first
+and falls back to `handle`, and `AccountByIdentifier` resolves either. The web
+client shows one box labelled *Email address* and sends what was typed in
+**both** fields:
+
+```json
+{"email": "<what was typed>", "handle": "<what was typed>", "password": "..."}
+```
+
+Do the same. It costs nothing, and it means one box on screen resolves an
+address, a pseudonym on an account made before addresses existed, and a server
+older than this change that reads only `handle`.
+
+**Responses now carry `email`.** Register, login and recover all return it.
+Store it next to the handle so the account screen can show which address is
+signed in; treat it as optional, because an older server does not send it and
+the account made before this change has none until it is set.
+
+### What it is not
+
+- **Not verified.** There is no confirmation link, because there is no SMTP
+  relay yet. Do not build a screen that waits for one. The column
+  `email_verified_at` exists in the schema so that adding it later is not a
+  fourth migration; it is null for everybody and the API does not expose it.
+- **Not a way back in yet.** See above: the recovery code still is.
+- **Not required to use the app.** This is the part that matters legally and
+  the part easiest to erode by accident. Thwart works with no account at all —
+  collection, decks, plays, campaigns, all local. An account buys sync and
+  nothing else. Nothing in the app may become unreachable behind a sign-in, and
+  no screen should ask for an address in order to do something local.
+
+### Passwords
+
+The rule changed with the address and is now length-led, with **no composition
+classes**: at least 12 characters counted as runes, not the pseudonym or the
+address and not containing either (for tokens of four characters or more), at
+least five distinct characters, and not one of a short list of obvious ones.
+
+Twelve *runes*, so a French passphrase is not penalised for its accents. No
+"one uppercase, one digit, one symbol", deliberately: that rule is satisfied by
+`Motdepasse1!`, which is shorter and more guessable than four ordinary words.
+What actually defends the system is Argon2id at 64 MiB per attempt and a
+limiter of five tries an hour, both of which already existed.
+
+**Do not re-implement this client-side.** Show the rule as a hint under the
+field, let the server decide, and print its `weak_password` message. Two copies
+of a password policy is two policies, and the one on the phone will be the
+stale one.
+
+### New error codes
+
+| code | when |
+|---|---|
+| `invalid_email` | no address, or one that is not shaped like an address |
+| `email_taken` | that address already has an account (case-insensitively) |
+| `invalid_handle` | pseudonym outside 3–32 chars of `[A-Za-z0-9._-]` |
+| `weak_password` | fails the rule above |
+
+`invalid_handle` and `weak_password` existed before but were not listed here.
+All four come back with English and French messages, chosen by
+`Accept-Language`, so a client with nothing to say for a code can print
+`error.message` and be correct in both languages.
+
+### Storage on the device
+
+`SyncStateEntity` needs one nullable `email` column. Nothing else moves. The
+address is not synced as a record — it belongs to the account, not to the data,
+and the server is the only copy that matters.
+
+---
+
+## 5. The four things that will go wrong
+
+### 5.1 Batches in order, one at a time, and never in parallel
 
 Two batches in flight can interleave two edits of the same record and land them
 in an order the device did not intend. Queue them.
@@ -115,7 +205,7 @@ duplicates writes.
 Records stay dirty until an explicit success. Re-uploading rows the server
 already has is a no-op; assuming a write landed is not.
 
-### 4.2 `minCursor` and the full resync
+### 5.2 `minCursor` and the full resync
 
 Every pull publishes `minCursor`, the tombstone horizon. A cursor below it means
 this device has been away longer than the 180-day retention and the server
@@ -128,7 +218,7 @@ plays that never reached the server. It is a merge from `since=0`, using exactly
 the same reconciliation code as first sign-in. One code path for both, which is
 the only way the rare one will ever actually work.
 
-### 4.3 Signing in on a phone that already holds data
+### 5.3 Signing in on a phone that already holds data
 
 The one that is unforgivable to get wrong: somebody's two years of play history
 either duplicated or gone.
@@ -162,7 +252,7 @@ merge there is no history to adjudicate with, so the safe direction is keeping
 data: a wrongly kept favourite is one tap to remove, a wrongly dropped campaign
 is gone.
 
-### 4.4 Signing out
+### 5.4 Signing out
 
 Local data **stays**. The sync state is cleared, the device is anonymous again
 with everything intact. Offer "sign out and erase local data" as a separate,
@@ -171,7 +261,7 @@ a side effect of signing out.
 
 ---
 
-## 5. Decisions taken since doc 02
+## 6. Decisions taken since doc 02
 
 ### Sync is opt-in
 
@@ -182,7 +272,7 @@ in must not start syncing on its own.
 - **Signing in** answers *who are you*. It records a token and stops.
 - **A switch, off by default,** answers *should this device stay in step*.
 
-The adoption conversation in §4.3 belongs to the switch, not to sign-in. Firing
+The adoption conversation in §5.3 belongs to the switch, not to sign-in. Firing
 a merge dialogue at somebody who only wanted to sign in is how the feature earns
 a reputation before it has done anything.
 
@@ -219,7 +309,7 @@ reason a collection name is.
 
 ---
 
-## 6. Two things worth stealing from the web client
+## 7. Two things worth stealing from the web client
 
 **Change detection without a dirty flag.** The web keeps, per record, the
 revision the server gave it and a digest of the body that was sent. A row whose
@@ -241,7 +331,7 @@ is not.
 
 ---
 
-## 7. Testing it
+## 8. Testing it
 
 The server is real and reachable, so test against it rather than a mock. Make a
 throwaway account, exercise the paths, then `DELETE /v1/account` — which is a

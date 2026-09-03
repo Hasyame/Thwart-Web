@@ -76,7 +76,7 @@ except where noted.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/v1/auth/register` | Create an account. No email required or requested. |
+| `POST` | `/v1/auth/register` | Create an account. Takes a pseudonym and an address. |
 | `POST` | `/v1/auth/login` | Exchange handle + password for a device token. |
 | `POST` | `/v1/auth/recover` | Exchange a recovery code for a password reset. |
 | `POST` | `/v1/auth/password` | Change password (authenticated). |
@@ -101,27 +101,29 @@ except where noted.
 
 Eleven endpoints. That is the whole API.
 
-### Registration without an email address
+### Registration
 
 ```http
 POST /v1/auth/register
 Content-Type: application/json
 
-{ "handle": "benoit", "password": "..." }
+{ "handle": "benoit", "email": "...", "password": "..." }
 ```
 
 ```json
 {
   "accountId": "018f2c...",
+  "handle": "benoit",
+  "email": "...",
   "token": "tw_live_9f3a...",
   "recoveryCode": "TW-4KX9-2M7P-QR31-8VNE",
   "recoveryCodeIssuedAt": "2026-09-14T10:03:11Z"
 }
 ```
 
-`handle` is a local identifier, not an email and not validated as one. It may be
-anything unique on the instance; the client should offer a generated one so a
-user can create an account without inventing anything.
+`handle` is a local identifier, not an address and not validated as one. It is
+the name on the account. `email` is what signing in uses, and both are required
+and unique on the instance.
 
 `recoveryCode` is CSPRNG output rendered in a grouped alphabet that excludes
 look-alike characters. **It is shown exactly once**, and the client must insist
@@ -140,11 +142,37 @@ a database dump does not yield recovery codes.
 > magnitude. The binding constraint is the limiter, not the code, which is why
 > the limiter's numbers are load-bearing rather than decorative.
 
-Email is not a column with a `NULL` in it. It is **absent from the schema
-entirely** in the first release. If optional email notification is ever added,
-it goes in a separate `account_email` table that simply has no row for the vast
-majority of accounts — so "this instance holds no email address for this user"
-is a structural fact rather than a policy someone has to remember.
+> **Amended during implementation: there is an address after all.**
+>
+> This document originally said an address was absent from the schema
+> entirely, and argued that a structural fact beats a policy somebody has to
+> remember. That argument still holds; it just lost to a plainer one.
+>
+> Without an address, an account has exactly one way back in: a code the user
+> copied down at registration. Somebody who loses it loses the account, and
+> there is nothing anyone can do about it — not a support request, not a
+> database, nothing. That is an acceptable trade for a throwaway login and a
+> bad one for the place a person's whole collection and campaign history
+> lives. An SMTP relay is coming, and when it does the address becomes a real
+> recovery route rather than a second thing to lose.
+>
+> The data-minimisation position is unchanged, and rests on something stronger
+> than not having the column: **the app does not need an account at all.** Web
+> and Android both work fully offline — collection, decks, plays, campaigns.
+> An account buys synchronisation between devices and nothing else, so the
+> address is only ever held for people who asked for that.
+>
+> The column is `email TEXT`, nullable, under a case-insensitive partial unique
+> index. Nullable so accounts predating it stay valid; case-insensitive so one
+> address cannot be claimed twice by capitalising it differently.
+> `email_verified_at` is there from the start, null for everybody, because the
+> relay is coming and a column is cheaper than another migration.
+>
+> Signing in reads `email` and falls back to `handle`, so one field on screen
+> resolves either and an older client keeps working.
+>
+> The recovery code stays, and stays the only way back in until the relay
+> exists. Nothing about it is weakened by the address being there.
 
 ---
 
@@ -545,7 +573,9 @@ Codes in the first release: `unauthorized`, `invalid_credentials`,
   and disaster recovery, so the rare paths are exercised by the common one.
 - The account is never a trap: `GET /v1/account/export` emits the app's own
   `Backup` shape, and `DELETE /v1/account` is real.
-- Nothing in the protocol requires the server to hold an email address.
+- The address is the only personal datum on the account, it is used to sign
+  in and for nothing else, and nobody who does not want synchronisation ever
+  supplies one — the app is fully usable with no account.
 
 **Bad, and accepted.**
 

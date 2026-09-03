@@ -378,8 +378,9 @@ account, **close registration**, install the backup timer, and — last, because
 it is the step everyone skips — perform one restore into a throwaway directory
 to prove the backups work.
 
-It should also state plainly what the server does not do: it holds no email
-address unless you add one, it stores no card data, it never contacts
-MarvelCDB or BoardGameGeek, and it makes no outbound connections at all. For
-somebody deciding whether to run a stranger's code on their box, that paragraph
-is the most useful one in the file.
+It should also state plainly what the server does and does not hold: one email
+address per account, used to sign in and for nothing else, on accounts that
+exist only because somebody asked for synchronisation — and beyond that, no
+card data, no contact with MarvelCDB or BoardGameGeek, and no outbound
+connections at all. For somebody deciding whether to run a stranger’s code on
+their box, that paragraph is the most useful one in the file.
