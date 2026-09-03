@@ -82,10 +82,10 @@
                  a card somebody else took is closed to everyone and says who
                  has it. -->
             <span class="owner muted">{t.ownedBy(owner)}</span>
-            <button type="button" onclick={() => giveBack(offer.entry.cardCode)}>{t.refund}</button>
+            <button class="btn" type="button" onclick={() => giveBack(offer.entry.cardCode)}>{t.refund}</button>
           {:else}
             <button
-              class="buy"
+              class="btn buy"
               type="button"
               disabled={!canBuy(offer)}
               onclick={() => take(offer.entry.cardCode, offer.entry.cost, offer.entry.cardListId ?? 'purchases')}
@@ -168,24 +168,10 @@
     font-size: var(--text-sm);
   }
 
-  button {
-    padding: var(--space-1) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
   button.buy:not(:disabled) {
     border-color: var(--accent);
     color: var(--accent);
     font-weight: 600;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 
 </style>

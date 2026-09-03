@@ -216,7 +216,7 @@
 {#snippet panel(title: string, steps: readonly SetupStep[])}
   {@const shown = steps.filter(hasText)}
   {#if shown.length > 0}
-    <section class="panel surface">
+    <section class="panel">
       <h3>{title}</h3>
       <ul class="steps">
         {#each shown as step, i (i)}
@@ -230,13 +230,13 @@
 <!-- Four boxes, in the order the table works through them: the story, what to
      fetch, what to lay out, and what to know once it is laid out. -->
 {#if scenario.flavour != null && label(scenario.flavour) !== ''}
-  <section class="panel surface story">
+  <section class="panel story">
     <p><CampaignText segments={parseCampaignText(label(scenario.flavour), text)} /></p>
   </section>
 {/if}
 
 {#if hasChips}
-  <section class="panel surface">
+  <section class="panel">
     <h3>{t.campaignPreSetup}</h3>
     <dl class="gather">
       {#if villainDeck.length > 0}
@@ -284,7 +284,7 @@
        whatever the campaign changes, then follow the setup printed on the
        scheme itself. Read off the card rather than written into the template,
        so it arrives in the language the cards are in. -->
-  <section class="panel surface">
+  <section class="panel">
     <h3>{t.schemeSetupTitle}</h3>
     <ul class="steps">
       {#each schemeSteps as step, i (i)}
@@ -301,7 +301,6 @@
 
 <style>
   .panel {
-    padding: var(--space-4) var(--space-5);
     margin: var(--space-3) 0;
   }
 
@@ -388,14 +387,6 @@
     margin-top: var(--space-1);
   }
 
-  .chip {
-    border: 1px solid var(--hairline);
-    border-radius: var(--radius-lg);
-    background: var(--surface-2);
-    padding: 2px var(--space-3);
-    font-size: var(--text-sm);
-  }
-
   .drawn {
     display: flex;
     flex-wrap: wrap;
@@ -415,11 +406,8 @@
   }
 
   .chip.keep {
-    cursor: pointer;
     border-color: var(--accent);
     color: var(--accent);
-    font: inherit;
-    font-size: var(--text-sm);
   }
 
   .taken {

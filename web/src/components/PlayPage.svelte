@@ -351,7 +351,7 @@
   {:else if recorded}
     <div class="notice surface">
       <p class="ok">{t.playRecorded}</p>
-      <button type="button" class="primary" onclick={newGame}>{t.playAnother}</button>
+      <button type="button" class="btn btn--primary" onclick={newGame}>{t.playAnother}</button>
     </div>
   {:else if session.current.phase === 'setup'}
     <p class="muted note">{t.playSetupNote}</p>
@@ -450,7 +450,7 @@
                     .join(' / ')}`}
             </span>
           </span>
-          <button type="button" class="small" onclick={() => removeSeat(i)}>×</button>
+          <button type="button" class="btn small" onclick={() => removeSeat(i)}>×</button>
         </div>
       {/each}
     </div>
@@ -463,10 +463,10 @@
         </p>
         <p class="muted note">{t.savedGameNote}</p>
         <div class="result-actions">
-          <button class="primary" type="button" onclick={() => resume(saved)}>
+          <button class="btn btn--primary" type="button" onclick={() => resume(saved)}>
             {t.resumeSaved}
           </button>
-          <button type="button" onclick={throwAway}>{t.discardSaved}</button>
+          <button class="btn" type="button" onclick={throwAway}>{t.discardSaved}</button>
         </div>
       </div>
     {/if}
@@ -490,15 +490,15 @@
       </div>
     {/if}
 
-    <button class="primary big" type="button" onclick={goToBriefing} disabled={!canStart}>
+    <button class="btn btn--primary big" type="button" onclick={goToBriefing} disabled={!canStart}>
       {t.goToSetup}
     </button>
   {:else if session.current.phase === 'briefing'}
     <Briefing {t} {cardLocale} {index} setNames={setNames} />
 
     <div class="result-actions">
-      <button class="primary big" type="button" onclick={startGame}>{t.play}</button>
-      <button type="button" onclick={backToSetup}>{t.backToSetup}</button>
+      <button class="btn btn--primary big" type="button" onclick={startGame}>{t.play}</button>
+      <button class="btn" type="button" onclick={backToSetup}>{t.backToSetup}</button>
     </div>
     <p class="muted note">{t.clockStartsNote}</p>
   {:else if outcome === null}
@@ -534,16 +534,16 @@
           />
         </label>
         <div class="clock-actions">
-          <button class="primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
-          <button type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
+          <button class="btn btn--primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
+          <button class="btn" type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
         </div>
       {/if}
 
       <div class="clock-actions">
         {#if session.current.runningSince === null}
-          <button type="button" onclick={resumeGame}>{t.resumeClock}</button>
+          <button class="btn" type="button" onclick={resumeGame}>{t.resumeClock}</button>
         {:else}
-          <button type="button" onclick={pauseGame}>{t.pauseClock}</button>
+          <button class="btn" type="button" onclick={pauseGame}>{t.pauseClock}</button>
         {/if}
       </div>
 
@@ -558,8 +558,8 @@
     </label>
 
     <div class="ending">
-      <button class="primary big" type="button" onclick={() => finish(true)}>{t.won}</button>
-      <button class="big" type="button" onclick={() => finish(false)}>{t.lost}</button>
+      <button class="btn btn--primary big" type="button" onclick={() => finish(true)}>{t.won}</button>
+      <button class="btn big" type="button" onclick={() => finish(false)}>{t.lost}</button>
     </div>
     <button class="forget" type="button" onclick={newGame}>{t.discardGame}</button>
 
@@ -594,10 +594,10 @@
       </label>
 
       <div class="result-actions">
-        <button class="primary" type="button" onclick={record} disabled={recording}>
+        <button class="btn btn--primary" type="button" onclick={record} disabled={recording}>
           {t.saveResult}
         </button>
-        <button type="button" onclick={() => (outcome = null)} disabled={recording}>
+        <button class="btn" type="button" onclick={() => (outcome = null)} disabled={recording}>
           {t.backToGame}
         </button>
       </div>
@@ -668,34 +668,13 @@
     font-size: var(--text-sm);
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
-    font-weight: 700;
-  }
-
-  button.big {
+  .big {
     padding: var(--space-3) var(--space-6);
     font-size: var(--text-lg);
     margin-top: var(--space-2);
   }
 
-  button.small {
+  .small {
     padding: var(--space-1) var(--space-3);
   }
 
@@ -706,18 +685,7 @@
   }
 
   .tick {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    cursor: pointer;
     font-size: var(--text-sm);
-  }
-
-  .tick input {
-    accent-color: var(--accent);
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 auto;
   }
 
   .tap {
@@ -797,9 +765,6 @@
     gap: var(--space-2);
     margin-top: var(--space-3);
   }
-
-
-
 
   .ok {
     color: var(--accent);

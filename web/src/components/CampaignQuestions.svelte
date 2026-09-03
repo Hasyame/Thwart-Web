@@ -172,7 +172,7 @@
   };
 </script>
 
-<section class="panel surface">
+<section class="panel">
   <p class="verdict" class:won={victory}>{victory ? t.campaignBravo : t.campaignDefeatRecorded}</p>
   <p class="clock">{formatElapsed(elapsedMillis)}</p>
   <p class="muted note centre">{t.timePlayedLabel}</p>
@@ -182,7 +182,7 @@
   {/if}
 </section>
 
-<section class="panel surface">
+<section class="panel">
   <h3>{t.campaignQuestionsTitle}</h3>
 
   {#if prompts.length === 0}
@@ -310,20 +310,19 @@
 
   <div class="actions">
     <button
-      class="primary"
+      class="btn btn--primary"
       type="button"
       disabled={submitting || missing.length > 0}
       onclick={() => onSubmit(built)}
     >
       {submitting ? t.campaignValidating : t.campaignValidate}
     </button>
-    <button type="button" disabled={submitting} onclick={onBack}>{t.backToGame}</button>
+    <button class="btn" type="button" disabled={submitting} onclick={onBack}>{t.backToGame}</button>
   </div>
 </section>
 
 <style>
   .panel {
-    padding: var(--space-4) var(--space-5);
     margin: var(--space-3) 0;
   }
 
@@ -373,12 +372,11 @@
     margin: 0 0 var(--space-2);
   }
 
-  .tick,
   .row {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-1) 0;
+    min-height: var(--tap-min);
   }
 
   .row {
@@ -421,24 +419,4 @@
     max-width: var(--prose-max);
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
-    font-weight: 700;
-  }
 </style>

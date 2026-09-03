@@ -199,7 +199,7 @@
             }}
           />
         </label>
-        <button type="button" onclick={doImport} disabled={reference === null || busy}>
+        <button class="btn" type="button" onclick={doImport} disabled={reference === null || busy}>
           {busy ? t.importing : t.importAction}
         </button>
       </div>
@@ -226,7 +226,7 @@
           >
             <button
               type="button"
-              class="deck-head"
+              class="btn deck-head"
               aria-expanded={deck.id === openDeckId}
               onclick={() => (openDeckId = openDeckId === deck.id ? null : deck.id)}
             >
@@ -244,7 +244,7 @@
                 <span class="verdict muted">…</span>
               {/if}
             </button>
-            <button type="button" class="remove" onclick={() => remove(deck.id)}>
+            <button type="button" class="btn remove" onclick={() => remove(deck.id)}>
               {t.removeDeck}
             </button>
           </li>
@@ -321,20 +321,6 @@
     border: 1px solid var(--border);
     background: var(--surface-1);
     color: var(--text);
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 
   .decks {

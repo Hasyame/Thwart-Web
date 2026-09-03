@@ -95,15 +95,15 @@
   }
 </script>
 
-<div class="panel surface">
+<div class="panel">
   <h2>{t.backupTitle}</h2>
   <p class="muted">{t.backupIntro}</p>
 
   <div class="actions">
-    <button type="button" onclick={() => fileInput?.click()} disabled={busy}>
+    <button class="btn" type="button" onclick={() => fileInput?.click()} disabled={busy}>
       {t.backupImport}
     </button>
-    <button type="button" onclick={download} disabled={busy}>
+    <button class="btn" type="button" onclick={download} disabled={busy}>
       {t.backupExport}
     </button>
     <input
@@ -141,13 +141,13 @@
       {/if}
 
       <div class="actions">
-        <button type="button" class="primary" onclick={() => confirm('merge')} disabled={busy}>
+        <button type="button" class="btn btn--primary" onclick={() => confirm('merge')} disabled={busy}>
           {t.backupMerge}
         </button>
-        <button type="button" onclick={() => confirm('replace')} disabled={busy}>
+        <button class="btn" type="button" onclick={() => confirm('replace')} disabled={busy}>
           {t.backupReplace}
         </button>
-        <button type="button" onclick={() => (pending = null)} disabled={busy}>
+        <button class="btn" type="button" onclick={() => (pending = null)} disabled={busy}>
           {t.cancel}
         </button>
       </div>
@@ -164,7 +164,6 @@
 
 <style>
   .panel {
-    padding: var(--space-4);
     margin: var(--space-4) 0;
   }
 
@@ -178,35 +177,6 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-3);
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    background: var(--surface-2);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
-  }
-
-  button.primary:hover:not(:disabled) {
-    background: var(--accent);
-    filter: brightness(1.08);
   }
 
   .confirm {

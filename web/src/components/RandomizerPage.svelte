@@ -547,9 +547,9 @@
               <span class="visually-hidden">{t.lockField}</span>
             </button>
           </div>
-          <ul class="chips">
+          <ul class="drawn-list">
             {#each draw.heroes as hero, position (position)}
-              <li class="chip picker" data-faction={hero.aspect}>
+              <li class="drawn picker" data-faction={hero.aspect}>
                 <select class="field"
                   value={hero.code}
                   onchange={(e) => chooseHero(position, e.currentTarget.value)}
@@ -589,17 +589,17 @@
           {#if draw.mandatoryModularCodes.length === 0 && draw.modularSetCodes.length === 0}
             <p class="value muted">{t.noModularSets}</p>
           {:else}
-            <ul class="chips">
+            <ul class="drawn-list">
               {#each draw.mandatoryModularCodes as code (code)}
                 <!-- Marked because it was not drawn: the scenario requires it,
                      and rerolling will never replace it. -->
-                <li class="chip required">
+                <li class="drawn is-required">
                   {setNames.get(code) ?? code}
                   <span class="muted">{t.required}</span>
                 </li>
               {/each}
               {#each draw.modularSetCodes as code, position (position)}
-                <li class="chip picker">
+                <li class="drawn picker">
                   <select class="field"
                     value={code}
                     onchange={(e) => chooseModularSet(position, e.currentTarget.value)}
@@ -779,7 +779,7 @@
     font-weight: 600;
   }
 
-  .chips {
+  .drawn-list {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
@@ -788,7 +788,14 @@
     margin: 0;
   }
 
-  .chip {
+  /*
+   * One part of a drawn game — a hero, a modular set, the difficulty — with a
+   * rule down its leading edge in the colour of what it names.
+   *
+   * Deliberately not the shared chip: that is a small pill for a label or a
+   * filter, and these are full rows carrying two pieces of text apiece.
+   */
+  .drawn {
     display: flex;
     align-items: baseline;
     gap: var(--space-2);
@@ -799,23 +806,23 @@
     font-size: var(--text-base);
   }
 
-  .chip.required {
+  .drawn.is-required {
     border-inline-start-color: var(--accent);
   }
 
-  .chip[data-faction='aggression'] {
+  .drawn[data-faction='aggression'] {
     border-inline-start-color: var(--faction-aggression);
   }
-  .chip[data-faction='justice'] {
+  .drawn[data-faction='justice'] {
     border-inline-start-color: var(--faction-justice);
   }
-  .chip[data-faction='leadership'] {
+  .drawn[data-faction='leadership'] {
     border-inline-start-color: var(--faction-leadership);
   }
-  .chip[data-faction='protection'] {
+  .drawn[data-faction='protection'] {
     border-inline-start-color: var(--faction-protection);
   }
-  .chip[data-faction='pool'] {
+  .drawn[data-faction='pool'] {
     border-inline-start-color: var(--faction-pool);
   }
 

@@ -156,7 +156,7 @@
           <p class="muted what">{t.damageOnVillain}</p>
           <div class="steps">
             {#each STEPS as step (step)}
-              <button type="button" onclick={() => updateEncounter((c) => damaged(c, step))}>
+              <button class="btn" type="button" onclick={() => updateEncounter((c) => damaged(c, step))}>
                 {step > 0 ? `+${step}` : `−${-step}`}
               </button>
             {/each}
@@ -168,7 +168,7 @@
                something the table does, sometimes with a choice, and a counter
                that jumped ahead would describe a board that does not exist. -->
           <button
-            class="advance"
+            class="btn advance"
             class:ready={villainDefeated(encounter)}
             type="button"
             onclick={() => updateEncounter(villainAdvanced)}
@@ -229,7 +229,7 @@
           <p class="muted what">{t.threatOnScheme}</p>
           <div class="steps">
             {#each STEPS as step (step)}
-              <button type="button" onclick={() => updateEncounter((c) => threatened(c, step))}>
+              <button class="btn" type="button" onclick={() => updateEncounter((c) => threatened(c, step))}>
                 {step > 0 ? `+${step}` : `−${-step}`}
               </button>
             {/each}
@@ -238,7 +238,7 @@
 
         {#if !isFinalSchemeStage(encounter)}
           <button
-            class="advance"
+            class="btn advance"
             class:ready={schemeComplete(encounter)}
             type="button"
             onclick={() => updateEncounter(schemeAdvanced)}
@@ -249,7 +249,7 @@
       </div>
     {/if}
 
-    <button class="primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
+    <button class="btn btn--primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
       {t.endRound}
     </button>
 
@@ -343,19 +343,6 @@
   .steps button {
     padding: var(--space-2);
     font-variant-numeric: tabular-nums;
-  }
-
-  button {
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    padding: var(--space-1) var(--space-3);
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: var(--surface-2);
   }
 
   .advance {

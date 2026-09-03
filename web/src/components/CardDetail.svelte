@@ -226,11 +226,7 @@
   }
 
   .chip {
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-lg);
-    background: var(--surface-2);
     color: var(--text-muted);
-    font-size: var(--text-sm);
   }
 
   .resources {

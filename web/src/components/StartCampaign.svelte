@@ -213,10 +213,10 @@
     </fieldset>
 
     <div class="actions">
-      <button class="primary" type="button" onclick={start} disabled={!canStart}>
+      <button class="btn btn--primary" type="button" onclick={start} disabled={!canStart}>
         {t.startCampaign}
       </button>
-      <button type="button" onclick={onCancel} disabled={starting}>{t.cancel}</button>
+      <button class="btn" type="button" onclick={onCancel} disabled={starting}>{t.cancel}</button>
     </div>
     <p class="muted note">{t.campaignRosterNote}</p>
   {/if}
@@ -276,26 +276,6 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-3);
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
   }
 
   .warning {

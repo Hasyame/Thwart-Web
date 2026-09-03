@@ -69,9 +69,9 @@
 
 {#if storageOk}
   {#if !open}
-    <button type="button" class="start" onclick={begin}>{t.longBreak}</button>
+    <button type="button" class="btn start" onclick={begin}>{t.longBreak}</button>
   {:else if draft !== null}
-    <div class="panel surface">
+    <div class="panel">
       <h2>{t.longBreak}</h2>
       <p class="muted note">{t.longBreakIntro}</p>
 
@@ -155,10 +155,10 @@
       </label>
 
       <div class="actions">
-        <button class="primary" type="button" onclick={save} disabled={saving}>
+        <button class="btn btn--primary" type="button" onclick={save} disabled={saving}>
           {t.savePutAway}
         </button>
-        <button type="button" onclick={() => (open = false)} disabled={saving}>{t.cancel}</button>
+        <button class="btn" type="button" onclick={() => (open = false)} disabled={saving}>{t.cancel}</button>
       </div>
     </div>
   {/if}
@@ -166,7 +166,6 @@
 
 <style>
   .panel {
-    padding: var(--space-4);
     margin: var(--space-4) 0;
   }
 
@@ -221,30 +220,6 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-3);
-  }
-
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button:hover:not(:disabled) {
-    background: var(--surface-2);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
   }
 
   .start {

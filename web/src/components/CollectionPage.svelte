@@ -323,19 +323,10 @@
     gap: var(--space-3);
   }
 
+  /* The only thing the shared row does not know: these sit in a grid whose
+     columns must be allowed to shrink, or a long pack name widens the track. */
   .tick {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    cursor: pointer;
     min-width: 0;
-  }
-
-  .tick input {
-    flex: 0 0 auto;
-    width: 1.1rem;
-    height: 1.1rem;
-    accent-color: var(--accent);
   }
 
   .pack-name {

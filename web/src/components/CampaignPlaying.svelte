@@ -99,16 +99,16 @@
       />
     </label>
     <div class="clock-actions">
-      <button class="primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
-      <button type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
+      <button class="btn btn--primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
+      <button class="btn" type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
     </div>
   {/if}
 
   <div class="clock-actions">
     {#if running}
-      <button type="button" onclick={onPause}>{t.pauseClock}</button>
+      <button class="btn" type="button" onclick={onPause}>{t.pauseClock}</button>
     {:else}
-      <button type="button" onclick={onResume}>{t.resumeClock}</button>
+      <button class="btn" type="button" onclick={onResume}>{t.resumeClock}</button>
     {/if}
   </div>
 
@@ -125,8 +125,8 @@
 </label>
 
 <div class="ending">
-  <button class="primary big" type="button" onclick={onVictory}>{t.won}</button>
-  <button class="big" type="button" onclick={onDefeat}>{t.lost}</button>
+  <button class="btn btn--primary big" type="button" onclick={onVictory}>{t.won}</button>
+  <button class="btn big" type="button" onclick={onDefeat}>{t.lost}</button>
 </div>
 
 <style>
@@ -220,23 +220,7 @@
     flex: 1 1 10rem;
   }
 
-  button {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
-    font-weight: 700;
-  }
-
-  button.big {
+  .big {
     padding: var(--space-3) var(--space-6);
     font-size: var(--text-lg);
   }
