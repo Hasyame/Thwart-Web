@@ -354,6 +354,116 @@ export interface CampaignTemplate {
   readonly notice?: LocalizedText | null;
   /** Marked incomplete by whoever wrote it. Shown, but with a warning. */
   readonly wip?: boolean;
+  /** Numbers the campaign counts with when the card database cannot. */
+  readonly tracker?: CampaignTracker | null;
+}
+
+// --- numbers a campaign carries itself ----------------------------------------
+
+/**
+ * A number worked out from the campaign rather than printed on a card.
+ *
+ * Campaign books state these as a sum for the table to do — one threat per
+ * pressure box ticked, or two on an expert campaign — for a number the app
+ * already holds every part of.
+ */
+export interface ComputedAmount {
+  /** The campaign counter the amount is read from. */
+  readonly counter: string;
+  /** What one unit of that counter is worth, on standard and on expert. */
+  readonly perUnit?: number;
+  readonly perUnitExpert?: number;
+  /** Below this the amount is nothing. */
+  readonly threshold?: number;
+  /**
+   * True when reaching the threshold is worth one amount rather than one per
+   * unit. La Poursuite puts a single token on its tanker once two boxes are
+   * ticked; the museum puts one on its scheme for every box.
+   */
+  readonly once?: boolean;
+}
+
+/**
+ * One printed side, as the tracker counts it.
+ *
+ * Mirrors the card rather than the rules: `value` is the number printed on it
+ * and `perPlayer` says whether the small figure icon is beside that number, so
+ * a template records what somebody can read off the card and check.
+ */
+export interface TrackedSide {
+  readonly name: string;
+  readonly stage?: string;
+  /** Villain health, or a main scheme's threat limit. Null when starred. */
+  readonly value?: number | null;
+  readonly perPlayer?: boolean;
+  /** The card prints a star instead of a number, so the table sets it. */
+  readonly starred?: boolean;
+  readonly startingThreat?: number;
+  readonly startingThreatPerPlayer?: boolean;
+  readonly escalation?: number;
+  readonly escalationPerPlayer?: boolean;
+  /**
+   * Threat the campaign adds on top of the printed `startingThreat`.
+   *
+   * A job under pressure starts with tokens already on its scheme, which is
+   * not on the card and cannot be: it depends on how the campaign has gone.
+   */
+  readonly startingThreatFrom?: ComputedAmount | null;
+  /**
+   * The difficulty this side is played on, when the modes use different cards.
+   *
+   * Fear No Evil's subordinates are dealt as two stages out of three: standard
+   * faces I and II, expert II and III. Null on every side played either way,
+   * which is most of them.
+   */
+  readonly onlyOn?: string | null;
+}
+
+/**
+ * Villain and main scheme numbers a campaign carries itself.
+ *
+ * Keyed by whatever the campaign identifies them with: a villain by the id its
+ * draw uses, a scheme by its scenario id. Both are lists because a villain has
+ * stages and a finale can turn over to a second scheme.
+ *
+ * This exists because Fear No Evil's villains are on no database. Without it
+ * that whole campaign has no tracker at all — no health to count down, no
+ * threat to count up — which is most of what a companion is for.
+ */
+export interface CampaignTracker {
+  readonly villains?: Readonly<Record<string, readonly TrackedSide[]>>;
+  readonly schemes?: Readonly<Record<string, readonly TrackedSide[]>>;
+  /**
+   * Scenario ids whose main scheme is dealt to each player rather than once to
+   * the table.
+   *
+   * Fear No Evil's racket job gives every player a market of their own to
+   * clear, so a table of three is thwarting three schemes that finish at
+   * different times.
+   */
+  readonly perPlayerSchemes?: readonly string[];
+}
+
+/**
+ * What a computed amount comes to, given the counter it reads and the mode.
+ *
+ * Floored at zero throughout: a template can be imported from a file, and a
+ * negative amount would read as an instruction to take threat off.
+ */
+export function amountFor(
+  amount: ComputedAmount | null | undefined,
+  counterValue: number,
+  expert: boolean,
+): number {
+  if (amount == null) {
+    return 0;
+  }
+  const threshold = amount.threshold ?? 1;
+  if (counterValue < threshold) {
+    return 0;
+  }
+  const unit = Math.max(0, (expert ? amount.perUnitExpert : amount.perUnit) ?? 1);
+  return amount.once === true ? unit : unit * Math.max(0, counterValue);
 }
 
 // --- the event log ------------------------------------------------------------

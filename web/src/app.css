@@ -65,6 +65,18 @@ body {
   }
 }
 
+/*
+ * A long unbroken token cannot push a line off the screen.
+ *
+ * The card and rules text is somebody else's, in two languages, and it carries
+ * things no layout can plan for: a hyphenated French compound, a set name, a
+ * URL in a credit. On a 375px phone one of those is enough to widen its
+ * container and take the whole column with it.
+ */
+body {
+  overflow-wrap: break-word;
+}
+
 h1,
 h2,
 h3 {

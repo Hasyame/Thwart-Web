@@ -459,7 +459,7 @@
    */
   .results {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr));
     gap: var(--space-2);
     padding: 0;
     margin: 0;

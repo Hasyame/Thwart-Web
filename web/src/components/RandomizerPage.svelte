@@ -709,7 +709,7 @@
 
   .draw {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
     gap: var(--space-3);
     margin-top: var(--space-4);
   }
@@ -883,7 +883,7 @@
 
   .options {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
     gap: var(--space-1) var(--space-3);
     margin-top: var(--space-2);
   }
@@ -934,7 +934,7 @@
     padding: 0;
     margin: var(--space-3) 0 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
     gap: var(--space-2);
   }
 

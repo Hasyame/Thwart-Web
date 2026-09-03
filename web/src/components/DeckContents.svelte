@@ -446,7 +446,7 @@
 
   .breakdowns {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
     gap: var(--space-4);
     margin-top: var(--space-4);
   }
@@ -484,7 +484,7 @@
     padding: 0;
     margin: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
     gap: var(--space-1) var(--space-4);
   }
 

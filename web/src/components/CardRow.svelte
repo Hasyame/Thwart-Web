@@ -118,8 +118,18 @@
     flex: 1 1 auto;
   }
 
+  /*
+   * The largest thing in the row, and the reason for the --text-lg step.
+   *
+   * This is what somebody reads with the phone flat on the table and their
+   * hands full of cards, so it is a step above the body text rather than the
+   * same size in bold.
+   */
   .name {
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
   }
 
   .unique {
@@ -127,12 +137,26 @@
     font-size: 0.8em;
   }
 
-  .subname,
-  .meta {
+  /* One line, cut with an ellipsis. A subname is a person's name and a
+     truncated one is still recognisable. */
+  .subname {
     font-size: var(--text-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /*
+   * Wraps rather than truncating.
+   *
+   * Type, affinity and pack, and on a phone the third of them was always the
+   * one cut off — "Amélioration · Commandement · L'Avènement de Crâne…" — so
+   * the pack, which is the part you are usually checking against what you own,
+   * was the part you could not read.
+   */
+  .meta {
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
   }
 
   .cost {

@@ -300,11 +300,11 @@
   /* Two columns of packs once there is room; the contents panel that expands
      underneath one of them spans both, so it is not squeezed. */
   .packs {
-    grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(30rem, 100%), 1fr));
   }
 
   .sets {
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
     margin-top: 0;
   }
 
