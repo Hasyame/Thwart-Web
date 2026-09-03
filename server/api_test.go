@@ -89,10 +89,19 @@ func call(t *testing.T, s *Server, method, path, token string, body any, headers
 	return out
 }
 
+// An address for a test account. Derived from the handle so that two accounts
+// in one test never collide on it by accident, and so that a test that means to
+// exercise the handle index is not silently caught by the address one.
+func testEmail(handle string) string { return handle + "@example.test" }
+
 func register(t *testing.T, s *Server, handle, password string) response {
 	t.Helper()
-	res := call(t, s, "POST", "/v1/auth/register", "",
-		map[string]any{"handle": handle, "password": password, "deviceName": "test device"})
+	res := call(t, s, "POST", "/v1/auth/register", "", map[string]any{
+		"handle":     handle,
+		"email":      testEmail(handle),
+		"password":   password,
+		"deviceName": "test device",
+	})
 	if res.status != http.StatusCreated {
 		t.Fatalf("register %s: status %d, body %v", handle, res.status, res.body)
 	}
@@ -315,25 +324,93 @@ func TestRegistrationValidation(t *testing.T) {
 	cases := []struct {
 		name     string
 		handle   string
+		email    string
 		password string
 		code     string
 	}{
-		{"handle already taken", "benoit", "another long password", "handle_taken"},
-		{"same handle, different case", "BENOIT", "another long password", "handle_taken"},
-		{"handle too short", "ab", "another long password", "invalid_handle"},
-		{"handle has a space", "be noit", "another long password", "invalid_handle"},
-		{"handle is an email", "a@b.com", "another long password", "invalid_handle"},
-		{"password too short", "fresh", "short", "weak_password"},
-		{"password is the handle", "repeated.handle", "repeated.handle", "weak_password"},
+		{"handle already taken", "benoit", "elsewhere@example.test", "another long password", "handle_taken"},
+		{"same handle, different case", "BENOIT", "elsewhere@example.test", "another long password", "handle_taken"},
+		{"address already taken", "fresh", testEmail("benoit"), "another long password", "email_taken"},
+		{"same address, different case", "fresh", "BENOIT@EXAMPLE.TEST", "another long password", "email_taken"},
+		{"handle too short", "ab", "ab@example.test", "another long password", "invalid_handle"},
+		{"handle has a space", "be noit", "sp@example.test", "another long password", "invalid_handle"},
+		{"handle is an email", "a@b.com", "ab@example.test", "another long password", "invalid_handle"},
+		{"no address at all", "fresh", "", "another long password", "invalid_email"},
+		{"address without an at-sign", "fresh", "example.test", "another long password", "invalid_email"},
+		{"address without a dot in the domain", "fresh", "someone@localhost", "another long password", "invalid_email"},
+		{"address with a space in it", "fresh", "some one@example.test", "another long password", "invalid_email"},
+		{"password too short", "fresh", "fresh@example.test", "short", "weak_password"},
+		{"password is the handle", "repeated.handle", "rh@example.test", "repeated.handle", "weak_password"},
+		{"password is the address", "fresh", "fresh@example.test", "fresh@example.test", "weak_password"},
+		{"password is the local part", "fresh", "correcthorse@example.test", "correcthorse", "weak_password"},
+		{"password is one letter over and over", "fresh", "fresh@example.test", "aaaaaaaaaaaaaa", "weak_password"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			res := call(t, s, "POST", "/v1/auth/register", "",
-				map[string]any{"handle": c.handle, "password": c.password})
+				map[string]any{"handle": c.handle, "email": c.email, "password": c.password})
 			if res.code() != c.code {
 				t.Errorf("status %d, code %q, want %q", res.status, res.code(), c.code)
 			}
 		})
+	}
+}
+
+/*
+Signing in by address.
+
+The address is what the sign-in form asks for now. The pseudonym still works,
+because a client that has not been updated sends it and because the accounts
+made before addresses existed have nothing else, and both must reach the same
+account rather than two.
+*/
+func TestSignInByAddressOrPseudonym(t *testing.T) {
+	s := newTestServer(t)
+	created := register(t, s, "benoit", "correct horse battery")
+
+	for _, c := range []struct {
+		name string
+		body map[string]any
+	}{
+		{"by address", map[string]any{"email": testEmail("benoit"), "password": "correct horse battery"}},
+		{"by address in another case", map[string]any{"email": "BENOIT@Example.Test", "password": "correct horse battery"}},
+		{"by pseudonym", map[string]any{"handle": "benoit", "password": "correct horse battery"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			res := call(t, s, "POST", "/v1/auth/login", "", c.body)
+			if res.status != http.StatusOK {
+				t.Fatalf("status %d, code %q", res.status, res.code())
+			}
+			if res.str("accountId") != created.str("accountId") {
+				t.Errorf("signed in to a different account: %q", res.str("accountId"))
+			}
+			if res.str("email") != testEmail("benoit") {
+				t.Errorf("address not reported back: %q", res.str("email"))
+			}
+		})
+	}
+
+	// The address is not a second password: a wrong one must not sign anybody
+	// in, and an unknown one must look exactly like a wrong one.
+	for _, c := range []map[string]any{
+		{"email": testEmail("benoit"), "password": "the wrong password"},
+		{"email": "nobody@example.test", "password": "correct horse battery"},
+	} {
+		if res := call(t, s, "POST", "/v1/auth/login", "", c); res.code() != "invalid_credentials" {
+			t.Errorf("status %d, code %q, want invalid_credentials", res.status, res.code())
+		}
+	}
+}
+
+// The mirror of the table above: a short local part is not a substring rule, or
+// half of all passwords ever written would be refused for containing one.
+func TestAShortLocalPartIsNotASubstringRule(t *testing.T) {
+	s := newTestServer(t)
+	res := call(t, s, "POST", "/v1/auth/register", "", map[string]any{
+		"handle": "fresh", "email": "an@example.test", "password": "a fine and long password",
+	})
+	if res.status != http.StatusCreated {
+		t.Errorf("status %d, code %q, want it accepted", res.status, res.code())
 	}
 }
 

@@ -119,6 +119,32 @@ var migrations = []string{
 	-- A client at or below it may have missed a delete that no longer exists
 	-- to be sent.
 	ALTER TABLE account ADD COLUMN min_cursor INTEGER NOT NULL DEFAULT 0;`,
+
+	// v3: an email address, and what a person signs in with.
+	//
+	// v1 refused one on purpose and said so at length. That decision is
+	// reversed here rather than quietly amended; doc 02 section 1 carries the
+	// reasoning. The short version: an account is optional — the app works
+	// entirely without one, and so does the phone — so an address is only ever
+	// given by somebody who wants their data on two devices, and a familiar
+	// login is worth more to them than a smaller schema was worth to us.
+	//
+	// **Nullable, and not backfilled.** An instance that already has accounts
+	// cannot invent addresses for them and must not lock them out: those rows
+	// keep NULL and their owners go on signing in with the handle. Only new
+	// accounts are asked for one.
+	`ALTER TABLE account ADD COLUMN email TEXT;
+
+	-- Unique where present. The partial index is what lets the legacy NULLs
+	-- coexist: several NULLs are not a collision, two of one address are.
+	CREATE UNIQUE INDEX account_email
+		ON account (email COLLATE NOCASE) WHERE email IS NOT NULL;
+
+	-- When the address was confirmed, once there is any way to confirm one.
+	-- Nothing reads it yet. It is here now for the same reason the revision
+	-- counter was added before sync existed: adding a column later is a
+	-- migration on live accounts, and this one is known to be coming.
+	ALTER TABLE account ADD COLUMN email_verified_at INTEGER;`,
 }
 
 type Store struct {
@@ -129,8 +155,25 @@ type Store struct {
 }
 
 type Account struct {
-	ID           string
-	Handle       string
+	ID string
+	/*
+		The pseudonym, shown wherever the account is named.
+
+		Still unique and still compared case-insensitively: it is what other
+		people would see if anything here were ever shared, and two accounts
+		answering to one name is a confusion nobody needs. It is no longer what
+		anybody types to sign in.
+	*/
+	Handle string
+	/*
+		The address, and the identifier a sign-in is looked up by.
+
+		Empty for an account made before v3, which signs in by handle instead.
+		Never used to send anything: this instance has no SMTP, so it is a
+		familiar name for a login rather than a way to reach somebody. It goes
+		out with the account export and is destroyed with the account.
+	*/
+	Email        string
 	PasswordHash string
 	RecoveryHash string
 	// When the current recovery code was issued. Returned to the client so it
@@ -152,6 +195,10 @@ var ErrNotFound = errors.New("not found")
 // ErrHandleTaken is returned rather than the driver's constraint error, so a
 // handler never has to match on a message string to know what happened.
 var ErrHandleTaken = errors.New("handle taken")
+
+// ErrEmailTaken is the same, for the address. Kept apart from ErrHandleTaken so
+// the form can point at the field that is actually the problem.
+var ErrEmailTaken = errors.New("email taken")
 
 func OpenStore(path string) (*Store, error) {
 	// WAL so readers never block the writer. busy_timeout so a concurrent write
@@ -228,16 +275,26 @@ func (s *Store) Ping(ctx context.Context) error {
 // CreateAccount stores a new account. The caller has already hashed both
 // secrets: this layer never sees a password or a recovery code in clear.
 func (s *Store) CreateAccount(ctx context.Context, a Account) error {
+	// NULL rather than "" when absent, so the partial unique index treats two
+	// address-less accounts as two accounts rather than a collision.
+	var email any
+	if a.Email != "" {
+		email = a.Email
+	}
+
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO account (id, handle, password_hash, recovery_hash, recovery_issued_at, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?)`,
-		a.ID, a.Handle, a.PasswordHash, a.RecoveryHash,
+		`INSERT INTO account (id, handle, email, password_hash, recovery_hash, recovery_issued_at, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		a.ID, a.Handle, email, a.PasswordHash, a.RecoveryHash,
 		a.RecoveryIssuedAt.UnixMilli(), a.CreatedAt.UnixMilli(),
 	)
 	if err != nil {
 		// modernc reports this as a message rather than a typed error, so the
-		// index name is what identifies it.
+		// index name is what identifies which of the two uniques was hit.
 		if containsAny(err.Error(), "UNIQUE constraint failed", "constraint failed: UNIQUE") {
+			if containsAny(err.Error(), "account_email", "account.email") {
+				return ErrEmailTaken
+			}
 			return ErrHandleTaken
 		}
 		return err
@@ -245,29 +302,58 @@ func (s *Store) CreateAccount(ctx context.Context, a Account) error {
 	return nil
 }
 
+const accountColumns = `id, handle, email, password_hash, recovery_hash, recovery_issued_at, created_at`
+
 func (s *Store) AccountByHandle(ctx context.Context, handle string) (Account, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, handle, password_hash, recovery_hash, recovery_issued_at, created_at
-		   FROM account WHERE handle = ? COLLATE NOCASE`, handle)
+		`SELECT `+accountColumns+` FROM account WHERE handle = ? COLLATE NOCASE`, handle)
 	return scanAccount(row)
+}
+
+func (s *Store) AccountByEmail(ctx context.Context, email string) (Account, error) {
+	row := s.db.QueryRowContext(ctx,
+		`SELECT `+accountColumns+` FROM account WHERE email = ? COLLATE NOCASE`, email)
+	return scanAccount(row)
+}
+
+/*
+The account somebody signing in is asking for.
+
+An address first, because that is what the form asks for and what every account
+made since v3 has. Falling back to the handle is for the accounts that predate
+the column: they were created when a handle was the only identifier, no address
+can be invented for them, and refusing them would be locking somebody out of
+their own data to tidy up a schema.
+*/
+func (s *Store) AccountByIdentifier(ctx context.Context, identifier string) (Account, error) {
+	account, err := s.AccountByEmail(ctx, identifier)
+	if err == nil {
+		return account, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return Account{}, err
+	}
+	return s.AccountByHandle(ctx, identifier)
 }
 
 func (s *Store) AccountByID(ctx context.Context, id string) (Account, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, handle, password_hash, recovery_hash, recovery_issued_at, created_at
-		   FROM account WHERE id = ?`, id)
+		`SELECT `+accountColumns+` FROM account WHERE id = ?`, id)
 	return scanAccount(row)
 }
 
 func scanAccount(row *sql.Row) (Account, error) {
 	var a Account
 	var issued, created int64
-	if err := row.Scan(&a.ID, &a.Handle, &a.PasswordHash, &a.RecoveryHash, &issued, &created); err != nil {
+	// NULL for an account made before v3, and then the empty string here.
+	var email sql.NullString
+	if err := row.Scan(&a.ID, &a.Handle, &email, &a.PasswordHash, &a.RecoveryHash, &issued, &created); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Account{}, ErrNotFound
 		}
 		return Account{}, err
 	}
+	a.Email = email.String
 	a.RecoveryIssuedAt = time.UnixMilli(issued).UTC()
 	a.CreatedAt = time.UnixMilli(created).UTC()
 	return a, nil

@@ -218,7 +218,8 @@ func TestRateLimitBucketCannotBeChosenByTheCaller(t *testing.T) {
 	limited := false
 	for i := 0; i < registerPerIP.limit+3; i++ {
 		req := httptest.NewRequest("POST", "/v1/auth/register",
-			strings.NewReader(`{"handle":"taken.handle","password":"a long enough password"}`))
+			strings.NewReader(fmt.Sprintf(
+				`{"handle":"taken.handle","email":"someone+%d@example.test","password":"a long enough password"}`, i)))
 		// As nginx would deliver it: the caller's invention, then the peer.
 		req.RemoteAddr = "127.0.0.1:1234"
 		req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.%d, 203.0.113.7", i+1))

@@ -156,6 +156,7 @@ func bearerToken(r *http.Request) (string, bool) {
 
 type registerRequest struct {
 	Handle     string `json:"handle"`
+	Email      string `json:"email"`
 	Password   string `json:"password"`
 	DeviceName string `json:"deviceName"`
 }
@@ -178,7 +179,15 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, apiError{status: http.StatusBadRequest, code: "invalid_handle"})
 		return
 	}
-	if !validPassword(body.Password, handle) {
+	// Lower-cased on the way in, because an address is not two addresses
+	// depending on how somebody held the shift key. The unique index is
+	// case-insensitive too, so the two cannot disagree.
+	email := strings.ToLower(strings.TrimSpace(body.Email))
+	if !validEmail(email) {
+		writeError(w, r, apiError{status: http.StatusBadRequest, code: "invalid_email"})
+		return
+	}
+	if !validPassword(body.Password, handle, email) {
 		writeError(w, r, apiError{status: http.StatusBadRequest, code: "weak_password"})
 		return
 	}
@@ -211,6 +220,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	account := Account{
 		ID:               uuid.NewString(),
 		Handle:           handle,
+		Email:            email,
 		PasswordHash:     passwordHash,
 		RecoveryHash:     recoveryHash,
 		RecoveryIssuedAt: now,
@@ -219,6 +229,10 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.CreateAccount(r.Context(), account); err != nil {
 		if errors.Is(err, ErrHandleTaken) {
 			writeError(w, r, apiError{status: http.StatusConflict, code: "handle_taken"})
+			return
+		}
+		if errors.Is(err, ErrEmailTaken) {
+			writeError(w, r, apiError{status: http.StatusConflict, code: "email_taken"})
 			return
 		}
 		s.fail(w, r, "create account", err)
@@ -234,6 +248,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"accountId": account.ID,
 		"handle":    account.Handle,
+		"email":     account.Email,
 		"token":     token,
 		// Shown exactly once. Doc 02 §1: the client must insist the user saves
 		// it, and offer it as a text file, because that is the part that makes
@@ -245,6 +260,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 type loginRequest struct {
 	Handle     string `json:"handle"`
+	Email      string `json:"email"`
 	Password   string `json:"password"`
 	DeviceName string `json:"deviceName"`
 }
@@ -255,15 +271,21 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handle := strings.TrimSpace(body.Handle)
+	// Signing in is by address. The pseudonym is still accepted, because a
+	// client that has not been updated sends it and because the first account
+	// on this instance was made before addresses existed.
+	identifier := strings.TrimSpace(body.Email)
+	if identifier == "" {
+		identifier = strings.TrimSpace(body.Handle)
+	}
 	ip := clientIP(r)
-	handleKey := "login:handle:" + strings.ToLower(handle)
+	handleKey := "login:handle:" + strings.ToLower(identifier)
 	if !s.limiter.allow("login:ip:"+ip, loginPerIP) || !s.limiter.allow(handleKey, loginPerHandle) {
 		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
 		return
 	}
 
-	account, err := s.store.AccountByHandle(r.Context(), handle)
+	account, err := s.store.AccountByIdentifier(r.Context(), identifier)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		s.fail(w, r, "look up account", err)
 		return
@@ -296,6 +318,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"accountId":            account.ID,
 		"handle":               account.Handle,
+		"email":                account.Email,
 		"token":                token,
 		"recoveryCodeIssuedAt": account.RecoveryIssuedAt.Format(time.RFC3339),
 	})
@@ -303,6 +326,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 type recoverRequest struct {
 	Handle       string `json:"handle"`
+	Email        string `json:"email"`
 	RecoveryCode string `json:"recoveryCode"`
 	NewPassword  string `json:"newPassword"`
 	DeviceName   string `json:"deviceName"`
@@ -321,22 +345,28 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handle := strings.TrimSpace(body.Handle)
+	identifier := strings.TrimSpace(body.Email)
+	if identifier == "" {
+		identifier = strings.TrimSpace(body.Handle)
+	}
 	// Same order as registration: a rejected new password is a form error, and
 	// spending one of five hourly attempts on it would leave somebody locked
 	// out of a recovery they hold the correct code for.
-	if !validPassword(body.NewPassword, handle) {
+	//
+	// Both submitted names are checked against the password, not just the one
+	// being looked up by, so that neither can be reused as it.
+	if !validPassword(body.NewPassword, strings.TrimSpace(body.Handle), strings.TrimSpace(body.Email)) {
 		writeError(w, r, apiError{status: http.StatusBadRequest, code: "weak_password"})
 		return
 	}
 
-	handleKey := "recover:handle:" + strings.ToLower(handle)
+	handleKey := "recover:handle:" + strings.ToLower(identifier)
 	if !s.limiter.allow("recover:ip:"+clientIP(r), recoverIP) || !s.limiter.allow(handleKey, recoverHandle) {
 		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
 		return
 	}
 
-	account, err := s.store.AccountByHandle(r.Context(), handle)
+	account, err := s.store.AccountByIdentifier(r.Context(), identifier)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		s.fail(w, r, "look up account", err)
 		return
@@ -402,6 +432,7 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"accountId":            account.ID,
 		"handle":               account.Handle,
+		"email":                account.Email,
 		"token":                token,
 		"recoveryCode":         nextCode,
 		"recoveryCodeIssuedAt": now.Format(time.RFC3339),
@@ -428,7 +459,7 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request, sess ses
 		writeError(w, r, apiError{status: http.StatusUnauthorized, code: "invalid_credentials"})
 		return
 	}
-	if !validPassword(body.NewPassword, sess.account.Handle) {
+	if !validPassword(body.NewPassword, sess.account.Handle, sess.account.Email) {
 		writeError(w, r, apiError{status: http.StatusBadRequest, code: "weak_password"})
 		return
 	}
@@ -637,11 +668,115 @@ The upper bound is not a policy, it is a defence. Argon2id hashes whatever it
 is given, and an unbounded password is a way to make the server do unbounded
 work for free.
 */
-func validPassword(password, handle string) bool {
-	if len(password) < 10 || len(password) > 256 {
+/*
+Whether a password is strong enough to be worth the hashing.
+
+Length-led, and deliberately without composition classes. ANSSI and NIST both
+moved away from "one uppercase, one digit, one symbol" for the same reason:
+people satisfy it with `Motdepasse1!`, which is shorter and more guessable than
+four ordinary words. Twelve characters with no other rule admits a passphrase,
+which is what somebody can actually remember.
+
+What actually defends this system is elsewhere and already built: Argon2id at
+64 MiB per attempt, and a limiter that allows five tries an hour. A rule here
+only has to stop the passwords that fall to the first hundred guesses.
+
+Rejected as well: anything that is the pseudonym or the address, or contains
+them, because those are the first two things anybody trying would enter.
+*/
+func validPassword(password, handle, email string) bool {
+	trimmed := strings.TrimSpace(password)
+	if len([]rune(trimmed)) < minPasswordRunes || len(password) > maxPasswordBytes {
 		return false
 	}
-	return !strings.EqualFold(strings.TrimSpace(password), strings.TrimSpace(handle))
+
+	lower := strings.ToLower(trimmed)
+	for _, own := range []string{handle, emailLocalPart(email), email} {
+		own = strings.ToLower(strings.TrimSpace(own))
+		if own == "" {
+			continue
+		}
+		if lower == own {
+			return false
+		}
+		// Containment, but only for a token long enough to mean something. A
+		// two-letter local part is inside half the passwords ever written, and
+		// rejecting those would teach the user nothing except that the form is
+		// broken. Short tokens are still caught by the equality test above and
+		// by the distinct-rune rule below.
+		if len([]rune(own)) >= 4 && strings.Contains(lower, own) {
+			return false
+		}
+	}
+
+	// One repeated character, however many times, is one character.
+	if distinctRunes(trimmed) < 5 {
+		return false
+	}
+
+	for _, common := range weakPasswords {
+		if lower == common {
+			return false
+		}
+	}
+	return true
+}
+
+const (
+	// Twelve, counted in runes: a passphrase in French should not be penalised
+	// for its accents, which are two bytes each.
+	minPasswordRunes = 12
+	// A ceiling only so that one request cannot ask for an unbounded amount of
+	// Argon2. Nothing legitimate approaches it.
+	maxPasswordBytes = 256
+)
+
+// The handful that survive a length rule. Not a dictionary — that belongs in a
+// list nobody has to maintain by hand — just the ones somebody types when a
+// form asks for twelve characters.
+var weakPasswords = []string{
+	"motdepasse12", "motdepasse123", "password1234", "passwordpassword",
+	"123456789012", "azertyuiopqs", "qwertyuiopas", "aaaaaaaaaaaa",
+	"motdepasse!1", "administrateur", "thwartthwart",
+}
+
+func distinctRunes(s string) int {
+	seen := map[rune]struct{}{}
+	for _, r := range strings.ToLower(s) {
+		seen[r] = struct{}{}
+	}
+	return len(seen)
+}
+
+func emailLocalPart(email string) string {
+	at := strings.IndexByte(email, '@')
+	if at <= 0 {
+		return ""
+	}
+	return email[:at]
+}
+
+/*
+Whether an address is worth storing.
+
+Deliberately shallow. The only test that means anything is sending to it, which
+this instance cannot yet do, so anything stricter here would reject valid
+addresses — the grammar is far wider than the regexes people write for it — in
+exchange for nothing. One at-sign with something either side, a dot in the
+domain, no spaces, and a sane length.
+*/
+func validEmail(email string) bool {
+	email = strings.TrimSpace(email)
+	if len(email) < 6 || len(email) > 254 || len(strings.Fields(email)) != 1 {
+		return false
+	}
+	at := strings.IndexByte(email, '@')
+	if at <= 0 || at != strings.LastIndexByte(email, '@') || at == len(email)-1 {
+		return false
+	}
+	domain := email[at+1:]
+	dot := strings.IndexByte(domain, '.')
+	return dot > 0 && dot < len(domain)-1
 }
 
 func trimTo(s string, n int) string {

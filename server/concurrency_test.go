@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"testing"
@@ -81,8 +82,14 @@ func TestSimultaneousRegistrationsOfOneHandle(t *testing.T) {
 		wg.Add(1)
 		go func(slot int) {
 			defer wg.Done()
-			results[slot] = call(t, s, "POST", "/v1/auth/register", "",
-				map[string]any{"handle": "benoit", "password": "correct horse battery"})
+			// A distinct address per attempt: the collision under test is the
+			// handle, and a shared address would let the other unique index
+			// answer first.
+			results[slot] = call(t, s, "POST", "/v1/auth/register", "", map[string]any{
+				"handle":   "benoit",
+				"email":    fmt.Sprintf("benoit+%d@example.test", slot),
+				"password": "correct horse battery",
+			})
 		}(i)
 	}
 	wg.Wait()

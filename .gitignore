@@ -50,3 +50,4 @@ Thumbs.db
 # PWA icons, rasterised from public/icon.svg by web/scripts/generate-icons.mjs.
 /web/public/icon-512.png
 /web/public/apple-touch-icon.png
+*.exe~

@@ -36,8 +36,16 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"Une authentification est nécessaire.",
 	},
 	"invalid_credentials": {
-		"That handle and password do not match an account.",
-		"Cet identifiant et ce mot de passe ne correspondent à aucun compte.",
+		"That address and password do not match an account.",
+		"Cette adresse et ce mot de passe ne correspondent à aucun compte.",
+	},
+	"email_taken": {
+		"That address already has an account on this instance.",
+		"Cette adresse a déjà un compte sur cette instance.",
+	},
+	"invalid_email": {
+		"That does not look like an email address.",
+		"Cela ne ressemble pas à une adresse e-mail.",
 	},
 	"handle_taken": {
 		"That handle is already in use on this instance.",
@@ -56,8 +64,8 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"Un identifiant fait 3 à 32 caractères : lettres, chiffres, point, tiret ou soulignement.",
 	},
 	"weak_password": {
-		"A password is at least 10 characters, and cannot be the handle itself.",
-		"Un mot de passe fait au moins 10 caractères, et ne peut pas être l'identifiant lui-même.",
+		"A password is at least 12 characters, and cannot contain your pseudonym or your address.",
+		"Un mot de passe fait au moins 12 caractères, et ne peut pas contenir votre pseudo ni votre adresse.",
 	},
 	"cursor_too_old": {
 		"That cursor predates the tombstone retention window; a full resynchronisation is required.",
