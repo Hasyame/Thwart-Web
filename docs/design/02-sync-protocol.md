@@ -522,6 +522,16 @@ Codes in the first release: `unauthorized`, `invalid_credentials`,
 `handle_taken`, `invalid_recovery_code`, `cursor_too_old`, `batch_too_large`,
 `record_too_large`, `malformed_record`, `rate_limited`, `server_error`.
 
+> **Added during implementation: `registration_closed`.** An instance meant for
+> one household needs a way to stop being one anybody can join, and the refusal
+> has to be the server's — a client that stops drawing the form has changed
+> nothing about who can register, since the endpoint is one curl away. The flag
+> is `-registration=false`, `/v1/version` publishes `registrationOpen` so a
+> client can stop offering a form that would be turned down, and **recovery
+> stays open regardless**: it resets an account that already exists rather than
+> creating one, and closing the door must not lock out the person whose account
+> it is.
+
 ---
 
 ## Consequences

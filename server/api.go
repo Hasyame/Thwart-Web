@@ -49,6 +49,17 @@ type Server struct {
 	// login for a known one spends 64 MiB of Argon2, and the difference is a
 	// handle oracle anyone can read with a stopwatch.
 	decoyHash string
+
+	/*
+		Whether this instance accepts new accounts.
+
+		Refused here rather than hidden in the interface: the form is one curl
+		away, so a client that stops offering registration has changed nothing
+		about who can register. Recovery stays open whatever this says — it
+		resets an account that already exists rather than creating one, and it
+		is the way back in for somebody who has lost a password.
+	*/
+	OpenRegistration bool
 }
 
 func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
@@ -57,7 +68,14 @@ func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{store: store, limiter: newLimiter(), log: log, build: build, decoyHash: decoy}, nil
+	return &Server{
+		store:            store,
+		limiter:          newLimiter(),
+		log:              log,
+		build:            build,
+		decoyHash:        decoy,
+		OpenRegistration: true,
+	}, nil
 }
 
 func (s *Server) Handler() http.Handler {
@@ -143,6 +161,13 @@ type registerRequest struct {
 }
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
+	// Before anything is read or hashed. A closed instance should cost a
+	// would-be registrant nothing and this server rather less.
+	if !s.OpenRegistration {
+		writeError(w, r, apiError{status: http.StatusForbidden, code: "registration_closed"})
+		return
+	}
+
 	var body registerRequest
 	if !decodeJSON(w, r, &body) {
 		return
@@ -514,6 +539,10 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"build":    s.build,
 		"protocol": protocolVersion,
+		// So a client can stop offering a form that would be refused, rather
+		// than finding out by submitting one. Not a security boundary — the
+		// refusal above is — just honesty about what this instance does.
+		"registrationOpen": s.OpenRegistration,
 		// Published so a client does not have to guess, and enforced on push
 		// so one that guesses wrong is told rather than half-served.
 		"limits": map[string]any{

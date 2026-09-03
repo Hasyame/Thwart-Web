@@ -43,6 +43,10 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"That handle is already in use on this instance.",
 		"Cet identifiant est déjà utilisé sur cette instance.",
 	},
+	"registration_closed": {
+		"This instance is not accepting new accounts.",
+		"Cette instance n'accepte pas de nouveaux comptes.",
+	},
 	"invalid_recovery_code": {
 		"That recovery code is not valid for this account.",
 		"Ce code de récupération n'est pas valide pour ce compte.",

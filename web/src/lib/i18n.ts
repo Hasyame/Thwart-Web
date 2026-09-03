@@ -195,6 +195,7 @@ export interface Strings {
   readonly accountDeviceName: string;
   readonly accountDeviceNameNote: string;
   readonly accountNoEmail: string;
+  readonly accountClosed: string;
   readonly accountSignedInAs: string;
   readonly accountDeviceIs: (name: string) => string;
   readonly accountDevices: string;
@@ -591,6 +592,8 @@ const STRINGS: Record<Locale, Strings> = {
     accountDeviceName: 'Name for this browser',
     accountDeviceNameNote:
       'Shown in your list of devices, so you can tell them apart and sign one out.',
+    accountClosed:
+      'This server is not taking new accounts at the moment. If you have one already, sign in — and if you have lost the password, the recovery code still works.',
     accountNoEmail:
       'No email address is asked for and none is stored. You get a recovery code instead, once, and it is the only way back in \u2014 so keep it.',
     accountSignedInAs: 'Signed in as',
@@ -612,6 +615,7 @@ const STRINGS: Record<Locale, Strings> = {
       ({
         invalid_credentials: 'That name and password do not match an account.',
         handle_taken: 'That name is taken on this server. Try another.',
+        registration_closed: 'This server is not taking new accounts.',
         invalid_recovery_code: 'That recovery code is not right for this account.',
         rate_limited: 'Too many attempts. Wait a little and try again.',
         unauthorized: 'You have been signed out. Sign in again.',
@@ -1030,6 +1034,8 @@ const STRINGS: Record<Locale, Strings> = {
     accountDeviceName: 'Nom de ce navigateur',
     accountDeviceNameNote:
       'Affich\u00e9 dans la liste de vos appareils, pour les distinguer et pouvoir en d\u00e9connecter un.',
+    accountClosed:
+      'Ce serveur n’accepte pas de nouveaux comptes pour l’instant. Si vous en avez déjà un, connectez-vous — et si vous avez perdu le mot de passe, le code de récupération fonctionne toujours.',
     accountNoEmail:
       'Aucune adresse e-mail n\u2019est demand\u00e9e ni conserv\u00e9e. Vous recevez \u00e0 la place un code de r\u00e9cup\u00e9ration, une seule fois, et c\u2019est le seul moyen de revenir : gardez-le.',
     accountSignedInAs: 'Connect\u00e9 en tant que',

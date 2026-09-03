@@ -25,17 +25,32 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8787",
 		"address to listen on; loopback by default because nginx terminates TLS in front")
 	dbPath := flag.String("db", "thwart.sqlite", "path to the SQLite database file")
+	/*
+		Whether anybody may create an account here.
+
+		Open by default, because that is what a fresh self-hosted instance
+		needs and because closing it by default would make the first run a
+		puzzle. An instance that is meant for one household closes it once
+		those accounts exist, and then the only way in is a password or a
+		recovery code for an account that is already there.
+
+		A server flag rather than something the client decides: hiding the
+		form in the interface stops nobody, since the endpoint is one curl
+		away.
+	*/
+	openRegistration := flag.Bool("registration", true,
+		"accept new accounts; set false once the accounts that should exist do")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
-	if err := run(*addr, *dbPath, log); err != nil {
+	if err := run(*addr, *dbPath, *openRegistration, log); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(addr, dbPath string, log *slog.Logger) error {
+func run(addr, dbPath string, openRegistration bool, log *slog.Logger) error {
 	store, err := OpenStore(dbPath)
 	if err != nil {
 		return err
@@ -46,6 +61,8 @@ func run(addr, dbPath string, log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	server.OpenRegistration = openRegistration
+	log.Info("configured", "registration", map[bool]string{true: "open", false: "closed"}[openRegistration])
 
 	httpServer := &http.Server{
 		Addr:    addr,

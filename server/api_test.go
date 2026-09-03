@@ -455,3 +455,59 @@ func TestSuccessfulLoginClearsTheHandleCounter(t *testing.T) {
 		}
 	}
 }
+
+/*
+Registration, closed.
+
+The refusal has to be the server's. A client that stops showing the form has
+changed nothing about who can register, because the endpoint is one curl away —
+so this asserts the endpoint itself, and that the two things a closed instance
+must still do keep working: signing in, and recovering an account whose password
+has been lost.
+*/
+func TestClosedRegistration(t *testing.T) {
+	t.Parallel()
+	s := newTestServer(t)
+
+	// One account, made while it was still open.
+	registered := register(t, s, "hasyame", "a-long-enough-password")
+	recoveryCode := registered.str("recoveryCode")
+
+	s.OpenRegistration = false
+
+	refused := call(t, s, "POST", "/v1/auth/register", "", map[string]any{
+		"handle": "somebody-else", "password": "a-long-enough-password", "deviceName": "x",
+	})
+	if refused.status != http.StatusForbidden {
+		t.Fatalf("register status = %d, want %d", refused.status, http.StatusForbidden)
+	}
+	if refused.code() != "registration_closed" {
+		t.Fatalf("code = %q, want registration_closed", refused.code())
+	}
+
+	// The account that exists still signs in.
+	signedIn := call(t, s, "POST", "/v1/auth/login", "", map[string]any{
+		"handle": "hasyame", "password": "a-long-enough-password", "deviceName": "x",
+	})
+	if signedIn.status != http.StatusOK {
+		t.Fatalf("login status = %d, want 200, body %v", signedIn.status, signedIn.body)
+	}
+
+	// And can still recover: closing the door must not lock out the person
+	// whose account it is, which is the whole point of the recovery code.
+	recovered := call(t, s, "POST", "/v1/auth/recover", "", map[string]any{
+		"handle":       "hasyame",
+		"recoveryCode": recoveryCode,
+		"newPassword":  "another-long-enough-password",
+		"deviceName":   "x",
+	})
+	if recovered.status != http.StatusOK {
+		t.Fatalf("recover status = %d, want 200, body %v", recovered.status, recovered.body)
+	}
+
+	// And the instance says so, so a client can stop offering the form.
+	version := call(t, s, "GET", "/v1/version", "", nil)
+	if open, _ := version.body["registrationOpen"].(bool); open {
+		t.Fatal("registrationOpen = true on a closed instance")
+	}
+}

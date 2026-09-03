@@ -20,6 +20,7 @@ export type ApiErrorCode =
   | 'unauthorized'
   | 'invalid_credentials'
   | 'handle_taken'
+  | 'registration_closed'
   | 'invalid_recovery_code'
   | 'cursor_too_old'
   | 'batch_too_large'
@@ -125,6 +126,16 @@ export interface ServerVersion {
   readonly build: string;
   readonly protocol: number;
   readonly limits: Limits;
+  /**
+   * Whether this instance takes new accounts.
+   *
+   * Not a security boundary — the server refuses a closed registration itself,
+   * because the endpoint is one curl away from anybody who reads the
+   * JavaScript. This only lets the screen stop offering a form that would be
+   * turned down. Absent on an older server, and then the form is offered and
+   * the refusal explains itself.
+   */
+  readonly registrationOpen?: boolean;
 }
 
 interface CallOptions {

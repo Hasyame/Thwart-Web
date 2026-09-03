@@ -42,6 +42,43 @@
 
   let devices = $state.raw<readonly DeviceInfo[]>([]);
 
+  /*
+   * Whether this instance takes new accounts.
+   *
+   * Asked rather than assumed, and undefined until the answer arrives, so a
+   * slow network shows neither a form that will be refused nor a refusal that
+   * is not true. An older server says nothing and the form is offered.
+   */
+  let registrationOpen = $state<boolean | null>(null);
+
+  $effect(() => {
+    let cancelled = false;
+    void api
+      .version(uiLocale)
+      .then((info) => {
+        if (!cancelled) {
+          registrationOpen = info.registrationOpen ?? true;
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          registrationOpen = true;
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  // A closed instance cannot show the register tab, so it must not be the
+  // selected one either — a deep link or a stale state would otherwise leave
+  // somebody on a form that cannot succeed.
+  $effect(() => {
+    if (registrationOpen === false && form === 'register') {
+      form = 'signin';
+    }
+  });
+
   $effect(() => {
     const account = session.account;
     if (account === null) {
@@ -219,14 +256,16 @@
         >
           {t.accountSignIn}
         </button>
-        <button
-          class="chip"
-          type="button"
-          aria-pressed={form === 'register'}
-          onclick={() => ((form = 'register'), (error = null))}
-        >
-          {t.accountCreate}
-        </button>
+        {#if registrationOpen !== false}
+          <button
+            class="chip"
+            type="button"
+            aria-pressed={form === 'register'}
+            onclick={() => ((form = 'register'), (error = null))}
+          >
+            {t.accountCreate}
+          </button>
+        {/if}
         <button
           class="chip"
           type="button"
@@ -237,7 +276,9 @@
         </button>
       </div>
 
-      {#if form === 'register'}
+      {#if registrationOpen === false}
+        <p class="notice">{t.accountClosed}</p>
+      {:else if form === 'register'}
         <p class="muted note">{t.accountNoEmail}</p>
       {/if}
 
