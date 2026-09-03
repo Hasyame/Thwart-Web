@@ -69,7 +69,6 @@ export interface Strings {
   readonly campaignsTitle: string;
   readonly campaignsEmpty: string;
   readonly campaignsEmptyHint: string;
-  readonly campaignsReadOnly: string;
   readonly campaignProgress: (done: number, total: number) => string;
   readonly campaignConceded: string;
   readonly campaignFinished: string;
@@ -250,13 +249,49 @@ export interface Strings {
   readonly campaignSummary: (played: number, won: number) => string;
   readonly campaignBetween: string;
   readonly campaignContinue: string;
-  readonly campaignConcede: string;
-  readonly whatNext: string;
-  readonly drawCard: string;
+  readonly campaignOpen: string;
   readonly actionTaken: string;
   readonly promptUnsupported: (type: string) => string;
+
+  // The briefing, in the four boxes the app reads it in.
+  readonly campaignPreSetup: string;
+  readonly campaignSetupLabel: string;
+  readonly campaignInformation: string;
+  readonly campaignVillainDeck: string;
+  readonly campaignMainScheme: string;
+  readonly campaignImReady: string;
+  readonly campaignNotReady: string;
+  readonly campaignChooseOne: string;
+  readonly campaignNothingRecorded: string;
+  readonly campaignNobody: string;
+
+  // Recording a scenario, and what comes after it.
+  readonly campaignQuestionsTitle: string;
+  readonly campaignNoQuestions: string;
+  readonly campaignAnswerRequired: string;
+  readonly campaignCardListHint: string;
+  readonly campaignNoDeckCards: string;
+  readonly campaignValidate: string;
+  readonly campaignValidating: string;
+  readonly campaignBravo: string;
+  readonly campaignDefeatRecorded: string;
+  readonly campaignGoToNext: (name: string) => string;
+  readonly campaignRetry: string;
+  readonly campaignTakeABreak: string;
+  readonly campaignStopCampaign: string;
+  readonly campaignChooseScenario: string;
+  readonly campaignDoneShopping: string;
+  readonly campaignWhoIsBuying: string;
+  readonly campaignFinishedMessage: string;
+  readonly campaignFinishedCleanup: string;
+
+  // Fear No Evil's rotation, where the villains push two places.
+  readonly campaignEnvironmentTitle: string;
+  readonly campaignEnvironmentLast: string;
+  readonly campaignPushed: string;
+  readonly campaignPushedTwice: string;
+
   readonly market: string;
-  readonly marketFor: string;
   readonly creditsLeft: (n: number) => string;
   readonly ownedBy: (name: string) => string;
   readonly buy: string;
@@ -349,8 +384,6 @@ const STRINGS: Record<Locale, Strings> = {
     campaignsEmpty: 'No campaigns here.',
     campaignsEmptyHint:
       'Import a backup from the Android app on the Collection page and your campaigns will show up.',
-    campaignsReadOnly:
-      'Read-only. Starting and playing a campaign stays in the Android app: the campaign engine runs counters, flags, questionnaires and branching, and none of that is ported yet. What is shown here is folded from the campaign log.',
     campaignProgress: (done, total) => `${done} of ${total} scenarios beaten`,
     campaignConceded: 'conceded',
     campaignFinished: 'finished',
@@ -582,15 +615,51 @@ const STRINGS: Record<Locale, Strings> = {
     campaignLost: 'The campaign is lost',
     campaignSummary: (played, won) => `${played} scenarios played, ${won} won.`,
     campaignBetween: 'Between scenarios',
-    campaignContinue: 'Carry on',
-    campaignConcede: 'Give up this campaign',
-    whatNext: 'What next?',
-    drawCard: 'Draw',
+    campaignContinue: 'Continue',
+    campaignOpen: 'Open this campaign',
     actionTaken: 'Done.',
     promptUnsupported: (type) =>
       `This build cannot ask this question yet (${type}). Record it by hand on the campaign sheet.`,
+
+    campaignPreSetup: 'Pre-setup',
+    campaignSetupLabel: 'Campaign setup',
+    campaignInformation: 'Subordinates and play tips',
+    campaignVillainDeck: 'Villain deck',
+    campaignMainScheme: 'Main scheme deck',
+    campaignImReady: "I'm ready",
+    campaignNotReady: "I'm not ready yet",
+    campaignChooseOne: 'Tap the one you want to keep',
+    campaignNothingRecorded: 'Nothing recorded',
+    campaignNobody: 'Nobody',
+
+    campaignQuestionsTitle: 'A few questions',
+    campaignNoQuestions: 'Nothing to record for this outcome.',
+    campaignAnswerRequired:
+      'A required choice is still open. The campaign expects it, and later scenarios assume it was made.',
+    campaignCardListHint: 'Card names separated by commas.',
+    campaignNoDeckCards: 'No deck cards available for this run.',
+    campaignValidate: 'Validate',
+    campaignValidating: 'Recording...',
+    campaignBravo: 'Bravo!',
+    campaignDefeatRecorded: 'Defeat recorded',
+    campaignGoToNext: (name) => `Go to ${name}`,
+    campaignRetry: 'I can beat you! (retry)',
+    campaignTakeABreak: 'Take a break',
+    campaignStopCampaign: 'Stop the campaign',
+    campaignChooseScenario: 'Which scenario next?',
+    campaignDoneShopping: 'Done shopping',
+    campaignWhoIsBuying: 'Who is buying?',
+    campaignFinishedMessage:
+      'The last villain is down and the campaign is yours. Everything below is what it took.',
+    campaignFinishedCleanup:
+      'Before your next game, take the campaign cards back out of your decks.',
+
+    campaignEnvironmentTitle: 'The villains push two places.',
+    campaignEnvironmentLast: 'One place left. It takes the hit twice.',
+    campaignPushed: 'pushed one step',
+    campaignPushedTwice: 'alone in the pile, pushed two steps',
+
     market: 'Market',
-    marketFor: 'Shopping for',
     creditsLeft: (n) => `${n} credits`,
     ownedBy: (name) => `taken by ${name}`,
     buy: 'Buy',
@@ -688,8 +757,6 @@ const STRINGS: Record<Locale, Strings> = {
     campaignsEmpty: 'Aucune campagne ici.',
     campaignsEmptyHint:
       "Importez une sauvegarde de l'application Android sur la page Collection et vos campagnes apparaîtront.",
-    campaignsReadOnly:
-      "Lecture seule. Démarrer et jouer une campagne reste dans l'application Android : le moteur de campagne gère des compteurs, des drapeaux, des questionnaires et des embranchements, et rien de tout cela n'est encore porté. Ce qui est affiché ici est déduit du journal de la campagne.",
     campaignProgress: (done, total) => `${done} scénarios battus sur ${total}`,
     campaignConceded: 'abandonnée',
     campaignFinished: 'terminée',
@@ -925,14 +992,50 @@ const STRINGS: Record<Locale, Strings> = {
     campaignSummary: (played, won) => `${played} scénarios joués, ${won} gagnés.`,
     campaignBetween: 'Entre deux scénarios',
     campaignContinue: 'Continuer',
-    campaignConcede: 'Abandonner cette campagne',
-    whatNext: 'Et maintenant ?',
-    drawCard: 'Tirer',
+    campaignOpen: 'Ouvrir cette campagne',
     actionTaken: 'Fait.',
     promptUnsupported: (type) =>
       `Cette version ne sait pas encore poser cette question (${type}). Notez-la à la main sur la feuille de campagne.`,
+
+    campaignPreSetup: 'Préparation',
+    campaignSetupLabel: 'Mise en place',
+    campaignInformation: 'Subordonnés et conseils de jeu',
+    campaignVillainDeck: 'Deck du Méchant',
+    campaignMainScheme: 'Deck Manigance Principale',
+    campaignImReady: 'Je suis prêt',
+    campaignNotReady: 'Pas encore prêt',
+    campaignChooseOne: 'Touchez celle que vous gardez',
+    campaignNothingRecorded: "Rien d'enregistré",
+    campaignNobody: 'Personne',
+
+    campaignQuestionsTitle: 'Quelques questions',
+    campaignNoQuestions: 'Rien à enregistrer pour ce résultat.',
+    campaignAnswerRequired:
+      "Un choix obligatoire reste à faire. La campagne l'exige, et les scénarios suivants le supposent acquis.",
+    campaignCardListHint: 'Noms de cartes séparés par des virgules.',
+    campaignNoDeckCards: 'Aucune carte de deck disponible pour cette partie.',
+    campaignValidate: 'Valider',
+    campaignValidating: 'Enregistrement...',
+    campaignBravo: 'Bravo !',
+    campaignDefeatRecorded: 'Défaite enregistrée',
+    campaignGoToNext: (name) => `Aller à ${name}`,
+    campaignRetry: 'Je peux le battre ! (rejouer)',
+    campaignTakeABreak: 'Faire une pause',
+    campaignStopCampaign: 'Arrêter la campagne',
+    campaignChooseScenario: 'Quel scénario ensuite ?',
+    campaignDoneShopping: 'Terminer les achats',
+    campaignWhoIsBuying: 'Qui achète ?',
+    campaignFinishedMessage:
+      "Le dernier Méchant est à terre et la campagne est à vous. Voici ce qu'elle aura coûté.",
+    campaignFinishedCleanup:
+      'Avant la prochaine partie, retirez les cartes de campagne de vos decks.',
+
+    campaignEnvironmentTitle: 'Les Méchants font progresser deux lieux.',
+    campaignEnvironmentLast: 'Un seul lieu restant. Il encaisse deux fois.',
+    campaignPushed: "progresse d'une case",
+    campaignPushedTwice: 'seul dans la pile, progresse de deux cases',
+
     market: 'Marché',
-    marketFor: 'Achats pour',
     creditsLeft: (n) => `${n} crédits`,
     ownedBy: (name) => `pris par ${name}`,
     buy: 'Acheter',

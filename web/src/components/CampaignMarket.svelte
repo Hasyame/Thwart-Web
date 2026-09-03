@@ -5,6 +5,7 @@
   import { canBuy, offersFor } from '../lib/campaign/rules';
   import { heroCounterOf, type CampaignState, type CampaignTemplate } from '../lib/campaign/types';
   import { buy, refund } from '../lib/campaign/store';
+  import CardRef from './CardRef.svelte';
 
   interface Props {
     t: Strings;
@@ -12,11 +13,11 @@
     run: CampaignRun;
     template: CampaignTemplate;
     campaign: CampaignState;
-    cardNames: ReadonlyMap<string, string>;
+    cardName: (code: string) => string;
     onChanged: () => void;
   }
 
-  const { t, run, template, campaign, cardNames, onChanged }: Props = $props();
+  const { t, run, template, campaign, cardName, onChanged }: Props = $props();
 
   let heroId = $state('');
   const chosen = $derived(heroId === '' ? (campaign.heroes[0]?.id ?? '') : heroId);
@@ -24,8 +25,6 @@
   const counterId = $derived(template.market?.counterId ?? 'credits');
   const credits = $derived(chosen === '' ? 0 : heroCounterOf(campaign, counterId, chosen));
   const offers = $derived(chosen === '' ? [] : offersFor(template, campaign, chosen));
-
-  const cardName = (code: string): string => cardNames.get(code) ?? code;
 
   const boughtBy = (code: string): string | null => {
     const purchase = campaign.purchases.find((entry) => entry.cardCode === code);
@@ -54,12 +53,15 @@
 </script>
 
 {#if template.market != null && (template.market.entries ?? []).length > 0}
-  <div class="market surface">
-    <h3>{t.market}</h3>
+  <section class="market surface">
+    <div class="head">
+      <h3>{t.market}</h3>
+      <p class="credits">{t.creditsLeft(credits)}</p>
+    </div>
 
     {#if campaign.heroes.length > 1}
       <label class="field">
-        <span class="muted">{t.marketFor}</span>
+        <span class="muted">{t.campaignWhoIsBuying}</span>
         <select value={chosen} onchange={(e) => (heroId = e.currentTarget.value)}>
           {#each campaign.heroes as hero (hero.id)}
             <option value={hero.id}>{hero.name}</option>
@@ -68,14 +70,12 @@
       </label>
     {/if}
 
-    <p class="credits">{t.creditsLeft(credits)}</p>
-
     <ul class="offers">
       {#each offers as offer (offer.entry.cardCode)}
         {@const owner = boughtBy(offer.entry.cardCode)}
         <li class:taken={owner !== null}>
-          <span class="name">{cardName(offer.entry.cardCode)}</span>
-          <span class="cost muted">{offer.entry.cost}</span>
+          <span class="name"><CardRef code={offer.entry.cardCode} name={cardName(offer.entry.cardCode)} /></span>
+          <span class="cost">{offer.entry.cost}</span>
 
           {#if owner !== null}
             <!-- One copy per campaign across the whole group, not per hero, so
@@ -85,6 +85,7 @@
             <button type="button" onclick={() => giveBack(offer.entry.cardCode)}>{t.refund}</button>
           {:else}
             <button
+              class="buy"
               type="button"
               disabled={!canBuy(offer)}
               onclick={() => take(offer.entry.cardCode, offer.entry.cost, offer.entry.cardListId ?? 'purchases')}
@@ -95,18 +96,26 @@
         </li>
       {/each}
     </ul>
-  </div>
+  </section>
 {/if}
 
 <style>
   .market {
-    padding: var(--space-4);
-    margin: var(--space-4) 0;
+    padding: var(--space-4) var(--space-5);
+    margin: var(--space-3) 0;
+  }
+
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
   }
 
   h3 {
-    font-size: 1.05rem;
-    margin-bottom: var(--space-2);
+    font-size: 1.1rem;
+    font-weight: 700;
   }
 
   .field {
@@ -114,16 +123,19 @@
     flex-direction: column;
     gap: 2px;
     max-width: 18rem;
-    margin-bottom: var(--space-3);
+    margin: var(--space-3) 0;
   }
 
   .credits {
-    font-weight: 600;
-    margin-bottom: var(--space-2);
+    font-weight: 700;
+    color: var(--md-primary);
+    margin: 0;
   }
 
   .offers {
     list-style: none;
+    padding: 0;
+    margin: var(--space-2) 0 0;
     display: grid;
     gap: var(--space-1);
   }
@@ -132,13 +144,13 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2);
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
     border-top: 1px solid var(--md-outline-variant);
   }
 
   .offers li.taken {
-    opacity: 0.7;
+    opacity: 0.65;
   }
 
   .name {
@@ -147,6 +159,9 @@
 
   .cost {
     font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    min-width: 1.5rem;
+    text-align: end;
   }
 
   .owner {
@@ -154,12 +169,18 @@
   }
 
   button {
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-1) var(--space-4);
     border-radius: var(--radius-lg);
     border: 1px solid var(--md-outline);
     background: transparent;
     color: inherit;
     cursor: pointer;
+  }
+
+  button.buy:not(:disabled) {
+    border-color: var(--md-primary);
+    color: var(--md-primary);
+    font-weight: 600;
   }
 
   button:disabled {

@@ -1,0 +1,126 @@
+<script lang="ts">
+  import type { Strings } from '../lib/i18n';
+  import type { Card, Locale } from '../lib/types';
+  import { fetchCard, hideCard, viewer } from '../lib/cardViewer.svelte';
+  import CardDetail from './CardDetail.svelte';
+
+  interface Props {
+    t: Strings;
+    cardLocale: Locale;
+    canFavourite: boolean;
+    isFavourite: (code: string) => boolean;
+    onToggleFavourite: (code: string) => void;
+  }
+
+  const { t, cardLocale, canFavourite, isFavourite, onToggleFavourite }: Props = $props();
+
+  let dialog = $state.raw<HTMLDialogElement | null>(null);
+  let card = $state.raw<Card | null>(null);
+  let loading = $state(false);
+
+  /*
+   * A real <dialog>, opened modally.
+   *
+   * Escape closing it, the focus trap and the inertness of the page behind are
+   * all the platform's, and hand-rolling them is how a modal ends up
+   * unreachable from a keyboard.
+   */
+  $effect(() => {
+    const code = viewer.code;
+    const element = dialog;
+    if (element === null) {
+      return;
+    }
+    if (code === null) {
+      if (element.open) {
+        element.close();
+      }
+      card = null;
+      return;
+    }
+    if (!element.open) {
+      element.showModal();
+    }
+    let cancelled = false;
+    loading = true;
+    card = null;
+    void fetchCard(code)
+      .then((loaded) => {
+        if (!cancelled) {
+          card = loaded;
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          loading = false;
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+</script>
+
+<dialog bind:this={dialog} onclose={hideCard}>
+  <div class="frame">
+    <button class="close" type="button" onclick={hideCard} aria-label={t.back}>×</button>
+
+    {#if loading}
+      <p class="muted pad">{t.loading}</p>
+    {:else if card === null}
+      <p class="muted pad">{t.cardNotFound}</p>
+    {:else}
+      {@const open = card}
+      <CardDetail
+        card={open}
+        {cardLocale}
+        {t}
+        {canFavourite}
+        isFavourite={isFavourite(open.code)}
+        onToggleFavourite={() => onToggleFavourite(open.code)}
+      />
+    {/if}
+  </div>
+</dialog>
+
+<style>
+  dialog {
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--radius-md);
+    background: var(--md-surface-container);
+    color: var(--md-on-surface);
+    padding: 0;
+    width: min(60rem, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+  }
+
+  dialog::backdrop {
+    background: rgb(0 0 0 / 60%);
+  }
+
+  .frame {
+    padding: var(--space-5);
+    position: relative;
+  }
+
+  .pad {
+    padding: var(--space-4) 0;
+  }
+
+  .close {
+    position: absolute;
+    top: var(--space-2);
+    inset-inline-end: var(--space-2);
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    border: 1px solid var(--md-outline);
+    background: var(--md-surface);
+    color: inherit;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 1;
+  }
+</style>

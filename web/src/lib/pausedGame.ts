@@ -81,6 +81,8 @@ export function buildPausedGame(
   session: Session,
   draft: LongBreakDraft,
   now: number,
+  /** The campaign run this scenario belongs to, or empty for a one-off game. */
+  campaignRunId = '',
 ): PausedGame {
   return {
     id: ONLY_ROW,
@@ -97,7 +99,7 @@ export function buildPausedGame(
     heroLives: joinLives(draft.heroLives),
     villainLife: Number.parseInt(draft.villainLife, 10) || 0,
     villainStage: draft.villainStage,
-    campaignRunId: '',
+    campaignRunId,
   };
 }
 

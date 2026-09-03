@@ -242,30 +242,41 @@ export interface BaseSetup {
   readonly modularSets?: readonly string[];
 }
 
+/**
+ * The question kinds a template may ask.
+ *
+ * **Written here as the app matches them, not as a template spells them.** The
+ * templates say `perHeroNumber` and `cardSelect`; the app lowercases and drops
+ * underscores before comparing, so `per_hero_number`, `perHeroNumber` and
+ * `PERHERONUMBER` are all the same question. Comparing a template's spelling
+ * directly matched nothing at all, and every question in every campaign fell
+ * through to "this build cannot ask that" — silently, because an unmatched
+ * question is not an error anywhere.
+ */
 export const PROMPT_TYPES = [
   'number',
   'boolean',
-  'per_hero_number',
-  'per_hero_boolean',
+  'perheronumber',
+  'perheroboolean',
   /**
    * Each hero picks from a known set of cards, one answer per hero.
    *
-   * Distinct from card_select, which records a single set for the table. When
+   * Distinct from cardselect, which records a single set for the table. When
    * a campaign says "each player chooses one", two players may well pick the
    * same card, and a shared set cannot hold it twice, nor say who took it.
    */
-  'per_hero_card_select',
-  'card_list',
-  'card_select',
+  'perherocardselect',
+  'cardlist',
+  'cardselect',
   /**
    * Picked out of the run's own decks, filled at the moment it is asked
    * because the set is whatever the players built.
    */
-  'deck_card_select',
+  'deckcardselect',
   'choice',
 ] as const;
 
-export type PromptType = (typeof PROMPT_TYPES)[number];
+export type PromptType = (typeof PROMPT_TYPES)[number] | 'unknown';
 
 export interface PromptOption {
   readonly id: string;
@@ -592,6 +603,19 @@ export const heroCardsOf = (
 /** Cards bought anywhere in the run, for the cross-hero uniqueness rule. */
 export const allPurchasedCardCodes = (state: CampaignState): ReadonlySet<string> =>
   new Set(state.purchases.map((purchase) => purchase.cardCode));
+
+/**
+ * A question's kind, normalised the way the app normalises it.
+ *
+ * See PROMPT_TYPES: the comparison is lowercase with underscores removed, so
+ * the two clients agree about a template however it was spelled.
+ */
+export function promptTypeOf(prompt: Prompt): PromptType {
+  const normalised = prompt.type.toLowerCase().replace(/_/g, '');
+  return (PROMPT_TYPES as readonly string[]).includes(normalised)
+    ? (normalised as PromptType)
+    : 'unknown';
+}
 
 /** The text for a locale, falling back rather than showing nothing. */
 export const textOf = (

@@ -79,6 +79,39 @@ const counterDefOf = (
 
 const isHeroScoped = (counter: CounterDefinition): boolean => counter.scope === 'hero';
 
+/**
+ * The same campaign with every `setupFragments` include spelled out.
+ *
+ * **Applied once, when a template is read, so nothing downstream has to know
+ * that fragments exist.** The app does exactly this and for the same reason:
+ * the engine, the dealer and the briefing all walk setup steps, and a step
+ * hidden inside a fragment is a step they silently skip. Age of Apocalypse
+ * keeps both of its draws — the MISSION and the OVERSEER — in a fragment, so
+ * without this neither was ever dealt and neither was ever cleared on a replay.
+ *
+ * One level deep, as the templates are: a fragment cannot include another. An
+ * include naming a fragment that does not exist is left in place rather than
+ * silently dropped, so it shows up as a step with nothing in it instead of
+ * disappearing.
+ */
+export function expandTemplate(template: CampaignTemplate): CampaignTemplate {
+  const fragments = template.setupFragments ?? {};
+  const expand = (steps: readonly SetupStep[] | undefined): readonly SetupStep[] =>
+    (steps ?? []).flatMap((step) =>
+      step.include != null ? (fragments[step.include] ?? [step]) : [step],
+    );
+
+  return {
+    ...template,
+    scenarios: (template.scenarios ?? []).map((scenario) => ({
+      ...scenario,
+      preSetup: expand(scenario.preSetup),
+      campaignSetup: expand(scenario.campaignSetup),
+      information: expand(scenario.information),
+    })),
+  };
+}
+
 /** Every setup step in a scenario, in the order the briefing shows them. */
 export const allSetupSteps = (scenario: ScenarioTemplate): readonly SetupStep[] => [
   ...(scenario.preSetup ?? []),

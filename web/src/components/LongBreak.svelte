@@ -14,9 +14,17 @@
     storageOk: boolean;
     /** Called once the table is clear, so the page can go back to setup. */
     onSaved: () => void;
+    /**
+     * The campaign run this scenario belongs to, if it is one.
+     *
+     * A campaign scenario is a game like any other and gets cleared off a table
+     * for the same reasons; the run id is what lets it be picked up from the
+     * campaign rather than from the play page.
+     */
+    campaignRunId?: string;
   }
 
-  const { t, storageOk, onSaved }: Props = $props();
+  const { t, storageOk, onSaved, campaignRunId = '' }: Props = $props();
 
   let open = $state(false);
   let saving = $state(false);
@@ -48,7 +56,7 @@
     }
     saving = true;
     try {
-      await savePausedGame(buildPausedGame(session.current, draft, Date.now()));
+      await savePausedGame(buildPausedGame(session.current, draft, Date.now(), campaignRunId));
       endGame();
       open = false;
       draft = null;

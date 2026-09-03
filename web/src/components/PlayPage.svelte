@@ -34,6 +34,7 @@
     backToSetup,
   } from '../lib/session.svelte';
   import { buildPlay } from '../lib/plays';
+  import { ScreenWakeLock } from '../lib/wakeLock.svelte';
   import { resumeSession } from '../lib/session.svelte';
 
   interface Props {
@@ -274,44 +275,15 @@
     editingClock = false;
   }
 
-  /**
-   * Keeping the screen on, where the browser allows it.
-   *
-   * A phone propped against the box goes dark every thirty seconds otherwise,
-   * and the counter it is showing is the reason it is there. The Wake Lock API
-   * is not everywhere and is dropped whenever the tab is hidden, so the lock is
-   * taken again on return rather than assumed to have survived.
-   */
-  let keepAwake = $state(false);
-  let wakeLock: WakeLockSentinel | null = null;
-
-  async function setKeepAwake(on: boolean): Promise<void> {
-    keepAwake = on;
-    if (!on) {
-      await wakeLock?.release().catch(() => undefined);
-      wakeLock = null;
-      return;
-    }
-    try {
-      wakeLock = await navigator.wakeLock?.request('screen');
-    } catch {
-      // Refused, or unsupported. The toggle stays on so the intent is kept and
-      // the next visibility change can try again; nothing else depends on it.
-      wakeLock = null;
-    }
-  }
+  /** Keeping the screen on, where the browser allows it. See lib/wakeLock. */
+  const wake = new ScreenWakeLock();
 
   $effect(() => {
-    const reacquire = (): void => {
-      if (keepAwake && document.visibilityState === 'visible' && wakeLock === null) {
-        void setKeepAwake(true);
-      }
-    };
+    const reacquire = (): void => wake.reacquire();
     document.addEventListener('visibilitychange', reacquire);
     return () => {
       document.removeEventListener('visibilitychange', reacquire);
-      void wakeLock?.release().catch(() => undefined);
-      wakeLock = null;
+      wake.dispose();
     };
   });
 
@@ -582,7 +554,7 @@
 
     <label class="awake surface">
       <span>{t.keepScreenOn}</span>
-      <input type="checkbox" checked={keepAwake} onchange={(e) => setKeepAwake(e.currentTarget.checked)} />
+      <input type="checkbox" checked={wake.on} onchange={(e) => void wake.set(e.currentTarget.checked)} />
     </label>
 
     <div class="ending">

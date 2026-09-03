@@ -9,6 +9,7 @@
   import PlayPage from './components/PlayPage.svelte';
   import StatsPage from './components/StatsPage.svelte';
   import CampaignsPage from './components/CampaignsPage.svelte';
+  import CardWindow from './components/CardWindow.svelte';
   import RulesPage from './components/RulesPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
@@ -18,6 +19,7 @@
   import { liveQuery } from 'dexie';
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
+  import { configureCardViewer } from './lib/cardViewer.svelte';
   import {
     applyTheme,
     loadCardLocale,
@@ -188,6 +190,10 @@
     saveUiLocale(locale);
   }
 
+  $effect(() => {
+    configureCardViewer(index, cardLocale);
+  });
+
   function setCardLocale(locale: Locale): void {
     cardLocale = locale;
     saveCardLocale(locale);
@@ -208,6 +214,21 @@
 </script>
 
 <svelte:window onpopstate={onPopState} />
+
+<!--
+  A card opened over the page you are on, rather than navigated to.
+
+  A campaign setup step names a dozen cards; following one by leaving the page
+  means losing your place in a list somebody is reading with cards in their
+  other hand.
+-->
+<CardWindow
+  {t}
+  {cardLocale}
+  canFavourite={storageOk}
+  isFavourite={(code) => favourites.value.has(code)}
+  onToggleFavourite={(code) => void toggleFavourite(code)}
+/>
 
 <TopBar
   {t}
@@ -275,7 +296,7 @@
   {:else if route.name === 'stats'}
     <StatsPage {t} {index} {storageOk} />
   {:else if route.name === 'campaigns'}
-    <CampaignsPage {t} {uiLocale} {index} {storageOk} />
+    <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
   {:else if route.name === 'rules'}
     <RulesPage {t} {cardLocale} />
   {:else if route.name === 'decks'}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
   import type { CampaignEvent, CampaignRun, Play } from '../lib/records';
-  import type { Locale } from '../lib/types';
+  import type { CardSet, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { foldCampaign, type CampaignProgress } from '../lib/campaigns';
@@ -14,12 +14,15 @@
   interface Props {
     t: Strings;
     uiLocale: Locale;
+    /** Card names and images follow the card language, not the interface's. */
+    cardLocale: Locale;
     /** For turning a template's card codes into card names. */
     index: readonly IndexRow[];
+    sets: readonly CardSet[];
     storageOk: boolean;
   }
 
-  const { t, uiLocale, index, storageOk }: Props = $props();
+  const { t, uiLocale, cardLocale, index, sets, storageOk }: Props = $props();
 
   /** Nothing, the start form, or one run being played. */
   let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'run'; id: string }>({
@@ -29,6 +32,7 @@
   const decks = $state<{ saved: readonly SavedDeck[] }>({ saved: [] });
 
   const cardNames = $derived(new Map(index.map((row) => [row.code, row.name] as const)));
+  const setNames = $derived(new Map(sets.map((set) => [set.code, set.name] as const)));
 
   const store = $state<{
     runs: readonly CampaignRun[];
@@ -88,7 +92,9 @@
 </script>
 
 <section>
-  <h1>{t.campaignsTitle}</h1>
+  {#if view.kind !== 'run'}
+    <h1>{t.campaignsTitle}</h1>
+  {/if}
 
   {#if storageOk && view.kind === 'list'}
     <button class="start-button" type="button" onclick={() => (view = { kind: 'start' })}>
@@ -108,8 +114,13 @@
     <CampaignRunView
       {t}
       {uiLocale}
-      run={openRun}
+      {cardLocale}
+      {index}
       {cardNames}
+      {setNames}
+      {storageOk}
+      run={openRun}
+      decks={decks.saved}
       onBack={() => (view = { kind: 'list' })}
     />
   {:else}
@@ -122,8 +133,6 @@
       <p class="muted">{t.campaignsEmptyHint}</p>
     </div>
   {:else}
-    <p class="muted note">{t.campaignsReadOnly}</p>
-
     <ul class="runs">
       {#each campaigns as campaign (campaign.run.id)}
         {@const open = openId === campaign.run.id}
@@ -137,11 +146,11 @@
           >
             <span class="run-name">{campaign.title}</span>
             <span class="muted run-sub">
-              {campaign.run.templateName} · {t.difficulty(
-                campaign.run.difficulty.toUpperCase(),
-              ) === campaign.run.difficulty.toUpperCase()
-                ? campaign.run.difficulty
-                : t.difficulty(campaign.run.difficulty.toUpperCase())}
+              <!-- A campaign's difficulty is its own word — `standard` or
+                   `expert` — not one of the play page's set names, so it reads
+                   through the campaign's own labels rather than falling back to
+                   printing the raw token. -->
+              {campaign.run.templateName} · {t.campaignDifficulty(campaign.run.difficulty)}
               · {t.campaignProgress(campaign.completed, campaign.scenarios.length)}
               {#if campaign.conceded}· {t.campaignConceded}{/if}
               {#if campaign.run.finished}· {t.campaignFinished}{/if}
@@ -186,6 +195,16 @@
 
               {#if plays.length > 0}
                 <p class="muted">{t.campaignPlays(plays.length)}</p>
+              {/if}
+
+              {#if !campaign.run.finished && !campaign.conceded}
+                <button
+                  class="open-run"
+                  type="button"
+                  onclick={() => (view = { kind: 'run', id: campaign.run.id })}
+                >
+                  {t.campaignOpen}
+                </button>
               {/if}
 
               {#if campaign.unreadEvents > 0}
@@ -323,5 +342,17 @@
 
   .attempts {
     font-size: 0.85rem;
+  }
+
+  .open-run {
+    display: block;
+    margin: var(--space-3) 0 var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-primary);
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    font-weight: 700;
+    cursor: pointer;
   }
 </style>

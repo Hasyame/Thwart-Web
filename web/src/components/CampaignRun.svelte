@@ -1,10 +1,22 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import type { Locale } from '../lib/types';
-  import type { CampaignRun } from '../lib/records';
+  import type { IndexRow, Locale } from '../lib/types';
+  import type { CampaignRun, SavedDeck } from '../lib/records';
+  import { db } from '../lib/db';
+  import { loadCardsByCode } from '../lib/data';
+  import { setupSteps } from '../lib/schemeSetup';
+  import { endGame, formatElapsed, resumeSession, session } from '../lib/session.svelte';
   import { evaluate } from '../lib/campaign/conditions';
-  import { allSetupSteps, fold } from '../lib/campaign/engine';
-  import { choosableScenarios, deal, drawPool } from '../lib/campaign/rules';
+  import { fold } from '../lib/campaign/engine';
+  import { choosableScenarios } from '../lib/campaign/rules';
+  import { buildCampaignPlay } from '../lib/campaign/play';
+  import {
+    currentScenario,
+    encounterSetsOf,
+    isExpertCampaign,
+    trackedSetCode,
+  } from '../lib/campaign/encounter';
+  import { parseCampaignText, type TextContext } from '../lib/campaign/text';
   import {
     counterOf,
     heroCounterOf,
@@ -12,32 +24,57 @@
     type AnswerSet,
     type CampaignEvent,
     type CampaignState,
-    type Prompt,
-    type ScenarioTemplate,
-    type SetupStep,
+    type LocalizedText,
   } from '../lib/campaign/types';
   import {
+    acknowledgeEnvironments,
     chooseScenario,
     concede,
     continueOutcome,
+    ensureDealt,
     eventsOf,
-    recordDraw,
+    keepDrawnCard,
+    pauseTimer,
     recordResult,
+    setTimerElapsed,
+    startTimer,
     takeSetupAction,
     templateOf,
+    timerElapsed,
+    timerRunning,
   } from '../lib/campaign/store';
+  import CampaignBriefing from './CampaignBriefing.svelte';
   import CampaignMarket from './CampaignMarket.svelte';
+  import CampaignPlaying from './CampaignPlaying.svelte';
+  import CampaignQuestions from './CampaignQuestions.svelte';
+  import CampaignText from './CampaignText.svelte';
 
   interface Props {
     t: Strings;
     uiLocale: Locale;
+    cardLocale: Locale;
     run: CampaignRun;
+    index: readonly IndexRow[];
     /** Card names by code, so a template's card codes read as cards. */
     cardNames: ReadonlyMap<string, string>;
+    setNames: ReadonlyMap<string, string>;
+    decks: readonly SavedDeck[];
+    storageOk: boolean;
     onBack: () => void;
   }
 
-  const { t, uiLocale, run, cardNames, onBack }: Props = $props();
+  const {
+    t,
+    uiLocale,
+    cardLocale,
+    run,
+    index,
+    cardNames,
+    setNames,
+    decks,
+    storageOk,
+    onBack,
+  }: Props = $props();
 
   const template = $derived(templateOf(run));
 
@@ -66,135 +103,332 @@
     template === null ? null : fold(template, events),
   );
 
-  const scenario = $derived<ScenarioTemplate | null>(
-    template === null || campaign === null || campaign.currentScenarioId === null
-      ? null
-      : ((template.scenarios ?? []).find((s) => s.id === campaign.currentScenarioId) ?? null),
-  );
+  const scenario = $derived(currentScenario(template, campaign));
 
-  const label = (text: Parameters<typeof textOf>[0]): string => textOf(text, uiLocale);
-  const cardName = (code: string): string => cardNames.get(code) ?? code;
+  const label = (value: LocalizedText | null | undefined): string => textOf(value, uiLocale);
 
   /**
-   * The setup steps to show, with fragments pulled in and conditions applied.
+   * A card's name, in the card language.
    *
-   * A step naming a fragment is replaced by that fragment's steps, so a rule
-   * written once appears wherever it is included. Conditions are judged against
-   * the campaign as it stands now, which is what makes a campaign's setup change
-   * as the run goes on.
+   * The template's own names come first: Fear No Evil invents its jobs and gives
+   * them names no database has, and falling through to the code would put
+   * `s2_poursuite` in the middle of a sentence.
    */
-  const steps = $derived.by((): readonly SetupStep[] => {
-    if (scenario === null || campaign === null || template === null) {
-      return [];
-    }
-    const context = { state: campaign, scenarioId: scenario.id };
-    const expanded: SetupStep[] = [];
-    for (const step of allSetupSteps(scenario)) {
-      if (!evaluate(step.when, context)) {
-        continue;
+  const cardName = (code: string): string => {
+    const local = template?.localCardNames?.[code];
+    if (local !== undefined) {
+      const named = textOf(local, cardLocale);
+      if (named !== '') {
+        return named;
       }
-      if (step.include != null) {
-        for (const inner of template.setupFragments?.[step.include] ?? []) {
-          if (evaluate(inner.when, context)) {
-            expanded.push(inner);
-          }
+    }
+    return cardNames.get(code) ?? code;
+  };
+
+  const setName = (code: string): string => setNames.get(code) ?? code;
+
+  const text = $derived<TextContext>({
+    cardName,
+    drawnFor: (drawId) =>
+      scenario === null || campaign === null
+        ? []
+        : (campaign.draws[scenario.id]?.[drawId] ?? []),
+  });
+
+  // --- the app's own draws --------------------------------------------------
+
+  let dealing = false;
+
+  /*
+   * Every random pick the campaign owes the players, made before the briefing
+   * is drawn.
+   *
+   * Idempotent, so it can run on every fold: a draw already in the log is left
+   * alone. A pick made while rendering would come out differently on every
+   * redraw, and the mission would change while somebody was reading it.
+   */
+  $effect(() => {
+    const current = template;
+    const state = campaign;
+    if (current === null || state === null || dealing) {
+      return;
+    }
+    dealing = true;
+    void ensureDealt(run, current, state)
+      .then((dealt) => {
+        if (dealt) {
+          reload();
         }
-        continue;
-      }
-      expanded.push(step);
-    }
-    return expanded;
+      })
+      .finally(() => {
+        dealing = false;
+      });
   });
 
-  const takenActions = $derived(
-    campaign === null || scenario === null ? [] : (campaign.setupActionsTaken[`${scenario.id}:`] ?? []),
-  );
+  // --- the clock ------------------------------------------------------------
 
-  async function act(step: SetupStep): Promise<void> {
-    if (scenario === null || step.action == null) {
+  let now = $state(Date.now());
+
+  $effect(() => {
+    if (!timerRunning(run)) {
       return;
     }
-    await takeSetupAction(run, scenario.id, step.action.id);
-    reload();
-  }
+    const handle = setInterval(() => (now = Date.now()), 1000);
+    return () => clearInterval(handle);
+  });
+
+  const elapsed = $derived(timerElapsed(run, now));
+
+  // --- where the run is -----------------------------------------------------
+
+  type Page =
+    | 'briefing'
+    | 'playing'
+    | 'questions'
+    | 'result'
+    | 'market'
+    | 'choice'
+    | 'environment'
+    | 'lost'
+    | 'finished'
+    | 'between';
 
   /**
-   * Draws for a setup step that asks for one, once.
+   * Which page a run belongs on, from its state alone.
    *
-   * Recorded as an event rather than rolled while rendering: a pick made during
-   * a redraw would come out differently every time, so the mission would change
-   * while the player was reading it.
+   * One place rather than a decision repeated at each transition: a campaign
+   * that can end between two taps has too many ways to be got wrong.
    */
-  async function drawFor(step: SetupStep): Promise<void> {
-    if (scenario === null || campaign === null || step.draw == null) {
-      return;
+  const placed = $derived.by((): Page => {
+    const state = campaign;
+    if (state === null) {
+      return 'briefing';
     }
-    const pool = drawPool(step.draw, campaign);
-    const cards = deal(pool, step.draw.count ?? 1);
-    await recordDraw(run, scenario.id, step.draw.id, cards);
-    reload();
-  }
-
-  const drawnFor = (drawId: string): readonly string[] =>
-    scenario === null || campaign === null ? [] : (campaign.draws[scenario.id]?.[drawId] ?? []);
-
-  // --- recording a result ------------------------------------------------------
-
-  let recording = $state<boolean | null>(null);
-  let answers = $state<{
-    numbers: Record<string, number>;
-    booleans: Record<string, boolean>;
-    choices: Record<string, string>;
-    perHeroNumbers: Record<string, Record<string, number>>;
-    perHeroBooleans: Record<string, Record<string, boolean>>;
-  }>({ numbers: {}, booleans: {}, choices: {}, perHeroNumbers: {}, perHeroBooleans: {} });
-
-  const outcome = $derived(
-    scenario === null || recording === null
-      ? null
-      : recording
-        ? (scenario.onVictory ?? null)
-        : (scenario.onDefeat ?? null),
-  );
-
-  const prompts = $derived.by((): readonly Prompt[] => {
-    if (outcome === null || campaign === null || scenario === null) {
-      return [];
+    if (state.campaignLost) {
+      return 'lost';
     }
-    const context = { state: campaign, scenarioId: scenario.id, answers: built() };
-    return (outcome.prompts ?? []).filter((prompt) => evaluate(prompt.when, context));
+    if (state.finished) {
+      return 'finished';
+    }
+    if (state.awaitingChoice) {
+      return state.environmentOffer.length > 0 ? 'environment' : 'choice';
+    }
+    if (timerRunning(run)) {
+      return 'playing';
+    }
+    return scenario === null ? 'between' : 'briefing';
   });
 
-  function built(): AnswerSet {
-    return {
-      numbers: answers.numbers,
-      booleans: answers.booleans,
-      choices: answers.choices,
-      perHeroNumbers: answers.perHeroNumbers,
-      perHeroBooleans: answers.perHeroBooleans,
-    };
-  }
+  /** Set only for the pages the state cannot infer: recording, and shopping. */
+  let override = $state<Page | null>(null);
+  const page = $derived(override ?? placed);
 
-  function begin(victory: boolean): void {
-    recording = victory;
-    answers = { numbers: {}, booleans: {}, choices: {}, perHeroNumbers: {}, perHeroBooleans: {} };
-  }
+  let victory = $state(true);
+  let submitting = $state(false);
 
-  async function save(): Promise<void> {
-    if (scenario === null || recording === null) {
+  // --- the table, for the tracker and the long break -------------------------
+
+  /**
+   * The scenario the play session was seeded for.
+   *
+   * Seeding again would throw away the damage on the table, so it happens once
+   * per scenario — and the tracker rebuilds its counters from the encounter
+   * set, which is read off the villain the campaign fields.
+   */
+  let seatedFor = $state<string | null>(null);
+
+  $effect(() => {
+    const state = campaign;
+    const current = scenario;
+    if (page !== 'playing' || state === null || current === null) {
       return;
     }
-    await recordResult(run, scenario.id, recording, built(), 0);
-    recording = null;
+    if (seatedFor === current.id) {
+      // The clock lives on the run, not in the session, so the session's copy
+      // is kept level with it: a long break writes down what it reads here.
+      session.current.accumulatedMillis = elapsed;
+      return;
+    }
+    resumeSession({
+      scenarioCode: trackedSetCode(current, state, index) ?? '',
+      scenarioName: label(current.name) || current.id,
+      difficulty: isExpertCampaign(state) ? 'EXPERT_I' : 'STANDARD_I',
+      seats: state.heroes.map((hero) => ({
+        deckId: hero.deckId ?? hero.id,
+        deckName: hero.name,
+        heroCode: hero.heroCardCode,
+        heroName: hero.name,
+        aspect: '',
+      })),
+      modularSetCodes: [...encounterSetsOf(current)],
+      accumulatedMillis: elapsed,
+    });
+    seatedFor = current.id;
+  });
+
+  // A campaign session belongs to this screen; leaving it must not leave a
+  // half-played scenario sitting on the Play page.
+  $effect(() => () => endGame());
+
+  // --- the setup printed on the scenario's own main scheme --------------------
+
+  let schemeSteps = $state.raw<readonly string[]>([]);
+
+  $effect(() => {
+    const codes = scenario?.baseSetup?.mainScheme ?? [];
+    if (codes.length === 0) {
+      schemeSteps = [];
+      return;
+    }
+    const packs = codes
+      .map((code) => index.find((row) => row.code === code)?.packCode)
+      .filter((pack): pack is string => pack !== undefined);
+    if (packs.length === 0) {
+      schemeSteps = [];
+      return;
+    }
+    let cancelled = false;
+    void loadCardsByCode(cardLocale, packs)
+      .then((byCode) => {
+        if (!cancelled) {
+          // Read off the card rather than written into the template, so it
+          // arrives in the language the cards are in.
+          schemeSteps = codes.flatMap((code) => setupSteps(byCode.get(code)?.text));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          schemeSteps = [];
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  /** Every card in the decks being played, for questions that pick from them. */
+  const deckCardCodes = $derived.by((): readonly string[] => {
+    const mine = new Set((campaign?.heroes ?? []).map((hero) => hero.deckId ?? hero.id));
+    const codes = new Set<string>();
+    for (const deck of decks) {
+      if (!mine.has(deck.id)) {
+        continue;
+      }
+      try {
+        for (const code of Object.keys(JSON.parse(deck.slots) as Record<string, number>)) {
+          codes.add(code);
+        }
+      } catch {
+        // A deck whose slots will not parse contributes nothing rather than
+        // taking the whole question with it.
+      }
+    }
+    return [...codes];
+  });
+
+  // --- moving the run on ------------------------------------------------------
+
+  async function act(actionId: string, heroId: string | null): Promise<void> {
+    if (scenario === null) {
+      return;
+    }
+    await takeSetupAction(run, scenario.id, actionId, heroId);
     reload();
   }
+
+  async function keep(drawId: string, cardCode: string): Promise<void> {
+    if (scenario === null) {
+      return;
+    }
+    await keepDrawnCard(run, scenario.id, drawId, cardCode);
+    reload();
+  }
+
+  /** "I'm ready" — the cards are out, so this is where the clock starts. */
+  async function begin(): Promise<void> {
+    await startTimer(run, scenario?.id ?? null);
+    override = null;
+    reload();
+  }
+
+  async function finish(won: boolean): Promise<void> {
+    await pauseTimer(run);
+    victory = won;
+    override = 'questions';
+    reload();
+  }
+
+  const lastResult = $derived(campaign?.completedScenarios.at(-1) ?? null);
+
+  /**
+   * Files the scenario: the campaign event, then the play.
+   *
+   * The play is recorded too, tagged with the run, because a campaign scenario
+   * is a game that was played and counts towards win rates like any other.
+   */
+  async function record(answers: AnswerSet): Promise<void> {
+    if (scenario === null || campaign === null || submitting) {
+      return;
+    }
+    submitting = true;
+    const played = elapsed;
+    const scenarioId = scenario.id;
+    const current = scenario;
+    const state = campaign;
+    try {
+      await recordResult(run, scenarioId, victory, answers, played);
+      if (storageOk) {
+        await db.plays.put(
+          buildCampaignPlay({
+            runId: run.id,
+            scenario: current,
+            scenarioId,
+            campaign: state,
+            decks,
+            locale: cardLocale,
+            won: victory,
+            elapsedMillis: played,
+            victoryPoints: answers.numbers?.vp ?? 0,
+          }),
+        );
+      }
+      seatedFor = null;
+      endGame();
+      override = 'result';
+      reload();
+    } finally {
+      submitting = false;
+    }
+  }
+
+  /** Whether the campaign says what continuing past this defeat costs. */
+  const canContinue = $derived(
+    lastResult === null ||
+      lastResult.victory ||
+      (
+        (template?.scenarios ?? []).find((s) => s.id === lastResult.scenarioId)?.onDefeat
+          ?.onContinue ?? []
+      ).length > 0,
+  );
 
   async function moveOn(): Promise<void> {
-    const last = campaign?.completedScenarios.at(-1);
-    if (last === undefined) {
+    if (lastResult === null) {
+      override = null;
       return;
     }
-    await continueOutcome(run, last.scenarioId, last.victory);
+    await continueOutcome(run, lastResult.scenarioId, lastResult.victory);
+    override = null;
+    reload();
+  }
+
+  async function pick(scenarioId: string): Promise<void> {
+    await chooseScenario(run, scenarioId);
+    override = null;
+    reload();
+  }
+
+  async function readEnvironments(): Promise<void> {
+    await acknowledgeEnvironments(run);
     reload();
   }
 
@@ -202,38 +436,62 @@
     template === null || campaign === null ? [] : choosableScenarios(template, campaign),
   );
 
-  async function pick(scenarioId: string): Promise<void> {
-    await chooseScenario(run, scenarioId);
-    reload();
-  }
+  /** The message the outcome closes on, resolved against the run as it stands. */
+  const outcomeMessage = $derived.by((): LocalizedText | null => {
+    if (lastResult === null || template === null) {
+      return null;
+    }
+    const played = (template.scenarios ?? []).find((s) => s.id === lastResult.scenarioId);
+    return (lastResult.victory ? played?.onVictory?.message : played?.onDefeat?.message) ?? null;
+  });
 
-  const setNumber = (id: string, value: number): void => {
-    answers = { ...answers, numbers: { ...answers.numbers, [id]: value } };
-  };
-  const setBoolean = (id: string, value: boolean): void => {
-    answers = { ...answers, booleans: { ...answers.booleans, [id]: value } };
-  };
-  const setChoice = (id: string, value: string): void => {
-    answers = { ...answers, choices: { ...answers.choices, [id]: value } };
-  };
-  const setHeroNumber = (id: string, heroId: string, value: number): void => {
-    answers = {
-      ...answers,
-      perHeroNumbers: {
-        ...answers.perHeroNumbers,
-        [id]: { ...(answers.perHeroNumbers[id] ?? {}), [heroId]: value },
-      },
-    };
-  };
-  const setHeroBoolean = (id: string, heroId: string, value: boolean): void => {
-    answers = {
-      ...answers,
-      perHeroBooleans: {
-        ...answers.perHeroBooleans,
-        [id]: { ...(answers.perHeroBooleans[id] ?? {}), [heroId]: value },
-      },
-    };
-  };
+  /**
+   * A readable name for a counter the template never labelled.
+   *
+   * Fear No Evil's five pressure counters are named after the jobs they belong
+   * to and carry no label of their own, so the panel was reading
+   * "PRESSIONMUSEE" at a player who has no reason to know the app calls it
+   * that. The environment draw already says which job each one counts.
+   */
+  const counterNames = $derived.by((): ReadonlyMap<string, string> => {
+    const named = new Map<string, string>();
+    for (const [scenarioId, counterId] of Object.entries(
+      template?.environmentDraw?.counts ?? {},
+    )) {
+      const named_scenario = (template?.scenarios ?? []).find((s) => s.id === scenarioId);
+      named.set(counterId, label(named_scenario?.name) || scenarioId);
+    }
+    return named;
+  });
+
+  const counterName = (counter: { id: string; label?: LocalizedText }): string =>
+    label(counter.label) || counterNames.get(counter.id) || counter.id;
+
+  /** The counters this campaign has switched on, which is what gets a box. */
+  const active = $derived(
+    campaign === null
+      ? []
+      : (template?.counters ?? []).filter((counter) =>
+          evaluate(counter.activeWhen, { state: campaign }),
+        ),
+  );
+
+  /** What the page is about right now: a result names what it is a result of. */
+  const headline = $derived.by((): string => {
+    if (page === 'result' && lastResult !== null) {
+      const played = (template?.scenarios ?? []).find((s) => s.id === lastResult.scenarioId);
+      return label(played?.name) || lastResult.scenarioId;
+    }
+    return scenario === null ? run.name : label(scenario.name) || scenario.id;
+  });
+
+  const nextName = $derived(
+    campaign?.currentScenarioId == null || campaign.currentScenarioId === lastResult?.scenarioId
+      ? null
+      : label(
+          (template?.scenarios ?? []).find((s) => s.id === campaign?.currentScenarioId)?.name,
+        ),
+  );
 </script>
 
 <div class="run">
@@ -244,46 +502,152 @@
   {:else if campaign === null}
     <p class="muted note">{t.loading}</p>
   {:else}
-    <h2>{run.name}</h2>
-    <p class="muted">
-      {t.campaignDifficulty(campaign.difficulty)} ·
-      {campaign.heroes.map((hero) => hero.name).join(', ')}
-    </p>
+    <header class="head">
+      <!-- The scenario just played, while its result is on screen: the campaign
+           has already moved on to the next one, and naming that one over a
+           result belonging to the last reads as the wrong verdict. -->
+      <h2>{headline}</h2>
+      <p class="muted">
+        {run.name} · {t.campaignDifficulty(campaign.difficulty)} ·
+        {campaign.heroes.map((hero) => hero.name).join(', ')}
+      </p>
+    </header>
 
     <!-- Counters first: they are the campaign's memory, and the thing a table
-         checks before anything else. -->
-    {#if (template.counters ?? []).length > 0}
+         checks before anything else. A counter is only shown once the campaign
+         has switched it on, so an empty box does not sit at the top of the
+         first scenario claiming to count something. -->
+    {#if active.length > 0 && page !== 'playing'}
       <div class="counters surface">
-        {#each template.counters ?? [] as counter (counter.id)}
-          {#if evaluate(counter.activeWhen, { state: campaign })}
-            <div class="counter">
-              <span class="muted">{label(counter.label) || counter.id}</span>
-              {#if counter.scope === 'hero'}
-                <ul class="per-hero">
-                  {#each campaign.heroes as hero (hero.id)}
-                    <li>{hero.name}: <strong>{heroCounterOf(campaign, counter.id, hero.id)}</strong></li>
-                  {/each}
-                </ul>
-              {:else}
-                <strong class="value">{counterOf(campaign, counter.id)}</strong>
-              {/if}
-            </div>
-          {/if}
+        {#each active as counter (counter.id)}
+          <div class="counter">
+            <span class="muted name">{counterName(counter)}</span>
+            {#if counter.scope === 'hero'}
+              <ul class="per-hero">
+                {#each campaign.heroes as hero (hero.id)}
+                  <li>
+                    <span>{hero.name}</span>
+                    <strong>{heroCounterOf(campaign, counter.id, hero.id)}</strong>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <!-- Against its ceiling where it has one: three is the number
+                   that matters on a pressure counter, and a bare 2 does not
+                   say how close the job is to falling. -->
+              <strong class="value">
+                {counterOf(campaign, counter.id)}{#if counter.max != null}<span class="of"
+                  >/{counter.max}</span
+                >{/if}
+              </strong>
+            {/if}
+          </div>
         {/each}
       </div>
     {/if}
 
-    {#if campaign.finished}
-      <div class="surface panel">
-        <h3>{campaign.campaignLost ? t.campaignLost : t.campaignComplete}</h3>
+    {#if page === 'lost'}
+      <section class="panel surface">
+        <h3>{t.campaignLost}</h3>
         <p class="muted note">{t.campaignSummary(
           campaign.completedScenarios.length,
           campaign.completedScenarios.filter((r) => r.victory).length,
         )}</p>
+      </section>
+    {:else if page === 'finished'}
+      <section class="panel surface">
+        <h3>{t.campaignComplete}</h3>
+        <p class="note">{t.campaignFinishedMessage}</p>
+        <p class="muted note">{t.campaignSummary(
+          campaign.completedScenarios.length,
+          campaign.completedScenarios.filter((r) => r.victory).length,
+        )}</p>
+        <p class="muted note">{t.timePlayed(formatElapsed(campaign.totalPlayTimeMillis))}</p>
+        <p class="muted note">{t.campaignFinishedCleanup}</p>
+      </section>
+    {:else if page === 'questions' && scenario !== null}
+      <CampaignQuestions
+        {t}
+        {uiLocale}
+        {campaign}
+        {scenario}
+        {victory}
+        {text}
+        {cardName}
+        {deckCardCodes}
+        {submitting}
+        elapsedMillis={elapsed}
+        onSubmit={record}
+        onBack={() => (override = null)}
+      />
+    {:else if page === 'result'}
+      <section class="panel surface">
+        <p class="verdict" class:won={lastResult?.victory === true}>
+          {lastResult?.victory === true ? t.campaignBravo : t.campaignDefeatRecorded}
+        </p>
+        {#if lastResult !== null}
+          <p class="clock">{formatElapsed(lastResult.elapsedMillis)}</p>
+        {/if}
+        {#if outcomeMessage !== null && label(outcomeMessage) !== ''}
+          <p class="message">
+            <CampaignText segments={parseCampaignText(label(outcomeMessage), text)} />
+          </p>
+        {/if}
+
+        <div class="actions">
+          {#if canContinue}
+            <button class="primary" type="button" onclick={moveOn}>
+              {nextName === null || nextName === '' ? t.campaignContinue : t.campaignGoToNext(nextName)}
+            </button>
+          {/if}
+          {#if lastResult?.victory === false}
+            <!-- Same scenario, clock from zero. Nothing is appended: the defeat
+                 stands in the log and the campaign has not moved past it. -->
+            <button type="button" onclick={() => (override = null)}>{t.campaignRetry}</button>
+          {/if}
+          {#if template.market != null}
+            <button type="button" onclick={() => (override = 'market')}>{t.market}</button>
+          {/if}
+          <button type="button" onclick={onBack}>{t.campaignTakeABreak}</button>
+        </div>
+      </section>
+    {:else if page === 'market'}
+      <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
+      <div class="actions">
+        <button class="primary" type="button" onclick={() => (override = null)}>
+          {t.campaignDoneShopping}
+        </button>
       </div>
-    {:else if campaign.awaitingChoice}
-      <div class="surface panel">
-        <h3>{t.whatNext}</h3>
+    {:else if page === 'environment'}
+      <section class="panel surface">
+        <h3>
+          {campaign.environmentOffer.length === 1
+            ? t.campaignEnvironmentLast
+            : t.campaignEnvironmentTitle}
+        </h3>
+        <!-- Nothing is chosen here: the rules draw two and tick the jobs they
+             name. The app dealt them; this only records that it was read. -->
+        <ul class="pushed">
+          {#each campaign.environmentOffer as id (id)}
+            <li>
+              <strong>{label((template.scenarios ?? []).find((s) => s.id === id)?.name) || id}</strong>
+              <span class="muted">
+                {campaign.environmentOffer.length === 1
+                  ? t.campaignPushedTwice
+                  : t.campaignPushed}
+              </span>
+            </li>
+          {/each}
+        </ul>
+        <div class="actions">
+          <button class="primary" type="button" onclick={readEnvironments}>
+            {t.campaignContinue}
+          </button>
+        </div>
+      </section>
+    {:else if page === 'choice'}
+      <section class="panel surface">
+        <h3>{t.campaignChooseScenario}</h3>
         <div class="actions">
           {#each choices as option (option.id)}
             <button type="button" onclick={() => pick(option.id)}>
@@ -291,175 +655,80 @@
             </button>
           {/each}
         </div>
-      </div>
-    {:else if recording !== null}
-      <div class="surface panel">
-        <h3>{recording ? t.won : t.lost}</h3>
-        {#if outcome?.message != null}
-          <p class="muted note">{label(outcome.message)}</p>
-        {/if}
-
-        {#each prompts as prompt (prompt.id)}
-          <div class="prompt">
-            <p class="ask">{label(prompt.label) || prompt.id}</p>
-
-            {#if prompt.type === 'number'}
-              <input
-                type="number"
-                min={prompt.min ?? 0}
-                max={prompt.max ?? undefined}
-                value={answers.numbers[prompt.id] ?? 0}
-                oninput={(e) => setNumber(prompt.id, Number.parseInt(e.currentTarget.value, 10) || 0)}
-              />
-            {:else if prompt.type === 'boolean'}
-              <label class="yes">
-                <input
-                  type="checkbox"
-                  checked={answers.booleans[prompt.id] === true}
-                  onchange={(e) => setBoolean(prompt.id, e.currentTarget.checked)}
-                />
-                <span>{t.yes}</span>
-              </label>
-            {:else if prompt.type === 'choice'}
-              <select
-                value={answers.choices[prompt.id] ?? ''}
-                onchange={(e) => setChoice(prompt.id, e.currentTarget.value)}
-              >
-                <option value="">{t.choose}</option>
-                {#each prompt.options ?? [] as option (option.id)}
-                  <option value={option.id}>{label(option.label) || option.id}</option>
-                {/each}
-              </select>
-            {:else if prompt.type === 'per_hero_number'}
-              {#each campaign.heroes as hero (hero.id)}
-                <label class="per-hero-field">
-                  <span>{hero.name}</span>
-                  <input
-                    type="number"
-                    min={prompt.min ?? 0}
-                    value={answers.perHeroNumbers[prompt.id]?.[hero.id] ?? 0}
-                    oninput={(e) =>
-                      setHeroNumber(prompt.id, hero.id, Number.parseInt(e.currentTarget.value, 10) || 0)}
-                  />
-                </label>
-              {/each}
-            {:else if prompt.type === 'per_hero_boolean'}
-              {#each campaign.heroes as hero (hero.id)}
-                <label class="yes">
-                  <input
-                    type="checkbox"
-                    checked={answers.perHeroBooleans[prompt.id]?.[hero.id] === true}
-                    onchange={(e) => setHeroBoolean(prompt.id, hero.id, e.currentTarget.checked)}
-                  />
-                  <span>{hero.name}</span>
-                </label>
-              {/each}
-            {:else}
-              <!-- A prompt this build cannot ask yet. Named rather than
-                   skipped: silently dropping a question changes the campaign,
-                   and the table needs to know it was asked something. -->
-              <p class="muted note">{t.promptUnsupported(prompt.type)}</p>
-            {/if}
-          </div>
-        {/each}
-
-        <div class="actions">
-          <button class="primary" type="button" onclick={save}>{t.saveResult}</button>
-          <button type="button" onclick={() => (recording = null)}>{t.cancel}</button>
-        </div>
-      </div>
-    {:else if scenario !== null}
-      <div class="surface panel">
-        <h3>{label(scenario.name) || scenario.id}</h3>
-        {#if scenario.flavour != null}
-          <p class="muted note">{label(scenario.flavour)}</p>
-        {/if}
-
-        {#each steps as step, i (i)}
-          <div class="step">
-            {#if step.text != null}
-              <p>{label(step.text)}</p>
-            {/if}
-
-            {#if (step.cards ?? []).length > 0}
-              <ul class="cards">
-                {#each step.cards ?? [] as code (code)}
-                  <li>{cardName(code)}</li>
-                {/each}
-              </ul>
-            {/if}
-
-            {#if step.showCounter != null}
-              <p class="reading"><strong>{counterOf(campaign, step.showCounter)}</strong></p>
-            {/if}
-
-            {#if step.showCardList != null}
-              <ul class="cards">
-                {#each campaign.cardLists[step.showCardList] ?? [] as code (code)}
-                  <li>{cardName(code)}</li>
-                {/each}
-              </ul>
-            {/if}
-
-            {#if step.draw != null}
-              {#if drawnFor(step.draw.id).length > 0}
-                <ul class="cards drawn">
-                  {#each drawnFor(step.draw.id) as code (code)}
-                    <li>{cardName(code)}</li>
-                  {/each}
-                </ul>
-              {:else}
-                <button type="button" onclick={() => drawFor(step)}>{t.drawCard}</button>
-              {/if}
-            {/if}
-
-            {#if step.action != null}
-              {#if takenActions.includes(step.action.id) && step.action.repeatable !== true}
-                <p class="muted note">{t.actionTaken}</p>
-              {:else}
-                <button
-                  type="button"
-                  disabled={!evaluate(step.action.enabledWhen, { state: campaign, scenarioId: scenario.id })}
-                  onclick={() => act(step)}
-                >
-                  {label(step.action.label)}
-                  {#if step.action.cost != null}
-                    ({step.action.cost.amount})
-                  {/if}
-                </button>
-              {/if}
-            {/if}
-          </div>
-        {/each}
-
-        <div class="actions">
-          <button class="primary" type="button" onclick={() => begin(true)}>{t.won}</button>
-          <button type="button" onclick={() => begin(false)}>{t.lost}</button>
-        </div>
-      </div>
-
-      <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardNames} onChanged={reload} />
+      </section>
+    {:else if page === 'playing' && scenario !== null}
+      <CampaignPlaying
+        {t}
+        {cardLocale}
+        {index}
+        {storageOk}
+        expert={isExpertCampaign(campaign)}
+        scenarioName={label(scenario.name) || scenario.id}
+        encounterSets={encounterSetsOf(scenario).map(setName)}
+        elapsedMillis={elapsed}
+        running={timerRunning(run)}
+        campaignRunId={run.id}
+        onPause={() => void pauseTimer(run)}
+        onResume={() => void startTimer(run, scenario.id)}
+        onCorrect={(millis) => void setTimerElapsed(run, millis)}
+        onVictory={() => void finish(true)}
+        onDefeat={() => void finish(false)}
+        onBreakSaved={() => {
+          seatedFor = null;
+          void pauseTimer(run).then(onBack);
+        }}
+      />
+    {:else if page === 'briefing' && scenario !== null}
+      <CampaignBriefing
+        {t}
+        {uiLocale}
+        {template}
+        {campaign}
+        {scenario}
+        {cardName}
+        {setName}
+        {text}
+        {schemeSteps}
+        onAction={act}
+        onKeep={keep}
+        onReady={begin}
+        onNotReady={onBack}
+      />
+      {#if template.market != null}
+        <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
+      {/if}
     {:else}
-      <div class="surface panel">
+      <section class="panel surface">
         <h3>{t.campaignBetween}</h3>
         <div class="actions">
           <button class="primary" type="button" onclick={moveOn}>{t.campaignContinue}</button>
         </div>
-      </div>
-      <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardNames} onChanged={reload} />
+      </section>
+      {#if template.market != null}
+        <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
+      {/if}
     {/if}
 
-    {#if !campaign.finished}
-      <button class="forget" type="button" onclick={async () => { await concede(run); reload(); }}>
-        {t.campaignConcede}
+    {#if !campaign.finished && page !== 'playing' && page !== 'questions'}
+      <button class="forget" type="button" onclick={async () => { await concede(run); override = null; reload(); }}>
+        {t.campaignStopCampaign}
       </button>
     {/if}
   {/if}
 </div>
 
 <style>
+  /*
+   * Held to a reading width.
+   *
+   * The page is 92rem because the card browser is a grid of four thousand
+   * rows; a briefing is prose with a table in front of it, and a setup step
+   * running the full width of a monitor is not readable while somebody is
+   * holding cards in their other hand.
+   */
   .run {
     margin: var(--space-4) 0;
+    max-width: 56rem;
   }
 
   .back {
@@ -471,103 +740,115 @@
     font-weight: 600;
   }
 
+  .head {
+    margin: var(--space-3) 0 var(--space-4);
+  }
+
   h2 {
-    font-size: 1.3rem;
-    margin-top: var(--space-2);
+    font-size: 1.6rem;
   }
 
   h3 {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
+    font-weight: 700;
     margin-bottom: var(--space-2);
   }
 
-  .panel,
-  .counters {
-    padding: var(--space-4);
-    margin: var(--space-4) 0;
+  .panel {
+    padding: var(--space-4) var(--space-5);
+    margin: var(--space-3) 0;
   }
 
+  /* The campaign's memory, laid out as a row of readings rather than a list:
+     it is glanced at, not read. */
   .counters {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: var(--space-4);
+    padding: var(--space-4);
+    margin: var(--space-3) 0;
+  }
+
+  .counter .name {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   .counter .value {
     display: block;
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     font-variant-numeric: tabular-nums;
+    color: var(--md-primary);
+  }
+
+  .counter .of {
+    font-size: 1rem;
+    color: var(--md-on-surface-variant);
   }
 
   .per-hero {
     list-style: none;
+    padding: 0;
+    margin: var(--space-1) 0 0;
     font-size: 0.9rem;
   }
 
-  .step {
-    padding: var(--space-3) 0;
-    border-top: 1px solid var(--md-outline-variant);
+  .per-hero li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .per-hero strong {
+    color: var(--md-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .verdict {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--md-error);
+  }
+
+  .verdict.won {
+    color: var(--md-primary);
+  }
+
+  .clock {
+    text-align: center;
+    font-size: 2.6rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin: var(--space-2) 0;
+  }
+
+  .message {
     max-width: var(--prose-max);
   }
 
-  .step:first-of-type {
-    border-top: 0;
+  .pushed {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-2);
   }
 
-  .cards {
-    list-style: none;
+  .pushed li {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1);
-    margin-top: var(--space-2);
-  }
-
-  .cards li {
-    border: 1px solid var(--md-outline-variant);
-    border-radius: var(--radius-sm);
-    padding: 2px var(--space-2);
-    font-size: 0.9rem;
-  }
-
-  .cards.drawn li {
-    border-color: var(--md-primary);
-    color: var(--md-primary);
-    font-weight: 600;
-  }
-
-  .prompt {
-    padding: var(--space-3) 0;
-    border-top: 1px solid var(--md-outline-variant);
-  }
-
-  .ask {
-    font-weight: 600;
-    margin-bottom: var(--space-2);
-  }
-
-  .yes,
-  .per-hero-field {
-    display: flex;
-    align-items: center;
     gap: var(--space-2);
-    padding: var(--space-1) 0;
-  }
-
-  .per-hero-field {
-    justify-content: space-between;
-    max-width: 20rem;
-  }
-
-  .reading {
-    font-size: 1.4rem;
-    font-variant-numeric: tabular-nums;
+    align-items: baseline;
   }
 
   .actions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
   }
 
   button {
@@ -579,29 +860,18 @@
     cursor: pointer;
   }
 
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
   button.primary {
     background: var(--md-primary);
     color: var(--md-on-primary);
     border-color: var(--md-primary);
+    font-weight: 700;
   }
 
-  input,
-  select {
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-  }
-
+  /* A text link rather than a button: giving up a campaign is not a thing to
+     reach for by accident. */
   .forget {
     display: block;
-    margin: var(--space-4) auto 0;
+    margin: var(--space-5) auto 0;
     border: 0;
     background: none;
     color: var(--md-error);
@@ -609,7 +879,7 @@
   }
 
   .note {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     max-width: var(--prose-max);
   }
 </style>

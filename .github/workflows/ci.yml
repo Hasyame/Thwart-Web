@@ -136,6 +136,20 @@ jobs:
         working-directory: web
         run: npm run test:engine
 
+      # A placeholder that does not resolve prints a card code in the middle of
+      # a sentence, and nothing errors. So this sweeps every one in all nine
+      # templates rather than only checking the parser.
+      - name: Campaign text
+        working-directory: web
+        run: npm run test:text
+
+      # The draws the app makes for the players, and the same shape of guard as
+      # the op tokens: a question spelled the way the templates spell it has to
+      # match, or it is never asked and the campaign quietly diverges.
+      - name: Campaign draws and questions
+        working-directory: web
+        run: npm run test:deal
+
 
   server:
     name: Server

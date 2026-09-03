@@ -82,17 +82,18 @@
           players,
           expert,
         );
-        setEncounter(isUsable(setup) ? startOf(setup) : null);
+        // Cleared **before** the encounter is set, not after. Setting it makes
+        // this effect re-run, which cancels this pass; a `finally` after that
+        // sees `cancelled` and leaves the panel reading "loading the scenario"
+        // for the rest of the game.
+        loading = false;
         failed = !isUsable(setup);
+        setEncounter(isUsable(setup) ? startOf(setup) : null);
       })
       .catch(() => {
         if (!cancelled) {
-          failed = true;
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
           loading = false;
+          failed = true;
         }
       });
     return () => {
