@@ -17,6 +17,8 @@ export type Route =
   | { readonly name: 'stats' }
   | { readonly name: 'campaigns' }
   | { readonly name: 'rules' }
+  /** The account, which exists whether or not anybody is signed in to one. */
+  | { readonly name: 'account' }
   | { readonly name: 'card'; readonly code: string };
 
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
@@ -27,6 +29,7 @@ const PLAY_PATH = /^\/play\/?$/;
 const STATS_PATH = /^\/stats\/?$/;
 const CAMPAIGNS_PATH = /^\/campaigns\/?$/;
 const RULES_PATH = /^\/rules\/?$/;
+const ACCOUNT_PATH = /^\/account\/?$/;
 
 export function routeFromPath(pathname: string, base: string): Route {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
@@ -57,6 +60,9 @@ export function routeFromPath(pathname: string, base: string): Route {
   }
   if (CAMPAIGNS_PATH.test(normalised)) {
     return { name: 'campaigns' };
+  }
+  if (ACCOUNT_PATH.test(normalised)) {
+    return { name: 'account' };
   }
   if (RULES_PATH.test(normalised)) {
     return { name: 'rules' };
@@ -89,6 +95,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'rules') {
     return `${trimmedBase}/rules`;
+  }
+  if (route.name === 'account') {
+    return `${trimmedBase}/account`;
   }
   return trimmedBase === '' ? '/' : `${trimmedBase}/`;
 }

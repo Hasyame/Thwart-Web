@@ -3,7 +3,7 @@
   import type { Strings } from '../lib/i18n';
   import type { ThemeChoice } from '../lib/preferences';
   import { LANGUAGE_NAMES } from '../lib/i18n';
-  import { OVERFLOW, type NavTarget } from '../lib/nav';
+  import { OVERFLOW, type ActiveTarget, type NavTarget } from '../lib/nav';
 
   interface Props {
     t: Strings;
@@ -11,7 +11,7 @@
     cardLocale: Locale;
     theme: ThemeChoice;
     open: boolean;
-    active: NavTarget | 'card';
+    active: ActiveTarget;
     /** True on a phone, where the sheet also carries the destinations. */
     showDestinations: boolean;
     onUiLocale: (locale: Locale) => void;
@@ -19,6 +19,10 @@
     onTheme: (theme: ThemeChoice) => void;
     onNavigate: (name: NavTarget) => void;
     hrefFor: (name: NavTarget) => string;
+    /** The account is not a tab, so the sheet is how it is reached. */
+    onAccount: () => void;
+    /** The handle when somebody is signed in, so the row says who. */
+    accountHandle: string | null;
     onClose: () => void;
   }
 
@@ -35,6 +39,8 @@
     onTheme,
     onNavigate,
     hrefFor,
+    onAccount,
+    accountHandle,
     onClose,
   }: Props = $props();
 
@@ -101,6 +107,27 @@
       They are answered once and then never again, and they were costing a
       third of a phone viewport on every page to stay reachable.
     -->
+    <section>
+      <h3 class="eyebrow">{t.accountTitle}</h3>
+      <button
+        class="account"
+        type="button"
+        onclick={() => {
+          onAccount();
+          onClose();
+        }}
+      >
+        <span class="glyph" aria-hidden="true">◉</span>
+        <span class="who">
+          {accountHandle ?? t.accountSignIn}
+          {#if accountHandle !== null}
+            <span class="muted sub">{t.accountSignedInAs}</span>
+          {/if}
+        </span>
+        <span class="muted" aria-hidden="true">›</span>
+      </button>
+    </section>
+
     <section>
       <h3 class="eyebrow">{t.settingsTitle}</h3>
 
@@ -253,6 +280,39 @@
   section {
     display: grid;
     gap: var(--space-3);
+  }
+
+  /* The same row as a destination, because that is what it is. */
+  .account {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--tap-min);
+    padding: var(--space-2);
+    margin-inline: calc(var(--space-2) * -1);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: var(--weight-medium);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .account:hover {
+    background: var(--surface-2);
+  }
+
+  .account .who {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sub {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-normal);
   }
 
   @media (min-width: 56rem) {

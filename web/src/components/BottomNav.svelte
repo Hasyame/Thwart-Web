@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import { TABS, type NavTarget } from '../lib/nav';
+  import { TABS, type ActiveTarget, type NavTarget } from '../lib/nav';
 
   interface Props {
     t: Strings;
-    active: NavTarget | 'card';
+    active: ActiveTarget;
     onNavigate: (name: NavTarget) => void;
     hrefFor: (name: NavTarget) => string;
     onMore: () => void;

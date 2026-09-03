@@ -19,6 +19,15 @@ export type NavTarget =
   | 'stats'
   | 'rules';
 
+/**
+ * What the bars highlight.
+ *
+ * Wider than the destinations themselves: a card is read from the card list and
+ * the account is reached from the settings sheet, so both are places the app can
+ * be without being a tab.
+ */
+export type ActiveTarget = NavTarget | 'card' | 'account';
+
 export interface Destination {
   readonly id: NavTarget;
   /** The full name, for the top bar and the More sheet. */

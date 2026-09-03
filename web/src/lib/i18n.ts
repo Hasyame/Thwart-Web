@@ -181,6 +181,39 @@ export interface Strings {
   readonly navMoreTitle: string;
   readonly settingsTitle: string;
   readonly close: string;
+
+  // The account, and the recovery code that stands in for an email address.
+  readonly accountTitle: string;
+  readonly accountSignIn: string;
+  readonly accountCreate: string;
+  readonly accountForgot: string;
+  readonly accountRecoverAction: string;
+  readonly accountHandle: string;
+  readonly accountPassword: string;
+  readonly accountNewPassword: string;
+  readonly accountRecoveryCode: string;
+  readonly accountDeviceName: string;
+  readonly accountDeviceNameNote: string;
+  readonly accountNoEmail: string;
+  readonly accountSignedInAs: string;
+  readonly accountDeviceIs: (name: string) => string;
+  readonly accountDevices: string;
+  readonly accountThisDevice: string;
+  readonly accountLeaving: string;
+  readonly accountSignOut: string;
+  readonly accountSignOutKeeps: string;
+  readonly accountSyncNotYet: string;
+  readonly accountWhy: string;
+  readonly accountWhyBody: string;
+  readonly accountPrivacy: string;
+  readonly accountError: (code: string) => string;
+  readonly recoveryTitle: string;
+  readonly recoveryIntro: string;
+  readonly recoveryDownload: string;
+  readonly recoveryCopy: string;
+  readonly recoverySaved: string;
+  readonly recoveryDone: string;
+  readonly recoveryFileBody: (handle: string, code: string) => string;
   readonly collectionTitle: string;
   readonly collectionIntro: string;
   readonly collectionOwned: (owned: number, total: number) => string;
@@ -545,6 +578,63 @@ const STRINGS: Record<Locale, Strings> = {
     navMoreTitle: 'Everything else',
     settingsTitle: 'Settings',
     close: 'Close',
+
+    accountTitle: 'Account',
+    accountSignIn: 'Sign in',
+    accountCreate: 'Create an account',
+    accountForgot: 'Lost your password',
+    accountRecoverAction: 'Reset the password',
+    accountHandle: 'Name',
+    accountPassword: 'Password',
+    accountNewPassword: 'New password',
+    accountRecoveryCode: 'Recovery code',
+    accountDeviceName: 'Name for this browser',
+    accountDeviceNameNote:
+      'Shown in your list of devices, so you can tell them apart and sign one out.',
+    accountNoEmail:
+      'No email address is asked for and none is stored. You get a recovery code instead, once, and it is the only way back in \u2014 so keep it.',
+    accountSignedInAs: 'Signed in as',
+    accountDeviceIs: (name) => `This browser is registered as \u201c${name}\u201d.`,
+    accountDevices: 'Devices',
+    accountThisDevice: 'this one',
+    accountLeaving: 'Signing out',
+    accountSignOut: 'Sign out',
+    accountSignOutKeeps:
+      'Everything on this browser stays exactly where it is. Signing out forgets the account, not your collection, decks, plays or campaigns.',
+    accountSyncNotYet:
+      'Nothing is syncing yet. The account works and this browser is registered to it, but moving data between your devices is still being built \u2014 so nothing has been uploaded and nothing has been changed here.',
+    accountWhy: 'What an account is for',
+    accountWhyBody:
+      'One place your collection, decks, plays and campaigns live, so the same data is on your phone and in this browser. Until then, the backup file on the Collection page is how it travels.',
+    accountPrivacy:
+      'The server stores your records without reading them: it does not know what a card is. You can export everything or delete the account outright, and neither needs anybody\u2019s permission.',
+    accountError: (code) =>
+      ({
+        invalid_credentials: 'That name and password do not match an account.',
+        handle_taken: 'That name is taken on this server. Try another.',
+        invalid_recovery_code: 'That recovery code is not right for this account.',
+        rate_limited: 'Too many attempts. Wait a little and try again.',
+        unauthorized: 'You have been signed out. Sign in again.',
+        offline: 'The server could not be reached. Check your connection.',
+      })[code] ?? 'Something went wrong on the server. Try again.',
+    recoveryTitle: 'Keep this code',
+    recoveryIntro:
+      'This is shown once and never again. There is no email address on this account, so this code is the only way back in if you forget your password. Save it somewhere you will still have it in a year.',
+    recoveryDownload: 'Save as a file',
+    recoveryCopy: 'Copy',
+    recoverySaved: 'I have saved it somewhere safe',
+    recoveryDone: 'Done',
+    recoveryFileBody: (handle, code) =>
+      [
+        'Thwart \u2014 account recovery code',
+        '',
+        `Account: ${handle}`,
+        `Code:    ${code}`,
+        '',
+        'This code resets the password on this account. It is shown once and',
+        'the server keeps only a hash of it, so this file is the only copy.',
+        'Anyone holding it can take the account: keep it as you would a key.',
+      ].join('\n'),
     collectionTitle: 'Collection',
     collectionIntro:
       'Tick the packs you own. This is stored in this browser only; nothing is sent anywhere, and there is no account. Use the export below to carry it to another device.',
@@ -927,6 +1017,63 @@ const STRINGS: Record<Locale, Strings> = {
     navMoreTitle: 'Tout le reste',
     settingsTitle: 'Réglages',
     close: 'Fermer',
+
+    accountTitle: 'Compte',
+    accountSignIn: 'Se connecter',
+    accountCreate: 'Cr\u00e9er un compte',
+    accountForgot: 'Mot de passe oubli\u00e9',
+    accountRecoverAction: 'R\u00e9initialiser le mot de passe',
+    accountHandle: 'Nom',
+    accountPassword: 'Mot de passe',
+    accountNewPassword: 'Nouveau mot de passe',
+    accountRecoveryCode: 'Code de r\u00e9cup\u00e9ration',
+    accountDeviceName: 'Nom de ce navigateur',
+    accountDeviceNameNote:
+      'Affich\u00e9 dans la liste de vos appareils, pour les distinguer et pouvoir en d\u00e9connecter un.',
+    accountNoEmail:
+      'Aucune adresse e-mail n\u2019est demand\u00e9e ni conserv\u00e9e. Vous recevez \u00e0 la place un code de r\u00e9cup\u00e9ration, une seule fois, et c\u2019est le seul moyen de revenir : gardez-le.',
+    accountSignedInAs: 'Connect\u00e9 en tant que',
+    accountDeviceIs: (name) => `Ce navigateur est enregistr\u00e9 sous \u00ab\u00a0${name}\u00a0\u00bb.`,
+    accountDevices: 'Appareils',
+    accountThisDevice: 'celui-ci',
+    accountLeaving: 'D\u00e9connexion',
+    accountSignOut: 'Se d\u00e9connecter',
+    accountSignOutKeeps:
+      'Tout ce qui est sur ce navigateur reste exactement o\u00f9 c\u2019est. Se d\u00e9connecter oublie le compte, pas votre collection, vos decks, vos parties ni vos campagnes.',
+    accountSyncNotYet:
+      'Rien n\u2019est encore synchronis\u00e9. Le compte fonctionne et ce navigateur y est enregistr\u00e9, mais le transfert des donn\u00e9es entre vos appareils est encore en cours d\u2019\u00e9criture : rien n\u2019a \u00e9t\u00e9 envoy\u00e9 et rien n\u2019a \u00e9t\u00e9 modifi\u00e9 ici.',
+    accountWhy: '\u00c0 quoi sert un compte',
+    accountWhyBody:
+      'Un seul endroit pour votre collection, vos decks, vos parties et vos campagnes, afin que les m\u00eames donn\u00e9es soient sur votre t\u00e9l\u00e9phone et dans ce navigateur. En attendant, le fichier de sauvegarde de la page Collection est la fa\u00e7on de les d\u00e9placer.',
+    accountPrivacy:
+      'Le serveur conserve vos enregistrements sans les lire : il ne sait pas ce qu\u2019est une carte. Vous pouvez tout exporter ou supprimer le compte, sans demander la permission \u00e0 personne.',
+    accountError: (code) =>
+      ({
+        invalid_credentials: 'Ce nom et ce mot de passe ne correspondent \u00e0 aucun compte.',
+        handle_taken: 'Ce nom est d\u00e9j\u00e0 pris sur ce serveur. Essayez-en un autre.',
+        invalid_recovery_code: 'Ce code de r\u00e9cup\u00e9ration ne correspond pas \u00e0 ce compte.',
+        rate_limited: 'Trop de tentatives. Patientez un peu avant de r\u00e9essayer.',
+        unauthorized: 'Vous avez \u00e9t\u00e9 d\u00e9connect\u00e9. Reconnectez-vous.',
+        offline: 'Le serveur est injoignable. V\u00e9rifiez votre connexion.',
+      })[code] ?? 'Une erreur est survenue sur le serveur. R\u00e9essayez.',
+    recoveryTitle: 'Conservez ce code',
+    recoveryIntro:
+      'Il n\u2019est affich\u00e9 qu\u2019une seule fois. Ce compte n\u2019a aucune adresse e-mail : ce code est le seul moyen de revenir si vous oubliez votre mot de passe. Rangez-le l\u00e0 o\u00f9 vous l\u2019aurez encore dans un an.',
+    recoveryDownload: 'Enregistrer dans un fichier',
+    recoveryCopy: 'Copier',
+    recoverySaved: 'Je l\u2019ai mis en lieu s\u00fbr',
+    recoveryDone: 'Termin\u00e9',
+    recoveryFileBody: (handle, code) =>
+      [
+        'Thwart \u2014 code de r\u00e9cup\u00e9ration du compte',
+        '',
+        `Compte : ${handle}`,
+        `Code :   ${code}`,
+        '',
+        'Ce code r\u00e9initialise le mot de passe de ce compte. Il n\u2019est affich\u00e9',
+        'qu\u2019une fois et le serveur n\u2019en garde qu\u2019une empreinte : ce fichier en est',
+        'la seule copie. Quiconque le d\u00e9tient peut prendre le compte.',
+      ].join('\n'),
     collectionTitle: 'Collection',
     collectionIntro:
       "Cochez les paquets que vous possédez. Tout est enregistré dans ce navigateur uniquement : rien n'est envoyé nulle part et il n'y a pas de compte. Utilisez l'export ci-dessous pour emporter vos données ailleurs.",

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import { DESTINATIONS, type NavTarget } from '../lib/nav';
+  import { DESTINATIONS, type ActiveTarget, type NavTarget } from '../lib/nav';
   import Logo from './Logo.svelte';
 
   interface Props {
@@ -8,7 +8,7 @@
     onHome: () => void;
     onNavigate: (name: NavTarget) => void;
     hrefFor: (name: NavTarget) => string;
-    active: NavTarget | 'card';
+    active: ActiveTarget;
     onSettings: () => void;
   }
 

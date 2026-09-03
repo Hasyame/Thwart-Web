@@ -10,6 +10,7 @@
   import StatsPage from './components/StatsPage.svelte';
   import CampaignsPage from './components/CampaignsPage.svelte';
   import CardWindow from './components/CardWindow.svelte';
+  import AccountPage from './components/AccountPage.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import MoreSheet from './components/MoreSheet.svelte';
   import RulesPage from './components/RulesPage.svelte';
@@ -22,6 +23,7 @@
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { configureCardViewer } from './lib/cardViewer.svelte';
+  import { loadSession, session } from './lib/sync/session.svelte';
   import {
     applyTheme,
     loadCardLocale,
@@ -127,6 +129,12 @@
     sync();
     query.addEventListener('change', sync);
     return () => query.removeEventListener('change', sync);
+  });
+
+  // Who is signed in, read once. Nothing syncs yet; this only decides what the
+  // account screen and the settings sheet show.
+  $effect(() => {
+    void loadSession();
   });
 
   /** Keeps the document attribute in step with the choice, including at startup. */
@@ -334,6 +342,8 @@
     <StatsPage {t} {index} {storageOk} />
   {:else if route.name === 'campaigns'}
     <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
+  {:else if route.name === 'account'}
+    <AccountPage {t} {uiLocale} {storageOk} />
   {:else if route.name === 'rules'}
     <RulesPage {t} {cardLocale} />
   {:else if route.name === 'decks'}
@@ -404,6 +414,8 @@
   onTheme={setTheme}
   onNavigate={(name) => navigate({ name })}
   hrefFor={(name) => pathForRoute({ name }, BASE)}
+  onAccount={() => navigate({ name: 'account' })}
+  accountHandle={session.account?.handle ?? null}
   onClose={() => (sheetOpen = false)}
 />
 

@@ -66,6 +66,25 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: false,
+    /*
+     * The API, borrowed from the deployed instance.
+     *
+     * In production nginx proxies /api/ to the Go server on the same origin,
+     * so the client asks for a same-origin path and never knows where the
+     * server is. Development has no nginx, and pointing the client at an
+     * absolute URL instead would mean shipping a different request in dev from
+     * the one that runs in production — which is how a CORS or cookie problem
+     * gets found by a user rather than by me.
+     *
+     * Set THWART_API to run against a server on this machine.
+     */
+    proxy: {
+      '/api': {
+        target: process.env.THWART_API ?? 'https://thwart.app',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   build: {
     target: 'es2022',
