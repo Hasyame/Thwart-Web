@@ -12,6 +12,7 @@ import type {
   RandomizerHistoryRow,
   SavedDeck,
 } from './records';
+import type { StoredSyncState, SyncRecordState } from './sync/state';
 
 /**
  * The anonymous user's database.
@@ -58,6 +59,19 @@ class ThwartDatabase extends Dexie {
   /** At most one row. See the PausedGame comment for why. */
   pausedGames!: Table<PausedGame, string>;
 
+  /**
+   * What this browser knows about each record the server has seen.
+   *
+   * Keyed `[collection+id]`, holding the revision the server gave it and a
+   * digest of the body that was sent. Comparing that digest with the row as it
+   * stands now is how a change is noticed: there is no dirty flag to set, so
+   * there is no write anywhere in the app that can forget to set one.
+   */
+  syncRecords!: Table<SyncRecordState, [string, string]>;
+
+  /** One row: who is signed in on this browser, and how far it has read. */
+  syncState!: Table<StoredSyncState, string>;
+
   constructor() {
     super('thwart');
 
@@ -87,6 +101,14 @@ class ThwartDatabase extends Dexie {
     // a game in progress describes the table in front of one person.
     this.version(3).stores({
       pausedGames: 'id, savedAt',
+    });
+
+    // v4 adds what sync needs to know, and nothing the app itself reads. Both
+    // stores are new, so no existing row is touched and a browser that never
+    // signs in carries two empty tables.
+    this.version(4).stores({
+      syncRecords: '[collection+id], collection',
+      syncState: 'id',
     });
   }
 }

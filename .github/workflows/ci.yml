@@ -70,6 +70,14 @@ jobs:
         working-directory: web
         run: npm run test:contrast
 
+      # There is no dirty flag in this app: a record counts as changed when its
+      # body hashes differently from what the server last confirmed. That is
+      # immune to a write that forgets to mark a row, and entirely dependent on
+      # the digest being right, so the digest is asserted.
+      - name: Sync change detection
+        working-directory: web
+        run: npm run test:sync
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw
