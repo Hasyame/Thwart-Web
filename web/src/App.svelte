@@ -10,6 +10,8 @@
   import StatsPage from './components/StatsPage.svelte';
   import CampaignsPage from './components/CampaignsPage.svelte';
   import CardWindow from './components/CardWindow.svelte';
+  import BottomNav from './components/BottomNav.svelte';
+  import MoreSheet from './components/MoreSheet.svelte';
   import RulesPage from './components/RulesPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
@@ -97,6 +99,35 @@
   const results = $derived(
     searchCards(index, { query, filters, limit: RESULT_LIMIT }),
   );
+
+  /**
+   * The More sheet, which holds the settings and — on a phone — the
+   * destinations the tab bar has no room for.
+   *
+   * One sheet with two ways in: the tab bar's More, and the top bar's gear.
+   * Two sheets saying nearly the same thing would be two things to keep in
+   * step for no reader benefit.
+   */
+  let sheetOpen = $state(false);
+
+  /**
+   * Whether the sheet needs to list destinations as well as settings.
+   *
+   * Matched to the breakpoint the tab bar and the top bar use, because it is
+   * the same question: below it the tab bar is showing four of eight, above it
+   * the top bar is showing all eight.
+   */
+  let narrow = $state(false);
+
+  $effect(() => {
+    const query = window.matchMedia('(max-width: 47.999rem)');
+    const sync = (): void => {
+      narrow = query.matches;
+    };
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  });
 
   /** Keeps the document attribute in step with the choice, including at startup. */
   $effect(() => {
@@ -243,16 +274,11 @@
 
 <TopBar
   {t}
-  {uiLocale}
-  {cardLocale}
-  {theme}
-  onUiLocale={setUiLocale}
-  onCardLocale={setCardLocale}
-  onTheme={setTheme}
   onHome={() => navigate({ name: 'search' })}
   onNavigate={(name) => navigate({ name })}
   hrefFor={(name) => pathForRoute({ name }, BASE)}
   active={route.name}
+  onSettings={() => (sheetOpen = true)}
 />
 
 <main class="page">
@@ -355,6 +381,31 @@
     {/if}
   {/if}
 </main>
+
+<BottomNav
+  {t}
+  active={route.name}
+  onNavigate={(name) => navigate({ name })}
+  hrefFor={(name) => pathForRoute({ name }, BASE)}
+  onMore={() => (sheetOpen = true)}
+  moreOpen={sheetOpen}
+/>
+
+<MoreSheet
+  {t}
+  {uiLocale}
+  {cardLocale}
+  {theme}
+  open={sheetOpen}
+  active={route.name}
+  showDestinations={narrow}
+  onUiLocale={setUiLocale}
+  onCardLocale={setCardLocale}
+  onTheme={setTheme}
+  onNavigate={(name) => navigate({ name })}
+  hrefFor={(name) => pathForRoute({ name }, BASE)}
+  onClose={() => (sheetOpen = false)}
+/>
 
 <footer class="page">
   <p class="muted">

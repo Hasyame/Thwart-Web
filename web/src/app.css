@@ -52,6 +52,19 @@ body {
   overscroll-behavior-y: contain;
 }
 
+/*
+ * Room for the tab bar.
+ *
+ * It is fixed to the bottom, so without this it sits over the last row of
+ * whatever list somebody is reading — and the last row is exactly the one they
+ * scrolled to. Only below the breakpoint where the bar exists.
+ */
+@media (max-width: 47.999rem) {
+  body {
+    padding-bottom: calc(var(--tap-min) + var(--space-4) + env(safe-area-inset-bottom));
+  }
+}
+
 h1,
 h2,
 h3 {

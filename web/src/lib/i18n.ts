@@ -175,6 +175,12 @@ export interface Strings {
   readonly waveUnknown: string;
   readonly navCards: string;
   readonly navCollection: string;
+  /** The Play tab's label, which has about six characters of room. */
+  readonly navPlayShort: string;
+  readonly navMore: string;
+  readonly navMoreTitle: string;
+  readonly settingsTitle: string;
+  readonly close: string;
   readonly collectionTitle: string;
   readonly collectionIntro: string;
   readonly collectionOwned: (owned: number, total: number) => string;
@@ -532,6 +538,11 @@ const STRINGS: Record<Locale, Strings> = {
     waveUnknown: 'Not yet classified',
     navCards: 'Cards',
     navCollection: 'Collection',
+    navPlayShort: 'Play',
+    navMore: 'More',
+    navMoreTitle: 'Everything else',
+    settingsTitle: 'Settings',
+    close: 'Close',
     collectionTitle: 'Collection',
     collectionIntro:
       'Tick the packs you own. This is stored in this browser only; nothing is sent anywhere, and there is no account. Use the export below to carry it to another device.',
@@ -908,6 +919,11 @@ const STRINGS: Record<Locale, Strings> = {
     waveUnknown: 'Non classés',
     navCards: 'Cartes',
     navCollection: 'Collection',
+    navPlayShort: 'Jouer',
+    navMore: 'Plus',
+    navMoreTitle: 'Tout le reste',
+    settingsTitle: 'Réglages',
+    close: 'Fermer',
     collectionTitle: 'Collection',
     collectionIntro:
       "Cochez les paquets que vous possédez. Tout est enregistré dans ce navigateur uniquement : rien n'est envoyé nulle part et il n'y a pas de compte. Utilisez l'export ci-dessous pour emporter vos données ailleurs.",
