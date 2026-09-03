@@ -122,7 +122,7 @@
   }
 
   /* Tabs are a phone arrangement. Above this the top bar carries everything. */
-  @media (min-width: 48rem) {
+  @media (min-width: 56rem) {
     .tabs {
       display: none;
     }

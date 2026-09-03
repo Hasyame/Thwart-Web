@@ -120,7 +120,7 @@
   let narrow = $state(false);
 
   $effect(() => {
-    const query = window.matchMedia('(max-width: 47.999rem)');
+    const query = window.matchMedia('(max-width: 55.999rem)');
     const sync = (): void => {
       narrow = query.matches;
     };

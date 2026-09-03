@@ -137,8 +137,14 @@
   /*
    * Wide enough for the destinations to sit on the bar itself, which is where
    * a pointer expects them. Below this the tab bar has them.
+   *
+   * 56rem, not 48: the breakpoint is where the eight labels fit on one line
+   * beside the brand and the settings button, measured rather than guessed.
+   * The French ones come to about 660px, which with everything else on the bar
+   * needs roughly 880px. At 48rem they wrapped to two rows and the header grew
+   * from 57px to 93px.
    */
-  @media (min-width: 48rem) {
+  @media (min-width: 56rem) {
     .spacer {
       display: none;
     }

@@ -59,7 +59,7 @@ body {
  * whatever list somebody is reading — and the last row is exactly the one they
  * scrolled to. Only below the breakpoint where the bar exists.
  */
-@media (max-width: 47.999rem) {
+@media (max-width: 55.999rem) {
   body {
     padding-bottom: calc(var(--tap-min) + var(--space-4) + env(safe-area-inset-bottom));
   }

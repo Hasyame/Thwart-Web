@@ -232,7 +232,7 @@
     gap: var(--space-3);
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 56rem) {
     dialog {
       margin: auto;
       width: min(28rem, calc(100vw - 2rem));
