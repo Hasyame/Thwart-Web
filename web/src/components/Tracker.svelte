@@ -130,7 +130,7 @@
                decides it and nobody can look it up. -->
           <label class="starred">
             <span class="muted">{t.trackerStarred}</span>
-            <input
+            <input class="field"
               type="number"
               min="1"
               onchange={(e) => {
@@ -189,7 +189,7 @@
                threat, so this is not cosmetic. -->
           <label class="field-group">
             <span class="field-label">{t.whichScheme}</span>
-            <select
+            <select class="field"
               value={encounter.progress.schemeOption}
               onchange={(e) => {
                 const option = Number.parseInt(e.currentTarget.value, 10);
@@ -206,7 +206,7 @@
         {#if limit === null}
           <label class="starred">
             <span class="muted">{t.trackerStarred}</span>
-            <input
+            <input class="field"
               type="number"
               min="1"
               onchange={(e) => {
@@ -375,15 +375,6 @@
     gap: var(--space-0-5);
     margin: var(--space-2) 0;
     max-width: 20rem;
-  }
-
-  select,
-  input {
-    background: var(--surface-1);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
   }
 
   .note {

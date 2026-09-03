@@ -158,7 +158,7 @@
                   {#if quantity > 0}
                     <label class="quantity">
                       <span class="visually-hidden">{t.copiesOwned}</span>
-                      <input
+                      <input class="field"
                         type="number"
                         min="1"
                         max="9"

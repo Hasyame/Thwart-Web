@@ -73,7 +73,7 @@
 <div class="controls">
   <label class="search">
     <span class="visually-hidden">{t.searchLabel}</span>
-    <input
+    <input class="field"
       type="search"
       value={query}
       placeholder={t.searchPlaceholder}
@@ -85,7 +85,7 @@
   </label>
 
   <div class="filters">
-    <select
+    <select class="field"
       aria-label={t.allTypes}
       value={filters.typeCode ?? ''}
       onchange={(event) =>
@@ -97,7 +97,7 @@
       {/each}
     </select>
 
-    <select
+    <select class="field"
       aria-label={t.allFactions}
       value={filters.factionCode ?? ''}
       onchange={(event) =>
@@ -109,7 +109,7 @@
       {/each}
     </select>
 
-    <select
+    <select class="field"
       aria-label={t.allPacks}
       value={filters.packCode ?? ''}
       onchange={(event) =>

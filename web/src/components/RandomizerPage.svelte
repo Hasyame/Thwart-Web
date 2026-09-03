@@ -362,7 +362,7 @@
     <div class="controls surface">
       <label class="players">
         <span class="muted">{t.players}</span>
-        <select
+        <select class="field"
           value={playerCount}
           onchange={(e) => (playerCount = Number.parseInt(e.currentTarget.value, 10))}
         >
@@ -550,7 +550,7 @@
           <ul class="chips">
             {#each draw.heroes as hero, position (position)}
               <li class="chip picker" data-faction={hero.aspect}>
-                <select
+                <select class="field"
                   value={hero.code}
                   onchange={(e) => chooseHero(position, e.currentTarget.value)}
                 >
@@ -558,7 +558,7 @@
                     <option value={option.code}>{option.name}</option>
                   {/each}
                 </select>
-                <select
+                <select class="field"
                   value={hero.aspect}
                   onchange={(e) => chooseAspect(position, e.currentTarget.value as Aspect)}
                 >
@@ -600,7 +600,7 @@
               {/each}
               {#each draw.modularSetCodes as code, position (position)}
                 <li class="chip picker">
-                  <select
+                  <select class="field"
                     value={code}
                     onchange={(e) => chooseModularSet(position, e.currentTarget.value)}
                   >
@@ -684,14 +684,6 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-  }
-
-  select {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface-1);
-    color: var(--text);
   }
 
   .roll {

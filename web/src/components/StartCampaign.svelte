@@ -135,7 +135,7 @@
   {:else}
     <label class="field-group">
       <span class="field-label">{t.campaign}</span>
-      <select value={templateId} onchange={(e) => (templateId = e.currentTarget.value)}>
+      <select class="field" value={templateId} onchange={(e) => (templateId = e.currentTarget.value)}>
         <option value="">{t.choose}</option>
         {#each summaries as summary (summary.id)}
           <option value={summary.id}>{textOf(summary.name, uiLocale)}</option>
@@ -157,12 +157,12 @@
 
     <label class="field-group">
       <span class="field-label">{t.campaignName}</span>
-      <input type="text" value={name} oninput={(e) => (name = e.currentTarget.value)} />
+      <input class="field" type="text" value={name} oninput={(e) => (name = e.currentTarget.value)} />
     </label>
 
     <label class="field-group">
       <span class="field-label">{t.difficultyLabel}</span>
-      <select value={difficulty} onchange={(e) => (difficulty = e.currentTarget.value)}>
+      <select class="field" value={difficulty} onchange={(e) => (difficulty = e.currentTarget.value)}>
         {#each template.difficulties ?? ['standard'] as id (id)}
           <option value={id}>{t.campaignDifficulty(id)}</option>
         {/each}
@@ -172,7 +172,7 @@
     {#each template.setupChoices ?? [] as choice (choice.id)}
       <label class="field-group">
         <span class="field-label">{textOf(choice.label, uiLocale)}</span>
-        <select
+        <select class="field"
           value={choices[choice.id] ?? ''}
           onchange={(e) => (choices = { ...choices, [choice.id]: e.currentTarget.value })}
         >

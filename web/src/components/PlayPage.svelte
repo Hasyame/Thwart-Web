@@ -359,7 +359,7 @@
     <div class="setup surface">
       <label class="field-group">
         <span class="field-label">{t.scenario}</span>
-        <select
+        <select class="field"
           value={session.current.scenarioCode}
           onchange={(e) => setScenario(e.currentTarget.value)}
         >
@@ -372,7 +372,7 @@
 
       <label class="field-group">
         <span class="field-label">{t.difficultyLabel}</span>
-        <select
+        <select class="field"
           value={session.current.difficulty}
           onchange={(e) => setDifficulty(e.currentTarget.value as DifficultyId)}
         >
@@ -387,7 +387,7 @@
              leaves a second question to answer. -->
         <label class="field-group">
           <span class="field-label">{t.standardSetWith}</span>
-          <select
+          <select class="field"
             value={session.current.standardSet ?? ''}
             onchange={(e) =>
               (session.current.standardSet =
@@ -415,7 +415,7 @@
       {:else}
         <label class="field-group">
           <span class="field-label">{t.addDeck}</span>
-          <select
+          <select class="field"
             value=""
             onchange={(e) => {
               addSeat(e.currentTarget.value);
@@ -521,7 +521,7 @@
       {#if editingClock}
         <label class="field-group">
           <span class="field-label">{t.correctTheClock}</span>
-          <input
+          <input class="field"
             type="number"
             min="0"
             inputmode="numeric"
@@ -579,7 +579,7 @@
 
       <label class="field-group">
         <span class="field-label">{t.victoryPoints}</span>
-        <input
+        <input class="field"
           type="number"
           min="0"
           inputmode="numeric"
@@ -589,7 +589,7 @@
       </label>
       <label class="field-group">
         <span class="field-label">{t.notes}</span>
-        <textarea rows="2" value={notes} oninput={(e) => (notes = e.currentTarget.value)}
+        <textarea class="field" rows="2" value={notes} oninput={(e) => (notes = e.currentTarget.value)}
         ></textarea>
       </label>
 
@@ -666,17 +666,6 @@
 
   .seat-sub {
     font-size: var(--text-sm);
-  }
-
-  select,
-  input,
-  textarea {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface-1);
-    color: var(--text);
-    font-family: inherit;
   }
 
   button {

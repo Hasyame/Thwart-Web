@@ -187,7 +187,7 @@
       <div class="import-row">
         <label class="grow">
           <span class="visually-hidden">{t.importDeck}</span>
-          <input
+          <input class="field"
             type="text"
             placeholder="https://marvelcdb.com/decklist/view/12345"
             value={input}

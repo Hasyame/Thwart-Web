@@ -86,7 +86,7 @@
   {#if editingClock}
     <label class="field-group">
       <span class="field-label">{t.correctTheClock}</span>
-      <input
+      <input class="field"
         type="number"
         min="0"
         inputmode="numeric"
@@ -218,14 +218,6 @@
 
   .ending .big {
     flex: 1 1 10rem;
-  }
-
-  input {
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface-1);
-    color: var(--text);
   }
 
   button {

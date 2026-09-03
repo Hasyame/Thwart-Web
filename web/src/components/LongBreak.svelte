@@ -102,7 +102,7 @@
              "how far through the villain's turn were we". -->
         <label class="field-group">
           <span class="field-label">{t.phaseVillain}</span>
-          <select
+          <select class="field"
             value={draft.villainStep}
             onchange={(e) => edit({ villainStep: e.currentTarget.value as VillainStep })}
           >
@@ -119,7 +119,7 @@
           {#each session.current.seats as seat (seat.deckId)}
             <label class="field-group inline">
               <span>{seat.heroName}</span>
-              <input
+              <input class="field"
                 type="number"
                 min="0"
                 inputmode="numeric"
@@ -133,7 +133,7 @@
 
       <label class="field-group">
         <span class="field-label">{t.villainLifeLeft}</span>
-        <input
+        <input class="field"
           type="number"
           min="0"
           inputmode="numeric"
@@ -144,7 +144,7 @@
 
       <label class="field-group">
         <span class="field-label">{t.villainStageLabel}</span>
-        <select
+        <select class="field"
           value={String(draft.villainStage)}
           onchange={(e) => edit({ villainStage: Number.parseInt(e.currentTarget.value, 10) || 1 })}
         >
@@ -214,15 +214,6 @@
 
   .field-group.inline input {
     width: 6rem;
-  }
-
-  select,
-  input[type='number'] {
-    background: var(--surface-1);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
   }
 
   .actions {

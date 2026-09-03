@@ -62,7 +62,7 @@
     {#if campaign.heroes.length > 1}
       <label class="field-group">
         <span class="field-label">{t.campaignWhoIsBuying}</span>
-        <select value={chosen} onchange={(e) => (heroId = e.currentTarget.value)}>
+        <select class="field" value={chosen} onchange={(e) => (heroId = e.currentTarget.value)}>
           {#each campaign.heroes as hero (hero.id)}
             <option value={hero.id}>{hero.name}</option>
           {/each}
@@ -188,11 +188,4 @@
     cursor: default;
   }
 
-  select {
-    background: var(--surface-1);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-  }
 </style>

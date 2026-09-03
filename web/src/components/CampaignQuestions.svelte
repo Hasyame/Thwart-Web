@@ -197,7 +197,7 @@
       </p>
 
       {#if kind === 'number'}
-        <input
+        <input class="field"
           type="number"
           min={prompt.min ?? 0}
           max={prompt.max ?? undefined}
@@ -215,7 +215,7 @@
           <span>{t.yes}</span>
         </label>
       {:else if kind === 'choice'}
-        <select
+        <select class="field"
           value={answers.choices[prompt.id] ?? ''}
           onchange={(e) => setChoice(prompt.id, e.currentTarget.value)}
         >
@@ -228,7 +228,7 @@
         {#each campaign.heroes as hero (hero.id)}
           <label class="row">
             <span>{hero.name}</span>
-            <input
+            <input class="field"
               type="number"
               min={prompt.min ?? 0}
               inputmode="numeric"
@@ -289,7 +289,7 @@
           </div>
         {/each}
       {:else if kind === 'cardlist'}
-        <input
+        <input class="field"
           type="text"
           value={(answers.cardLists[prompt.id] ?? []).join(', ')}
           oninput={(e) => setTypedList(prompt.id, e.currentTarget.value)}
@@ -414,15 +414,6 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-4);
-  }
-
-  input,
-  select {
-    background: var(--surface-1);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
   }
 
   input[type='text'] {
