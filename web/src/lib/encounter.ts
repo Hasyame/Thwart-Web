@@ -44,6 +44,14 @@ export interface EncounterSide {
   /** Threat added at the end of every round. Schemes only. */
   readonly escalation: number;
   readonly escalationPerPlayer: boolean;
+  /**
+   * Threat the campaign puts on the scheme on top of what the card prints.
+   *
+   * Already worked out, and not scaled again: Fear No Evil starts a job with a
+   * threat for every pressure box ticked against it, and that is a flat amount
+   * whatever the printed threat beside it does.
+   */
+  readonly extraStartingThreat?: number;
 }
 
 /**
@@ -67,6 +75,16 @@ export interface EncounterSetup {
   readonly villain: readonly EncounterSide[];
   readonly scheme: readonly SchemeStage[];
   readonly players: number;
+  /**
+   * How many copies of the main scheme are on the table at once.
+   *
+   * One almost everywhere: a table plays a main scheme and turns it over. Fear
+   * No Evil's racket job deals one to *each* player, who works their own market
+   * alone, so three players have three schemes running side by side and
+   * finishing at different times. Folding those into a single bar would count
+   * to a limit nobody is playing to, and could not say whose was nearly done.
+   */
+  readonly schemeCopies?: number;
 }
 
 export interface EncounterProgress {
@@ -76,6 +94,15 @@ export interface EncounterProgress {
   /** Which of this stage's printed schemes is on the table. */
   readonly schemeOption: number;
   readonly threat: number;
+  /**
+   * Threat on the second and later copies of the main scheme.
+   *
+   * The first copy's threat stays in `threat` rather than all of them moving
+   * into one list, because a game put away before this existed wrote `threat`
+   * into its saved counters and renaming it would bring every paused game back
+   * with its scheme empty.
+   */
+  readonly extraThreats: readonly number[];
   readonly round: number;
   /** Filled in by the player, for the stages that print a star. */
   readonly manualVillainHealth: number | null;
@@ -94,7 +121,8 @@ export const totalFor = (side: EncounterSide, players: number): number | null =>
   side.value === null ? null : scaled(side.value, side.perPlayer, players);
 
 export const startingThreatFor = (side: EncounterSide, players: number): number =>
-  scaled(side.startingThreat, side.startingThreatPerPlayer, players);
+  scaled(side.startingThreat, side.startingThreatPerPlayer, players) +
+  (side.extraStartingThreat ?? 0);
 
 export const escalationFor = (side: EncounterSide, players: number): number =>
   scaled(side.escalation, side.escalationPerPlayer, players);
@@ -134,10 +162,20 @@ export const villainDefeated = (e: Encounter): boolean => {
   return health !== null && e.progress.damage >= health;
 };
 
-export const schemeComplete = (e: Encounter): boolean => {
+/** Copies of the main scheme in play, never fewer than one. */
+export const schemeCopies = (e: Encounter): number =>
+  Math.max(1, e.setup.schemeCopies ?? 1);
+
+/** Threat on one copy of the main scheme. Copy zero is the table's own. */
+export const threatOn = (e: Encounter, copy: number): number =>
+  copy <= 0 ? e.progress.threat : (e.progress.extraThreats[copy - 1] ?? 0);
+
+export const schemeCompleteOn = (e: Encounter, copy: number): boolean => {
   const limit = schemeLimit(e);
-  return limit !== null && e.progress.threat >= limit;
+  return limit !== null && threatOn(e, copy) >= limit;
 };
+
+export const schemeComplete = (e: Encounter): boolean => schemeCompleteOn(e, 0);
 
 export const isFinalVillainStage = (e: Encounter): boolean =>
   e.progress.villainIndex >= e.setup.villain.length - 1;
@@ -161,9 +199,11 @@ export function withSchemeOption(e: Encounter, option: number): Encounter {
   if (chosen === undefined) {
     return e;
   }
+  const start = startingThreatFor(chosen, e.setup.players);
   return withProgress(e, {
     schemeOption: option,
-    threat: startingThreatFor(chosen, e.setup.players),
+    threat: start,
+    extraThreats: Array.from({ length: schemeCopies(e) - 1 }, () => start),
     manualSchemeLimit: null,
   });
 }
@@ -186,10 +226,23 @@ export function damaged(e: Encounter, amount: number): Encounter {
 }
 
 /** Threat on the main scheme. A negative amount thwarts. */
-export function threatened(e: Encounter, amount: number): Encounter {
-  const raised = Math.max(0, e.progress.threat + amount);
+export const threatened = (e: Encounter, amount: number): Encounter =>
+  threatenedOn(e, 0, amount);
+
+/** The same, on one particular copy of the scheme. */
+export function threatenedOn(e: Encounter, copy: number, amount: number): Encounter {
+  const raised = Math.max(0, threatOn(e, copy) + amount);
   const limit = schemeLimit(e);
-  return withProgress(e, { threat: limit === null ? raised : Math.min(raised, limit) });
+  const capped = limit === null ? raised : Math.min(raised, limit);
+  if (copy <= 0) {
+    return withProgress(e, { threat: capped });
+  }
+  const grown = [...e.progress.extraThreats];
+  while (grown.length < copy) {
+    grown.push(0);
+  }
+  grown[copy - 1] = capped;
+  return withProgress(e, { extraThreats: grown });
 }
 
 /**
@@ -216,12 +269,14 @@ export function schemeAdvanced(e: Encounter): Encounter {
     return e;
   }
   const next = e.setup.scheme[e.progress.schemeIndex + 1]?.options[0];
+  const start = next === undefined ? 0 : startingThreatFor(next, e.setup.players);
   return withProgress(e, {
     schemeIndex: e.progress.schemeIndex + 1,
     // Back to the first option: a new stage is a new choice, and the number
     // chosen for the last one says nothing about this one.
     schemeOption: 0,
-    threat: next === undefined ? 0 : startingThreatFor(next, e.setup.players),
+    threat: start,
+    extraThreats: Array.from({ length: schemeCopies(e) - 1 }, () => start),
     manualSchemeLimit: null,
   });
 }
@@ -236,7 +291,12 @@ export function schemeAdvanced(e: Encounter): Encounter {
 export function roundEnded(e: Encounter): Encounter {
   const side = schemeSideOf(e);
   const escalation = side === null ? 0 : escalationFor(side, e.setup.players);
-  const after = threatened(e, escalation);
+  // Every copy accelerates, not only the first: a table playing one scheme
+  // each is a table where each of them speeds up every round.
+  let after = e;
+  for (let copy = 0; copy < schemeCopies(e); copy += 1) {
+    after = threatenedOn(after, copy, escalation);
+  }
   return withProgress(after, { round: after.progress.round + 1 });
 }
 
@@ -249,6 +309,8 @@ export const withManualSchemeLimit = (e: Encounter, limit: number | null): Encou
 /** A scenario at the start of a game, with the scheme's printed threat on it. */
 export function startOf(setup: EncounterSetup): Encounter {
   const first = setup.scheme[0]?.options[0];
+  const start = first === undefined ? 0 : startingThreatFor(first, setup.players);
+  const copies = Math.max(1, setup.schemeCopies ?? 1);
   return {
     setup,
     progress: {
@@ -256,7 +318,8 @@ export function startOf(setup: EncounterSetup): Encounter {
       damage: 0,
       schemeIndex: 0,
       schemeOption: 0,
-      threat: first === undefined ? 0 : startingThreatFor(first, setup.players),
+      threat: start,
+      extraThreats: Array.from({ length: copies - 1 }, () => start),
       round: 1,
       manualVillainHealth: null,
       manualSchemeLimit: null,

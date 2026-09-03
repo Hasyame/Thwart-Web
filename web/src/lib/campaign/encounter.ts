@@ -1,6 +1,14 @@
+import type { EncounterSetup, EncounterSide } from '../encounter';
 import type { IndexRow } from '../types';
 import { VILLAIN_DRAW_ID } from './deal';
-import type { BaseSetup, CampaignState, CampaignTemplate, ScenarioTemplate } from './types';
+import { amountFor, counterOf } from './types';
+import type {
+  BaseSetup,
+  CampaignState,
+  CampaignTemplate,
+  ScenarioTemplate,
+  TrackedSide,
+} from './types';
 
 /**
  * Working out which villain a campaign scenario fields, so the tracker can
@@ -90,3 +98,87 @@ export const currentScenario = (
     (template.scenarios ?? []).find((scenario) => scenario.id === state.currentScenarioId) ?? null
   );
 };
+
+// --- numbers the campaign carries itself ---------------------------------------
+
+/**
+ * The tracker a campaign supplies for itself, in place of the card database.
+ *
+ * Fear No Evil's subordinates are on no database — they are the campaign's own
+ * invention — so without this that whole campaign has no tracker at all: no
+ * health counting down, no threat counting up, which is most of what somebody
+ * opens a companion for. Every other campaign leaves the block out and is read
+ * from the cards as before.
+ *
+ * Ported from `CampaignRunViewModel.buildEncounter`.
+ */
+export function trackerSetupFor(
+  template: CampaignTemplate,
+  state: CampaignState,
+  scenario: ScenarioTemplate | null,
+  players: number,
+): EncounterSetup | null {
+  const tracker = template.tracker;
+  if (tracker == null || scenario === null) {
+    return null;
+  }
+
+  const drawn = drawnVillainFor(state, scenario.id);
+  const villains =
+    (drawn === null ? undefined : tracker.villains?.[drawn]) ?? tracker.villains?.[scenario.id];
+  const schemes = tracker.schemes?.[scenario.id];
+  if (villains === undefined && schemes === undefined) {
+    return null;
+  }
+
+  const expert = isExpertCampaign(state);
+  const side = (tracked: TrackedSide): EncounterSide => ({
+    name: tracked.name,
+    stage: tracked.stage ?? '',
+    // Floored at zero: a template can be imported from a file, and a negative
+    // health would have the villain defeated the moment the game started.
+    value: tracked.value == null ? null : Math.max(0, tracked.value),
+    perPlayer: tracked.perPlayer ?? true,
+    starred: tracked.starred === true,
+    startingThreat: Math.max(0, tracked.startingThreat ?? 0),
+    startingThreatPerPlayer: tracked.startingThreatPerPlayer ?? true,
+    escalation: Math.max(0, tracked.escalation ?? 0),
+    escalationPerPlayer: tracked.escalationPerPlayer === true,
+    // The pressure already on a job before anybody sits down. It is not on the
+    // card and cannot be: it depends on how the campaign has gone.
+    extraStartingThreat: amountFor(
+      tracked.startingThreatFrom,
+      counterOf(state, tracked.startingThreatFrom?.counter ?? ''),
+      expert,
+    ),
+  });
+
+  /*
+   * A side played on one difficulty only.
+   *
+   * Fear No Evil deals its subordinates as two stages out of three: standard
+   * faces I and II, expert II and III. Counting from the first stage whatever
+   * the campaign had an expert table counting a villain down to a number
+   * printed on a card that was not on the table.
+   */
+  const played = (tracked: TrackedSide): boolean =>
+    tracked.onlyOn == null ||
+    tracked.onlyOn.toLowerCase() === (expert ? 'expert' : 'standard');
+
+  return {
+    villain: (villains ?? []).filter(played).map(side),
+    // One stage per entry, each with a single option: a campaign states the
+    // stages it plays, where a printed scenario can offer a choice between
+    // several schemes for one stage.
+    scheme: (schemes ?? []).filter(played).map((tracked) => ({
+      stage: tracked.stage ?? '',
+      options: [side(tracked)],
+    })),
+    players: Math.max(1, players),
+    // Fear No Evil's racket job deals a market to each player, so a table of
+    // three is thwarting three schemes that finish at different times.
+    schemeCopies: (tracker.perPlayerSchemes ?? []).includes(scenario.id)
+      ? Math.max(1, players)
+      : 1,
+  };
+}

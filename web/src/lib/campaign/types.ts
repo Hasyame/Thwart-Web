@@ -231,6 +231,14 @@ export interface SetupStep {
   /** Pulls in a shared fragment by id, so a rule is written once. */
   readonly include?: string | null;
   readonly draw?: DrawDefinition | null;
+  /**
+   * An amount the app works out and writes into this step's `{value}`.
+   *
+   * A step whose amount comes to nothing is not shown at all, so the rule that
+   * decides whether it applies and the sum that says how much are the same
+   * declaration rather than two that can disagree.
+   */
+  readonly compute?: ComputedAmount | null;
 }
 
 export interface BaseSetup {

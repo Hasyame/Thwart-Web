@@ -234,6 +234,8 @@ export interface Strings {
   readonly schemeSetupTitle: string;
   readonly damageOnVillain: string;
   readonly threatOnScheme: string;
+  /** Whose copy of the main scheme a counter is, when there is one each. */
+  readonly schemeForPlayer: (n: number) => string;
   readonly tapToCorrect: string;
   readonly correctTheClock: string;
   readonly keepScreenOn: string;
@@ -606,6 +608,7 @@ const STRINGS: Record<Locale, Strings> = {
     schemeSetupTitle: 'Main scheme setup',
     damageOnVillain: 'Damage on the villain',
     threatOnScheme: 'Threat on the main scheme',
+    schemeForPlayer: (n) => `Player ${n}`,
     tapToCorrect: 'Tap the time to correct it',
     correctTheClock: 'Time played, as minutes',
     keepScreenOn: 'Keep the screen on',
@@ -987,6 +990,7 @@ const STRINGS: Record<Locale, Strings> = {
     schemeSetupTitle: 'Mise en place de la manigance principale',
     damageOnVillain: 'Dégâts sur le Méchant',
     threatOnScheme: 'Menace sur la manigance principale',
+    schemeForPlayer: (n) => `Joueur ${n}`,
     tapToCorrect: 'Touchez le temps pour le corriger',
     correctTheClock: 'Temps de jeu, en minutes',
     keepScreenOn: "Garder l'écran allumé",

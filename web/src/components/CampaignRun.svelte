@@ -15,6 +15,7 @@
     encounterSetsOf,
     isExpertCampaign,
     trackedSetCode,
+    trackerSetupFor,
   } from '../lib/campaign/encounter';
   import { parseCampaignText, type TextContext } from '../lib/campaign/text';
   import {
@@ -358,6 +359,19 @@
     reload();
   }
 
+  /**
+   * The numbers this campaign counts with, when it brings its own.
+   *
+   * Only Fear No Evil does, because its subordinates are its own invention and
+   * on no database; without this that whole campaign has no tracker at all.
+   * Null everywhere else, and the tracker reads the cards as it always has.
+   */
+  const trackerSetup = $derived(
+    template === null || campaign === null
+      ? null
+      : trackerSetupFor(template, campaign, scenario, campaign.heroes.length),
+  );
+
   const lastResult = $derived(campaign?.completedScenarios.at(-1) ?? null);
 
   /**
@@ -668,6 +682,7 @@
         elapsedMillis={elapsed}
         running={timerRunning(run)}
         campaignRunId={run.id}
+        {trackerSetup}
         onPause={() => void pauseTimer(run)}
         onResume={() => void startTimer(run, scenario.id)}
         onCorrect={(millis) => void setTimerElapsed(run, millis)}

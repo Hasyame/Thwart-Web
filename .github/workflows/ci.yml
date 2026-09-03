@@ -157,6 +157,14 @@ jobs:
         working-directory: web
         run: npm run test:deal
 
+      # Fear No Evil's villains are on no database, so its numbers come from
+      # the template. Asserted against the real one: the stages a difficulty
+      # plays, the threat pressure already put on a job, and the scheme a
+      # scenario deals to each player rather than to the table.
+      - name: Campaign tracker
+        working-directory: web
+        run: npm run test:tracker
+
 
   server:
     name: Server

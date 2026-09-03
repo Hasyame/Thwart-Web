@@ -143,6 +143,10 @@ for (const file of readdirSync(TEMPLATES)) {
   if ((template.villainPool ?? []).length > 0) {
     drawIds.add('villain');
   }
+  // Not a draw at all: `{value}` is the amount a step's `compute` works out,
+  // substituted before the placeholders are parsed. Listed here so the sweep
+  // stops reporting it as a draw nobody declared.
+  drawIds.add('value');
   if (template.environmentDraw?.id) {
     drawIds.add(template.environmentDraw.id);
   }

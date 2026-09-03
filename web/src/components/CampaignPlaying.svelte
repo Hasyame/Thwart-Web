@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale } from '../lib/types';
+  import type { EncounterSetup } from '../lib/encounter';
   import { formatElapsed, session } from '../lib/session.svelte';
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
   import Tracker from './Tracker.svelte';
@@ -19,6 +20,8 @@
     running: boolean;
     storageOk: boolean;
     campaignRunId: string;
+    /** Numbers the campaign carries itself, when it has any. */
+    trackerSetup?: EncounterSetup | null;
     onPause: () => void;
     onResume: () => void;
     onCorrect: (millis: number) => void;
@@ -38,6 +41,7 @@
     running,
     storageOk,
     campaignRunId,
+    trackerSetup = null,
     onPause,
     onResume,
     onCorrect,
@@ -117,7 +121,7 @@
   <LongBreak {t} {storageOk} {campaignRunId} onSaved={onBreakSaved} />
 </div>
 
-<Tracker {t} {cardLocale} {index} {expert} />
+<Tracker {t} {cardLocale} {index} {expert} setup={trackerSetup} />
 
 <label class="awake surface">
   <span>{t.keepScreenOn}</span>

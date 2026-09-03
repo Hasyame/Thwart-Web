@@ -10,12 +10,15 @@
     roundEnded,
     schemeAdvanced,
     schemeComplete,
+    schemeCompleteOn,
+    schemeCopies,
     schemeLimit,
     schemeSideOf,
     schemeStageOf,
     setupFor,
     startOf,
-    threatened,
+    threatenedOn,
+    threatOn,
     villainAdvanced,
     villainDefeated,
     villainHealth,
@@ -24,6 +27,7 @@
     withManualVillainHealth,
     withSchemeOption,
   } from '../lib/encounter';
+  import type { EncounterSetup } from '../lib/encounter';
   import { session, setEncounter, updateEncounter } from '../lib/session.svelte';
 
   interface Props {
@@ -32,9 +36,17 @@
     index: readonly IndexRow[];
     /** Standard plays the first two villain stages, Expert the last two. */
     expert: boolean;
+    /**
+     * Numbers the campaign carries itself, believed before the card database.
+     *
+     * Fear No Evil's subordinates are the campaign's own invention and are on
+     * no database, so for that campaign this is the only source there is. Null
+     * everywhere else, and then the cards are read as they always were.
+     */
+    setup?: EncounterSetup | null;
   }
 
-  const { t, cardLocale, index, expert }: Props = $props();
+  const { t, cardLocale, index, expert, setup = null }: Props = $props();
 
   const players = $derived(Math.max(1, session.current.seats.length));
   const scenarioCode = $derived(session.current.scenarioCode);
@@ -64,9 +76,24 @@
    * none of which change while a game runs; rebuilding it would throw away the
    * damage on the table. The guard is the encounter already being there.
    */
+  /*
+   * A campaign that brought its own numbers needs nothing fetched.
+   *
+   * Set before the card path runs, and guarded on the encounter already being
+   * there so it is built once per game rather than once per render.
+   */
+  $effect(() => {
+    if (setup === null || session.current.encounter !== null) {
+      return;
+    }
+    loading = false;
+    failed = !isUsable(setup);
+    setEncounter(isUsable(setup) ? startOf(setup) : null);
+  });
+
   $effect(() => {
     const pack = packOf;
-    if (scenarioCode === '' || pack === null || session.current.encounter !== null) {
+    if (setup !== null || scenarioCode === '' || pack === null || session.current.encounter !== null) {
       return;
     }
     let cancelled = false;
@@ -107,6 +134,11 @@
   const stage = $derived(encounter === null ? null : schemeStageOf(encounter));
   const health = $derived(encounter === null ? null : villainHealth(encounter));
   const limit = $derived(encounter === null ? null : schemeLimit(encounter));
+
+  /** One entry per copy of the main scheme on the table. Usually just the one. */
+  const copies = $derived(
+    encounter === null ? [0] : Array.from({ length: schemeCopies(encounter) }, (_, i) => i),
+  );
 
   const STEPS = [-5, -1, 1, 5] as const;
 </script>
@@ -163,16 +195,18 @@
           </div>
         {/if}
 
-        {#if !isFinalVillainStage(encounter)}
-          <!-- Never automatic on reaching the health: flipping a villain is
-               something the table does, sometimes with a choice, and a counter
-               that jumped ahead would describe a board that does not exist. -->
-          <button
-            class="btn advance"
-            class:ready={villainDefeated(encounter)}
-            type="button"
-            onclick={() => updateEncounter(villainAdvanced)}
-          >
+        {#if !isFinalVillainStage(encounter) && villainDefeated(encounter)}
+          <!--
+            Offered once the stage is down, and not before: until then there is
+            nothing to flip and a permanent button is one more thing to read
+            past.
+
+            Never automatic, though. Flipping a villain is something the table
+            does, sometimes with a choice in it, and a counter that jumped
+            ahead on its own would be describing a board that does not exist
+            yet. The app offers the step; the table takes it.
+          -->
+          <button class="btn advance ready" type="button" onclick={() => updateEncounter(villainAdvanced)}>
             {t.advanceVillain}
           </button>
         {/if}
@@ -218,31 +252,41 @@
             />
           </label>
         {:else}
-          <p class="reading" class:done={schemeComplete(encounter)}>
-            <span class="big">{encounter.progress.threat}</span>
-            <span class="muted">/ {limit}</span>
-          </p>
-          <div class="bar scheme" role="presentation">
-            <span style={`width: ${Math.min(100, (encounter.progress.threat / Math.max(1, limit)) * 100)}%`}
-            ></span>
-          </div>
-          <p class="muted what">{t.threatOnScheme}</p>
-          <div class="steps">
-            {#each STEPS as step (step)}
-              <button class="btn" type="button" onclick={() => updateEncounter((c) => threatened(c, step))}>
-                {step > 0 ? `+${step}` : `−${-step}`}
-              </button>
-            {/each}
-          </div>
+          <!--
+            Usually one, and then this reads exactly as it always did. A
+            scenario that deals a main scheme to each player gets one counter
+            each, named for whose it is, because they are separate jobs of
+            thwarting that finish at different times.
+          -->
+          {#each copies as copy (copy)}
+            {@const threat = threatOn(encounter, copy)}
+            {#if copies.length > 1}
+              <p class="whose">{t.schemeForPlayer(copy + 1)}</p>
+            {/if}
+            <p class="reading" class:done={schemeCompleteOn(encounter, copy)}>
+              <span class="big">{threat}</span>
+              <span class="muted">/ {limit}</span>
+            </p>
+            <div class="bar scheme" role="presentation">
+              <span style={`width: ${Math.min(100, (threat / Math.max(1, limit)) * 100)}%`}></span>
+            </div>
+            <p class="muted what">{t.threatOnScheme}</p>
+            <div class="steps">
+              {#each STEPS as step (step)}
+                <button
+                  class="btn"
+                  type="button"
+                  onclick={() => updateEncounter((c) => threatenedOn(c, copy, step))}
+                >
+                  {step > 0 ? `+${step}` : `−${-step}`}
+                </button>
+              {/each}
+            </div>
+          {/each}
         {/if}
 
-        {#if !isFinalSchemeStage(encounter)}
-          <button
-            class="btn advance"
-            class:ready={schemeComplete(encounter)}
-            type="button"
-            onclick={() => updateEncounter(schemeAdvanced)}
-          >
+        {#if !isFinalSchemeStage(encounter) && schemeComplete(encounter)}
+          <button class="btn advance ready" type="button" onclick={() => updateEncounter(schemeAdvanced)}>
             {t.advanceScheme}
           </button>
         {/if}
@@ -275,6 +319,16 @@
   .what {
     font-size: var(--text-sm);
     margin: var(--space-1) 0 var(--space-2);
+  }
+
+  /* Whose scheme this counter is, when there is one each. */
+  .whose {
+    margin-top: var(--space-3);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-muted);
   }
 
   .bar {

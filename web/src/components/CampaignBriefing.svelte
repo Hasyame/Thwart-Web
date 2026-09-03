@@ -4,8 +4,9 @@
   import { evaluate } from '../lib/campaign/conditions';
   import { heroDrawId } from '../lib/campaign/engine';
   import { drawnVillainFor, villainStages } from '../lib/campaign/encounter';
-  import { parseCampaignText, type TextContext } from '../lib/campaign/text';
+  import { parseCampaignText, resolveAmount, type TextContext } from '../lib/campaign/text';
   import {
+    amountFor,
     counterOf,
     heroCounterOf,
     textOf,
@@ -53,6 +54,8 @@
 
   const label = (value: Parameters<typeof textOf>[0]): string => textOf(value, uiLocale);
   const context = $derived({ state: campaign, scenarioId: scenario.id });
+  /** The rate a computed amount is paid at: campaigns state two. */
+  const expert = $derived(campaign.difficulty.toLowerCase() === 'expert');
 
   /**
    * One section's steps, as this run should read them right now.
@@ -62,8 +65,23 @@
    * does. All that is left is the conditions, judged against the campaign as it
    * stands, which is what makes a setup change as the run goes on.
    */
+  /**
+   * What a step's `{value}` comes to, given the campaign as it stands.
+   *
+   * Null when the step declares no sum, which is nearly all of them.
+   */
+  const amountOf = (step: SetupStep): number | null =>
+    step.compute == null
+      ? null
+      : amountFor(step.compute, counterOf(campaign, step.compute.counter), expert);
+
   const shown = (steps: readonly SetupStep[] | undefined): readonly SetupStep[] =>
-    (steps ?? []).filter((step) => evaluate(step.when, context));
+    (steps ?? [])
+      .filter((step) => evaluate(step.when, context))
+      // A step whose amount comes to nothing is not shown at all: the rule that
+      // decides whether it applies and the sum that says how much are the same
+      // declaration, so "place 0 threat" is a step that does not exist.
+      .filter((step) => amountOf(step) !== 0);
 
   const preSetup = $derived(shown(scenario.preSetup));
   const setup = $derived(shown(scenario.campaignSetup));
@@ -122,7 +140,7 @@
 {/snippet}
 
 {#snippet stepBody(step: SetupStep)}
-  {@const segments = parseCampaignText(label(step.text), text)}
+  {@const segments = parseCampaignText(resolveAmount(label(step.text), amountOf(step)), text)}
   {@const named = new Set(segments.filter((s) => s.kind === 'card').map((s) => s.code))}
   <li class="step">
     <p class="line"><CampaignText {segments} /></p>

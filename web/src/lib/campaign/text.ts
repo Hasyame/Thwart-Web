@@ -27,6 +27,21 @@ export interface TextContext {
 }
 
 /**
+ * Writes a step's worked-out amount into its `{value}`.
+ *
+ * Run before the placeholders are parsed, not during: that pass clears any
+ * token it does not recognise, so an amount left for it to see would be
+ * quietly deleted instead of printed.
+ */
+export const resolveAmount = (
+  text: string | null | undefined,
+  amount: number | null,
+): string | null | undefined =>
+  text == null || amount === null ? text : text.split(AMOUNT_PLACEHOLDER).join(String(amount));
+
+const AMOUNT_PLACEHOLDER = '{value}';
+
+/**
  * Words a campaign gives a specific meaning to.
  *
  * MISSION and OVERSEER are not descriptions in Age of Apocalypse: a MISSION

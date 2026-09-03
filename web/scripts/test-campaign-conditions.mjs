@@ -196,6 +196,10 @@ against what the port declares.
     'villainDecks',
     'counts',
     'perHeroPools',
+    // The campaign's own tracker: villains keyed by the id their draw uses,
+    // schemes by scenario id.
+    'villains',
+    'schemes',
   ]);
 
   const keys = new Set();
