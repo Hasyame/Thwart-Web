@@ -35,6 +35,16 @@ log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 # preference apply. Harmless on a healthy host.
 export GODEBUG=netdns=cgo
 
+# Go's own directory, added rather than assumed.
+#
+# `sudo -H -u thwart update-api.sh` runs the script directly, not through a
+# login shell, so nothing sources /etc/profile.d and PATH is sudo's secure_path
+# — which does not include /usr/local/go/bin. The symptom is a deploy that
+# fetches, then fails on `go: not found` while `go` works perfectly well when
+# you ssh in and type it, which is a confusing ten minutes at the wrong moment.
+PATH="/usr/local/go/bin:$PATH"
+export PATH
+
 cd "$REPO"
 
 log "fetching"
