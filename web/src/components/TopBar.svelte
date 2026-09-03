@@ -10,9 +10,13 @@
     hrefFor: (name: NavTarget) => string;
     active: ActiveTarget;
     onSettings: () => void;
+    onAccount: () => void;
+    /** The handle when somebody is signed in, so the button can show who. */
+    accountHandle: string | null;
   }
 
-  const { t, onHome, onNavigate, hrefFor, active, onSettings }: Props = $props();
+  const { t, onHome, onNavigate, hrefFor, active, onSettings, onAccount, accountHandle }: Props =
+    $props();
 
   function go(event: MouseEvent, name: NavTarget): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
@@ -54,6 +58,29 @@
     </nav>
 
     <span class="spacer"></span>
+
+    <!--
+      The account, on every screen.
+
+      Not in the overflow sheet with the settings: an account is the thing this
+      app is about to be built around, and something reached by opening a menu
+      and reading past four destinations is something most people never find.
+      It shows who is signed in rather than only that somebody is, because
+      "which account is this browser on" is the question it gets asked.
+    -->
+    <button
+      class="account"
+      class:on={accountHandle !== null}
+      type="button"
+      onclick={onAccount}
+      aria-label={accountHandle === null ? t.accountSignIn : t.accountTitle}
+    >
+      {#if accountHandle === null}
+        <span aria-hidden="true">◌</span>
+      {:else}
+        <span class="initial" aria-hidden="true">{accountHandle.slice(0, 1).toUpperCase()}</span>
+      {/if}
+    </button>
 
     <button class="settings" type="button" onclick={onSettings} aria-label={t.settingsTitle}>
       <span aria-hidden="true">⚙</span>
@@ -132,6 +159,38 @@
   .settings:hover {
     background: var(--surface-2);
     color: var(--text);
+  }
+
+  .account {
+    display: grid;
+    place-items: center;
+    min-width: var(--tap-min);
+    min-height: var(--tap-min);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    cursor: pointer;
+  }
+
+  .account:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  /* Signed in, and said with a filled mark rather than only a colour: this is
+     the one control whose two states have to be told apart at a glance. */
+  .account.on .initial {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
   }
 
   /*

@@ -11,6 +11,7 @@
   import CampaignsPage from './components/CampaignsPage.svelte';
   import CardWindow from './components/CardWindow.svelte';
   import AccountPage from './components/AccountPage.svelte';
+  import AccountMenu from './components/AccountMenu.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import MoreSheet from './components/MoreSheet.svelte';
   import RulesPage from './components/RulesPage.svelte';
@@ -111,6 +112,9 @@
    * step for no reader benefit.
    */
   let sheetOpen = $state(false);
+
+  /** The account menu, which drops out of the button in the top bar. */
+  let accountOpen = $state(false);
 
   /**
    * Whether the sheet needs to list destinations as well as settings.
@@ -287,6 +291,16 @@
   hrefFor={(name) => pathForRoute({ name }, BASE)}
   active={route.name}
   onSettings={() => (sheetOpen = true)}
+  onAccount={() => (accountOpen = true)}
+  accountHandle={session.account?.handle ?? null}
+/>
+
+<AccountMenu
+  {t}
+  {uiLocale}
+  open={accountOpen}
+  onClose={() => (accountOpen = false)}
+  onAccount={() => navigate({ name: 'account' })}
 />
 
 <main class="page">

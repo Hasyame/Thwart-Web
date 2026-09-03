@@ -196,6 +196,7 @@ export interface Strings {
   readonly accountDeviceNameNote: string;
   readonly accountNoEmail: string;
   readonly accountClosed: string;
+  readonly accountManage: string;
   readonly accountSignedInAs: string;
   readonly accountDeviceIs: (name: string) => string;
   readonly accountDevices: string;
@@ -592,6 +593,7 @@ const STRINGS: Record<Locale, Strings> = {
     accountDeviceName: 'Name for this browser',
     accountDeviceNameNote:
       'Shown in your list of devices, so you can tell them apart and sign one out.',
+    accountManage: 'Manage the account',
     accountClosed:
       'This server is not taking new accounts at the moment. If you have one already, sign in — and if you have lost the password, the recovery code still works.',
     accountNoEmail:
@@ -1027,13 +1029,14 @@ const STRINGS: Record<Locale, Strings> = {
     accountCreate: 'Cr\u00e9er un compte',
     accountForgot: 'Mot de passe oubli\u00e9',
     accountRecoverAction: 'R\u00e9initialiser le mot de passe',
-    accountHandle: 'Nom',
+    accountHandle: 'Pseudo',
     accountPassword: 'Mot de passe',
     accountNewPassword: 'Nouveau mot de passe',
     accountRecoveryCode: 'Code de r\u00e9cup\u00e9ration',
     accountDeviceName: 'Nom de ce navigateur',
     accountDeviceNameNote:
       'Affich\u00e9 dans la liste de vos appareils, pour les distinguer et pouvoir en d\u00e9connecter un.',
+    accountManage: 'Gérer le compte',
     accountClosed:
       'Ce serveur n’accepte pas de nouveaux comptes pour l’instant. Si vous en avez déjà un, connectez-vous — et si vous avez perdu le mot de passe, le code de récupération fonctionne toujours.',
     accountNoEmail:
