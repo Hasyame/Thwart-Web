@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import './controls.css';
 
 /*
  * Base styles, and the handful of primitives a web app needs to behave like an
