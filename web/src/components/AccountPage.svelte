@@ -3,14 +3,8 @@
   import type { Locale } from '../lib/types';
   import { ApiError, type DeviceInfo, type Registration } from '../lib/sync/api';
   import * as api from '../lib/sync/api';
-  import {
-    recover,
-    register,
-    session,
-    signIn,
-    signOut,
-    suggestDeviceName,
-  } from '../lib/sync/session.svelte';
+  import { session, signOut } from '../lib/sync/session.svelte';
+  import SignInForm, { type FormMode } from './SignInForm.svelte';
 
   interface Props {
     t: Strings;
@@ -20,22 +14,16 @@
 
   const { t, uiLocale, storageOk }: Props = $props();
 
-  type Form = 'signin' | 'register' | 'recover';
-
-  let form = $state<Form>('signin');
-  let handle = $state('');
-  let password = $state('');
-  let recoveryCode = $state('');
-  let deviceName = $state(suggestDeviceName());
+  let form = $state<FormMode>('signin');
   let error = $state<string | null>(null);
 
   /**
    * The recovery code, shown exactly once.
    *
    * The server keeps only its Argon2id hash, so this is the only time it will
-   * ever exist in readable form. That is the whole reason an account here needs
-   * no email address, and the reason this screen refuses to move on until
-   * somebody has said they have kept it.
+   * ever exist in readable form. Until this instance can send email, it is also
+   * the only way back into an account whose password has been forgotten, which
+   * is why this screen refuses to move on until somebody has said they kept it.
    */
   let issued = $state.raw<Registration | null>(null);
   let saved = $state(false);
@@ -111,24 +99,6 @@
     return t.accountError('server_error');
   }
 
-  async function submit(): Promise<void> {
-    error = null;
-    const name = deviceName.trim() === '' ? suggestDeviceName() : deviceName.trim();
-    try {
-      if (form === 'register') {
-        issued = await register(handle.trim(), password, name, uiLocale);
-      } else if (form === 'recover') {
-        issued = await recover(handle.trim(), recoveryCode.trim(), password, name, uiLocale);
-      } else {
-        await signIn(handle.trim(), password, name, uiLocale);
-      }
-      password = '';
-      recoveryCode = '';
-    } catch (cause) {
-      error = say(cause);
-    }
-  }
-
   function downloadCode(): void {
     const code = issued;
     if (code === null) {
@@ -152,13 +122,6 @@
       error = say(cause);
     }
   }
-
-  const canSubmit = $derived(
-    handle.trim() !== '' &&
-      password !== '' &&
-      (form !== 'recover' || recoveryCode.trim() !== '') &&
-      !session.busy,
-  );
 </script>
 
 <section>
@@ -170,9 +133,9 @@
     <!--
       The one screen in the app that refuses to be dismissed.
 
-      This code is the only way back into the account, it exists in readable
-      form exactly once, and there is no email address to fall back on. Moving
-      on before it is saved is the one mistake nobody can undo for you.
+      This code exists in readable form exactly once, and until this instance
+      can send email it is the only way back into the account. Moving on before
+      it is saved is the one mistake nobody can undo for you.
     -->
     {@const code = issued}
     <div class="panel recovery">
@@ -202,7 +165,12 @@
         <span>{t.recoverySaved}</span>
       </label>
 
-      <button class="btn btn--primary" type="button" disabled={!saved} onclick={() => (issued = null)}>
+      <button
+        class="btn btn--primary"
+        type="button"
+        disabled={!saved}
+        onclick={() => (issued = null)}
+      >
         {t.recoveryDone}
       </button>
     </div>
@@ -211,6 +179,9 @@
     <div class="panel">
       <p class="eyebrow">{t.accountSignedInAs}</p>
       <p class="who">{account.handle}</p>
+      {#if account.email !== undefined && account.email !== ''}
+        <p class="muted note">{account.email}</p>
+      {/if}
       <p class="muted note">{t.accountDeviceIs(account.deviceName)}</p>
 
       <!--
@@ -229,7 +200,9 @@
             <li>
               <span class="name">{device.name}</span>
               {#if device.current}<span class="chip is-on">{t.accountThisDevice}</span>{/if}
-              <span class="muted when">{new Date(device.lastSeen).toLocaleDateString(uiLocale)}</span>
+              <span class="muted when"
+                >{new Date(device.lastSeen).toLocaleDateString(uiLocale)}</span
+              >
             </li>
           {/each}
         </ul>
@@ -239,6 +212,9 @@
     <div class="panel">
       <h2>{t.accountLeaving}</h2>
       <p class="muted note">{t.accountSignOutKeeps}</p>
+      {#if error !== null}
+        <p class="warning" role="alert">{error}</p>
+      {/if}
       <div class="btn-row">
         <button class="btn" type="button" disabled={session.busy} onclick={leave}>
           {t.accountSignOut}
@@ -246,112 +222,24 @@
       </div>
     </div>
   {:else}
+    <!--
+      The same component the top-bar menu uses, rather than a second copy of
+      the same fields. Two copies is how one of them ends up asking for a
+      pseudonym after the other has moved to an address.
+    -->
     <div class="panel">
-      <div class="chip-row tabs">
-        <button
-          class="chip"
-          type="button"
-          aria-pressed={form === 'signin'}
-          onclick={() => ((form = 'signin'), (error = null))}
-        >
-          {t.accountSignIn}
-        </button>
-        {#if registrationOpen !== false}
-          <button
-            class="chip"
-            type="button"
-            aria-pressed={form === 'register'}
-            onclick={() => ((form = 'register'), (error = null))}
-          >
-            {t.accountCreate}
-          </button>
-        {/if}
-        <button
-          class="chip"
-          type="button"
-          aria-pressed={form === 'recover'}
-          onclick={() => ((form = 'recover'), (error = null))}
-        >
-          {t.accountForgot}
-        </button>
-      </div>
-
-      {#if registrationOpen === false}
-        <p class="notice">{t.accountClosed}</p>
-      {:else if form === 'register'}
-        <p class="muted note">{t.accountNoEmail}</p>
-      {/if}
-
-      <form
-        class="stack-4"
-        onsubmit={(event) => {
-          event.preventDefault();
-          void submit();
+      <SignInForm
+        {t}
+        {uiLocale}
+        mode={form}
+        {registrationOpen}
+        onMode={(next) => (form = next)}
+        onIssued={(registration) => {
+          issued = registration;
+          saved = false;
         }}
-      >
-        <label class="field-group">
-          <span class="field-label">{t.accountHandle}</span>
-          <input
-            class="field"
-            type="text"
-            autocomplete="username"
-            autocapitalize="none"
-            spellcheck="false"
-            value={handle}
-            oninput={(e) => (handle = e.currentTarget.value)}
-          />
-        </label>
-
-        {#if form === 'recover'}
-          <label class="field-group">
-            <span class="field-label">{t.accountRecoveryCode}</span>
-            <input
-              class="field"
-              type="text"
-              autocapitalize="characters"
-              spellcheck="false"
-              value={recoveryCode}
-              oninput={(e) => (recoveryCode = e.currentTarget.value)}
-            />
-          </label>
-        {/if}
-
-        <label class="field-group">
-          <span class="field-label">
-            {form === 'signin' ? t.accountPassword : t.accountNewPassword}
-          </span>
-          <input
-            class="field"
-            type="password"
-            autocomplete={form === 'signin' ? 'current-password' : 'new-password'}
-            value={password}
-            oninput={(e) => (password = e.currentTarget.value)}
-          />
-        </label>
-
-        <label class="field-group">
-          <span class="field-label">{t.accountDeviceName}</span>
-          <input
-            class="field"
-            type="text"
-            value={deviceName}
-            oninput={(e) => (deviceName = e.currentTarget.value)}
-          />
-          <span class="muted note">{t.accountDeviceNameNote}</span>
-        </label>
-
-        {#if error !== null}
-          <p class="warning">{error}</p>
-        {/if}
-
-        <button class="btn btn--primary btn--block" type="submit" disabled={!canSubmit}>
-          {form === 'signin'
-            ? t.accountSignIn
-            : form === 'register'
-              ? t.accountCreate
-              : t.accountRecoverAction}
-        </button>
-      </form>
+        onSignedIn={() => undefined}
+      />
     </div>
 
     <div class="panel">
@@ -383,10 +271,6 @@
 
   .note {
     font-size: var(--text-sm);
-  }
-
-  .tabs {
-    margin-bottom: var(--space-2);
   }
 
   .who {

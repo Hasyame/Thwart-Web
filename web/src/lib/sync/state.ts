@@ -17,6 +17,13 @@ export interface StoredSyncState {
   readonly accountId: string;
   readonly handle: string;
   /**
+   * The address on the account, when the server reports one.
+   *
+   * Kept only so the account screen can show which address is signed in.
+   * Optional because the row may have been written before addresses existed.
+   */
+  readonly email?: string;
+  /**
    * The device token.
    *
    * Held in IndexedDB rather than localStorage for one reason: everything else

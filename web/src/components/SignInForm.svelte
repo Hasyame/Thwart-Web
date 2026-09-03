@@ -12,6 +12,10 @@
    * somebody signs in every day and the other is where they first arrive.
    * Written once so the two cannot drift into disagreeing about what a
    * password field autocompletes as.
+   *
+   * Signing in asks for an address. Creating an account asks for an address and
+   * a pseudonym both, because they answer different questions: one is how you
+   * get back in, the other is what you are called.
    */
 
   export type FormMode = 'signin' | 'register' | 'recover';
@@ -48,7 +52,16 @@
     compact = false,
   }: Props = $props();
 
+  /**
+   * What goes in the address box when signing in or recovering.
+   *
+   * Not called `email`, because the server resolves a pseudonym in the same
+   * field and an account made before addresses existed has nothing else.
+   * Registering keeps its two fields apart, below.
+   */
+  let identifier = $state('');
   let handle = $state('');
+  let email = $state('');
   let password = $state('');
   let recoveryCode = $state('');
   let deviceName = $state(suggestDeviceName());
@@ -63,11 +76,11 @@
     const name = deviceName.trim() === '' ? suggestDeviceName() : deviceName.trim();
     try {
       if (mode === 'register') {
-        onIssued(await register(handle.trim(), password, name, uiLocale));
+        onIssued(await register(handle.trim(), email.trim(), password, name, uiLocale));
       } else if (mode === 'recover') {
-        onIssued(await recover(handle.trim(), recoveryCode.trim(), password, name, uiLocale));
+        onIssued(await recover(identifier.trim(), recoveryCode.trim(), password, name, uiLocale));
       } else {
-        await signIn(handle.trim(), password, name, uiLocale);
+        await signIn(identifier.trim(), password, name, uiLocale);
         onSignedIn();
       }
       password = '';
@@ -77,11 +90,11 @@
     }
   }
 
+  const named = $derived(
+    mode === 'register' ? handle.trim() !== '' && email.trim() !== '' : identifier.trim() !== '',
+  );
   const canSubmit = $derived(
-    handle.trim() !== '' &&
-      password !== '' &&
-      (mode !== 'recover' || recoveryCode.trim() !== '') &&
-      !session.busy,
+    named && password !== '' && (mode !== 'recover' || recoveryCode.trim() !== '') && !session.busy,
   );
 </script>
 
@@ -118,7 +131,7 @@
   {#if registrationOpen === false}
     <p class="notice">{t.accountClosed}</p>
   {:else if mode === 'register'}
-    <p class="muted note">{t.accountNoEmail}</p>
+    <p class="notice">{t.accountRecoveryNote}</p>
   {/if}
 {/if}
 
@@ -129,18 +142,50 @@
     void submit();
   }}
 >
-  <label class="field-group">
-    <span class="field-label">{t.accountHandle}</span>
-    <input
-      class="field"
-      type="text"
-      autocomplete="username"
-      autocapitalize="none"
-      spellcheck="false"
-      value={handle}
-      oninput={(e) => (handle = e.currentTarget.value)}
-    />
-  </label>
+  {#if mode === 'register'}
+    <label class="field-group">
+      <span class="field-label">{t.accountEmail}</span>
+      <input
+        class="field"
+        type="email"
+        inputmode="email"
+        autocomplete="email"
+        autocapitalize="none"
+        spellcheck="false"
+        value={email}
+        oninput={(e) => (email = e.currentTarget.value)}
+      />
+      {#if !compact}<span class="muted note">{t.accountEmailNote}</span>{/if}
+    </label>
+
+    <label class="field-group">
+      <span class="field-label">{t.accountHandle}</span>
+      <input
+        class="field"
+        type="text"
+        autocomplete="username"
+        autocapitalize="none"
+        spellcheck="false"
+        value={handle}
+        oninput={(e) => (handle = e.currentTarget.value)}
+      />
+      {#if !compact}<span class="muted note">{t.accountHandleNote}</span>{/if}
+    </label>
+  {:else}
+    <label class="field-group">
+      <span class="field-label">{t.accountEmail}</span>
+      <input
+        class="field"
+        type="email"
+        inputmode="email"
+        autocomplete="username"
+        autocapitalize="none"
+        spellcheck="false"
+        value={identifier}
+        oninput={(e) => (identifier = e.currentTarget.value)}
+      />
+    </label>
+  {/if}
 
   {#if mode === 'recover'}
     <label class="field-group">
@@ -167,6 +212,7 @@
       value={password}
       oninput={(e) => (password = e.currentTarget.value)}
     />
+    {#if mode !== 'signin'}<span class="muted note">{t.accountPasswordRule}</span>{/if}
   </label>
 
   {#if !compact}

@@ -74,6 +74,7 @@ async function remember(
     id: SYNC_STATE_KEY,
     accountId: result.accountId,
     handle: result.handle,
+    email: result.email,
     token: result.token,
     // Nothing has been read yet. Zero is "everything" on the next pull, which
     // is both first sign-in and a full resync — one code path for both.
@@ -89,13 +90,14 @@ async function remember(
 
 export async function register(
   handle: string,
+  email: string,
   password: string,
   deviceName: string,
   locale: Locale,
 ): Promise<api.Registration> {
   session.busy = true;
   try {
-    const result = await api.register(handle, password, deviceName, locale);
+    const result = await api.register(handle, email, password, deviceName, locale);
     await remember(result, deviceName);
     return result;
   } finally {
@@ -103,22 +105,23 @@ export async function register(
   }
 }
 
+/** `identifier` is the address, or a pseudonym on an account that predates them. */
 export async function signIn(
-  handle: string,
+  identifier: string,
   password: string,
   deviceName: string,
   locale: Locale,
 ): Promise<void> {
   session.busy = true;
   try {
-    await remember(await api.login(handle, password, deviceName, locale), deviceName);
+    await remember(await api.login(identifier, password, deviceName, locale), deviceName);
   } finally {
     session.busy = false;
   }
 }
 
 export async function recover(
-  handle: string,
+  identifier: string,
   recoveryCode: string,
   newPassword: string,
   deviceName: string,
@@ -126,7 +129,7 @@ export async function recover(
 ): Promise<api.Registration> {
   session.busy = true;
   try {
-    const result = await api.recover(handle, recoveryCode, newPassword, deviceName, locale);
+    const result = await api.recover(identifier, recoveryCode, newPassword, deviceName, locale);
     await remember(result, deviceName);
     return result;
   } finally {

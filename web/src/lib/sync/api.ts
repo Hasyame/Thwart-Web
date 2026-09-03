@@ -20,6 +20,10 @@ export type ApiErrorCode =
   | 'unauthorized'
   | 'invalid_credentials'
   | 'handle_taken'
+  | 'email_taken'
+  | 'invalid_handle'
+  | 'invalid_email'
+  | 'weak_password'
   | 'registration_closed'
   | 'invalid_recovery_code'
   | 'cursor_too_old'
@@ -49,6 +53,14 @@ export class ApiError extends Error {
 export interface Session {
   readonly accountId: string;
   readonly handle: string;
+  /**
+   * The address on the account.
+   *
+   * Optional because a server older than the address migration does not send
+   * it, and because the account created before addresses existed does not have
+   * one until it is set.
+   */
+  readonly email?: string;
   readonly token: string;
   readonly recoveryCodeIssuedAt: string;
 }
@@ -206,22 +218,35 @@ async function call<T>(path: string, options: CallOptions = {}): Promise<T> {
 
 export const register = (
   handle: string,
+  email: string,
   password: string,
   deviceName: string,
   locale?: Locale,
 ): Promise<Registration> =>
-  call('/auth/register', { method: 'POST', body: { handle, password, deviceName }, locale });
+  call('/auth/register', { method: 'POST', body: { handle, email, password, deviceName }, locale });
 
+/**
+ * Signing in.
+ *
+ * `identifier` is whatever was typed: an address, or a pseudonym on an account
+ * that predates addresses. The server resolves either, so this does not have to
+ * guess which it was given, and it goes into both fields so that a server older
+ * than the address migration — which reads only `handle` — still answers.
+ */
 export const login = (
-  handle: string,
+  identifier: string,
   password: string,
   deviceName: string,
   locale?: Locale,
 ): Promise<Session> =>
-  call('/auth/login', { method: 'POST', body: { handle, password, deviceName }, locale });
+  call('/auth/login', {
+    method: 'POST',
+    body: { email: identifier, handle: identifier, password, deviceName },
+    locale,
+  });
 
 export const recover = (
-  handle: string,
+  identifier: string,
   recoveryCode: string,
   newPassword: string,
   deviceName: string,
@@ -229,7 +254,7 @@ export const recover = (
 ): Promise<Registration> =>
   call('/auth/recover', {
     method: 'POST',
-    body: { handle, recoveryCode, newPassword, deviceName },
+    body: { email: identifier, handle: identifier, recoveryCode, newPassword, deviceName },
     locale,
   });
 

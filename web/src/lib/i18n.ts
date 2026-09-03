@@ -194,7 +194,11 @@ export interface Strings {
   readonly accountRecoveryCode: string;
   readonly accountDeviceName: string;
   readonly accountDeviceNameNote: string;
-  readonly accountNoEmail: string;
+  readonly accountEmail: string;
+  readonly accountEmailNote: string;
+  readonly accountHandleNote: string;
+  readonly accountPasswordRule: string;
+  readonly accountRecoveryNote: string;
   readonly accountClosed: string;
   readonly accountManage: string;
   readonly accountSignedInAs: string;
@@ -586,7 +590,7 @@ const STRINGS: Record<Locale, Strings> = {
     accountCreate: 'Create an account',
     accountForgot: 'Lost your password',
     accountRecoverAction: 'Reset the password',
-    accountHandle: 'Name',
+    accountHandle: 'Pseudonym',
     accountPassword: 'Password',
     accountNewPassword: 'New password',
     accountRecoveryCode: 'Recovery code',
@@ -596,8 +600,14 @@ const STRINGS: Record<Locale, Strings> = {
     accountManage: 'Manage the account',
     accountClosed:
       'This server is not taking new accounts at the moment. If you have one already, sign in — and if you have lost the password, the recovery code still works.',
-    accountNoEmail:
-      'No email address is asked for and none is stored. You get a recovery code instead, once, and it is the only way back in \u2014 so keep it.',
+    accountEmail: 'Email address',
+    accountEmailNote:
+      'This is what you sign in with. It is used for nothing else \u2014 no newsletter, no analytics, and it is never passed to anybody.',
+    accountHandleNote: 'The name on your account. You sign in with your address, not with this.',
+    accountPasswordRule:
+      'At least 12 characters. A phrase you will actually remember beats a short password with symbols in it. It cannot contain your pseudonym or your address.',
+    accountRecoveryNote:
+      'You also get a recovery code, once. Until this server can send email, that code is the only way back in if you forget your password \u2014 so keep it.',
     accountSignedInAs: 'Signed in as',
     accountDeviceIs: (name) => `This browser is registered as \u201c${name}\u201d.`,
     accountDevices: 'Devices',
@@ -612,11 +622,17 @@ const STRINGS: Record<Locale, Strings> = {
     accountWhyBody:
       'One place your collection, decks, plays and campaigns live, so the same data is on your phone and in this browser. Until then, the backup file on the Collection page is how it travels.',
     accountPrivacy:
-      'The server stores your records without reading them: it does not know what a card is. You can export everything or delete the account outright, and neither needs anybody\u2019s permission.',
+      'The server stores your records without reading them: it does not know what a card is. Your address is kept to sign you in and for nothing else. You can export everything or delete the account outright, and neither needs anybody\u2019s permission.',
     accountError: (code) =>
       ({
-        invalid_credentials: 'That name and password do not match an account.',
-        handle_taken: 'That name is taken on this server. Try another.',
+        invalid_credentials: 'That address and password do not match an account.',
+        email_taken: 'There is already an account on this server with that address.',
+        handle_taken: 'That pseudonym is taken on this server. Try another.',
+        invalid_email: 'That does not look like an email address.',
+        invalid_handle:
+          'A pseudonym is 3 to 32 characters: letters, digits, dot, dash or underscore.',
+        weak_password:
+          'That password is too easy. Use at least 12 characters, and nothing containing your pseudonym or your address.',
         registration_closed: 'This server is not taking new accounts.',
         invalid_recovery_code: 'That recovery code is not right for this account.',
         rate_limited: 'Too many attempts. Wait a little and try again.',
@@ -625,7 +641,7 @@ const STRINGS: Record<Locale, Strings> = {
       })[code] ?? 'Something went wrong on the server. Try again.',
     recoveryTitle: 'Keep this code',
     recoveryIntro:
-      'This is shown once and never again. There is no email address on this account, so this code is the only way back in if you forget your password. Save it somewhere you will still have it in a year.',
+      'This is shown once and never again. This server cannot send email yet, so until it can, this code is the only way back in if you forget your password. Save it somewhere you will still have it in a year.',
     recoveryDownload: 'Save as a file',
     recoveryCopy: 'Copy',
     recoverySaved: 'I have saved it somewhere safe',
@@ -1039,8 +1055,15 @@ const STRINGS: Record<Locale, Strings> = {
     accountManage: 'Gérer le compte',
     accountClosed:
       'Ce serveur n’accepte pas de nouveaux comptes pour l’instant. Si vous en avez déjà un, connectez-vous — et si vous avez perdu le mot de passe, le code de récupération fonctionne toujours.',
-    accountNoEmail:
-      'Aucune adresse e-mail n\u2019est demand\u00e9e ni conserv\u00e9e. Vous recevez \u00e0 la place un code de r\u00e9cup\u00e9ration, une seule fois, et c\u2019est le seul moyen de revenir : gardez-le.',
+    accountEmail: 'Adresse e-mail',
+    accountEmailNote:
+      'C\u2019est avec elle que vous vous connectez. Elle ne sert \u00e0 rien d\u2019autre : aucune lettre d\u2019information, aucune mesure d\u2019audience, et elle n\u2019est transmise \u00e0 personne.',
+    accountHandleNote:
+      'Le nom affich\u00e9 sur votre compte. Vous vous connectez avec votre adresse, pas avec lui.',
+    accountPasswordRule:
+      'Au moins 12 caract\u00e8res. Une phrase dont vous vous souviendrez vaut mieux qu\u2019un mot de passe court plein de symboles. Il ne peut contenir ni votre pseudo ni votre adresse.',
+    accountRecoveryNote:
+      'Vous recevez aussi un code de r\u00e9cup\u00e9ration, une seule fois. Tant que ce serveur ne peut pas envoyer d\u2019e-mail, ce code est le seul moyen de revenir si vous oubliez votre mot de passe : gardez-le.',
     accountSignedInAs: 'Connect\u00e9 en tant que',
     accountDeviceIs: (name) => `Ce navigateur est enregistr\u00e9 sous \u00ab\u00a0${name}\u00a0\u00bb.`,
     accountDevices: 'Appareils',
@@ -1055,11 +1078,18 @@ const STRINGS: Record<Locale, Strings> = {
     accountWhyBody:
       'Un seul endroit pour votre collection, vos decks, vos parties et vos campagnes, afin que les m\u00eames donn\u00e9es soient sur votre t\u00e9l\u00e9phone et dans ce navigateur. En attendant, le fichier de sauvegarde de la page Collection est la fa\u00e7on de les d\u00e9placer.',
     accountPrivacy:
-      'Le serveur conserve vos enregistrements sans les lire : il ne sait pas ce qu\u2019est une carte. Vous pouvez tout exporter ou supprimer le compte, sans demander la permission \u00e0 personne.',
+      'Le serveur conserve vos enregistrements sans les lire : il ne sait pas ce qu\u2019est une carte. Votre adresse sert \u00e0 vous connecter et \u00e0 rien d\u2019autre. Vous pouvez tout exporter ou supprimer le compte, sans demander la permission \u00e0 personne.',
     accountError: (code) =>
       ({
-        invalid_credentials: 'Ce nom et ce mot de passe ne correspondent \u00e0 aucun compte.',
-        handle_taken: 'Ce nom est d\u00e9j\u00e0 pris sur ce serveur. Essayez-en un autre.',
+        invalid_credentials: 'Cette adresse et ce mot de passe ne correspondent \u00e0 aucun compte.',
+        email_taken: 'Un compte existe d\u00e9j\u00e0 sur ce serveur avec cette adresse.',
+        handle_taken: 'Ce pseudo est d\u00e9j\u00e0 pris sur ce serveur. Essayez-en un autre.',
+        invalid_email: 'Cela ne ressemble pas \u00e0 une adresse e-mail.',
+        invalid_handle:
+          'Un pseudo fait 3 \u00e0 32 caract\u00e8res : lettres, chiffres, point, tiret ou soulignement.',
+        weak_password:
+          'Ce mot de passe est trop simple. Utilisez au moins 12 caract\u00e8res, sans y mettre votre pseudo ni votre adresse.',
+        registration_closed: 'Ce serveur n\u2019accepte pas de nouveaux comptes.',
         invalid_recovery_code: 'Ce code de r\u00e9cup\u00e9ration ne correspond pas \u00e0 ce compte.',
         rate_limited: 'Trop de tentatives. Patientez un peu avant de r\u00e9essayer.',
         unauthorized: 'Vous avez \u00e9t\u00e9 d\u00e9connect\u00e9. Reconnectez-vous.',
@@ -1067,7 +1097,7 @@ const STRINGS: Record<Locale, Strings> = {
       })[code] ?? 'Une erreur est survenue sur le serveur. R\u00e9essayez.',
     recoveryTitle: 'Conservez ce code',
     recoveryIntro:
-      'Il n\u2019est affich\u00e9 qu\u2019une seule fois. Ce compte n\u2019a aucune adresse e-mail : ce code est le seul moyen de revenir si vous oubliez votre mot de passe. Rangez-le l\u00e0 o\u00f9 vous l\u2019aurez encore dans un an.',
+      'Il n\u2019est affich\u00e9 qu\u2019une seule fois. Ce serveur ne sait pas encore envoyer d\u2019e-mail : jusque-l\u00e0, ce code est le seul moyen de revenir si vous oubliez votre mot de passe. Rangez-le l\u00e0 o\u00f9 vous l\u2019aurez encore dans un an.',
     recoveryDownload: 'Enregistrer dans un fichier',
     recoveryCopy: 'Copier',
     recoverySaved: 'Je l\u2019ai mis en lieu s\u00fbr',
