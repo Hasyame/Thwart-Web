@@ -27,6 +27,13 @@ REPO="${REPO:-/srv/thwart/repo}"
 RELEASES="${RELEASES:-/srv/thwart/releases}"
 CURRENT="${CURRENT:-/srv/thwart/current}"
 KEEP="${KEEP:-3}"
+# Which branch to build. `main` by default, so running this by hand does what
+# it always did; release.sh passes `release`, which only moves when CI is green.
+REF="${REF:-main}"
+# Skip the card fetch if the data on disk is younger than this. The nightly run
+# is 24 hours apart and always fetches; this only bites when several releases
+# land in one afternoon, and MarvelCDB is run by volunteers.
+MAX_DATA_AGE_HOURS="${MAX_DATA_AGE_HOURS:-20}"
 
 FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
@@ -44,9 +51,13 @@ cd "$REPO"
 WAS_HEAD="$(git rev-parse HEAD 2>/dev/null || echo none)"
 WAS_DIGEST="$(data_digest)"
 
-log "fetching"
-git fetch --quiet origin main
-git reset --quiet --hard origin/main
+log "fetching $REF"
+git fetch --quiet origin "$REF"
+# Detached, not `reset --hard` on a branch: this clone is checked out on
+# main, and resetting would drag the local main pointer to whichever ref
+# was deployed last. Untracked files are left alone deliberately, because
+# node_modules and the card data live there and both are expensive.
+git checkout --quiet --force --detach "origin/$REF"
 
 NOW_HEAD="$(git rev-parse HEAD)"
 
@@ -62,8 +73,16 @@ npm ci --include=dev --no-audit --no-fund --silent
 # Fetches both languages from MarvelCDB and refuses to write an implausibly
 # small dataset, so a bad day there cannot replace the card database with forty
 # cards. Failing here leaves the previous release serving.
-log "fetching card data"
-npm run --silent data
+#
+# Skipped when what is already on disk is recent. The card database moves in
+# weeks and this is somebody else's volunteer-run server; three deploys in an
+# afternoon should not mean three full downloads of it.
+if [ -n "$(find "$REPO/web/public/data/meta.json" -mmin "-$((MAX_DATA_AGE_HOURS * 60))" 2>/dev/null)" ]; then
+    log "card data is under ${MAX_DATA_AGE_HOURS}h old; keeping it"
+else
+    log "fetching card data"
+    npm run --silent data
+fi
 
 NOW_DIGEST="$(data_digest)"
 

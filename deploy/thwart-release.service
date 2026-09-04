@@ -1,0 +1,29 @@
+[Unit]
+Description=Take whatever GitHub has marked as ready
+Documentation=file:///srv/thwart/repo/deploy/release.sh
+# No point running before the network is up: the first thing it does is fetch.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=thwart
+Group=thwart
+
+# Long enough for a cold npm ci plus a card fetch plus a Vite build, which is
+# the worst case and takes about three minutes on this box. A deploy that hangs
+# past this is stuck, and the timer would otherwise stack another on top of it.
+TimeoutStartSec=20min
+
+ExecStart=/srv/thwart/repo/deploy/release.sh
+
+# Nothing here should be able to touch anything but its own tree. The one
+# exception is the systemctl restart, which is why it goes through sudo with a
+# single-command rule rather than by giving this unit privileges.
+NoNewPrivileges=no
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes

@@ -19,6 +19,10 @@ set -eu
 REPO="${REPO:-/srv/thwart/repo}"
 BIN="${BIN:-/srv/thwart/bin}"
 DATA="${DATA:-/srv/thwart/data}"
+# Which branch to build. `main` by default, so running this by hand does what
+# it always did; release.sh passes `api-release`, which moves only when a
+# person presses the button.
+REF="${REF:-main}"
 
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
@@ -47,9 +51,13 @@ export PATH
 
 cd "$REPO"
 
-log "fetching"
-git fetch --quiet origin main
-git reset --quiet --hard origin/main
+log "fetching $REF"
+git fetch --quiet origin "$REF"
+# Detached, not `reset --hard` on a branch: this clone is checked out on
+# main, and resetting would drag the local main pointer to whichever ref
+# was deployed last. Untracked files are left alone deliberately, because
+# node_modules and the card data live there and both are expensive.
+git checkout --quiet --force --detach "origin/$REF"
 
 mkdir -p "$BIN" "$DATA"
 
@@ -68,6 +76,11 @@ log "building"
 CGO_ENABLED=0 go build -trimpath -o "$BIN/thwart-api.new" .
 
 mv -f "$BIN/thwart-api.new" "$BIN/thwart-api"
+
+# What the binary was built from, recorded where a script can read it without
+# the service being up. release.sh compares the site against this to refuse
+# publishing a front end that expects a newer server than the one running.
+git rev-parse HEAD > "$BIN/thwart-api.commit"
 
 log "built $(git rev-parse --short HEAD)"
 log "now run: sudo systemctl restart thwart-api"

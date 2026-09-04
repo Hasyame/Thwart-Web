@@ -1,0 +1,20 @@
+[Unit]
+Description=Check every few minutes for a release to take
+
+[Timer]
+# Five minutes, which is the gap between pressing a button and seeing the
+# result. It costs one `git fetch` against GitHub when nothing has changed —
+# the expensive halves only run when a branch has actually moved.
+OnBootSec=3min
+OnUnitActiveSec=5min
+
+# Spreads the start, so a fleet of these would not arrive at GitHub together.
+# Harmless with one server and correct if there is ever another.
+RandomizedDelaySec=45
+
+# The deploy is idempotent, so a run missed while the machine was off is not
+# worth catching up on: the next tick five minutes later does the same thing.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -221,3 +221,36 @@ jobs:
         env:
           CGO_ENABLED: "1"
         run: go test -race ./...
+
+  # --- the release marker ----------------------------------------------------
+  #
+  # Moves the `release` branch to this commit once both halves are green.
+  #
+  # This is the whole of the deployment handshake, and it is deliberately not a
+  # deployment. Nothing here reaches the server, holds a credential for it, or
+  # knows it exists: the branch is a statement that a commit passed, and the
+  # server decides on its own timer what to do about that. The alternative —
+  # an SSH key in GitHub Actions — would give anyone with write access to this
+  # repository, and every third-party action that ever runs in it, a shell on
+  # the machine holding the account database. A branch pointer cannot do that.
+  #
+  # The push is a fast-forward, because that is git's default and this job does
+  # not pass --force. A force-push to main therefore fails here loudly instead
+  # of quietly marking rewritten history as tested.
+  release:
+    name: Mark tested
+    needs: [web, server]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Move release to this commit
+        run: |
+          git push origin "${{ github.sha }}:refs/heads/release"
+          echo "release -> $(git rev-parse --short "${{ github.sha }}")" >> "$GITHUB_STEP_SUMMARY"

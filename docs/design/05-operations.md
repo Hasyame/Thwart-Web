@@ -365,7 +365,80 @@ restore procedure of four commands.
 
 ---
 
-## 8. The self-hosting document
+## 8. Deployment
+
+Added 2026-09-04, replacing "somebody runs two scripts over SSH".
+
+### It pulls; GitHub never pushes
+
+The obvious shape is a GitHub Actions job that SSHes in and deploys. It is
+rejected. That key would let anyone with write access to the repository — and
+every third-party action that ever runs in it, at whatever version it resolves
+to that morning — open a shell on the machine holding the account database. The
+whole posture of this server is that it makes no outbound connections and
+accepts nothing inbound but nginx; a deploy credential in a CI provider
+undoes that for a convenience.
+
+So CI does not deploy. It moves two branch pointers, and the server decides on
+its own timer what to do about them. A branch cannot open a shell.
+
+| branch | moved by | means |
+|---|---|---|
+| `main` | you | the latest work |
+| `release` | CI, automatically | this commit passed both halves of the suite |
+| `api-release` | a person, by pressing **Release the API** | ship this to the account server |
+
+The server already had SSH read access to the private repository for the
+nightly card refresh, so this needed no new credential anywhere.
+
+### What runs where
+
+- `deploy/release.sh`, on a five-minute timer, is the whole decision. It
+  fetches, compares the two branches against what is deployed, and acts.
+- `deploy/update-api.sh` builds and installs the binary from `api-release`,
+  then `release.sh` restarts the service through a one-command sudo rule
+  (`deploy/thwart-release.sudoers` — `systemctl restart thwart-api` and
+  nothing else).
+- `deploy/update.sh` publishes the site from `release`.
+- The nightly `thwart-update.timer` is unchanged and still owns the card data.
+  Code and data are on separate clocks because they change for different
+  reasons.
+
+Both scripts still default to `main`, so running either by hand does what it
+always did.
+
+### The rule that matters
+
+**The site is never published ahead of its API.** `release.sh` refuses to
+publish when the `server/` tree at `release` differs from the one the running
+binary was built from, and says so in the log.
+
+This is not tidiness. On 4 September 2026 the API was deployed and the site was
+not, and then the site caught up first on a later change: the front end had
+learned to send an email address and the server had not, and every account
+endpoint decodes with `DisallowUnknownFields`, so the field the new form always
+sent came back `malformed_record`. Nobody could sign in or create an account.
+The ordering was obvious in hindsight and entirely dependent on somebody
+remembering it at the time, which is the definition of a thing to move into
+code.
+
+`update-api.sh` writes the commit it built to `/srv/thwart/bin/thwart-api.commit`
+so this can be decided without the service being up.
+
+### Rolling back
+
+The site keeps its last three releases as directories and `current` is a
+symlink, so a rollback is one `ln -sfn` — unchanged, and the reason nothing
+here needs a rollback feature.
+
+The API is a single binary built to a temporary name and moved into place, so a
+failed build never replaces a working one. To go back a version, point
+`api-release` at the older commit and wait five minutes; the timer treats
+backwards the same as forwards.
+
+---
+
+## 9. The self-hosting document
 
 A `SELFHOSTING.md` at the repository root is a Phase 0b deliverable, not an
 afterthought — "someone must be able to clone the repo and run the whole stack

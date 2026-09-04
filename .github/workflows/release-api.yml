@@ -1,0 +1,114 @@
+name: Release the API
+
+# The button that lets the account server move.
+#
+# The site publishes itself: it is static files behind an atomic symlink swap,
+# and the previous three releases stay on disk to roll back to. The API is not
+# that. It restarts a process holding the account database, so a person decides
+# when that happens, and this is where they decide it.
+#
+# Like the `release` job in ci.yml, this deploys nothing and holds no
+# credential for the server. It moves a branch pointer. The server fetches
+# `api-release` on its own timer and acts on what it finds, which is why
+# nothing in GitHub can reach the machine even if this repository is
+# compromised.
+#
+# It promotes `release`, never `main`. `release` only moves when CI is green,
+# so there is no path from here that ships an untested commit — including when
+# somebody presses this button while CI is still running.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-api
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: Promote release to api-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Work out what this would ship
+        id: plan
+        run: |
+          set -eu
+
+          if ! git rev-parse --verify --quiet origin/release >/dev/null; then
+            echo "There is no release branch yet: nothing has passed CI on main." >&2
+            exit 1
+          fi
+          target="$(git rev-parse origin/release)"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+
+          # No api-release yet means this is the first one, and everything in
+          # the server directory is new to the machine.
+          if git rev-parse --verify --quiet origin/api-release >/dev/null; then
+            current="$(git rev-parse origin/api-release)"
+          else
+            current=""
+          fi
+
+          {
+            echo "## Releasing the API"
+            echo
+            echo "\`release\` is at \`$(git rev-parse --short "$target")\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -z "$current" ]; then
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo "First release: there is no \`api-release\` branch yet." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "$current" = "$target" ]; then
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo "Already there. Nothing to do." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Refuse to move backwards. A fast-forward is what the push would do
+          # anyway; saying so here gives a readable reason instead of git's.
+          if ! git merge-base --is-ancestor "$current" "$target"; then
+            echo "api-release is not an ancestor of release; refusing to move it backwards." >&2
+            exit 1
+          fi
+
+          {
+            echo
+            echo "### Commits"
+            echo
+            git log --no-merges --format='- %h %s' "$current..$target"
+            echo
+            echo "### Changes under server/"
+            echo
+            if git diff --quiet "$current" "$target" -- server; then
+              echo "None. This release only carries the site, and restarting the API"
+              echo "is not strictly necessary — it is harmless, and it keeps the"
+              echo "reported build in step with what is deployed."
+            else
+              echo '```'
+              git diff --stat "$current" "$target" -- server
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Move api-release
+        run: |
+          set -eu
+          git push origin "${{ steps.plan.outputs.target }}:refs/heads/api-release"
+          {
+            echo
+            echo "Pushed. The server picks this up within a few minutes and"
+            echo "reports the new build at \`/api/v1/version\`."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,17 @@
+# One command, one service, no password.
+#
+#   install -m 440 -o root -g root \
+#       /srv/thwart/repo/deploy/thwart-release.sudoers \
+#       /etc/sudoers.d/thwart-release
+#   visudo -c
+#
+# The deploy has to restart the API and nothing else. Giving the thwart user
+# general sudo would mean a bug in a deploy script — or anything that ever runs
+# as that user — could do anything at all on this machine, which is a large
+# price for one systemctl call.
+#
+# The command is written out in full, absolute, with its argument. sudo matches
+# the whole line, so this permits `systemctl restart thwart-api` and refuses
+# `systemctl restart` anything-else, `systemctl edit`, and a `systemctl` found
+# earlier on someone's PATH.
+thwart ALL=(root) NOPASSWD: /usr/bin/systemctl restart thwart-api
