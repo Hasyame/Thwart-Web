@@ -87,7 +87,7 @@ except where noted.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/v1/sync/changes?since=<cursor>&limit=<n>` | Pull everything changed after `cursor`. |
+| `GET` | `/v1/sync/changes?since=<cursor>&limit=<n>&resync=<0 or 1>` | Pull everything changed after `cursor`. |
 | `POST` | `/v1/sync/changes` | Push a batch of dirty records. |
 
 ### Account rights and housekeeping
@@ -271,6 +271,23 @@ GET /v1/sync/changes?since=1840&limit=500
   > receives a feed that looks complete and is not, and the deletions it never
   > hears about come back from the dead. Refusing makes it impossible to
   > miss. `since=0` is exempt, being the full resync itself.
+
+  > **Amended again, 2026-09-04: `resync=1`.** Exempting `since=0` was not
+  > enough, and the gap was found by the Android client rather than by this
+  > server's own tests. A resync of an account too large for one page resumes
+  > page two from the last revision of page one, and a *live* record untouched
+  > since before the last sweep carries a revision below the horizon — so the
+  > resync was refused on its own second page, with no way forward. The client
+  > cannot step over the gap: those records have never reached it, and skipping
+  > them would lose them.
+  >
+  > A pull now takes `resync=1`, which exempts it from the refusal. It is a
+  > claim only the client can make, because the server is stateless between
+  > requests and cannot tell "resuming from an old cursor" from "paging through
+  > a resync that started at zero". It grants nothing: a client that sets it
+  > while genuinely resuming only serves itself the incomplete feed the refusal
+  > exists to prevent. A resync is rebuilding from nothing and has no deletion
+  > to miss, which is the same reason `since=0` was exempt in the first place.
 - `since=0` means "everything", which is both first sign-in and full resync.
 
 ### Push

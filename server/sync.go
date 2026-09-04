@@ -88,6 +88,22 @@ func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess session
 	}
 	limit = min(limit, maxPageSize)
 
+	/*
+		Whether this pull is one page of a full resynchronisation.
+
+		A claim the client makes, because it is the only party that can: this
+		server is stateless between requests and cannot tell "resuming from an
+		old cursor" from "paging through a resync that started at zero". It is
+		not a privilege — a client that claims it falsely only serves itself an
+		incomplete feed, which is precisely what the refusal below exists to
+		spare it.
+	*/
+	resync, err := boolParam(r, "resync")
+	if err != nil {
+		writeError(w, r, apiError{status: http.StatusBadRequest, code: "malformed_record"})
+		return
+	}
+
 	minCursor, err := s.store.MinCursor(r.Context(), sess.account.ID)
 	if err != nil {
 		s.fail(w, r, "read min cursor", err)
@@ -103,8 +119,16 @@ func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess session
 		a client that missed the check would otherwise receive a feed that looks
 		complete and is not, and the deletions it never hears about come back
 		from the dead. since=0 is exempt because it is the full resync.
+
+		So is every later page of that same resync, and forgetting them was a
+		bug: page two resumes from the last revision of page one, and a live
+		record untouched since before the last sweep carries a revision below
+		the horizon. A large account then failed on its own second page with no
+		way forward — the client cannot step over the gap, because those records
+		have never reached it. A resync is rebuilding from nothing and so has no
+		deletion to miss, which is the same reason since=0 was already exempt.
 	*/
-	if since > 0 && since < minCursor {
+	if since > 0 && !resync && since < minCursor {
 		writeError(w, r, apiError{
 			status:  http.StatusConflict,
 			code:    "cursor_too_old",
@@ -365,4 +389,15 @@ func int64Param(r *http.Request, name string, fallback int64) (int64, error) {
 		return fallback, nil
 	}
 	return strconv.ParseInt(raw, 10, 64)
+}
+
+// Accepts what the three client languages produce for a boolean in a query
+// string: 1/0, true/false, t/f. An absent parameter is false rather than an
+// error, so an older client that has never heard of it behaves as it did.
+func boolParam(r *http.Request, name string) (bool, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		return false, nil
+	}
+	return strconv.ParseBool(raw)
 }

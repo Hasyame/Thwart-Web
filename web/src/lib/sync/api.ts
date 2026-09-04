@@ -230,8 +230,14 @@ export const register = (
  *
  * `identifier` is whatever was typed: an address, or a pseudonym on an account
  * that predates addresses. The server resolves either, so this does not have to
- * guess which it was given, and it goes into both fields so that a server older
- * than the address migration — which reads only `handle` — still answers.
+ * guess which it was given.
+ *
+ * Sent as `handle` alone. An earlier version of this sent it in both fields and
+ * claimed that kept a pre-address server working; the opposite is true, and the
+ * Android client caught it. Every account endpoint decodes with
+ * `DisallowUnknownFields`, so an `email` key against such a server is refused
+ * outright. `handle` alone reaches the same account on both builds, because the
+ * newer one falls back to it and resolves an address through it.
  */
 export const login = (
   identifier: string,
@@ -241,7 +247,7 @@ export const login = (
 ): Promise<Session> =>
   call('/auth/login', {
     method: 'POST',
-    body: { email: identifier, handle: identifier, password, deviceName },
+    body: { handle: identifier, password, deviceName },
     locale,
   });
 
@@ -254,7 +260,7 @@ export const recover = (
 ): Promise<Registration> =>
   call('/auth/recover', {
     method: 'POST',
-    body: { email: identifier, handle: identifier, recoveryCode, newPassword, deviceName },
+    body: { handle: identifier, recoveryCode, newPassword, deviceName },
     locale,
   });
 

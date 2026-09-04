@@ -375,6 +375,9 @@ func TestSignInByAddressOrPseudonym(t *testing.T) {
 		{"by address", map[string]any{"email": testEmail("benoit"), "password": "correct horse battery"}},
 		{"by address in another case", map[string]any{"email": "BENOIT@Example.Test", "password": "correct horse battery"}},
 		{"by pseudonym", map[string]any{"handle": "benoit", "password": "correct horse battery"}},
+		// What the clients actually send: one box on screen, one field on the
+		// wire, holding whichever of the two the reader typed.
+		{"address in the handle field", map[string]any{"handle": testEmail("benoit"), "password": "correct horse battery"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			res := call(t, s, "POST", "/v1/auth/login", "", c.body)

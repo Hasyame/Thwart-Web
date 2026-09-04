@@ -329,6 +329,107 @@ func TestAccountsCannotSeeEachOther(t *testing.T) {
 
 // --- tombstone horizon -------------------------------------------------------
 
+/*
+A full resync of an account whose live records predate the horizon.
+
+Reported from the Android client, and it deadlocks: since=0 is exempt from the
+horizon check, but the second page resumes from the last revision of the first,
+and a live record never touched since before the last sweep carries a revision
+below min_cursor. The resync is then refused on its own second page, and there
+is no way forward from the client side — the records between the page boundary
+and the horizon have never been read by that device, so stepping over them
+would lose them.
+
+The client says it is resyncing. A resync has no deletions to miss, because it
+is rebuilding from nothing, which is exactly why since=0 was already exempt.
+*/
+func TestAResyncCanPageBelowTheHorizon(t *testing.T) {
+	s := newTestServer(t)
+	token := register(t, s, "benoit", "a long enough password").str("token")
+
+	// Four live records, then a deletion swept well past the horizon. The
+	// horizon lands above the first records, which is the whole point: they are
+	// alive, they are old, and they have to remain reachable.
+	for i := 1; i <= 4; i++ {
+		push(t, s, token, fmt.Sprintf("batch-live-%d", i),
+			record("plays", fmt.Sprintf("play-%d", i), map[string]any{"note": i}))
+	}
+	push(t, s, token, "batch-gone", record("plays", "play-gone", map[string]any{"note": "x"}))
+	push(t, s, token, "batch-delete", map[string]any{
+		"collection": "plays", "id": "play-gone",
+		"updatedAt": "2026-09-13T09:00:00Z", "deleted": true, "body": nil,
+	})
+
+	if _, _, err := s.store.Sweep(t.Context(), time.Now().Add(TombstoneRetention+24*time.Hour)); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+
+	// Page through a resync two at a time, the way a client with a page limit
+	// does, and assert every live record arrives.
+	seen := map[string]bool{}
+	since, resync := 0, true
+	for page := 0; page < 10; page++ {
+		res := call(t, s, "GET",
+			fmt.Sprintf("/v1/sync/changes?since=%d&limit=2&resync=%t", since, resync), token, nil)
+		if res.status != http.StatusOK {
+			t.Fatalf("page %d refused: %d %q", page, res.status, res.code())
+		}
+		for _, change := range changesOf(t, res) {
+			id, _ := change["id"].(string)
+			seen[id] = true
+		}
+		cursor, ok := res.body["cursor"].(float64)
+		if !ok {
+			t.Fatalf("page %d has no cursor: %v", page, res.body)
+		}
+		since = int(cursor)
+		if more, _ := res.body["hasMore"].(bool); !more {
+			break
+		}
+	}
+
+	for i := 1; i <= 4; i++ {
+		if id := fmt.Sprintf("play-%d", i); !seen[id] {
+			t.Errorf("%s never arrived; a resync lost a live record", id)
+		}
+	}
+}
+
+/*
+And the flag does not become a way round the refusal that matters.
+
+A client resuming an ordinary sync from a stale cursor must still be sent back
+to a full resync: it is missing deletions the server can no longer describe.
+Only a resync — which starts at zero and therefore has no deletions to miss —
+may page below the horizon.
+*/
+func TestResyncFlagDoesNotExcuseAStaleCursor(t *testing.T) {
+	s := newTestServer(t)
+	token := register(t, s, "benoit", "a long enough password").str("token")
+
+	push(t, s, token, "batch-1", record("plays", "play-1", map[string]any{"note": "one"}))
+	push(t, s, token, "batch-2", map[string]any{
+		"collection": "plays", "id": "play-1",
+		"updatedAt": "2026-09-13T09:00:00Z", "deleted": true, "body": nil,
+	})
+	push(t, s, token, "batch-3", record("plays", "play-2", map[string]any{"note": "two"}))
+
+	if _, _, err := s.store.Sweep(t.Context(), time.Now().Add(TombstoneRetention+24*time.Hour)); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+
+	// A resync that has genuinely paged past the horizon is served.
+	if res := call(t, s, "GET", "/v1/sync/changes?since=1&resync=true", token, nil); res.status != http.StatusOK {
+		t.Errorf("a paging resync was refused: %d %q", res.status, res.code())
+	}
+
+	// The same cursor without the flag is still refused, because that client is
+	// resuming and has missed a deletion.
+	if res := pull(t, s, token, 1); res.code() != "cursor_too_old" {
+		t.Errorf("a stale resuming cursor was served: %d %q", res.status, res.code())
+	}
+}
+
 func TestSweptTombstonesForceAFullResync(t *testing.T) {
 	s := newTestServer(t)
 	token := register(t, s, "benoit", "a long enough password").str("token")

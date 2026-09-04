@@ -118,17 +118,25 @@ you are called. Both are required; a registration without an address is refused
 with `invalid_email`.
 
 **Signing in and recovering take one field.** The server reads `email` first
-and falls back to `handle`, and `AccountByIdentifier` resolves either. The web
-client shows one box labelled *Email address* and sends what was typed in
-**both** fields:
+and falls back to `handle`, and `AccountByIdentifier` resolves either. Show one
+box labelled *Email address* and send what was typed as **`handle`**:
 
 ```json
-{"email": "<what was typed>", "handle": "<what was typed>", "password": "..."}
+{"handle": "<what was typed>", "password": "..."}
 ```
 
-Do the same. It costs nothing, and it means one box on screen resolves an
-address, a pseudonym on an account made before addresses existed, and a server
-older than this change that reads only `handle`.
+> **Corrected 2026-09-04.** This section first said to send the value in
+> `email` *and* `handle`, on the grounds that it cost nothing and would also
+> satisfy a server too old to know about addresses. That was wrong, and the
+> Android side was right to check rather than take it on trust: every account
+> endpoint decodes with `DisallowUnknownFields`, so a body carrying `email`
+> against a pre-address build is refused outright as `malformed_record`. The
+> advice would have broken sign-in on exactly the server it claimed to
+> protect.
+>
+> `handle` alone reaches the same account on both builds, because the newer
+> server falls back to it and resolves an address through it. One field, and
+> it works everywhere.
 
 **Responses now carry `email`.** Register, login and recover all return it.
 Store it next to the handle so the account screen can show which address is
@@ -182,9 +190,15 @@ All four come back with English and French messages, chosen by
 
 ### Storage on the device
 
-`SyncStateEntity` needs one nullable `email` column. Nothing else moves. The
-address is not synced as a record — it belongs to the account, not to the data,
-and the server is the only copy that matters.
+The address belongs wherever the token, handle and cursor already live — one
+row for the session, not one per record — and it is not synced as a record:
+it belongs to the account, not to the data, and the server is the only copy
+that matters. It also has no business in anything that gets written to a backup
+file, for the same reason the bearer token does not.
+
+*(This first said "`SyncStateEntity` needs one nullable `email` column", which
+was written without checking that the table is one row per record. Android put
+it in the session store instead, which is right.)*
 
 ---
 
@@ -217,6 +231,26 @@ it is **not** "delete local and download". The device may hold six months of
 plays that never reached the server. It is a merge from `since=0`, using exactly
 the same reconciliation code as first sign-in. One code path for both, which is
 the only way the rare one will ever actually work.
+
+**Send `resync=1` on every page of it**, not only the first:
+
+```
+GET /v1/sync/changes?since=<cursor>&limit=<n>&resync=1
+```
+
+`since=0` was always exempt from the horizon check, but the later pages were
+not, and that was a server bug — reported from the Android side and fixed on
+2026-09-04. Page two resumes from the last revision of page one, and a live
+record untouched since before the last sweep carries a revision below the
+horizon, so a large account failed on its own second page with no way forward.
+There is now a test for it.
+
+The flag is a claim only the client can make: the server is stateless between
+requests and cannot tell "resuming from an old cursor" from "paging through a
+resync that started at zero". It is not a privilege. A client that sets it on
+an ordinary resuming pull only serves itself an incomplete feed, which is the
+exact harm the refusal exists to prevent. An older server ignores the parameter
+and behaves as it did.
 
 ### 5.3 Signing in on a phone that already holds data
 
