@@ -10,6 +10,14 @@ Type=oneshot
 User=thwart
 Group=thwart
 WorkingDirectory=/srv/thwart/repo
+
+# From `release`, not `main`. This unit exists to refresh the card data
+# overnight, but it rebuilds the site to do it, and building whatever happens
+# to be on main would publish a commit CI has not finished with — quietly, at
+# half past one in the morning. `release` is the tested one, and it is what the
+# five-minute release timer publishes too, so the two cannot disagree about
+# which commit is live.
+Environment=REF=release
 ExecStart=/srv/thwart/repo/deploy/update.sh
 
 # MarvelCDB can be slow, and the build fetches both languages.
