@@ -45,6 +45,16 @@ export interface EncounterSide {
   readonly escalation: number;
   readonly escalationPerPlayer: boolean;
   /**
+   * The acceleration is a star on the card, so this adds nothing at all.
+   *
+   * One scheme does it: Cambriolage du Musee d'Art accelerates by the ART
+   * attachments on the villain plus one, and that count changes during the
+   * game. A tracker that guessed would be wrong at somebody's table, and a
+   * tracker that is wrong once stops being trusted for the numbers it *is*
+   * keeping correctly. So it adds none and the interface says why.
+   */
+  readonly escalationVariable?: boolean;
+  /**
    * Threat the campaign puts on the scheme on top of what the card prints.
    *
    * Already worked out, and not scaled again: Fear No Evil starts a job with a
@@ -125,7 +135,7 @@ export const startingThreatFor = (side: EncounterSide, players: number): number 
   (side.extraStartingThreat ?? 0);
 
 export const escalationFor = (side: EncounterSide, players: number): number =>
-  scaled(side.escalation, side.escalationPerPlayer, players);
+  side.escalationVariable === true ? 0 : scaled(side.escalation, side.escalationPerPlayer, players);
 
 /** Nothing to count is not worth showing. */
 export const isUsable = (setup: EncounterSetup): boolean =>

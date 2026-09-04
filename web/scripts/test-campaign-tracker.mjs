@@ -22,6 +22,7 @@ import { join } from 'node:path';
 import { trackerSetupFor } from '../src/lib/campaign/encounter.ts';
 import { EMPTY_STATE, amountFor } from '../src/lib/campaign/types.ts';
 import {
+  escalationFor,
   roundEnded,
   schemeCopies,
   startOf,
@@ -204,6 +205,51 @@ const stateFor = ({ difficulty = 'standard', counters = {}, draws = {}, scenario
     'every copy accelerates at the end of a round',
     moved.every((step) => step === moved[0]) && moved[0] > 0,
     `by ${moved.join(', ')}`,
+  );
+}
+
+// --- an acceleration the app must not guess --------------------------------------
+
+{
+  /*
+   * The museum's scheme prints a star where its acceleration goes: it speeds
+   * up by the ART attachments on the villain plus one, and that count changes
+   * during the game. Nothing here can see the table.
+   *
+   * So the app adds none, and the round button only advances the round. Both
+   * halves are asserted, because the failure is silent and expensive in either
+   * direction: guess a number and the tracker is wrong at somebody's table,
+   * and a tracker wrong once is not trusted for the numbers it is keeping
+   * correctly either.
+   */
+  const scenario = scenarioOf('s1_musee');
+  const setup = trackerSetupFor(fne, stateFor({ scenarioId: 's1_musee' }), scenario, 2);
+  const printed = setup.scheme[0].options[0];
+
+  check(
+    'the museum scheme carries the star through to the tracker',
+    printed.escalationVariable === true,
+  );
+
+  /*
+   * Asserted on a side that would otherwise accelerate, rather than on the
+   * museum itself.
+   *
+   * The template gives that scheme `escalation: 0`, so reading its threat
+   * before and after a round proves nothing: it would sit still whether the
+   * flag were honoured or ignored. This gives the same side a real
+   * acceleration and asserts the flag suppresses it.
+   */
+  const accelerating = { ...printed, escalation: 3, escalationPerPlayer: false };
+  check(
+    'a star suppresses an acceleration that would otherwise apply',
+    escalationFor(accelerating, 2) === 0,
+    `got ${escalationFor(accelerating, 2)}`,
+  );
+  check(
+    'and the same side without the star still accelerates',
+    escalationFor({ ...accelerating, escalationVariable: false }, 2) === 3,
+    `got ${escalationFor({ ...accelerating, escalationVariable: false }, 2)}`,
   );
 }
 

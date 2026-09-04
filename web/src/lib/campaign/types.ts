@@ -411,6 +411,14 @@ export interface TrackedSide {
   readonly escalation?: number;
   readonly escalationPerPlayer?: boolean;
   /**
+   * The card prints a star where the acceleration goes, so the app adds none.
+   *
+   * Cambriolage du Musee d'Art accelerates by the number of ART attachments on
+   * the villain plus one, which grows as the game goes on. Nothing here can see
+   * the table, so the round button advances the round and adds nothing.
+   */
+  readonly escalationVariable?: boolean;
+  /**
    * Threat the campaign adds on top of the printed `startingThreat`.
    *
    * A job under pressure starts with tokens already on its scheme, which is

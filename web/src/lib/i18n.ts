@@ -243,6 +243,7 @@ export interface Strings {
   readonly trackerLoading: string;
   readonly trackerUnavailable: string;
   readonly trackerStarred: string;
+  readonly trackerStarredAcceleration: string;
   readonly trackerNote: string;
   readonly round: (n: number) => string;
   readonly endRound: string;
@@ -683,6 +684,8 @@ const STRINGS: Record<Locale, Strings> = {
     trackerLoading: 'Reading the scenario…',
     trackerUnavailable: 'This scenario has no numbers to count.',
     trackerStarred: 'The card prints a star, so type the number',
+    trackerStarredAcceleration:
+      'This scheme accelerates by a starred amount that depends on the board, so nothing is added for it here — move the threat yourself at the end of the round.',
     trackerNote:
       "Counters only. It does not know that drones enter play or that a Crisis icon stops thwarting, because a tracker that half-adjudicates rules is wrong at somebody's table, and then the numbers it is keeping stop being trusted either.",
     round: (n) => `Round ${n}`,
@@ -1140,6 +1143,8 @@ const STRINGS: Record<Locale, Strings> = {
     trackerLoading: 'Lecture du scénario…',
     trackerUnavailable: "Ce scénario n'a aucun compteur à tenir.",
     trackerStarred: 'La carte imprime une étoile : saisissez le nombre',
+    trackerStarredAcceleration:
+      'Cette machination accélère d’un montant étoilé qui dépend du plateau : rien n’est ajouté ici pour elle, déplacez la menace vous-même à la fin du round.',
     trackerNote:
       "Des compteurs, rien de plus. L'application ne sait pas que les drones entrent en jeu ni qu'une icône Crise empêche de contrer : un compteur qui arbitre à moitié se trompe à une table, et les nombres qu'il tient vraiment cessent alors d'être crus.",
     round: (n) => `Tour ${n}`,

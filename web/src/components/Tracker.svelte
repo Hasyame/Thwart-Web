@@ -297,6 +297,19 @@
       {t.endRound}
     </button>
 
+    <!--
+      Said out loud, because otherwise the round button looks broken.
+
+      One scheme prints a star where its acceleration goes: it speeds up by the
+      attachments on the villain, which this cannot see. It therefore adds
+      nothing, and a player who is not told that presses end of round, watches
+      the threat sit still, and concludes the tracker is wrong — about that and
+      then about everything else it is counting correctly.
+    -->
+    {#if scheme !== null && scheme.escalationVariable === true}
+      <p class="muted note">{t.trackerStarredAcceleration}</p>
+    {/if}
+
     <p class="muted note">{t.trackerNote}</p>
   </div>
 {/if}

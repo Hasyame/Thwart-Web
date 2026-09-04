@@ -144,6 +144,7 @@ export function trackerSetupFor(
     startingThreatPerPlayer: tracked.startingThreatPerPlayer ?? true,
     escalation: Math.max(0, tracked.escalation ?? 0),
     escalationPerPlayer: tracked.escalationPerPlayer === true,
+    escalationVariable: tracked.escalationVariable === true,
     // The pressure already on a job before anybody sits down. It is not on the
     // card and cannot be: it depends on how the campaign has gone.
     extraStartingThreat: amountFor(
