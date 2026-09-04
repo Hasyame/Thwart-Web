@@ -3,15 +3,20 @@
   import type { Locale } from '../lib/types';
   import * as api from '../lib/sync/api';
   import { session, signOut } from '../lib/sync/session.svelte';
-  import SignInForm from './SignInForm.svelte';
+  import SignInForm, { type FormMode } from './SignInForm.svelte';
 
   interface Props {
     t: Strings;
     uiLocale: Locale;
     open: boolean;
     onClose: () => void;
-    /** Opens the full account screen, which has the room this does not. */
-    onAccount: () => void;
+    /**
+     * Opens the full account screen, which has the room this does not.
+     *
+     * Takes the tab it should land on, so the links below arrive where they
+     * say they will rather than on the sign-in form somebody just left.
+     */
+    onAccount: (mode?: FormMode) => void;
   }
 
   const { t, uiLocale, open, onClose, onAccount }: Props = $props();
@@ -55,8 +60,8 @@
     };
   });
 
-  function toAccount(): void {
-    onAccount();
+  function toAccount(mode?: FormMode): void {
+    onAccount(mode);
     onClose();
   }
 </script>
@@ -83,7 +88,7 @@
       <p class="notice">{t.accountSyncNotYet}</p>
 
       <div class="btn-row">
-        <button class="btn btn--primary" type="button" onclick={toAccount}>
+        <button class="btn btn--primary" type="button" onclick={() => toAccount()}>
           {t.accountManage}
         </button>
         <button
@@ -110,16 +115,20 @@
         {registrationOpen}
         compact
         onMode={() => undefined}
-        onIssued={toAccount}
+        onIssued={() => toAccount()}
         onSignedIn={onClose}
       />
 
       <p class="more">
         {#if registrationOpen !== false}
-          <button class="link" type="button" onclick={toAccount}>{t.accountCreate}</button>
+          <button class="link" type="button" onclick={() => toAccount('register')}>
+            {t.accountCreate}
+          </button>
           <span aria-hidden="true">·</span>
         {/if}
-        <button class="link" type="button" onclick={toAccount}>{t.accountForgot}</button>
+        <button class="link" type="button" onclick={() => toAccount('recover')}>
+          {t.accountForgot}
+        </button>
       </p>
     {/if}
   </div>

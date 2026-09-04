@@ -10,11 +10,21 @@
     t: Strings;
     uiLocale: Locale;
     storageOk: boolean;
+    /** Which tab to open on, so the top-bar menu can land where it promised. */
+    initialMode?: FormMode;
   }
 
-  const { t, uiLocale, storageOk }: Props = $props();
+  const { t, uiLocale, storageOk, initialMode = 'signin' }: Props = $props();
 
   let form = $state<FormMode>('signin');
+
+  // Follows the prop rather than only its first value, so asking for the
+  // create tab from the top-bar menu works the second time as well as the
+  // first. A tab the reader picks here does not change the prop, so this does
+  // not fight them for it.
+  $effect(() => {
+    form = initialMode;
+  });
   let error = $state<string | null>(null);
 
   /**

@@ -11,6 +11,7 @@
   import CampaignsPage from './components/CampaignsPage.svelte';
   import CardWindow from './components/CardWindow.svelte';
   import AccountPage from './components/AccountPage.svelte';
+  import type { FormMode } from './components/SignInForm.svelte';
   import AccountMenu from './components/AccountMenu.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import MoreSheet from './components/MoreSheet.svelte';
@@ -115,6 +116,14 @@
 
   /** The account menu, which drops out of the button in the top bar. */
   let accountOpen = $state(false);
+  /**
+   * Which tab the account page opens on.
+   *
+   * Set by the top-bar menu, whose "create an account" and "lost your
+   * password" links would otherwise land on the sign-in tab and make somebody
+   * click the same words twice.
+   */
+  let accountMode = $state<FormMode>('signin');
 
   /**
    * Whether the sheet needs to list destinations as well as settings.
@@ -300,7 +309,10 @@
   {uiLocale}
   open={accountOpen}
   onClose={() => (accountOpen = false)}
-  onAccount={() => navigate({ name: 'account' })}
+  onAccount={(mode) => {
+    accountMode = mode ?? 'signin';
+    navigate({ name: 'account' });
+  }}
 />
 
 <main class="page">
@@ -357,7 +369,7 @@
   {:else if route.name === 'campaigns'}
     <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
   {:else if route.name === 'account'}
-    <AccountPage {t} {uiLocale} {storageOk} />
+    <AccountPage {t} {uiLocale} {storageOk} initialMode={accountMode} />
   {:else if route.name === 'rules'}
     <RulesPage {t} {cardLocale} />
   {:else if route.name === 'decks'}
