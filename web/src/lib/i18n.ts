@@ -194,6 +194,13 @@ export interface Strings {
   readonly accountRecoveryCode: string;
   readonly accountDeviceName: string;
   readonly accountDeviceNameNote: string;
+  /**
+   * The top bar's own word for signing in.
+   *
+   * A noun, not the form's imperative: it labels a place to go, and it has to
+   * be read at a glance from the corner of a bar.
+   */
+  readonly navSignIn: string;
   readonly accountEmail: string;
   readonly accountEmailNote: string;
   readonly accountHandleNote: string;
@@ -600,6 +607,7 @@ const STRINGS: Record<Locale, Strings> = {
     accountManage: 'Manage the account',
     accountClosed:
       'This server is not taking new accounts at the moment. If you have one already, sign in — and if you have lost the password, the recovery code still works.',
+    navSignIn: 'Login',
     accountEmail: 'Email address',
     accountEmailNote:
       'This is what you sign in with. It is used for nothing else \u2014 no newsletter, no analytics, and it is never passed to anybody.',
@@ -1055,6 +1063,7 @@ const STRINGS: Record<Locale, Strings> = {
     accountManage: 'Gérer le compte',
     accountClosed:
       'Ce serveur n’accepte pas de nouveaux comptes pour l’instant. Si vous en avez déjà un, connectez-vous — et si vous avez perdu le mot de passe, le code de récupération fonctionne toujours.',
+    navSignIn: 'Connexion',
     accountEmail: 'Adresse e-mail',
     accountEmailNote:
       'C\u2019est avec elle que vous vous connectez. Elle ne sert \u00e0 rien d\u2019autre : aucune lettre d\u2019information, aucune mesure d\u2019audience, et elle n\u2019est transmise \u00e0 personne.',

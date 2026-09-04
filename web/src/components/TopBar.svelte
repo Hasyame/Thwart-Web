@@ -76,7 +76,9 @@
       aria-label={accountHandle === null ? t.accountSignIn : t.accountTitle}
     >
       {#if accountHandle === null}
-        <span aria-hidden="true">◌</span>
+        <!-- A word, not a glyph. A ring in the corner of a bar names nothing,
+             and this is the control the app is about to be built around. -->
+        <span class="label">{t.navSignIn}</span>
       {:else}
         <span class="initial" aria-hidden="true">{accountHandle.slice(0, 1).toUpperCase()}</span>
       {/if}
@@ -172,6 +174,23 @@
     color: var(--text-muted);
     font-size: var(--text-lg);
     cursor: pointer;
+  }
+
+  /* Outlined, so the word reads as something to press rather than as a caption
+     sitting next to the brand. */
+  .account .label {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    color: var(--text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+  }
+
+  .account:hover .label {
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .account:hover {
