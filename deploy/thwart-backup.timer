@@ -1,0 +1,17 @@
+[Unit]
+Description=Snapshot the account database daily
+
+[Timer]
+# 03:14 local, which is Europe/Paris on this box. Away from midnight and away
+# from 01:23, so the backup is not competing with the nightly site rebuild for
+# the disk, and it runs after it rather than during.
+OnCalendar=*-*-* 03:14:00
+RandomizedDelaySec=5min
+
+# Runs on the next boot if the machine was off when it was due. Unlike the
+# release timer, a missed backup is not made good by the next tick: that is a
+# day with no snapshot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

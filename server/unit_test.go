@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -377,5 +378,89 @@ func TestResponsesAreNotCacheable(t *testing.T) {
 	// browser both need telling.
 	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
 		t.Errorf("Cache-Control = %q, want no-store", got)
+	}
+}
+
+/*
+The snapshot is a whole database, including what is still in the WAL.
+
+This is the test the runbook's warning deserves. In WAL mode the .db file on
+disk is not the database: recent transactions live in the -wal beside it, so
+copying the one file yields something that opens without complaint and is
+missing the last hour. That is the worst failure mode a backup has, because
+nothing about it looks wrong until the day it is needed.
+
+Asserted by writing rows, taking a snapshot without checkpointing, opening the
+snapshot as its own database and counting.
+*/
+func TestBackupIsAWholeDatabase(t *testing.T) {
+	dir := t.TempDir()
+	live := filepath.Join(dir, "live.sqlite")
+
+	store, err := OpenStore(live)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+
+	account := Account{
+		ID:               "acct-1",
+		Handle:           "benoit",
+		Email:            "benoit@example.test",
+		PasswordHash:     "x",
+		RecoveryHash:     "y",
+		RecoveryIssuedAt: time.Now().UTC(),
+		CreatedAt:        time.Now().UTC(),
+	}
+	if err := store.CreateAccount(t.Context(), account); err != nil {
+		t.Fatalf("create account: %v", err)
+	}
+
+	snapshot := filepath.Join(dir, "snapshot.sqlite")
+	if err := store.Backup(t.Context(), snapshot); err != nil {
+		t.Fatalf("backup: %v", err)
+	}
+
+	// Deliberately not closed before reading the snapshot: the point is that
+	// this works against a database that is still open and being written.
+	restored, err := OpenStore(snapshot)
+	if err != nil {
+		t.Fatalf("open snapshot: %v", err)
+	}
+	defer func() { _ = restored.Close() }()
+
+	got, err := restored.AccountByEmail(t.Context(), "benoit@example.test")
+	if err != nil {
+		t.Fatalf("the account is not in the snapshot: %v", err)
+	}
+	if got.Handle != "benoit" {
+		t.Errorf("handle is %q, want benoit", got.Handle)
+	}
+
+	// A write after the snapshot must not appear in it. A backup that keeps
+	// changing is not a snapshot.
+	later := account
+	later.ID, later.Handle, later.Email = "acct-2", "later", "later@example.test"
+	if err := store.CreateAccount(t.Context(), later); err != nil {
+		t.Fatalf("create second account: %v", err)
+	}
+	if _, err := restored.AccountByEmail(t.Context(), "later@example.test"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("the snapshot moved after it was taken: %v", err)
+	}
+	_ = store.Close()
+}
+
+// Backing up over the live database would destroy it, so it is refused before
+// SQLite is asked.
+func TestBackupRefusesToOverwriteItself(t *testing.T) {
+	dir := t.TempDir()
+	live := filepath.Join(dir, "live.sqlite")
+	store, err := OpenStore(live)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	_ = store.Close()
+
+	if err := backup(live, live); err == nil {
+		t.Error("backing a database up onto itself was allowed")
 	}
 }

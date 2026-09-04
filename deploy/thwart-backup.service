@@ -1,0 +1,21 @@
+[Unit]
+Description=Snapshot the Thwart account database
+Documentation=file:///srv/thwart/repo/deploy/backup.sh
+
+[Service]
+Type=oneshot
+User=thwart
+Group=thwart
+ExecStart=/srv/thwart/repo/deploy/backup.sh
+
+# A snapshot of a few megabytes takes seconds. Anything past this is stuck.
+TimeoutStartSec=10min
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/thwart
+
+[Install]
+WantedBy=multi-user.target

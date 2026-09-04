@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -40,14 +41,61 @@ func main() {
 	*/
 	openRegistration := flag.Bool("registration", true,
 		"accept new accounts; set false once the accounts that should exist do")
+	/*
+		Write a consistent snapshot and exit, without stopping the server.
+
+		Doc 05 section 3 asks for this on the binary rather than leaving it to
+		a `sqlite3` on the host: the backup script should not depend on a tool
+		that may not be installed, and copying the database file is not a
+		backup. In WAL mode the file on disk is not a complete database —
+		recent transactions live in the -wal beside it — so a plain `cp` yields
+		something that opens without complaint and is missing the last hour.
+		That is the worst kind of backup, because it looks like one.
+	*/
+	backupTo := flag.String("backup", "",
+		"write a consistent snapshot to this path and exit, leaving any running server alone")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	if *backupTo != "" {
+		if err := backup(*dbPath, *backupTo); err != nil {
+			log.Error("backup", "error", err)
+			os.Exit(1)
+		}
+		log.Info("backed up", "db", *dbPath, "to", *backupTo)
+		return
+	}
 
 	if err := run(*addr, *dbPath, *openRegistration, log); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
+}
+
+/*
+A snapshot of a live database.
+
+VACUUM INTO is the supported way to do this: it reads through the normal
+transaction machinery, so it takes a consistent view without blocking writers
+and without needing the -wal copied separately. The result is a single file
+that is already compact, and it is a real database rather than a text dump, so
+restoring it is a move rather than a replay.
+
+It refuses to overwrite, which is SQLite's own behaviour and worth keeping:
+every caller here writes to a fresh timestamped path, and a backup that
+silently replaced yesterday's would be a way to lose two at once.
+*/
+func backup(dbPath, to string) error {
+	if dbPath == to {
+		return fmt.Errorf("refusing to back up %s onto itself", dbPath)
+	}
+	store, err := OpenStore(dbPath)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = store.Close() }()
+	return store.Backup(context.Background(), to)
 }
 
 func run(addr, dbPath string, openRegistration bool, log *slog.Logger) error {

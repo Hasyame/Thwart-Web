@@ -264,6 +264,24 @@ func (s *Store) migrate() error {
 
 func (s *Store) Close() error { return s.db.Close() }
 
+/*
+Backup writes a consistent snapshot to a path that does not yet exist.
+
+VACUUM INTO rather than a file copy: in WAL mode the database file alone is not
+the database, and a snapshot that quietly omits the last hour is worse than no
+snapshot at all. This holds a read view for the duration rather than a lock, so
+the server keeps serving while it runs.
+
+The path is interpolated because SQLite takes it as an expression and will not
+accept a bound parameter here. It is quoted as a string literal, with any
+single quote doubled, which is the escaping SQLite itself defines.
+*/
+func (s *Store) Backup(ctx context.Context, to string) error {
+	quoted := "'" + strings.ReplaceAll(to, "'", "''") + "'"
+	_, err := s.db.ExecContext(ctx, "VACUUM INTO "+quoted)
+	return err
+}
+
 // Ping is what /v1/health actually checks. A process that is running but whose
 // database file has gone is not healthy, and answering "ok" from memory would
 // hide exactly the failure the check exists to catch.
