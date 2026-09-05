@@ -12,6 +12,7 @@ export type Route =
   | { readonly name: 'search' }
   | { readonly name: 'collection' }
   | { readonly name: 'randomizer' }
+  | { readonly name: 'versus' }
   | { readonly name: 'decks' }
   | { readonly name: 'play' }
   | { readonly name: 'stats' }
@@ -24,6 +25,7 @@ export type Route =
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
 const COLLECTION_PATH = /^\/collection\/?$/;
 const RANDOMIZER_PATH = /^\/randomizer\/?$/;
+const VERSUS_PATH = /^\/versus\/?$/;
 const DECKS_PATH = /^\/decks\/?$/;
 const PLAY_PATH = /^\/play\/?$/;
 const STATS_PATH = /^\/stats\/?$/;
@@ -48,6 +50,9 @@ export function routeFromPath(pathname: string, base: string): Route {
   }
   if (RANDOMIZER_PATH.test(normalised)) {
     return { name: 'randomizer' };
+  }
+  if (VERSUS_PATH.test(path)) {
+    return { name: 'versus' };
   }
   if (DECKS_PATH.test(normalised)) {
     return { name: 'decks' };
@@ -77,6 +82,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'collection') {
     return `${trimmedBase}/collection`;
+  }
+  if (route.name === 'versus') {
+    return `${trimmedBase}/versus`;
   }
   if (route.name === 'randomizer') {
     return `${trimmedBase}/randomizer`;

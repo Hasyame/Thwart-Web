@@ -5,6 +5,7 @@
   import CardDetail from './components/CardDetail.svelte';
   import CollectionPage from './components/CollectionPage.svelte';
   import RandomizerPage from './components/RandomizerPage.svelte';
+  import VersusPage from './components/VersusPage.svelte';
   import DecksPage from './components/DecksPage.svelte';
   import PlayPage from './components/PlayPage.svelte';
   import StatsPage from './components/StatsPage.svelte';
@@ -27,6 +28,7 @@
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
+  import type { NavTarget } from './lib/nav';
   import {
     applyTheme,
     loadCardLocale,
@@ -103,6 +105,19 @@
    * core set can be said — so it is not owned.
    */
   const ownedPacks = $state<{ value: ReadonlySet<string> }>({ value: new Set() });
+
+  /*
+   * Versus belongs to the boxes that print two main-scheme sets, and is hidden
+   * for anybody who owns none of them — the master app hides it on the same
+   * rule, and a menu entry that leads to an apology is worse than no entry.
+   */
+  const hiddenDestinations = $derived.by(() => {
+    const versusPacks = new Set(
+      sets.filter((set) => set.type === 'main_scheme').map((set) => set.packCode),
+    );
+    const anyOwned = [...versusPacks].some((code) => ownedPacks.value.has(code));
+    return new Set<NavTarget>(anyOwned ? [] : ['versus']);
+  });
 
   // The preferences the account carries, watched for the life of the app so a
   // sync that brings new ones in is reflected without a reload.
@@ -333,6 +348,7 @@
   onSettings={() => (sheetOpen = true)}
   onAccount={() => (accountOpen = true)}
   accountHandle={session.account?.handle ?? null}
+  hidden={hiddenDestinations}
 />
 
 <AccountMenu
@@ -393,6 +409,8 @@
     <CollectionPage {t} {packs} {sets} {storageOk} />
   {:else if route.name === 'randomizer'}
     <RandomizerPage {t} {sets} {index} {storageOk} />
+  {:else if route.name === 'versus'}
+    <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
   {:else if route.name === 'play'}
     <PlayPage {t} {sets} {index} {cardLocale} {storageOk} />
   {:else if route.name === 'stats'}
@@ -473,6 +491,7 @@
   hrefFor={(name) => pathForRoute({ name }, BASE)}
   onAccount={() => navigate({ name: 'account' })}
   accountHandle={session.account?.handle ?? null}
+  hidden={hiddenDestinations}
   onClose={() => (sheetOpen = false)}
 />
 

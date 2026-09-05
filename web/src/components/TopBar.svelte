@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import { DESTINATIONS, type ActiveTarget, type NavTarget } from '../lib/nav';
+  import { DESTINATIONS, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
   import Logo from './Logo.svelte';
 
   interface Props {
@@ -13,9 +13,21 @@
     onAccount: () => void;
     /** The handle when somebody is signed in, so the button can show who. */
     accountHandle: string | null;
+    /** Destinations this build has nothing to show for. */
+    hidden?: ReadonlySet<NavTarget>;
   }
 
-  const { t, onHome, onNavigate, hrefFor, active, onSettings, onAccount, accountHandle }: Props =
+  const {
+    t,
+    onHome,
+    onNavigate,
+    hrefFor,
+    active,
+    onSettings,
+    onAccount,
+    accountHandle,
+    hidden = new Set<NavTarget>(),
+  }: Props =
     $props();
 
   function go(event: MouseEvent, name: NavTarget): void {
@@ -44,7 +56,7 @@
     </button>
 
     <nav aria-label={t.appName}>
-      {#each DESTINATIONS as destination (destination.id)}
+      {#each visible(DESTINATIONS, hidden) as destination (destination.id)}
         <a
           href={hrefFor(destination.id)}
           class:current={active === destination.id ||

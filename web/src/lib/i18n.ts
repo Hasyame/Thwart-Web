@@ -157,6 +157,27 @@ export interface Strings {
   readonly notOwned: string;
   readonly deckLocaleNote: (locale: string) => string;
   readonly navRandomizer: string;
+  readonly navVersus: string;
+
+  // The competitive mode. The tie-breaks are the rulebook's, in the order they
+  // are applied, and that order is the rule.
+  readonly versusTitle: string;
+  readonly versusIntro: string;
+  readonly versusNeedsBox: string;
+  readonly versusBox: string;
+  readonly versusFaces: string;
+  readonly versusLeader: string;
+  readonly versusStageOne: string;
+  readonly versusStageTwo: string;
+  readonly versusPlayers: string;
+  readonly versusStart: string;
+  readonly versusEndRound: string;
+  readonly versusRound: (round: number) => string;
+  readonly versusWhoWon: string;
+  readonly versusTie: string;
+  readonly versusAgain: string;
+  readonly versusTiebreakTitle: string;
+  readonly versusTiebreaks: readonly string[];
   readonly filters: string;
   readonly filtersNote: string;
   readonly aspects: string;
@@ -610,6 +631,32 @@ const STRINGS: Record<Locale, Strings> = {
     deckLocaleNote: (locale) =>
       `Card names are shown in ${locale === 'fr' ? 'French' : 'English'}, following the card language above.`,
     navRandomizer: 'Random game',
+    navVersus: 'Versus',
+    versusTitle: 'Versus game',
+    versusIntro:
+      'Each team builds a scenario and hands it to the other, so what a team faces here is the enemy leader and the enemy schemes.',
+    versusNeedsBox:
+      'Versus needs a box that has the mode. Record one in your collection and this comes back.',
+    versusBox: 'Box',
+    versusFaces: 'This team faces:',
+    versusLeader: 'Leader',
+    versusStageOne: 'Main scheme, stage 1',
+    versusStageTwo: 'Main scheme, stage 2',
+    versusPlayers: 'Players on this team',
+    versusStart: 'Start the game',
+    versusEndRound: 'End the round on both boards',
+    versusRound: (round) => `Round ${round}`,
+    versusWhoWon: 'Who won?',
+    versusTie: 'A tie',
+    versusAgain: 'Another game',
+    versusTiebreakTitle: 'Tie-breaks, in order',
+    versusTiebreaks: [
+      'The team whose enemy main scheme deck did not advance past stage 1B.',
+      'The team with the fewest minions and side schemes in their area.',
+      'The team with the least threat on the main scheme in their area.',
+      'The team whose identities have the most hit points left.',
+      'The team with the fewest attachments on their leader.',
+    ],
     filters: 'Filters',
     filtersNote:
       'These apply to this session only and are not saved. What you own lives on the Collection page; this is what you fancy tonight.',
@@ -1154,6 +1201,32 @@ const STRINGS: Record<Locale, Strings> = {
     deckLocaleNote: (locale) =>
       `Les noms de cartes sont affichés en ${locale === 'fr' ? 'français' : 'anglais'}, selon la langue des cartes choisie ci-dessus.`,
     navRandomizer: 'Partie aléatoire',
+    navVersus: 'Comp\u00e9titif',
+    versusTitle: 'Partie comp\u00e9titive',
+    versusIntro:
+      'Chaque \u00e9quipe construit un sc\u00e9nario et le donne \u00e0 l\u2019autre : ce qu\u2019une \u00e9quipe affronte ici, c\u2019est le leader et les manigances de l\u2019adversaire.',
+    versusNeedsBox:
+      'Le mode comp\u00e9titif demande une bo\u00eete qui le propose. Ajoutez-en une \u00e0 votre collection et il r\u00e9appara\u00eetra.',
+    versusBox: 'Bo\u00eete',
+    versusFaces: 'Cette \u00e9quipe affronte :',
+    versusLeader: 'Leader',
+    versusStageOne: 'Manigance principale, stade 1',
+    versusStageTwo: 'Manigance principale, stade 2',
+    versusPlayers: 'Joueurs dans cette \u00e9quipe',
+    versusStart: 'Commencer la partie',
+    versusEndRound: 'Finir le round sur les deux tableaux',
+    versusRound: (round) => `Round ${round}`,
+    versusWhoWon: 'Qui a gagn\u00e9 ?',
+    versusTie: '\u00c9galit\u00e9',
+    versusAgain: 'Une autre partie',
+    versusTiebreakTitle: 'D\u00e9partages, dans l\u2019ordre',
+    versusTiebreaks: [
+      'L\u2019\u00e9quipe dont le deck manigance principale adverse n\u2019a pas d\u00e9pass\u00e9 le stade 1B.',
+      'L\u2019\u00e9quipe avec le moins de sbires et de manigances annexes dans sa zone.',
+      'L\u2019\u00e9quipe avec le moins de menace sur la manigance principale de sa zone.',
+      'L\u2019\u00e9quipe dont les identit\u00e9s ont le plus de points de vie restants.',
+      'L\u2019\u00e9quipe avec le moins d\u2019attachements sur son leader.',
+    ],
     filters: 'Filtres',
     filtersNote:
       "Ces filtres ne valent que pour cette session et ne sont pas enregistrés. Ce que vous possédez se règle sur la page Collection ; ici, c'est ce dont vous avez envie ce soir.",

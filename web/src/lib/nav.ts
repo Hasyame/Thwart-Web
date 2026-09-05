@@ -14,6 +14,7 @@ export type NavTarget =
   | 'collection'
   | 'decks'
   | 'randomizer'
+  | 'versus'
   | 'play'
   | 'campaigns'
   | 'stats'
@@ -50,6 +51,7 @@ export const DESTINATIONS: readonly Destination[] = [
   { id: 'campaigns', label: (t) => t.navCampaigns, tab: (t) => t.navCampaigns, glyph: '◈' },
   { id: 'collection', label: (t) => t.navCollection, tab: (t) => t.navCollection, glyph: '▣' },
   { id: 'randomizer', label: (t) => t.navRandomizer, tab: (t) => t.navRandomizer, glyph: '✦' },
+  { id: 'versus', label: (t) => t.navVersus, tab: (t) => t.navVersus, glyph: '⚔' },
   { id: 'stats', label: (t) => t.navStats, tab: (t) => t.navStats, glyph: '▥' },
   { id: 'rules', label: (t) => t.navRules, tab: (t) => t.navRules, glyph: '❔' },
 ];
@@ -72,6 +74,18 @@ export const TABS: readonly Destination[] = TAB_IDS.map(
 export const OVERFLOW: readonly Destination[] = DESTINATIONS.filter(
   (d) => !TAB_IDS.includes(d.id),
 );
+
+/**
+ * Everything except the destinations a build has nothing to show for.
+ *
+ * Versus is the only one so far: the mode belongs to two boxes, and offering it
+ * to somebody who owns neither is a menu entry that leads to an apology. The
+ * master app hides it on the same rule.
+ */
+export const visible = (
+  destinations: readonly Destination[],
+  hidden: ReadonlySet<NavTarget>,
+): readonly Destination[] => destinations.filter((d) => !hidden.has(d.id));
 
 export const destinationOf = (id: NavTarget): Destination | undefined =>
   DESTINATIONS.find((d) => d.id === id);

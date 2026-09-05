@@ -64,6 +64,15 @@ export interface Card {
   readonly pack_name: string;
   readonly card_set_code?: string | null;
   readonly card_set_name?: string | null;
+  /**
+   * What kind of set the card belongs to: `hero`, `villain`, `modular`,
+   * `leader`, `main_scheme` and a few rarer ones.
+   *
+   * Read by the versus mode, which is defined entirely by two of them: a box
+   * offers the mode when it prints two `main_scheme` sets, and the thing
+   * standing where a villain stands is a `leader`.
+   */
+  readonly card_set_type_name_code?: string | null;
   readonly traits?: string | null;
 
   readonly text?: string | null;

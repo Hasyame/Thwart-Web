@@ -3,7 +3,7 @@
   import type { Strings } from '../lib/i18n';
   import type { ThemeChoice } from '../lib/preferences';
   import { LANGUAGE_NAMES } from '../lib/i18n';
-  import { OVERFLOW, type ActiveTarget, type NavTarget } from '../lib/nav';
+  import { OVERFLOW, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
   import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
 
   interface Props {
@@ -24,6 +24,8 @@
     onAccount: () => void;
     /** The handle when somebody is signed in, so the row says who. */
     accountHandle: string | null;
+    /** Destinations this build has nothing to show for. */
+    hidden?: ReadonlySet<NavTarget>;
     onClose: () => void;
   }
 
@@ -42,6 +44,7 @@
     hrefFor,
     onAccount,
     accountHandle,
+    hidden = new Set<NavTarget>(),
     onClose,
   }: Props = $props();
 
@@ -88,7 +91,7 @@
            than a grid: a row can hold "Partie aléatoire" without shrinking its
            own hit area to fit. -->
       <nav>
-        {#each OVERFLOW as destination (destination.id)}
+        {#each visible(OVERFLOW, hidden) as destination (destination.id)}
           <a
             href={hrefFor(destination.id)}
             class:current={active === destination.id}

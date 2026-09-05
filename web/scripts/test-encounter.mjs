@@ -24,6 +24,7 @@ import {
   villainAdvanced,
   villainDefeated,
   villainHealth,
+  versusSetup,
   withSchemeOption,
 } from '../src/lib/encounter.ts';
 
@@ -273,6 +274,64 @@ options and the table says which one it drew.
       );
     }
   }
+}
+
+// --- a versus board -------------------------------------------------------------
+
+{
+  /*
+   * Civil War, read off the real cards.
+   *
+   * A leader stands where a villain stands and has four stages, all of which a
+   * versus game uses in order. The campaign path picks two of a villain's
+   * stages by difficulty, which is why this has a builder of its own: borrowing
+   * that rule here would quietly drop half the board.
+   */
+  const cards = JSON.parse(readFileSync(join(DATA, 'cw.json'), 'utf8'));
+  const all = Array.isArray(cards) ? cards : (cards.cards ?? []);
+
+  const ironMan = all.filter((card) => card.card_set_code === 'iron_man_leader');
+  const registration = all.filter((card) => card.card_set_code === 'registration');
+  const stageOne = registration.find((card) => card.stage === '1B');
+  const stageTwo = registration.find((card) => card.stage === '2B');
+
+  const setup = versusSetup(ironMan, [stageOne, stageTwo], 2);
+
+  check(
+    'a leader brings all four of its stages',
+    setup.villain.length === 4,
+    setup.villain.map((side) => side.stage).join(','),
+  );
+  check(
+    'and they are in printed order',
+    setup.villain.map((side) => side.stage).join(',') === 'I,II,III,IV',
+  );
+  check(
+    'the leader is counted where a villain would be',
+    villainHealth(startOf(setup)) === 24,
+    'Iron Man I is 12 per hero, so 24 for two',
+  );
+  check(
+    'the two chosen schemes are the two stages',
+    setup.scheme.length === 2 && setup.scheme.map((s) => s.stage).join(',') === '1B,2B',
+  );
+  check(
+    'the first stage carries its printed threat',
+    schemeLimit(startOf(setup)) === 14,
+    'Cut Off Support is 7 per hero',
+  );
+
+  // The whole board runs: damage advances the leader, threat advances the scheme.
+  let game = startOf(setup);
+  game = damaged(game, 24);
+  check('a leader defeated at its first stage can advance', villainDefeated(game));
+  game = villainAdvanced(game);
+  check('and the second stage is a bigger number', villainHealth(game) === 32, 'Iron Man II is 16 per hero');
+
+  check(
+    'only the numbers side of a scheme is counted, not its text side',
+    setup.scheme.every((stage) => stage.options.every((side) => side.stage.endsWith('B'))),
+  );
 }
 
 process.exit(failures === 0 ? 0 : 1);
