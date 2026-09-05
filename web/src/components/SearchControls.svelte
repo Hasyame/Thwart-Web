@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { IndexRow, Pack } from '../lib/types';
   import type { Strings } from '../lib/i18n';
-  import type { Filters } from '../lib/search';
+  import { activeFilterCount, NO_FILTERS, type Filters } from '../lib/search';
 
   interface Props {
     t: Strings;
@@ -58,6 +58,31 @@
       (row) => row.factionName,
     ),
   );
+
+  /*
+   * Every trait in the index, which is a long list and a useful one.
+   *
+   * Built from the data rather than a fixed list, like the types and factions
+   * above: a trait introduced by a future pack appears on its own. An index
+   * built before traits were carried yields nothing, and the control hides
+   * itself rather than offering an empty menu.
+   */
+  const traits = $derived.by(() => {
+    const seen = new Set<string>();
+    for (const row of index) {
+      for (const trait of row.traits ?? []) {
+        seen.add(trait);
+      }
+    }
+    return [...seen].sort((a, b) => a.localeCompare(b));
+  });
+
+  const active = $derived(activeFilterCount(filters));
+
+  function cost(value: string): number | null {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  }
 
   const packOptions = $derived(
     [...packs]
@@ -120,10 +145,103 @@
         <option value={option.code}>{option.name}</option>
       {/each}
     </select>
+
+    {#if traits.length > 0}
+      <select
+        class="field"
+        aria-label={t.allTraits}
+        value={filters.trait ?? ''}
+        onchange={(event) => onFilters({ ...filters, trait: pick(event.currentTarget.value) })}
+      >
+        <option value="">{t.allTraits}</option>
+        {#each traits as trait (trait)}
+          <option value={trait}>{trait}</option>
+        {/each}
+      </select>
+    {/if}
+  </div>
+
+  <div class="filters second">
+    <!--
+      Cost as two numbers rather than a slider. A slider needs a maximum
+      nobody agrees on and cannot be typed into; two boxes say exactly what
+      they are and work with a keyboard.
+    -->
+    <label class="cost">
+      <span class="lbl">{t.costFrom}</span>
+      <input
+        class="field"
+        type="number"
+        min="0"
+        inputmode="numeric"
+        value={filters.minCost ?? ''}
+        onchange={(event) => onFilters({ ...filters, minCost: cost(event.currentTarget.value) })}
+      />
+    </label>
+    <label class="cost">
+      <span class="lbl">{t.costTo}</span>
+      <input
+        class="field"
+        type="number"
+        min="0"
+        inputmode="numeric"
+        value={filters.maxCost ?? ''}
+        onchange={(event) => onFilters({ ...filters, maxCost: cost(event.currentTarget.value) })}
+      />
+    </label>
+
+    <label class="tick">
+      <input
+        type="checkbox"
+        checked={filters.ownedOnly}
+        onchange={(event) => onFilters({ ...filters, ownedOnly: event.currentTarget.checked })}
+      />
+      <span>{t.ownedOnly}</span>
+    </label>
+
+    <label class="tick">
+      <input
+        type="checkbox"
+        checked={filters.favouritesOnly}
+        onchange={(event) =>
+          onFilters({ ...filters, favouritesOnly: event.currentTarget.checked })}
+      />
+      <span>{t.favouritesOnly}</span>
+    </label>
+
+    <!--
+      Shown only when something is on, because a permanent Clear button reads
+      as a thing you have to press before you can search.
+    -->
+    {#if active > 0}
+      <button class="btn btn--quiet" type="button" onclick={() => onFilters(NO_FILTERS)}>
+        {t.clearFilters(active)}
+      </button>
+    {/if}
   </div>
 </div>
 
 <style>
+  .second {
+    align-items: center;
+  }
+
+  .cost {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .cost .lbl {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .cost .field {
+    width: 5.5rem;
+  }
+
   .controls {
     display: flex;
     flex-direction: column;

@@ -114,6 +114,14 @@ jobs:
         working-directory: web
         run: npm run test:adoption
 
+      # Four filters that each fail as a short list rather than as an error:
+      # a cost range that swallows every card with no printed cost, owned-only
+      # reading the card instead of its pack, a trait filter matching a card
+      # merely named for the word, and favourites keyed on the wrong column.
+      - name: Card filters
+        working-directory: web
+        run: npm run test:filters
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw

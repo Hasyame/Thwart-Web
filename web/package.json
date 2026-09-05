@@ -30,7 +30,8 @@
     "test:engine-sync": "vite-node scripts/test-sync-engine.mjs",
     "test:plays": "vite-node scripts/test-plays.mjs",
     "test:merge": "vite-node scripts/test-sync-merge.mjs",
-    "test:adoption": "vite-node scripts/test-sync-adoption.mjs"
+    "test:adoption": "vite-node scripts/test-sync-adoption.mjs",
+    "test:filters": "vite-node scripts/test-search-filters.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

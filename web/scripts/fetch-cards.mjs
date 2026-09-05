@@ -181,6 +181,16 @@ function toIndexRow(card) {
     factionName: card.faction_name,
     cost: card.cost ?? null,
     isUnique: Boolean(card.is_unique),
+    // Split out as their own field as well as folded into `s`.
+    //
+    // Searchable text finds a trait, but it cannot tell one apart from a card
+    // whose *name* contains the same word, and it cannot offer the reader a
+    // list of the traits that exist. MarvelCDB writes them as one string,
+    // "Avenger. Spy.", so this is the one place that shape is understood.
+    traits: String(card.traits ?? '')
+      .split('.')
+      .map((trait) => trait.trim())
+      .filter((trait) => trait !== ''),
     // Folded exactly as SearchNormalizer folds it, so the browser compares
     // like with like and never has to normalise 4000 cards at startup.
     s: normalizeForSearch(

@@ -30,6 +30,15 @@ export interface IndexRow {
   readonly factionName: string;
   readonly cost: number | null;
   readonly isUnique: boolean;
+  /**
+   * The card's traits, one per entry.
+   *
+   * Optional because an index built before this existed does not carry them,
+   * and an absent list must read as "no traits" rather than as an error. They
+   * are also folded into `s`, which is what makes them findable by typing;
+   * this is what makes them selectable.
+   */
+  readonly traits?: readonly string[];
   /** Pre-folded search text. See lib/normalize.js. */
   readonly s: string;
 }

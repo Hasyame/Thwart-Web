@@ -28,6 +28,12 @@ export interface Strings {
   readonly allTypes: string;
   readonly allFactions: string;
   readonly allPacks: string;
+  readonly allTraits: string;
+  readonly costFrom: string;
+  readonly costTo: string;
+  readonly ownedOnly: string;
+  readonly favouritesOnly: string;
+  readonly clearFilters: (active: number) => string;
   readonly loading: string;
   readonly loadError: string;
   readonly retry: string;
@@ -432,6 +438,12 @@ const STRINGS: Record<Locale, Strings> = {
     allTypes: 'All types',
     allFactions: 'All factions',
     allPacks: 'All packs',
+    allTraits: 'All traits',
+    costFrom: 'Cost from',
+    costTo: 'to',
+    ownedOnly: 'Only what I own',
+    favouritesOnly: 'Only favourites',
+    clearFilters: (active) => `Clear ${active} filter${active === 1 ? '' : 's'}`,
     loading: 'Loading the card database…',
     loadError: 'The card database could not be loaded.',
     retry: 'Retry',
@@ -949,6 +961,12 @@ const STRINGS: Record<Locale, Strings> = {
     allTypes: 'Tous les types',
     allFactions: 'Toutes les factions',
     allPacks: 'Tous les paquets',
+    allTraits: 'Tous les traits',
+    costFrom: 'Coût de',
+    costTo: 'à',
+    ownedOnly: 'Seulement ce que je possède',
+    favouritesOnly: 'Seulement les favorites',
+    clearFilters: (active) => `Effacer ${active} filtre${active === 1 ? '' : 's'}`,
     loading: 'Chargement de la base de cartes…',
     loadError: 'Impossible de charger la base de cartes.',
     retry: 'Réessayer',

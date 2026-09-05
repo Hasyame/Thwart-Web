@@ -94,6 +94,27 @@
     return () => subscription.unsubscribe();
   });
 
+  /*
+   * The packs the collection says are owned, for the owned-only filter.
+   *
+   * A quantity of zero is a pack somebody has recorded and does not have —
+   * the collection stores a count rather than a tick precisely so a second
+   * core set can be said — so it is not owned.
+   */
+  const ownedPacks = $state<{ value: ReadonlySet<string> }>({ value: new Set() });
+
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const subscription = liveQuery(() => db.ownedPacks.toArray()).subscribe((rows) => {
+      ownedPacks.value = new Set(
+        rows.filter((row) => row.quantity > 0).map((row) => row.packCode),
+      );
+    });
+    return () => subscription.unsubscribe();
+  });
+
   const t = $derived(strings(uiLocale));
 
   const packNames = $derived(
@@ -101,7 +122,12 @@
   );
 
   const results = $derived(
-    searchCards(index, { query, filters, limit: RESULT_LIMIT }),
+    searchCards(index, {
+      query,
+      filters,
+      limit: RESULT_LIMIT,
+      collection: { ownedPacks: ownedPacks.value, favourites: favourites.value },
+    }),
   );
 
   /**
