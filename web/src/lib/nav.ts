@@ -44,14 +44,22 @@ export interface Destination {
   readonly glyph: string;
 }
 
+/*
+ * The order the bar reads in, which is the reader's and not the code's.
+ *
+ * Browsing, then the things you build, then the ways you play, then what you
+ * own and what you have done. The account and the settings sit after all of
+ * them, in the top bar rather than in this list, because neither is a place to
+ * go and look at cards.
+ */
 export const DESTINATIONS: readonly Destination[] = [
   { id: 'search', label: (t) => t.navCards, tab: (t) => t.navCards, glyph: '▤' },
   { id: 'decks', label: (t) => t.navDecks, tab: (t) => t.navDecks, glyph: '❐' },
-  { id: 'play', label: (t) => t.navPlay, tab: (t) => t.navPlayShort, glyph: '▶' },
   { id: 'campaigns', label: (t) => t.navCampaigns, tab: (t) => t.navCampaigns, glyph: '◈' },
-  { id: 'collection', label: (t) => t.navCollection, tab: (t) => t.navCollection, glyph: '▣' },
+  { id: 'play', label: (t) => t.navPlay, tab: (t) => t.navPlayShort, glyph: '▶' },
   { id: 'randomizer', label: (t) => t.navRandomizer, tab: (t) => t.navRandomizer, glyph: '✦' },
   { id: 'versus', label: (t) => t.navVersus, tab: (t) => t.navVersus, glyph: '⚔' },
+  { id: 'collection', label: (t) => t.navCollection, tab: (t) => t.navCollection, glyph: '▣' },
   { id: 'stats', label: (t) => t.navStats, tab: (t) => t.navStats, glyph: '▥' },
   { id: 'rules', label: (t) => t.navRules, tab: (t) => t.navRules, glyph: '❔' },
 ];
@@ -64,7 +72,7 @@ export const DESTINATIONS: readonly Destination[] = [
  * 44pt floor once the label has any padding at all. These four are the ones a
  * game is played out of; the rest are things you visit between games.
  */
-export const TAB_IDS: readonly NavTarget[] = ['search', 'decks', 'play', 'campaigns'];
+export const TAB_IDS: readonly NavTarget[] = ['search', 'decks', 'campaigns', 'play'];
 
 export const TABS: readonly Destination[] = TAB_IDS.map(
   (id) => DESTINATIONS.find((d) => d.id === id) as Destination,

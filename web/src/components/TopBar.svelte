@@ -228,13 +228,22 @@
    * Wide enough for the destinations to sit on the bar itself, which is where
    * a pointer expects them. Below this the tab bar has them.
    *
-   * 56rem, not 48: the breakpoint is where the eight labels fit on one line
-   * beside the brand and the settings button, measured rather than guessed.
-   * The French ones come to about 660px, which with everything else on the bar
-   * needs roughly 880px. At 48rem they wrapped to two rows and the header grew
-   * from 57px to 93px.
+   * Measured, never guessed: with `flex-wrap: nowrap` the bar reports the width
+   * it actually needs. Nine French labels come to 912px, and with the brand,
+   * the account button, the settings button and the page padding the whole bar
+   * needs 1229px — 78.8rem. So 80rem, with a little room.
+   *
+   * It was 56rem when there were eight shorter destinations. Adding Versus and
+   * lengthening Collection to "Ma collection" pushed it past what 56rem holds,
+   * and the bar wrapped to two rows: the header grew from 57px to 93px, which
+   * is the thing this breakpoint exists to prevent. Below it every destination
+   * is still reachable — four on the tab bar and the rest in the More sheet.
+   *
+   * Kept in step with BottomNav and the body padding in app.css. The 56rem in
+   * the two dialogs is a different question — sheet or centred dialog — and is
+   * deliberately left where it is.
    */
-  @media (min-width: 56rem) {
+  @media (min-width: 80rem) {
     .spacer {
       display: none;
     }

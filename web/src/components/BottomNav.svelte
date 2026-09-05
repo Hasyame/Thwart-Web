@@ -121,8 +121,9 @@
     background: var(--accent-soft);
   }
 
-  /* Tabs are a phone arrangement. Above this the top bar carries everything. */
-  @media (min-width: 56rem) {
+  /* Tabs are a phone arrangement. Above this the top bar carries everything.
+     80rem is where nine labels fit on one line; see the note in TopBar. */
+  @media (min-width: 80rem) {
     .tabs {
       display: none;
     }
