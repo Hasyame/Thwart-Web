@@ -196,6 +196,14 @@ const state = (collection, id, revision, body) => ({
    * loop nobody notices — no error, just two devices talking for ever.
    */
   const samples = {
+    settings: {
+      id: 'app',
+      cardLocale: 'fr',
+      themeChoice: 'dark',
+      playLocation: 'kitchen table',
+      trackEncounter: true,
+      dismissedPacks: ['core'],
+    },
     owned_packs: { packCode: 'core', quantity: 2 },
     excluded_modular_sets: { setCode: 'bomb_scare' },
     excluded_scenarios: { scenarioCode: 'rhino' },

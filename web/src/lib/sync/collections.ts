@@ -1,5 +1,5 @@
 import type { Table } from 'dexie';
-import { db } from '../db';
+import { db, SETTINGS_KEY, type StoredSettings } from '../db';
 import type {
   CampaignEvent,
   CampaignRun,
@@ -35,6 +35,7 @@ import type {
  */
 
 export type CollectionName =
+  | 'settings'
   | 'owned_packs'
   | 'excluded_modular_sets'
   | 'excluded_scenarios'
@@ -178,6 +179,48 @@ export const PLAYS: Mapping<Play> = {
   updatedAt: (row) => iso(row.playedAt),
 };
 
+/**
+ * The app's own preferences, as one record called `app`.
+ *
+ * The tenth collection, and the one this client did not have. Doc 06 said the
+ * web was implementing it and the web was not: Android syncs it, the server has
+ * always stored it, and the effect of the gap was the quiet one the contract
+ * warns about — a setting changed on the phone and never arriving here, with
+ * nothing anywhere reporting a problem.
+ *
+ * `lastCardSync` is deliberately not in the body, on either platform. It says
+ * when *this* device last fetched from MarvelCDB, which is not a preference and
+ * is wrong on any other device the moment it arrives.
+ */
+export const SETTINGS: Mapping<StoredSettings> = {
+  name: 'settings',
+  table: () => db.appSettings,
+  // Literally `app`. One record per account, and the id is a constant rather
+  // than a generated one so that two devices write the same record instead of
+  // one each.
+  idOf: () => SETTINGS_KEY,
+  bodyOf: (row) => ({
+    cardLocale: row.cardLocale,
+    themeChoice: row.themeChoice,
+    playLocation: row.playLocation,
+    trackEncounter: row.trackEncounter,
+    dismissedPacks: [...row.dismissedPacks],
+  }),
+  rowOf: (_id, body) => ({
+    id: SETTINGS_KEY,
+    cardLocale: typeof body.cardLocale === 'string' ? body.cardLocale : '',
+    themeChoice: typeof body.themeChoice === 'string' ? body.themeChoice : '',
+    playLocation: typeof body.playLocation === 'string' ? body.playLocation : '',
+    trackEncounter: body.trackEncounter === true,
+    dismissedPacks: Array.isArray(body.dismissedPacks)
+      ? body.dismissedPacks.filter((entry): entry is string => typeof entry === 'string')
+      : [],
+  }),
+  // No timestamp on the row, and inventing one from the clock would make every
+  // scan look like an edit. Change detection is by digest here, as everywhere.
+  updatedAt: () => new Date(0).toISOString(),
+};
+
 export const RANDOMIZER_HISTORY: Mapping<RandomizerHistoryRow> = {
   name: 'randomizer_history',
   table: () => db.randomizerHistory,
@@ -195,6 +238,7 @@ export const RANDOMIZER_HISTORY: Mapping<RandomizerHistoryRow> = {
  * a screen can render mid-way through one.
  */
 export const COLLECTIONS = [
+  SETTINGS,
   OWNED_PACKS,
   EXCLUDED_MODULAR_SETS,
   EXCLUDED_SCENARIOS,

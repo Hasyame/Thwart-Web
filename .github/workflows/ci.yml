@@ -96,6 +96,15 @@ jobs:
         working-directory: web
         run: npm run test:plays
 
+      # The refinements the server does not know about. It applies
+      # last-write-wins to whole records and never reads a body, so each of
+      # these lives in the client, and a client that skips one loses what the
+      # other kept — silently, and in one case outside the app entirely: a
+      # stale reportedToBgg posts a duplicate to a real BoardGameGeek account.
+      - name: Sync merge rules
+        working-directory: web
+        run: npm run test:merge
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw

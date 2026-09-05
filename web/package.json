@@ -28,7 +28,8 @@
     "test:tracker": "vite-node scripts/test-campaign-tracker.mjs",
     "test:sync": "vite-node scripts/test-sync-state.mjs",
     "test:engine-sync": "vite-node scripts/test-sync-engine.mjs",
-    "test:plays": "vite-node scripts/test-plays.mjs"
+    "test:plays": "vite-node scripts/test-plays.mjs",
+    "test:merge": "vite-node scripts/test-sync-merge.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
