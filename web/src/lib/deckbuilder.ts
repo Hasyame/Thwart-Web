@@ -520,3 +520,146 @@ export const deckCardInfo = (card: Card): DeckCardInfo => ({
   resourceEnergy: card.resource_energy ?? 0,
   resourceWild: card.resource_wild ?? 0,
 });
+
+// --- what a deck is made of ------------------------------------------------------
+
+export interface ResourceCounts {
+  readonly physical: number;
+  readonly mental: number;
+  readonly energy: number;
+  readonly wild: number;
+  readonly total: number;
+}
+
+export interface DeckStatistics {
+  /** Cost to copies at that cost, ascending. Cards with no printed cost are out. */
+  readonly costCurve: readonly (readonly [number, number])[];
+  readonly resources: ResourceCounts;
+  /** Type name to copies, largest first. */
+  readonly byType: readonly (readonly [string, number])[];
+  readonly byAspect: readonly (readonly [string, number])[];
+  readonly costedCards: number;
+  readonly averageCost: number;
+  readonly tallestCostColumn: number;
+}
+
+const descendingThenName = (
+  a: readonly [string, number],
+  b: readonly [string, number],
+): number => b[1] - a[1] || a[0].localeCompare(b[0]);
+
+/**
+ * Counts a deck.
+ *
+ * Everything counts **copies**, not distinct cards: three copies of a one-cost
+ * ally are three one-cost cards, and the question somebody is asking — how
+ * often will I draw something cheap — is about copies. Counting rows instead
+ * flatters every deck equally and answers nothing.
+ *
+ * The identity is not passed in and must not be. It is not part of the deck,
+ * has no cost, and would distort both the curve and the aspect split.
+ */
+export function deckStatistics(
+  entries: readonly (readonly [Card, number])[],
+): DeckStatistics {
+  const costCurve = new Map<number, number>();
+  const typeCounts = new Map<string, number>();
+  const aspectCounts = new Map<string, number>();
+  let physical = 0;
+  let mental = 0;
+  let energy = 0;
+  let wild = 0;
+  let costedCards = 0;
+  let costTotal = 0;
+
+  for (const [card, quantity] of entries) {
+    /*
+     * A card printed with a variable cost — an X, or one per hero — has no
+     * single number, so it is left out of the curve rather than counted as
+     * whatever placeholder the database happens to hold.
+     */
+    const cost =
+      typeof card.cost === 'number' && card.cost_star !== true && card.cost_per_hero !== true
+        ? card.cost
+        : null;
+    if (cost !== null) {
+      costCurve.set(cost, (costCurve.get(cost) ?? 0) + quantity);
+      costedCards += quantity;
+      costTotal += cost * quantity;
+    }
+
+    physical += (card.resource_physical ?? 0) * quantity;
+    mental += (card.resource_mental ?? 0) * quantity;
+    energy += (card.resource_energy ?? 0) * quantity;
+    wild += (card.resource_wild ?? 0) * quantity;
+
+    const typeName = card.type_name ?? card.type_code;
+    const aspectName = card.faction_name ?? card.faction_code;
+    typeCounts.set(typeName, (typeCounts.get(typeName) ?? 0) + quantity);
+    aspectCounts.set(aspectName, (aspectCounts.get(aspectName) ?? 0) + quantity);
+  }
+
+  const curve = [...costCurve.entries()].sort((a, b) => a[0] - b[0]);
+
+  return {
+    costCurve: curve,
+    resources: {
+      physical,
+      mental,
+      energy,
+      wild,
+      total: physical + mental + energy + wild,
+    },
+    byType: [...typeCounts.entries()].sort(descendingThenName),
+    byAspect: [...aspectCounts.entries()].sort(descendingThenName),
+    costedCards,
+    averageCost: costedCards > 0 ? costTotal / costedCards : 0,
+    tallestCostColumn: curve.reduce((tallest, [, count]) => Math.max(tallest, count), 0),
+  };
+}
+
+// --- sharing a deck as text --------------------------------------------------------
+
+export interface DeckTextCard {
+  readonly quantity: number;
+  readonly name: string;
+}
+
+/**
+ * A deck as text somebody can paste into a message.
+ *
+ * Plain text rather than a link or a file, because that is what actually gets
+ * shared. A link only works for decks that came from MarvelCDB, and a deck
+ * built here has no URL at all.
+ *
+ * Grouped by type and counted, the way a decklist is written everywhere else,
+ * so it reads as familiar rather than as this app's own invention. Sorted
+ * throughout, so the same deck shared twice reads the same both times.
+ */
+export function deckAsText(
+  deckName: string,
+  heroName: string,
+  aspects: readonly string[],
+  cardsByType: ReadonlyMap<string, readonly DeckTextCard[]>,
+  marvelCdbUrl: string | null = null,
+): string {
+  const lines: string[] = [deckName];
+  lines.push(aspects.length > 0 ? `${heroName} (${aspects.join(', ')})` : heroName, '');
+
+  let total = 0;
+  for (const [type, cards] of [...cardsByType.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const inType = cards.reduce((sum, entry) => sum + entry.quantity, 0);
+    total += inType;
+    lines.push(`${type} (${inType})`);
+    for (const entry of [...cards].sort((a, b) => a.name.localeCompare(b.name))) {
+      lines.push(`  ${entry.quantity}x ${entry.name}`);
+    }
+    lines.push('');
+  }
+
+  lines.push(`Total: ${total} cards`);
+  if (marvelCdbUrl !== null && marvelCdbUrl.trim() !== '') {
+    lines.push('', marvelCdbUrl);
+  }
+  return lines.join('\n').trim();
+}

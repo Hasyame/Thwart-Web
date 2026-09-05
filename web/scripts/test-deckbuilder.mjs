@@ -12,7 +12,9 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  deckAsText,
   deckCardInfo,
+  deckStatistics,
   heroDeckRules,
   MAXIMUM_DECK_SIZE,
   MINIMUM_DECK_SIZE,
@@ -357,6 +359,105 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
     legal.isLegal,
     legal.problems.map((p) => p.kind).join(',') || 'no problems',
   );
+}
+
+// --- what a deck is made of ---------------------------------------------------------
+
+{
+  /*
+   * Everything counts copies, not distinct cards. Three copies of a one-cost
+   * ally are three one-cost cards, and the question being asked — how often
+   * will I draw something cheap — is about copies.
+   */
+  const oneCost = [...pool.values()].find(
+    (c) => c.cost === 1 && c.type_code === 'ally' && !c.cost_star && !c.cost_per_hero,
+  );
+  const threeCost = [...pool.values()].find(
+    (c) => c.cost === 3 && c.type_code === 'event' && !c.cost_star && !c.cost_per_hero,
+  );
+  const starred = [...pool.values()].find((c) => c.cost_star === true || c.cost_per_hero === true);
+
+  const stats = deckStatistics([
+    [oneCost, 3],
+    [threeCost, 1],
+    ...(starred ? [[starred, 2]] : []),
+  ]);
+
+  check(
+    'the curve counts copies rather than rows',
+    stats.costCurve.find(([cost]) => cost === 1)?.[1] === 3,
+    JSON.stringify(stats.costCurve),
+  );
+  check('and is ordered by cost', stats.costCurve.map(([cost]) => cost).join(',') === '1,3');
+  check('the average is over copies too', Math.abs(stats.averageCost - 1.5) < 0.001, `${stats.averageCost}`);
+  check('the tallest column is what a chart scales to', stats.tallestCostColumn === 3);
+  if (starred !== undefined) {
+    check(
+      'a card printed with a variable cost is left out rather than guessed at',
+      stats.costedCards === 4,
+      `${starred.name} contributes nothing to the curve`,
+    );
+  }
+  check(
+    'resources are totalled across copies',
+    stats.resources.total ===
+      (oneCost.resource_physical ?? 0) * 3 +
+        (oneCost.resource_mental ?? 0) * 3 +
+        (oneCost.resource_energy ?? 0) * 3 +
+        (oneCost.resource_wild ?? 0) * 3 +
+        (threeCost.resource_physical ?? 0) +
+        (threeCost.resource_mental ?? 0) +
+        (threeCost.resource_energy ?? 0) +
+        (threeCost.resource_wild ?? 0) +
+        (starred
+          ? ((starred.resource_physical ?? 0) +
+              (starred.resource_mental ?? 0) +
+              (starred.resource_energy ?? 0) +
+              (starred.resource_wild ?? 0)) * 2
+          : 0),
+  );
+  check('an empty deck counts to nothing rather than dividing by zero', deckStatistics([]).averageCost === 0);
+}
+
+// --- sharing it ------------------------------------------------------------------------
+
+{
+  const text = deckAsText(
+    'My Deck',
+    'Spider-Man',
+    ['Justice'],
+    new Map([
+      ['Ally', [{ quantity: 2, name: 'Spider-Woman' }, { quantity: 1, name: 'Ant-Man' }]],
+      ['Event', [{ quantity: 3, name: 'Swinging Web Kick' }]],
+    ]),
+  );
+  // Split without an escape sequence: this file is edited through tools that
+  // eat backslashes, and a newline is worth naming plainly.
+  const NEWLINE = String.fromCharCode(10);
+  const lines = text.split(NEWLINE);
+
+  check('the deck is named first', lines[0] === 'My Deck');
+  check('then the hero and aspects', lines[1] === 'Spider-Man (Justice)');
+  check('types come in a stable order', text.indexOf('Ally (3)') < text.indexOf('Event (3)'));
+  check('and cards within a type are sorted', text.indexOf('Ant-Man') < text.indexOf('Spider-Woman'));
+  check('the total counts copies', lines[lines.length - 1] === 'Total: 6 cards');
+  check(
+    'sharing the same deck twice reads the same both times',
+    text ===
+      deckAsText(
+        'My Deck',
+        'Spider-Man',
+        ['Justice'],
+        new Map([
+          ['Event', [{ quantity: 3, name: 'Swinging Web Kick' }]],
+          ['Ally', [{ quantity: 1, name: 'Ant-Man' }, { quantity: 2, name: 'Spider-Woman' }]],
+        ]),
+      ),
+    'the map arrived in a different order and the text is identical',
+  );
+
+  const withUrl = deckAsText('D', 'H', [], new Map(), 'https://marvelcdb.com/decklist/view/1');
+  check('a MarvelCDB link is appended when there is one', withUrl.endsWith('/decklist/view/1'));
 }
 
 process.exit(failures === 0 ? 0 : 1);

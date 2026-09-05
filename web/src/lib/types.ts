@@ -124,6 +124,9 @@ export interface Card {
   readonly escalation_threat_fixed?: boolean;
 
   readonly quantity?: number | null;
+  /** A cost printed as a star or as one per hero: no single number. */
+  readonly cost_star?: boolean;
+  readonly cost_per_hero?: boolean;
   readonly deck_limit?: number | null;
   readonly is_unique?: boolean;
   /**
