@@ -8,15 +8,11 @@
   import { parseSlots } from '../lib/decks';
   import {
     deckAsText,
-    deckCardInfo,
     deckStatistics,
-    heroDeckRules,
-    maximumFor,
-    minimumFor,
+    heroRules,
     validateDeck,
-    type DeckCardInfo,
     type DeckProblem,
-  } from '../lib/deckbuilder';
+  } from '../lib/deckRules';
   import { searchCards, NO_FILTERS } from '../lib/search';
 
   /**
@@ -108,27 +104,22 @@
       .filter((entry) => entry !== ''),
   );
 
-  const rules = $derived(hero === null ? null : heroDeckRules(hero));
+  /*
+   * The hero's rules, derived from its own pack.
+   *
+   * `heroRules` needs the pack's cards to work out which of them are the
+   * identity's own signature cards — they are not optional and not adjustable,
+   * and nothing on the identity card lists them.
+   */
+  const rules = $derived(hero === null ? null : heroRules(hero, [...records.values()]));
 
-  const infos = $derived.by(() => {
-    const out = new Map<string, DeckCardInfo>();
-    for (const [code, card] of records) {
-      out.set(code, deckCardInfo(card));
-    }
-    return out;
-  });
+  const slotMap = $derived(new Map(Object.entries(slots)));
 
   const validation = $derived(
-    rules === null ? null : validateDeck(rules, aspects, slots, infos),
+    rules === null ? null : validateDeck(rules, aspects, slotMap, records),
   );
 
-  const stats = $derived(
-    deckStatistics(
-      Object.entries(slots)
-        .map(([code, quantity]) => [records.get(code), quantity] as const)
-        .filter((entry): entry is readonly [Card, number] => entry[0] !== undefined),
-    ),
-  );
+  const stats = $derived(deckStatistics(slotMap, records));
 
   const total = $derived(Object.values(slots).reduce((sum, quantity) => sum + quantity, 0));
 
@@ -190,22 +181,22 @@
   function describe(problem: DeckProblem): string {
     switch (problem.kind) {
       case 'tooFewCards':
-        return t.deckTooFew(problem.actual, problem.required);
+        return t.deckTooFew(problem.actual, problem.minimum);
       case 'tooManyCards':
-        return t.deckTooMany(problem.actual, problem.allowed);
+        return t.deckTooMany(problem.actual, problem.maximum);
       case 'wrongAspectCount':
-        return t.deckWrongAspects(problem.actual, problem.required);
+        return t.deckWrongAspects(problem.chosen, problem.expected);
       case 'offAspect':
         return t.deckOffAspect(problem.cardName);
       case 'overCopyLimit':
-        return t.deckOverLimit(problem.cardName, problem.quantity, problem.limit);
+        return t.deckOverLimit(problem.title, problem.total, problem.limit);
       case 'duplicateUnique':
-        return t.deckDuplicateUnique(problem.cardName);
+        return t.deckDuplicateUnique(problem.title);
       case 'missingRequired':
         return t.deckMissingRequired(problem.cardName, problem.required, problem.actual);
       case 'unbalancedAspects':
         return t.deckUnbalanced(
-          Object.entries(problem.counts)
+          [...problem.counts.entries()]
             .map(([aspect, count]) => `${aspect} ${count}`)
             .join(', '),
         );
@@ -262,12 +253,12 @@
     useful moment for "that is a fourth copy" is when the fourth copy goes in.
   -->
   {#if validation !== null && rules !== null}
-    <div class="legality" class:ok={validation.isLegal}>
+    <div class="legality" class:ok={validation.legal}>
       <p class="count">
-        {t.deckCardCount(total, minimumFor(rules), maximumFor(rules))}
-        {#if validation.isLegal}<span class="ok-mark">{t.deckLegal}</span>{/if}
+        {t.deckCardCount(total, rules.minimum, rules.maximum)}
+        {#if validation.legal}<span class="ok-mark">{t.deckLegal}</span>{/if}
       </p>
-      {#if !validation.isLegal}
+      {#if !validation.legal}
         <ul class="problems">
           {#each validation.problems as problem, i (i)}
             <li>{describe(problem)}</li>

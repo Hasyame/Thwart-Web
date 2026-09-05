@@ -13,13 +13,18 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   deckAsText,
-  deckCardInfo,
   deckStatistics,
-  heroDeckRules,
-  MAXIMUM_DECK_SIZE,
-  MINIMUM_DECK_SIZE,
+  heroRules,
   validateDeck,
-} from '../src/lib/deckbuilder.ts';
+} from '../src/lib/deckRules.ts';
+
+/*
+ * The deck size, which is the one rule not in the card data anywhere. Named
+ * here rather than imported because the module keeps it per-hero on the rules
+ * object; these are the values every hero without an override gets.
+ */
+const MINIMUM_DECK_SIZE = 40;
+const MAXIMUM_DECK_SIZE = 50;
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -43,8 +48,14 @@ for (const file of readdirSync(DATA).filter((name) => name.endsWith('.json'))) {
     pool.set(card.code, card);
   }
 }
-const infos = new Map([...pool].map(([code, card]) => [code, deckCardInfo(card)]));
+const infos = pool;
 const byName = (name) => [...pool.values()].filter((card) => card.name === name);
+
+/** Every card printed in one hero's pack, which is where its own cards live. */
+const packOf = (card) => [...pool.values()].filter((other) => other.pack_code === card.pack_code);
+
+/** The module takes a Map of slots; the fixtures below build plain objects. */
+const asMap = (slots) => new Map(Object.entries(slots));
 
 /**
  * A legal pile of ordinary basic cards, to pad a deck out to a given size.
@@ -62,59 +73,57 @@ function padding(count, exclude = new Set()) {
     if (total >= count) {
       break;
     }
-    const info = infos.get(card.code);
     if (
-      info === undefined ||
-      info.factionCode !== 'basic' ||
-      info.isUnique ||
+      card.faction_code !== 'basic' ||
+      card.is_unique === true ||
       exclude.has(card.code) ||
-      titlesUsed.has(info.name) ||
-      !['ally', 'event', 'upgrade', 'support', 'resource'].includes(info.typeCode)
+      titlesUsed.has(card.name) ||
+      !['ally', 'event', 'upgrade', 'support', 'resource'].includes(card.type_code)
     ) {
       continue;
     }
-    const take = Math.min(info.deckLimit ?? 3, count - total);
+    const take = Math.min(card.deck_limit ?? 3, count - total);
     slots[card.code] = take;
-    titlesUsed.add(info.name);
+    titlesUsed.add(card.name);
     total += take;
   }
   return slots;
 }
 
 const spiderMan = pool.get('01001a');
-const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
+const rules = heroRules(spiderMan, packOf(spiderMan));
 
 // --- the size rule, which is the one not in the data ------------------------------
 
 {
-  const small = validateDeck(rules, ['justice'], padding(10), infos);
+  const small = validateDeck(rules, ['justice'], asMap(padding(10)), infos);
   check(
     'a deck under forty is too few',
     small.problems.some((p) => p.kind === 'tooFewCards'),
     `${small.totalCards} cards`,
   );
 
-  const right = validateDeck(rules, ['justice'], padding(MINIMUM_DECK_SIZE), infos);
+  const right = validateDeck(rules, ['justice'], asMap(padding(MINIMUM_DECK_SIZE)), infos);
   check(
     'and exactly forty is not',
     !right.problems.some((p) => p.kind === 'tooFewCards'),
     `${right.totalCards} cards`,
   );
 
-  const big = validateDeck(rules, ['justice'], padding(MAXIMUM_DECK_SIZE + 3), infos);
+  const big = validateDeck(rules, ['justice'], asMap(padding(MAXIMUM_DECK_SIZE + 3)), infos);
   check('over fifty is too many', big.problems.some((p) => p.kind === 'tooManyCards'));
 }
 
 // --- aspects ------------------------------------------------------------------------
 
 {
-  const none = validateDeck(rules, [], padding(40), infos);
+  const none = validateDeck(rules, [], asMap(padding(40)), infos);
   check(
     'a hero who picks one aspect must pick one',
     none.problems.some((p) => p.kind === 'wrongAspectCount'),
   );
 
-  const two = validateDeck(rules, ['justice', 'aggression'], padding(40), infos);
+  const two = validateDeck(rules, ['justice', 'aggression'], asMap(padding(40)), infos);
   check('and not two', two.problems.some((p) => p.kind === 'wrongAspectCount'));
 }
 
@@ -126,7 +135,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
    * throws the balance off.
    */
   const spiderWoman = pool.get('04031a');
-  const swRules = heroDeckRules(spiderWoman, {}, 'Jessica Drew');
+  const swRules = heroRules(spiderWoman, packOf(spiderWoman));
   check('Spider-Woman takes two aspects', swRules.aspectCount === 2);
   check('and they must balance', swRules.aspectsMustBalance);
 
@@ -139,7 +148,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   for (const card of ownCards.slice(0, 4)) {
     slots[card.code] = 1;
   }
-  const result = validateDeck(swRules, ['justice', 'protection'], slots, infos);
+  const result = validateDeck(swRules, ['justice', 'protection'], asMap(slots), infos);
   check(
     'her own cards are never off-aspect, whatever faction they carry',
     !result.problems.some((p) => p.kind === 'offAspect'),
@@ -158,10 +167,10 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
     (card) => card.faction_code === 'aggression' && card.type_code === 'event' && !card.is_unique,
   );
   const slots = { ...padding(38), [aggressionCard.code]: 2 };
-  const result = validateDeck(rules, ['justice'], slots, infos);
+  const result = validateDeck(rules, ['justice'], asMap(slots), infos);
   check(
     'a card from an aspect the deck did not choose is off-aspect',
-    result.problems.some((p) => p.kind === 'offAspect' && p.cardCode === aggressionCard.code),
+    result.problems.some((p) => p.kind === 'offAspect' && p.cardName === aggressionCard.name),
     aggressionCard.name,
   );
 
@@ -169,15 +178,10 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   const otherHeroCard = [...pool.values()].find(
     (card) => card.faction_code === 'hero' && card.card_set_code !== spiderMan.card_set_code,
   );
-  const withStranger = validateDeck(
-    rules,
-    ['justice'],
-    { ...padding(38), [otherHeroCard.code]: 1 },
-    infos,
-  );
+  const withStranger = validateDeck(rules, ['justice'], asMap({ ...padding(38), [otherHeroCard.code]: 1 }), infos);
   check(
     "another hero's own card is never legal",
-    withStranger.problems.some((p) => p.kind === 'offAspect' && p.cardCode === otherHeroCard.code),
+    withStranger.problems.some((p) => p.kind === 'offAspect' && p.cardName === otherHeroCard.name),
     otherHeroCard.name,
   );
 }
@@ -190,7 +194,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
    * them the builder rejects decks these heroes are printed to build.
    */
   const cyclops = pool.get('33001a');
-  const cyclopsRules = heroDeckRules(cyclops, {}, 'Scott Summers');
+  const cyclopsRules = heroRules(cyclops, packOf(cyclops));
   check('Cyclops carries an allowance', cyclopsRules.options.length > 0);
   check(
     'and it is for X-Men allies',
@@ -209,26 +213,16 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   if (xmenAlly === undefined) {
     check('an off-aspect X-Men ally exists to test with', false);
   } else {
-    const allowed = validateDeck(
-      cyclopsRules,
-      ['justice'],
-      { ...padding(39), [xmenAlly.code]: 1 },
-      infos,
-    );
+    const allowed = validateDeck(cyclopsRules, ['justice'], asMap({ ...padding(39), [xmenAlly.code]: 1 }), infos);
     check(
       'an off-aspect X-Men ally is admitted for Cyclops',
-      !allowed.problems.some((p) => p.kind === 'offAspect' && p.cardCode === xmenAlly.code),
+      !allowed.problems.some((p) => p.kind === 'offAspect' && p.cardName === xmenAlly.name),
       `${xmenAlly.name} (${xmenAlly.faction_code})`,
     );
-    const refused = validateDeck(
-      rules,
-      ['justice'],
-      { ...padding(39), [xmenAlly.code]: 1 },
-      infos,
-    );
+    const refused = validateDeck(rules, ['justice'], asMap({ ...padding(39), [xmenAlly.code]: 1 }), infos);
     check(
       'and refused for a hero without the allowance',
-      refused.problems.some((p) => p.kind === 'offAspect' && p.cardCode === xmenAlly.code),
+      refused.problems.some((p) => p.kind === 'offAspect' && p.cardName === xmenAlly.name),
     );
   }
 }
@@ -237,7 +231,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
 
 {
   const adam = pool.get('21031a');
-  const adamRules = heroDeckRules(adam, {}, 'Adam Warlock');
+  const adamRules = heroRules(adam, packOf(adam));
   check('Adam Warlock takes four aspects', adamRules.aspectCount === 4);
   check(
     'and his limit is one copy of anything that is not his',
@@ -248,12 +242,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   const ordinary = [...pool.values()].find(
     (card) => card.faction_code === 'basic' && !card.is_unique && (card.deck_limit ?? 3) >= 2,
   );
-  const result = validateDeck(
-    adamRules,
-    ['justice', 'aggression', 'protection', 'leadership'],
-    { ...padding(38, new Set([ordinary.code])), [ordinary.code]: 2 },
-    infos,
-  );
+  const result = validateDeck(adamRules, ['justice', 'aggression', 'protection', 'leadership'], asMap({ ...padding(38, new Set([ordinary.code])), [ordinary.code]: 2 }), infos);
   check(
     'so two copies of an ordinary card break his limit',
     result.problems.some((p) => p.kind === 'overCopyLimit' && p.limit === 1),
@@ -282,15 +271,10 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
     check('a title with two printings exists to test with', false, 'none found in the pool');
   } else {
     const [first, second] = reprinted;
-    const result = validateDeck(
-      rules,
-      ['justice'],
-      { ...padding(34, new Set([first.code, second.code])), [first.code]: 3, [second.code]: 3 },
-      infos,
-    );
+    const result = validateDeck(rules, ['justice'], asMap({ ...padding(34, new Set([first.code, second.code])), [first.code]: 3, [second.code]: 3 }), infos);
     check(
       'three of one printing and three of another is six copies of one card',
-      result.problems.some((p) => p.kind === 'overCopyLimit' && p.quantity === 6),
+      result.problems.some((p) => p.kind === 'overCopyLimit' && p.total === 6),
       `${first.name}: ${first.code} and ${second.code}`,
     );
   }
@@ -302,15 +286,10 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   const unique = [...pool.values()].find(
     (card) => card.is_unique === true && card.faction_code === 'basic' && card.type_code === 'ally',
   );
-  const result = validateDeck(
-    rules,
-    ['justice'],
-    { ...padding(38, new Set([unique.code])), [unique.code]: 2 },
-    infos,
-  );
+  const result = validateDeck(rules, ['justice'], asMap({ ...padding(38, new Set([unique.code])), [unique.code]: 2 }), infos);
   check(
     'two copies of a unique card is one too many',
-    result.problems.some((p) => p.kind === 'duplicateUnique' && p.cardCode === unique.code),
+    result.problems.some((p) => p.kind === 'duplicateUnique' && p.title === unique.name),
     unique.name,
   );
 }
@@ -330,7 +309,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   );
 
   if (sameMan !== undefined) {
-    const clash = validateDeck(rules, ['justice'], { ...padding(39), [sameMan.code]: 1 }, infos);
+    const clash = validateDeck(rules, ['justice'], asMap({ ...padding(39), [sameMan.code]: 1 }), infos);
     check(
       'Peter Parker cannot take the Spider-Man who is also Peter Parker',
       clash.problems.some((p) => p.kind === 'duplicateUnique'),
@@ -341,7 +320,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   }
 
   if (otherMan !== undefined) {
-    const fine = validateDeck(rules, ['justice'], { ...padding(39), [otherMan.code]: 1 }, infos);
+    const fine = validateDeck(rules, ['justice'], asMap({ ...padding(39), [otherMan.code]: 1 }), infos);
     check(
       'but he can take a Spider-Man who is somebody else',
       !fine.problems.some((p) => p.kind === 'duplicateUnique'),
@@ -353,10 +332,29 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
 // --- a deck that is simply legal ----------------------------------------------------------
 
 {
-  const legal = validateDeck(rules, ['justice'], padding(40), infos);
+  /*
+   * A hero's own signature cards are not optional. The rules derive them from
+   * the identity's pack, so a legal deck has to hold every one of them in the
+   * printed number — the first version of this test padded with basics alone
+   * and was told so eight times over, which is the rule working.
+   */
+  const own = {};
+  let ownTotal = 0;
+  for (const card of packOf(spiderMan)) {
+    if (card.card_set_code === spiderMan.card_set_code && card.type_code !== 'hero' && card.type_code !== 'alter_ego') {
+      own[card.code] = card.quantity ?? 1;
+      ownTotal += card.quantity ?? 1;
+    }
+  }
+  const legal = validateDeck(
+    rules,
+    ['justice'],
+    asMap({ ...own, ...padding(Math.max(0, 40 - ownTotal), new Set(Object.keys(own))) }),
+    infos,
+  );
   check(
-    'an ordinary forty-card deck of basics passes with nothing to say',
-    legal.isLegal,
+    'a forty-card deck holding the hero’s own cards passes with nothing to say',
+    legal.legal,
     legal.problems.map((p) => p.kind).join(',') || 'no problems',
   );
 }
@@ -377,20 +375,21 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
   );
   const starred = [...pool.values()].find((c) => c.cost_star === true || c.cost_per_hero === true);
 
-  const stats = deckStatistics([
-    [oneCost, 3],
-    [threeCost, 1],
-    ...(starred ? [[starred, 2]] : []),
+  const slots = new Map([
+    [oneCost.code, 3],
+    [threeCost.code, 1],
+    ...(starred ? [[starred.code, 2]] : []),
   ]);
+  const stats = deckStatistics(slots, pool);
 
+  check('the curve counts copies rather than rows', stats.costCurve.get(1) === 3);
   check(
-    'the curve counts copies rather than rows',
-    stats.costCurve.find(([cost]) => cost === 1)?.[1] === 3,
-    JSON.stringify(stats.costCurve),
+    'and every cost in it is one the deck really holds',
+    [...stats.costCurve.keys()].sort((a, b) => a - b).join(',') === '1,3',
+    [...stats.costCurve.keys()].join(','),
   );
-  check('and is ordered by cost', stats.costCurve.map(([cost]) => cost).join(',') === '1,3');
   check('the average is over copies too', Math.abs(stats.averageCost - 1.5) < 0.001, `${stats.averageCost}`);
-  check('the tallest column is what a chart scales to', stats.tallestCostColumn === 3);
+  check('the tallest column is what a chart scales to', Math.max(...stats.costCurve.values()) === 3);
   if (starred !== undefined) {
     check(
       'a card printed with a variable cost is left out rather than guessed at',
@@ -416,7 +415,7 @@ const rules = heroDeckRules(spiderMan, {}, 'Peter Parker');
               (starred.resource_wild ?? 0)) * 2
           : 0),
   );
-  check('an empty deck counts to nothing rather than dividing by zero', deckStatistics([]).averageCost === 0);
+  check('an empty deck counts to nothing rather than dividing by zero', deckStatistics(new Map(), pool).averageCost === 0);
 }
 
 // --- sharing it ------------------------------------------------------------------------

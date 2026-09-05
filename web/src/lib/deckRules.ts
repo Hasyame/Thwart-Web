@@ -423,10 +423,26 @@ export function deckStatistics(
       continue;
     }
 
-    if (card.cost !== null && card.cost !== undefined) {
-      costCurve.set(card.cost, (costCurve.get(card.cost) ?? 0) + quantity);
+    /*
+     * A cost printed as a star, or as one per hero, is not the number beside
+     * it.
+     *
+     * Eleven cards in the pool carry both — Hunted prints a star and holds 0,
+     * Break Time prints "per hero" and holds 3 — and counting the number drags
+     * the average towards a cost nobody pays and puts a phantom column in the
+     * curve. There is no single number for those cards, so they are left out
+     * rather than guessed at, which is what the Android app does.
+     */
+    const printedCost =
+      card.cost !== null && card.cost !== undefined &&
+      card.cost_star !== true &&
+      card.cost_per_hero !== true
+        ? card.cost
+        : null;
+    if (printedCost !== null) {
+      costCurve.set(printedCost, (costCurve.get(printedCost) ?? 0) + quantity);
       costedCards += quantity;
-      costTotal += card.cost * quantity;
+      costTotal += printedCost * quantity;
     }
 
     types.set(card.type_name, (types.get(card.type_name) ?? 0) + quantity);
@@ -452,4 +468,50 @@ export function deckStatistics(
     averageCost: costedCards === 0 ? 0 : costTotal / costedCards,
     tallestCostColumn: Math.max(0, ...costCurve.values()),
   };
+}
+
+// --- sharing a deck as text --------------------------------------------------------
+
+export interface DeckTextCard {
+  readonly quantity: number;
+  readonly name: string;
+}
+
+/**
+ * A deck as text somebody can paste into a message.
+ *
+ * Plain text rather than a link or a file, because that is what actually gets
+ * shared. A link only works for decks that came from MarvelCDB, and a deck
+ * built here has no URL at all.
+ *
+ * Grouped by type and counted, the way a decklist is written everywhere else,
+ * so it reads as familiar rather than as this app's own invention. Sorted
+ * throughout, so the same deck shared twice reads the same both times.
+ */
+export function deckAsText(
+  deckName: string,
+  heroName: string,
+  aspects: readonly string[],
+  cardsByType: ReadonlyMap<string, readonly DeckTextCard[]>,
+  marvelCdbUrl: string | null = null,
+): string {
+  const lines: string[] = [deckName];
+  lines.push(aspects.length > 0 ? `${heroName} (${aspects.join(', ')})` : heroName, '');
+
+  let total = 0;
+  for (const [type, cards] of [...cardsByType.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const inType = cards.reduce((sum, entry) => sum + entry.quantity, 0);
+    total += inType;
+    lines.push(`${type} (${inType})`);
+    for (const entry of [...cards].sort((a, b) => a.name.localeCompare(b.name))) {
+      lines.push(`  ${entry.quantity}x ${entry.name}`);
+    }
+    lines.push('');
+  }
+
+  lines.push(`Total: ${total} cards`);
+  if (marvelCdbUrl !== null && marvelCdbUrl.trim() !== '') {
+    lines.push('', marvelCdbUrl);
+  }
+  return lines.join('\n').trim();
 }
