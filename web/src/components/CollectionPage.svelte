@@ -105,6 +105,58 @@
     }, new Map()),
   );
 
+  /*
+   * The bulk buttons, in the order the collection is entered.
+   *
+   * Everything first, then by type for somebody who owns the heroes and not the
+   * scenarios. `null` is every pack; the rest match the curated pack type,
+   * which MarvelCDB does not carry and the metadata file supplies.
+   */
+  const BULK_GROUPS = [
+    { id: 'all', type: null, label: (s: Strings) => s.bulkAll },
+    { id: 'core', type: 'CORE', label: (s: Strings) => s.bulkCore },
+    { id: 'hero', type: 'HERO_PACK', label: (s: Strings) => s.bulkHeroes },
+    { id: 'scenario', type: 'SCENARIO_PACK', label: (s: Strings) => s.bulkScenarios },
+    { id: 'campaign', type: 'CAMPAIGN_BOX', label: (s: Strings) => s.bulkCampaigns },
+  ] as const;
+
+  let busy = $state(false);
+  let clearing = $state(false);
+
+  const packsOfType = (type: string | null): readonly Pack[] =>
+    type === null ? sortedPacks : sortedPacks.filter((pack) => pack.type === type);
+
+  /**
+   * Marks a group as owned, one copy each.
+   *
+   * Packs already recorded are left exactly as they are: somebody who owns two
+   * core sets and then presses "everything" should not be told they own one.
+   */
+  async function ownAll(packs: readonly Pack[]): Promise<void> {
+    busy = true;
+    try {
+      for (const pack of packs) {
+        if ((owned.value.get(pack.code) ?? 0) === 0) {
+          await setPackQuantity(pack.code, 1);
+        }
+      }
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function clearAll(): Promise<void> {
+    busy = true;
+    try {
+      for (const code of [...owned.value.keys()]) {
+        await setPackQuantity(code, 0);
+      }
+    } finally {
+      busy = false;
+      clearing = false;
+    }
+  }
+
   function contentsOf(packCode: string, type: string): CardSet[] {
     return (setsByPack.get(packCode) ?? [])
       .filter((set) => set.type === type)
@@ -124,6 +176,48 @@
   {:else}
     <p class="muted intro">{t.collectionIntro}</p>
     <p class="muted">{t.collectionOwned(ownedCount, sortedPacks.length)}</p>
+
+    <!--
+      Entering a real collection is a hundred taps otherwise.
+
+      Each button says how many packs it would affect, because "select all core"
+      means nothing until you know whether that is one box or six. Clearing asks
+      first: it is the only one of these that throws away something somebody
+      typed, including the quantities.
+    -->
+    <div class="bulk">
+      <span class="bulk-label muted">{t.bulkLabel}</span>
+      {#each BULK_GROUPS as group (group.id)}
+        {@const packs = packsOfType(group.type)}
+        {#if packs.length > 0}
+          <button
+            class="btn btn--quiet"
+            type="button"
+            disabled={busy || packs.every((pack) => (owned.value.get(pack.code) ?? 0) > 0)}
+            onclick={() => void ownAll(packs)}
+          >
+            {group.label(t)}
+            <span class="muted">{packs.length}</span>
+          </button>
+        {/if}
+      {/each}
+
+      {#if clearing}
+        <span class="confirm">
+          <span class="muted">{t.bulkClearConfirm(ownedCount)}</span>
+          <button class="btn btn--quiet danger" type="button" disabled={busy} onclick={() => void clearAll()}>
+            {t.bulkClearYes}
+          </button>
+          <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => (clearing = false)}>
+            {t.cancel}
+          </button>
+        </span>
+      {:else if ownedCount > 0}
+        <button class="btn btn--quiet danger" type="button" onclick={() => (clearing = true)}>
+          {t.bulkClear}
+        </button>
+      {/if}
+    </div>
 
     <BackupPanel {t} />
 
@@ -244,6 +338,30 @@
 </section>
 
 <style>
+  .bulk {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+  }
+
+  .bulk-label {
+    font-size: var(--text-sm);
+  }
+
+  .bulk .confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+  }
+
+  .danger {
+    color: var(--danger);
+  }
+
   h1 {
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-2);

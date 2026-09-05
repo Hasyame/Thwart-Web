@@ -238,6 +238,15 @@ export interface Strings {
   readonly recoveryFileBody: (handle: string, code: string) => string;
   readonly collectionTitle: string;
   readonly collectionIntro: string;
+  readonly bulkLabel: string;
+  readonly bulkAll: string;
+  readonly bulkCore: string;
+  readonly bulkHeroes: string;
+  readonly bulkScenarios: string;
+  readonly bulkCampaigns: string;
+  readonly bulkClear: string;
+  readonly bulkClearConfirm: (owned: number) => string;
+  readonly bulkClearYes: string;
   readonly collectionOwned: (owned: number, total: number) => string;
   readonly storageUnavailable: string;
   readonly copiesOwned: string;
@@ -726,6 +735,16 @@ const STRINGS: Record<Locale, Strings> = {
         'Anyone holding it can take the account: keep it as you would a key.',
       ].join('\n'),
     collectionTitle: 'Collection',
+    bulkLabel: 'Add at once:',
+    bulkAll: 'Everything',
+    bulkCore: 'Core sets',
+    bulkHeroes: 'Hero packs',
+    bulkScenarios: 'Scenario packs',
+    bulkCampaigns: 'Campaign boxes',
+    bulkClear: 'Clear the collection',
+    bulkClearConfirm: (owned) =>
+      `This forgets all ${owned} packs, quantities included. It does not come back.`,
+    bulkClearYes: 'Clear it',
     collectionIntro:
       'Tick the packs you own. This is stored in this browser only; nothing is sent anywhere, and there is no account. Use the export below to carry it to another device.',
     collectionOwned: (owned, total) => `${owned} of ${total} packs owned`,
@@ -1262,6 +1281,16 @@ const STRINGS: Record<Locale, Strings> = {
         'la seule copie. Quiconque le d\u00e9tient peut prendre le compte.',
       ].join('\n'),
     collectionTitle: 'Collection',
+    bulkLabel: 'Ajouter d\u2019un coup :',
+    bulkAll: 'Tout',
+    bulkCore: 'Bo\u00eetes de base',
+    bulkHeroes: 'Paquets h\u00e9ros',
+    bulkScenarios: 'Paquets sc\u00e9nario',
+    bulkCampaigns: 'Bo\u00eetes de campagne',
+    bulkClear: 'Vider la collection',
+    bulkClearConfirm: (owned) =>
+      `Ceci oublie les ${owned} paquets, quantit\u00e9s comprises. C\u2019est d\u00e9finitif.`,
+    bulkClearYes: 'Vider',
     collectionIntro:
       "Cochez les paquets que vous possédez. Tout est enregistré dans ce navigateur uniquement : rien n'est envoyé nulle part et il n'y a pas de compte. Utilisez l'export ci-dessous pour emporter vos données ailleurs.",
     collectionOwned: (owned, total) => `${owned} paquets sur ${total} possédés`,
