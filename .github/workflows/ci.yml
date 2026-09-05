@@ -78,6 +78,16 @@ jobs:
         working-directory: web
         run: npm run test:sync
 
+      # Pull, merge, push, on the cases that lose data rather than the happy
+      # one: a batch that fails and the ones behind it that must not be sent, a
+      # push whose own revisions must not be read straight back down, and the
+      # gap in them that means another device wrote and must not be stepped
+      # over. The engine takes its world as an argument so these can be built
+      # without a browser.
+      - name: Sync engine
+        working-directory: web
+        run: npm run test:engine-sync
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw

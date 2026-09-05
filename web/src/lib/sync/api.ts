@@ -291,14 +291,31 @@ export const deleteAccount = (token: string, password: string, locale?: Locale):
 
 // --- sync ---------------------------------------------------------------------
 
+/**
+ * One page of changes.
+ *
+ * `resync` says this page belongs to a full resynchronisation that started at
+ * zero, and it must be set on **every** page of one, not only the first. The
+ * server exempts `since=0` from the tombstone horizon, but page two resumes
+ * from a real revision, and a live record untouched since before the last
+ * sweep sits below that horizon — so a large account was refused on its own
+ * second page with no way forward. It is a claim only the client can make: the
+ * server cannot tell resuming from resyncing. Setting it while genuinely
+ * resuming only serves this browser an incomplete feed.
+ */
 export const pull = (
   token: string,
   since: number,
   limit: number,
   locale?: Locale,
   signal?: AbortSignal,
+  resync = false,
 ): Promise<PullPage> =>
-  call(`/sync/changes?since=${since}&limit=${limit}`, { token, locale, signal });
+  call(`/sync/changes?since=${since}&limit=${limit}${resync ? '&resync=1' : ''}`, {
+    token,
+    locale,
+    signal,
+  });
 
 export const push = (
   token: string,
