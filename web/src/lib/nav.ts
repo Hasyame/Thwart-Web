@@ -23,11 +23,12 @@ export type NavTarget =
 /**
  * What the bars highlight.
  *
- * Wider than the destinations themselves: a card is read from the card list and
- * the account is reached from the settings sheet, so both are places the app can
- * be without being a tab.
+ * Wider than the destinations themselves: a card is read from the card list, the
+ * account is reached from the settings sheet, and the confirmation page is
+ * reached from a link in somebody's mail. All three are places the app can be
+ * without being a tab, and none of them should light one up.
  */
-export type ActiveTarget = NavTarget | 'card' | 'account';
+export type ActiveTarget = NavTarget | 'card' | 'account' | 'verify';
 
 export interface Destination {
   readonly id: NavTarget;

@@ -42,6 +42,11 @@ var (
 	loginPerIP     = limitRule{30, 15 * time.Minute}
 	recoverHandle  = limitRule{5, time.Hour}
 	recoverIP      = limitRule{10, time.Hour}
+	// Opening a link is a thing people do twice by accident and rarely more.
+	verifyPerIP = limitRule{20, time.Hour}
+	// Tighter, because this one makes the server send mail. Five is enough for
+	// somebody whose message went to spam and not enough to be a mail cannon.
+	resendPerIP = limitRule{5, time.Hour}
 )
 
 type counter struct {

@@ -26,6 +26,10 @@ export type ApiErrorCode =
   | 'weak_password'
   | 'registration_closed'
   | 'invalid_recovery_code'
+  /** The address on the account has not been confirmed, so nothing works yet. */
+  | 'email_not_verified'
+  | 'invalid_verification'
+  | 'verification_expired'
   | 'cursor_too_old'
   | 'batch_too_large'
   | 'record_too_large'
@@ -63,6 +67,14 @@ export interface Session {
   readonly email?: string;
   readonly token: string;
   readonly recoveryCodeIssuedAt: string;
+  /**
+   * Whether the address has been confirmed.
+   *
+   * Absent from a server older than confirmation, and absent means yes: such a
+   * server confirms nothing and disables nothing, so treating a missing field
+   * as "not confirmed" would lock this browser out of a working account.
+   */
+  readonly emailVerified?: boolean;
 }
 
 /** Only ever returned once, by register and recover. */
@@ -261,6 +273,30 @@ export const recover = (
   call('/auth/recover', {
     method: 'POST',
     body: { handle: identifier, recoveryCode, newPassword, deviceName },
+    locale,
+  });
+
+/**
+ * Confirms an address from the link in the message.
+ *
+ * No token: the link is opened wherever the mailbox is, which is usually not the
+ * browser that registered. That is the whole point of sending it.
+ */
+export const verifyEmail = (
+  token: string,
+  locale?: Locale,
+): Promise<{ handle: string; email: string }> =>
+  call('/auth/verify', { method: 'POST', body: { token }, locale });
+
+/** Asks for the link again. Behind the password, so it cannot mail strangers. */
+export const resendVerification = (
+  identifier: string,
+  password: string,
+  locale?: Locale,
+): Promise<{ sent: boolean; alreadyVerified?: boolean }> =>
+  call('/auth/verify/resend', {
+    method: 'POST',
+    body: { handle: identifier, email: identifier, password },
     locale,
   });
 

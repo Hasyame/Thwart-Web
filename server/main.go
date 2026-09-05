@@ -54,6 +54,25 @@ func main() {
 	*/
 	backupTo := flag.String("backup", "",
 		"write a consistent snapshot to this path and exit, leaving any running server alone")
+	/*
+		Where confirmation mail comes from, and where its link points.
+
+		`-mail-from` is the switch for the whole feature. Empty, which is the
+		default, means this instance has no mail: accounts are created ready to
+		use and no address is ever confirmed. That is the right behaviour for a
+		self-hosted server with no MTA — demanding a confirmation it cannot send
+		would create accounts nobody could enable — and it is why this is opt-in
+		rather than opt-out.
+
+		Set it, and every new account is disabled until its address is
+		confirmed.
+	*/
+	mailFrom := flag.String("mail-from", "",
+		"sender for confirmation mail, e.g. \"Thwart <no-reply@thwart.app>\"; empty means this instance sends no mail and confirms no addresses")
+	smtpAddr := flag.String("smtp", "127.0.0.1:25",
+		"loopback SMTP to hand mail to; must be local, since this hop has no authentication")
+	siteURL := flag.String("site", "https://thwart.app",
+		"public address of the web app, used to build the confirmation link")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -67,7 +86,7 @@ func main() {
 		return
 	}
 
-	if err := run(*addr, *dbPath, *openRegistration, log); err != nil {
+	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, log); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
@@ -98,7 +117,7 @@ func backup(dbPath, to string) error {
 	return store.Backup(context.Background(), to)
 }
 
-func run(addr, dbPath string, openRegistration bool, log *slog.Logger) error {
+func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, log *slog.Logger) error {
 	store, err := OpenStore(dbPath)
 	if err != nil {
 		return err
@@ -111,6 +130,17 @@ func run(addr, dbPath string, openRegistration bool, log *slog.Logger) error {
 	}
 	server.OpenRegistration = openRegistration
 	log.Info("configured", "registration", map[bool]string{true: "open", false: "closed"}[openRegistration])
+
+	if mailFrom != "" {
+		mailer, err := NewSMTPMailer(smtpAddr, mailFrom, log)
+		if err != nil {
+			return err
+		}
+		server.UseMailer(mailer, siteURL)
+		log.Info("mail configured", "smtp", smtpAddr, "from", mailFrom, "site", siteURL)
+	} else {
+		log.Info("no mail configured", "addresses", "not confirmed")
+	}
 
 	httpServer := &http.Server{
 		Addr:    addr,
@@ -136,6 +166,10 @@ func run(addr, dbPath string, openRegistration bool, log *slog.Logger) error {
 	// client is measured against.
 	go sweepRecords(ctx, store, log, 6*time.Hour)
 
+	// The message says an account nobody confirms is deleted. This is what
+	// makes that true. Once an hour is far more often than a day's grace needs.
+	go sweepUnverified(ctx, server, time.Hour)
+
 	errs := make(chan error, 1)
 	go func() {
 		log.Info("listening", "addr", addr, "db", dbPath, "build", server.build)
@@ -157,6 +191,22 @@ func run(addr, dbPath string, openRegistration bool, log *slog.Logger) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	return httpServer.Shutdown(shutdownCtx)
+}
+
+func sweepUnverified(ctx context.Context, server *Server, every time.Duration) {
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+	// Once at startup as well as on the tick, so a server that is restarted
+	// often still gets round to it.
+	server.sweepUnverified(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			server.sweepUnverified(ctx)
+		}
+	}
 }
 
 func sweepUntil(ctx context.Context, l *limiter, every time.Duration) {

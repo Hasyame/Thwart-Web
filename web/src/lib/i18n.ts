@@ -252,6 +252,17 @@ export interface Strings {
   readonly accountRecoverAction: string;
   readonly accountHandle: string;
   readonly accountPassword: string;
+  readonly verifyTitle: string;
+  readonly verifyWorking: string;
+  readonly verifyDone: (handle: string) => string;
+  readonly verifyDoneHint: string;
+  readonly verifyFailedHint: string;
+  readonly verifyGoToAccount: string;
+  readonly verifyPendingTitle: string;
+  readonly verifyPendingBody: (address: string) => string;
+  readonly verifyResend: string;
+  readonly verifyResent: string;
+  readonly verifyAlready: string;
   readonly accountNewPassword: string;
   readonly accountRecoveryCode: string;
   readonly accountDeviceName: string;
@@ -815,6 +826,20 @@ const STRINGS: Record<Locale, Strings> = {
     accountRecoverAction: 'Reset the password',
     accountHandle: 'Pseudonym',
     accountPassword: 'Password',
+    verifyTitle: 'Confirming your address',
+    verifyWorking: 'One moment.',
+    verifyDone: (handle) => `Confirmed. The account ${handle} is now working.`,
+    verifyDoneHint:
+      'Sign in on whichever devices you want to keep in step. This browser is not signed in by opening a link.',
+    verifyFailedHint:
+      'A link works once and expires after a week. Ask for a new one from the account screen.',
+    verifyGoToAccount: 'Go to the account',
+    verifyPendingTitle: 'Confirm your address',
+    verifyPendingBody: (address) =>
+      `The account is disabled until you open the link sent to ${address}. Nothing syncs until then. If it never arrived, check the spam folder and then ask for another.`,
+    verifyResend: 'Send the link again',
+    verifyResent: 'On its way. It can take a minute.',
+    verifyAlready: 'That address is already confirmed.',
     accountNewPassword: 'New password',
     accountRecoveryCode: 'Recovery code',
     accountDeviceName: 'Name for this browser',
@@ -1457,6 +1482,20 @@ const STRINGS: Record<Locale, Strings> = {
     accountRecoverAction: 'R\u00e9initialiser le mot de passe',
     accountHandle: 'Pseudo',
     accountPassword: 'Mot de passe',
+    verifyTitle: 'Confirmation de votre adresse',
+    verifyWorking: 'Un instant.',
+    verifyDone: (handle) => `Confirmée. Le compte ${handle} fonctionne désormais.`,
+    verifyDoneHint:
+      'Connectez-vous sur les appareils que vous voulez garder synchronisés. Ouvrir un lien ne connecte pas ce navigateur.',
+    verifyFailedHint:
+      "Un lien ne sert qu'une fois et expire au bout d'une semaine. Demandez-en un nouveau depuis l'écran du compte.",
+    verifyGoToAccount: 'Aller au compte',
+    verifyPendingTitle: 'Confirmez votre adresse',
+    verifyPendingBody: (address) =>
+      `Le compte est désactivé tant que vous n'avez pas ouvert le lien envoyé à ${address}. Rien ne se synchronise d'ici là. S'il n'est jamais arrivé, regardez dans les indésirables puis demandez-en un autre.`,
+    verifyResend: 'Renvoyer le lien',
+    verifyResent: "C'est parti. Cela peut prendre une minute.",
+    verifyAlready: 'Cette adresse est déjà confirmée.',
     accountNewPassword: 'Nouveau mot de passe',
     accountRecoveryCode: 'Code de r\u00e9cup\u00e9ration',
     accountDeviceName: 'Nom de ce navigateur',

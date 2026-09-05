@@ -20,6 +20,14 @@ export type Route =
   | { readonly name: 'rules' }
   /** The account, which exists whether or not anybody is signed in to one. */
   | { readonly name: 'account' }
+  /**
+   * Where the link in a confirmation message lands.
+   *
+   * The token rides in the query string rather than the path, because that is
+   * what a mail client will not try to be clever about, and because it keeps
+   * the secret out of the part of the URL a crawler would treat as a page.
+   */
+  | { readonly name: 'verify'; readonly token: string }
   | { readonly name: 'card'; readonly code: string };
 
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
@@ -32,8 +40,9 @@ const STATS_PATH = /^\/stats\/?$/;
 const CAMPAIGNS_PATH = /^\/campaigns\/?$/;
 const RULES_PATH = /^\/rules\/?$/;
 const ACCOUNT_PATH = /^\/account\/?$/;
+const VERIFY_PATH = /^\/verify\/?$/;
 
-export function routeFromPath(pathname: string, base: string): Route {
+export function routeFromPath(pathname: string, base: string, search = ''): Route {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
   const path = pathname.startsWith(trimmedBase)
     ? pathname.slice(trimmedBase.length)
@@ -68,6 +77,9 @@ export function routeFromPath(pathname: string, base: string): Route {
   }
   if (ACCOUNT_PATH.test(normalised)) {
     return { name: 'account' };
+  }
+  if (VERIFY_PATH.test(normalised)) {
+    return { name: 'verify', token: new URLSearchParams(search).get('token') ?? '' };
   }
   if (RULES_PATH.test(normalised)) {
     return { name: 'rules' };
@@ -106,6 +118,12 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'account') {
     return `${trimmedBase}/account`;
+  }
+  if (route.name === 'verify') {
+    // Written without the token. The address bar keeps the one it arrived with;
+    // this is only ever used to build a link *to* the page, and a link that
+    // carried somebody's token would be a link that confirms their account.
+    return `${trimmedBase}/verify`;
   }
   return trimmedBase === '' ? '/' : `${trimmedBase}/`;
 }

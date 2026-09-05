@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
   import type { Locale } from '../lib/types';
-  import { ApiError, type Registration } from '../lib/sync/api';
+  import { ApiError, resendVerification, type Registration } from '../lib/sync/api';
   import { recover, register, session, signIn, suggestDeviceName } from '../lib/sync/session.svelte';
 
   /**
@@ -66,6 +66,16 @@
   let recoveryCode = $state('');
   let deviceName = $state(suggestDeviceName());
   let error = $state<string | null>(null);
+  /*
+   * The one error with a way out on the form itself.
+   *
+   * Somebody signing in on a new browser with an account they never confirmed
+   * has the identifier and the password in front of them already, which is
+   * exactly what a resend needs. Sending them off to find the old message
+   * instead would be asking them to solve the problem the form just caused.
+   */
+  let unconfirmed = $state(false);
+  let resent = $state<'sent' | 'already' | null>(null);
 
   /** The server's code, said in the reader's language. Its message is for curl. */
   const say = (cause: unknown): string =>
@@ -73,6 +83,8 @@
 
   async function submit(): Promise<void> {
     error = null;
+    unconfirmed = false;
+    resent = null;
     const name = deviceName.trim() === '' ? suggestDeviceName() : deviceName.trim();
     try {
       if (mode === 'register') {
@@ -85,6 +97,18 @@
       }
       password = '';
       recoveryCode = '';
+    } catch (cause) {
+      error = say(cause);
+      unconfirmed = cause instanceof ApiError && cause.code === 'email_not_verified';
+    }
+  }
+
+  /** Asks for the confirmation link again, with what is already in the form. */
+  async function resend(): Promise<void> {
+    error = null;
+    try {
+      const result = await resendVerification(identifier.trim(), password, uiLocale);
+      resent = result.alreadyVerified === true ? 'already' : 'sent';
     } catch (cause) {
       error = say(cause);
     }
@@ -230,6 +254,16 @@
 
   {#if error !== null}
     <p class="warning" role="alert">{error}</p>
+  {/if}
+
+  {#if unconfirmed && resent === null}
+    <button class="btn" type="button" disabled={session.busy} onclick={() => void resend()}>
+      {t.verifyResend}
+    </button>
+  {:else if resent === 'sent'}
+    <p class="notice">{t.verifyResent}</p>
+  {:else if resent === 'already'}
+    <p class="notice">{t.verifyAlready}</p>
   {/if}
 
   <button class="btn btn--primary btn--block" type="submit" disabled={!canSubmit}>

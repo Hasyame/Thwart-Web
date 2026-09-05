@@ -16,6 +16,7 @@
   import AccountMenu from './components/AccountMenu.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import MoreSheet from './components/MoreSheet.svelte';
+  import VerifyPage from './components/VerifyPage.svelte';
   import RulesPage from './components/RulesPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
@@ -50,7 +51,9 @@
   let cardLocale = $state<Locale>(loadCardLocale(loadUiLocale()));
   let theme = $state<ThemeChoice>(loadTheme());
 
-  let route = $state<Route>(routeFromPath(window.location.pathname, BASE));
+  let route = $state<Route>(
+    routeFromPath(window.location.pathname, BASE, window.location.search),
+  );
   let query = $state('');
   let filters = $state<Filters>(NO_FILTERS);
 
@@ -313,7 +316,7 @@
   }
 
   function onPopState(): void {
-    route = routeFromPath(window.location.pathname, BASE);
+    route = routeFromPath(window.location.pathname, BASE, window.location.search);
   }
 
   function setUiLocale(locale: Locale): void {
@@ -441,6 +444,13 @@
     <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
   {:else if route.name === 'account'}
     <AccountPage {t} {uiLocale} {storageOk} initialMode={accountMode} />
+  {:else if route.name === 'verify'}
+    <VerifyPage
+      {t}
+      {uiLocale}
+      token={route.token}
+      onDone={() => navigate({ name: 'account' })}
+    />
   {:else if route.name === 'rules'}
     <RulesPage {t} {cardLocale} />
   {:else if route.name === 'decks'}

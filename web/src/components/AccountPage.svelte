@@ -42,6 +42,37 @@
   let devices = $state.raw<readonly DeviceInfo[]>([]);
 
   /*
+   * Whether this account is still waiting on its address to be confirmed.
+   *
+   * Learned by asking, not by remembering. The registration response says so
+   * too, but that answer is gone after a reload and the account is disabled
+   * until somebody opens a link in a mailbox — which may be days later, on
+   * another machine. The device list is already fetched here and is already an
+   * authenticated request, so its refusal is the answer.
+   */
+  let unconfirmed = $state(false);
+  let resendPassword = $state('');
+  let resent = $state<'sent' | 'already' | null>(null);
+
+  async function resend(): Promise<void> {
+    const account = session.account;
+    if (account === null) {
+      return;
+    }
+    error = null;
+    try {
+      const identifier = account.email !== undefined && account.email !== ''
+        ? account.email
+        : account.handle;
+      const result = await api.resendVerification(identifier, resendPassword, uiLocale);
+      resent = result.alreadyVerified === true ? 'already' : 'sent';
+      resendPassword = '';
+    } catch (cause) {
+      error = say(cause);
+    }
+  }
+
+  /*
    * Whether this instance takes new accounts.
    *
    * Asked rather than assumed, and undefined until the answer arrives, so a
@@ -90,11 +121,13 @@
       .then((list) => {
         if (!cancelled) {
           devices = list;
+          unconfirmed = false;
         }
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
         if (!cancelled) {
           devices = [];
+          unconfirmed = cause instanceof ApiError && cause.code === 'email_not_verified';
         }
       });
     return () => {
@@ -196,6 +229,46 @@
       <p class="muted note">{t.accountDeviceIs(account.deviceName)}</p>
 
     </div>
+
+    {#if unconfirmed}
+      <!--
+        The account exists and does nothing until this is done, so it is said
+        here rather than left to the sync panel's failure to explain itself.
+        The password is asked for because the resend endpoint is behind it: an
+        endpoint that mails anybody who knows an address is a way to use this
+        server to send mail to strangers.
+      -->
+      <div class="panel unconfirmed">
+        <h2>{t.verifyPendingTitle}</h2>
+        <p class="note">{t.verifyPendingBody(account.email ?? account.handle)}</p>
+        {#if resent === 'sent'}
+          <p class="notice">{t.verifyResent}</p>
+        {:else if resent === 'already'}
+          <p class="notice">{t.verifyAlready}</p>
+        {:else}
+          <form
+            class="stack-4"
+            onsubmit={(event) => {
+              event.preventDefault();
+              void resend();
+            }}
+          >
+            <label class="field-group">
+              <span class="field-label">{t.accountPassword}</span>
+              <input
+                class="field"
+                type="password"
+                autocomplete="current-password"
+                bind:value={resendPassword}
+              />
+            </label>
+            <button class="btn" type="submit" disabled={resendPassword === '' || session.busy}>
+              {t.verifyResend}
+            </button>
+          </form>
+        {/if}
+      </div>
+    {/if}
 
     <SyncPanel {t} {uiLocale} />
 

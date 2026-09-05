@@ -51,6 +51,18 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"That handle is already in use on this instance.",
 		"Cet identifiant est déjà utilisé sur cette instance.",
 	},
+	"email_not_verified": {
+		"Confirm your address from the message we sent you. The account is disabled until you do.",
+		"Confirmez votre adresse depuis le message que nous vous avons envoyé. Le compte est désactivé jusque-là.",
+	},
+	"invalid_verification": {
+		"That confirmation link is not valid. It may already have been used.",
+		"Ce lien de confirmation n'est pas valide. Il a peut-être déjà servi.",
+	},
+	"verification_expired": {
+		"That confirmation link has expired. Ask for a new one.",
+		"Ce lien de confirmation a expiré. Demandez-en un nouveau.",
+	},
 	"registration_closed": {
 		"This instance is not accepting new accounts.",
 		"Cette instance n'accepte pas de nouveaux comptes.",

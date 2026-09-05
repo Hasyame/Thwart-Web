@@ -145,6 +145,25 @@ var migrations = []string{
 	-- counter was added before sync existed: adding a column later is a
 	-- migration on live accounts, and this one is known to be coming.
 	ALTER TABLE account ADD COLUMN email_verified_at INTEGER;`,
+
+	// v4: the pending confirmation, and everybody who came before it.
+	//
+	// One outstanding link per account, so this is two columns rather than a
+	// table: issuing a new link overwrites the old one, which is also what
+	// makes a resend invalidate whatever was sent before it.
+	//
+	// **The backfill is the important line.** Every account that already exists
+	// is marked confirmed as of its creation. They were made when there was no
+	// way to confirm anything, and a rule applied retroactively would lock out
+	// every one of them — including the ones with no address at all, which
+	// could never satisfy it.
+	`ALTER TABLE account ADD COLUMN verify_hash TEXT;
+	ALTER TABLE account ADD COLUMN verify_issued_at INTEGER;
+
+	CREATE UNIQUE INDEX account_verify_hash
+		ON account (verify_hash) WHERE verify_hash IS NOT NULL;
+
+	UPDATE account SET email_verified_at = created_at WHERE email_verified_at IS NULL;`,
 }
 
 type Store struct {
@@ -173,13 +192,37 @@ type Account struct {
 		familiar name for a login rather than a way to reach somebody. It goes
 		out with the account export and is destroyed with the account.
 	*/
-	Email        string
-	PasswordHash string
-	RecoveryHash string
+	Email string
+	/*
+		When the address was confirmed. Zero means it has not been.
+
+		Read through [Account.EmailVerified] rather than compared directly, so
+		that the one place which decides what "confirmed" means is the one place
+		that has to be right.
+	*/
+	EmailVerifiedAt time.Time
+	// The SHA-256 of the outstanding confirmation link, and when it was issued.
+	// Both empty once the address is confirmed.
+	VerifyHash     string
+	VerifyIssuedAt time.Time
+	PasswordHash   string
+	RecoveryHash   string
 	// When the current recovery code was issued. Returned to the client so it
 	// can say how old the code the user wrote down is.
 	RecoveryIssuedAt time.Time
 	CreatedAt        time.Time
+}
+
+/*
+Whether this account may do anything.
+
+An account with no address is confirmed by definition: it was made before
+addresses existed, it signs in by handle, and there is nothing to confirm. Any
+other reading would lock out the accounts that have the least to do with this
+feature.
+*/
+func (a Account) EmailVerified() bool {
+	return a.Email == "" || !a.EmailVerifiedAt.IsZero()
 }
 
 type Device struct {
@@ -300,10 +343,17 @@ func (s *Store) CreateAccount(ctx context.Context, a Account) error {
 		email = a.Email
 	}
 
+	// NULL unless the caller is creating an account that needs no confirmation,
+	// which is an instance with no mailer. See sendVerification.
+	var verifiedAt any
+	if !a.EmailVerifiedAt.IsZero() {
+		verifiedAt = a.EmailVerifiedAt.UnixMilli()
+	}
+
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO account (id, handle, email, password_hash, recovery_hash, recovery_issued_at, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		a.ID, a.Handle, email, a.PasswordHash, a.RecoveryHash,
+		`INSERT INTO account (id, handle, email, email_verified_at, password_hash, recovery_hash, recovery_issued_at, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		a.ID, a.Handle, email, verifiedAt, a.PasswordHash, a.RecoveryHash,
 		a.RecoveryIssuedAt.UnixMilli(), a.CreatedAt.UnixMilli(),
 	)
 	if err != nil {
@@ -320,7 +370,7 @@ func (s *Store) CreateAccount(ctx context.Context, a Account) error {
 	return nil
 }
 
-const accountColumns = `id, handle, email, password_hash, recovery_hash, recovery_issued_at, created_at`
+const accountColumns = `id, handle, email, email_verified_at, verify_hash, verify_issued_at, password_hash, recovery_hash, recovery_issued_at, created_at`
 
 func (s *Store) AccountByHandle(ctx context.Context, handle string) (Account, error) {
 	row := s.db.QueryRowContext(ctx,
@@ -364,17 +414,82 @@ func scanAccount(row *sql.Row) (Account, error) {
 	var a Account
 	var issued, created int64
 	// NULL for an account made before v3, and then the empty string here.
-	var email sql.NullString
-	if err := row.Scan(&a.ID, &a.Handle, &email, &a.PasswordHash, &a.RecoveryHash, &issued, &created); err != nil {
+	var email, verifyHash sql.NullString
+	// NULL while unconfirmed, and while no link is outstanding.
+	var verifiedAt, verifyIssued sql.NullInt64
+	if err := row.Scan(
+		&a.ID, &a.Handle, &email, &verifiedAt, &verifyHash, &verifyIssued,
+		&a.PasswordHash, &a.RecoveryHash, &issued, &created,
+	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Account{}, ErrNotFound
 		}
 		return Account{}, err
 	}
 	a.Email = email.String
+	a.VerifyHash = verifyHash.String
+	if verifiedAt.Valid {
+		a.EmailVerifiedAt = time.UnixMilli(verifiedAt.Int64).UTC()
+	}
+	if verifyIssued.Valid {
+		a.VerifyIssuedAt = time.UnixMilli(verifyIssued.Int64).UTC()
+	}
 	a.RecoveryIssuedAt = time.UnixMilli(issued).UTC()
 	a.CreatedAt = time.UnixMilli(created).UTC()
 	return a, nil
+}
+
+// --- confirming an address ---------------------------------------------------
+
+// SetVerification records the outstanding link, replacing any earlier one.
+func (s *Store) SetVerification(ctx context.Context, accountID, hash string, issuedAt time.Time) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE account SET verify_hash = ?, verify_issued_at = ? WHERE id = ?`,
+		hash, issuedAt.UnixMilli(), accountID)
+	return err
+}
+
+func (s *Store) AccountByVerifyHash(ctx context.Context, hash string) (Account, error) {
+	row := s.db.QueryRowContext(ctx,
+		`SELECT `+accountColumns+` FROM account WHERE verify_hash = ?`, hash)
+	return scanAccount(row)
+}
+
+/*
+MarkEmailVerified confirms the address and consumes the link.
+
+Clearing the hash in the same statement is what makes a link single-use, and the
+`verify_hash IS NOT NULL` guard is what makes two simultaneous clicks on the same
+link confirm once rather than twice.
+*/
+func (s *Store) MarkEmailVerified(ctx context.Context, accountID string, at time.Time) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE account
+		    SET email_verified_at = ?, verify_hash = NULL, verify_issued_at = NULL
+		  WHERE id = ? AND verify_hash IS NOT NULL`,
+		at.UnixMilli(), accountID)
+	return err
+}
+
+/*
+DeleteUnverifiedAccountsBefore removes accounts nobody ever confirmed.
+
+Deliberately narrow: an address, no confirmation, and older than the cutoff. An
+account with no address can never match, which is what keeps the pre-v3 rows
+safe no matter what the cutoff is.
+*/
+func (s *Store) DeleteUnverifiedAccountsBefore(ctx context.Context, cutoff time.Time) (int, error) {
+	result, err := s.db.ExecContext(ctx,
+		`DELETE FROM account
+		  WHERE email IS NOT NULL
+		    AND email_verified_at IS NULL
+		    AND created_at < ?`,
+		cutoff.UnixMilli())
+	if err != nil {
+		return 0, err
+	}
+	n, err := result.RowsAffected()
+	return int(n), err
 }
 
 func (s *Store) SetPasswordHash(ctx context.Context, accountID, hash string) error {

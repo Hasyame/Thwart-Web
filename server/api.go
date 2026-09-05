@@ -60,6 +60,23 @@ type Server struct {
 		is the way back in for somebody who has lost a password.
 	*/
 	OpenRegistration bool
+
+	/*
+		How confirmation mail is sent, and where the link points.
+
+		Nil means this instance has no mail, and then addresses are not
+		confirmed at all: an account is created ready to use. That is not a
+		loophole, it is the self-hosted case — a server with no SMTP that
+		demanded a confirmation would create accounts nobody could ever enable.
+	*/
+	mailer  Mailer
+	SiteURL string
+}
+
+// UseMailer turns address confirmation on, with the link pointing at siteURL.
+func (s *Server) UseMailer(m Mailer, siteURL string) {
+	s.mailer = m
+	s.SiteURL = siteURL
 }
 
 func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
@@ -75,6 +92,7 @@ func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
 		build:            build,
 		decoyHash:        decoy,
 		OpenRegistration: true,
+		SiteURL:          "https://thwart.app",
 	}, nil
 }
 
@@ -85,6 +103,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/auth/login", s.handleLogin)
 	mux.HandleFunc("POST /v1/auth/recover", s.handleRecover)
 	mux.HandleFunc("POST /v1/auth/password", s.authenticated(s.handlePassword))
+	// Both unauthenticated: the link is opened in whatever browser the mailbox
+	// happens to be in, which is rarely the one that registered.
+	mux.HandleFunc("POST /v1/auth/verify", s.handleVerify)
+	mux.HandleFunc("POST /v1/auth/verify/resend", s.handleResendVerification)
 	mux.HandleFunc("GET /v1/auth/devices", s.authenticated(s.handleListDevices))
 	mux.HandleFunc("DELETE /v1/auth/devices/{id}", s.authenticated(s.handleDeleteDevice))
 	mux.HandleFunc("GET /v1/sync/changes", s.authenticated(s.handlePull))
@@ -136,6 +158,23 @@ func (s *Server) authenticated(next authedHandler) http.HandlerFunc {
 		if err != nil {
 			s.log.Error("resolve account", "error", err, "device", device.ID)
 			writeError(w, r, apiError{status: http.StatusUnauthorized, code: "unauthorized"})
+			return
+		}
+
+		/*
+			The gate.
+
+			One place, so that a handler added later is disabled-by-default
+			rather than exempt-by-accident. Everything behind a device token is
+			part of "the account works", and none of it should before the
+			address is confirmed.
+
+			Password change is deliberately behind it too: an unconfirmed
+			account has nothing to protect, and letting it be edited would make
+			an address somebody else owns slightly more useful to hold.
+		*/
+		if !account.EmailVerified() {
+			writeError(w, r, apiError{status: http.StatusForbidden, code: "email_not_verified"})
 			return
 		}
 
@@ -226,6 +265,12 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RecoveryIssuedAt: now,
 		CreatedAt:        now,
 	}
+	// An instance with no mail cannot ask anybody to confirm anything, so its
+	// accounts are born confirmed. Everywhere else this stays zero and the
+	// account is disabled until the link is opened.
+	if s.mailer == nil {
+		account.EmailVerifiedAt = now
+	}
 	if err := s.store.CreateAccount(r.Context(), account); err != nil {
 		if errors.Is(err, ErrHandleTaken) {
 			writeError(w, r, apiError{status: http.StatusConflict, code: "handle_taken"})
@@ -239,6 +284,31 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/*
+		Sent before the token is issued, and a failure is fatal to the request.
+
+		If the message did not go out, nobody can enable this account, and the
+		honest moment to say so is while the person is still looking at the
+		form rather than a week later. The row is removed again so the address
+		is not taken by an account that never worked.
+	*/
+	if err := s.sendVerification(r.Context(), account); err != nil {
+		if delErr := s.store.DeleteAccount(r.Context(), account.ID); delErr != nil {
+			s.log.Error("roll back unsent registration", "error", delErr, "account", account.ID)
+		}
+		s.fail(w, r, "send verification", err)
+		return
+	}
+
+	/*
+		A device token is still issued, and still returned.
+
+		The account cannot use it yet — `authenticated` refuses every request
+		until the address is confirmed — but the shape of this response is the
+		contract the Android app was built against, and quietly dropping a field
+		from it would break a released app to make a point. The client learns
+		the state from `emailVerified` and the `email_not_verified` code.
+	*/
 	token, err := s.issueDevice(r.Context(), account.ID, body.DeviceName)
 	if err != nil {
 		s.fail(w, r, "issue device", err)
@@ -246,10 +316,11 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, map[string]any{
-		"accountId": account.ID,
-		"handle":    account.Handle,
-		"email":     account.Email,
-		"token":     token,
+		"accountId":     account.ID,
+		"handle":        account.Handle,
+		"email":         account.Email,
+		"token":         token,
+		"emailVerified": account.EmailVerified(),
 		// Shown exactly once. Doc 02 §1: the client must insist the user saves
 		// it, and offer it as a text file, because that is the part that makes
 		// recovery work without SMTP.
@@ -309,6 +380,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	s.limiter.forget(handleKey)
 
+	/*
+		The password was right, and the account still cannot be used.
+
+		Said plainly rather than folded into `invalid_credentials`: somebody
+		who typed their password correctly and is told it is wrong will change
+		it, and then be told that is wrong too. The address is already known to
+		whoever holds this password, so naming the reason gives away nothing.
+	*/
+	if !account.EmailVerified() {
+		writeError(w, r, apiError{status: http.StatusForbidden, code: "email_not_verified"})
+		return
+	}
+
 	token, err := s.issueDevice(r.Context(), account.ID, body.DeviceName)
 	if err != nil {
 		s.fail(w, r, "issue device", err)
@@ -320,6 +404,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		"handle":               account.Handle,
 		"email":                account.Email,
 		"token":                token,
+		"emailVerified":        true,
 		"recoveryCodeIssuedAt": account.RecoveryIssuedAt.Format(time.RFC3339),
 	})
 }
