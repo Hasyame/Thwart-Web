@@ -4,6 +4,7 @@
   import type { ThemeChoice } from '../lib/preferences';
   import { LANGUAGE_NAMES } from '../lib/i18n';
   import { OVERFLOW, type ActiveTarget, type NavTarget } from '../lib/nav';
+  import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
 
   interface Props {
     t: Strings;
@@ -168,6 +169,32 @@
           <option value="light">{t.themeLight}</option>
           <option value="dark">{t.themeDark}</option>
         </select>
+      </label>
+
+      <!--
+        The two preferences the account carries that had nowhere to be set.
+        They arrived here from a phone and sat unread; these are the controls.
+      -->
+      <label class="tick">
+        <input
+          type="checkbox"
+          checked={appSettings.value.trackEncounter !== false}
+          onchange={(event) =>
+            void setAppSettings({ trackEncounter: event.currentTarget.checked })}
+        />
+        <span>{t.trackEncounter}</span>
+      </label>
+      <p class="muted note">{t.trackEncounterNote}</p>
+
+      <label class="field-group">
+        <span class="field-label">{t.playLocation}</span>
+        <input
+          class="field"
+          type="text"
+          value={appSettings.value.playLocation}
+          onchange={(event) => void setAppSettings({ playLocation: event.currentTarget.value })}
+        />
+        <span class="muted note">{t.playLocationNote}</span>
       </label>
     </section>
   </div>

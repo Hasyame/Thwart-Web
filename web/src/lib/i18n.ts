@@ -25,6 +25,10 @@ export interface Strings {
   readonly themeSystem: string;
   readonly themeLight: string;
   readonly themeDark: string;
+  readonly trackEncounter: string;
+  readonly trackEncounterNote: string;
+  readonly playLocation: string;
+  readonly playLocationNote: string;
   readonly allTypes: string;
   readonly allFactions: string;
   readonly allPacks: string;
@@ -435,6 +439,12 @@ const STRINGS: Record<Locale, Strings> = {
     themeSystem: 'System',
     themeLight: 'Light',
     themeDark: 'Dark',
+    trackEncounter: 'Track the villain and the scheme',
+    trackEncounterNote:
+      'Shows the health and threat trackers while you play. Turn it off if you keep score on the table.',
+    playLocation: 'Where you play',
+    playLocationNote:
+      'Filled in on every game you record. It is remembered from the last one you typed.',
     allTypes: 'All types',
     allFactions: 'All factions',
     allPacks: 'All packs',
@@ -958,6 +968,12 @@ const STRINGS: Record<Locale, Strings> = {
     themeSystem: 'Système',
     themeLight: 'Clair',
     themeDark: 'Sombre',
+    trackEncounter: 'Suivre le vilain et la machination',
+    trackEncounterNote:
+      'Affiche les compteurs de points de vie et de menace pendant la partie. Désactivez-les si vous comptez sur la table.',
+    playLocation: 'Où vous jouez',
+    playLocationNote:
+      'Rempli sur chaque partie enregistrée. Retenu depuis la dernière que vous avez saisie.',
     allTypes: 'Tous les types',
     allFactions: 'Toutes les factions',
     allPacks: 'Tous les paquets',

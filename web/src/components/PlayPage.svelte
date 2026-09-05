@@ -2,6 +2,7 @@
   import { liveQuery } from 'dexie';
   import type { CardSet, IndexRow, Locale } from '../lib/types';
   import Tracker from './Tracker.svelte';
+  import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
   import Briefing from './Briefing.svelte';
   import LongBreak from './LongBreak.svelte';
   import type { PausedGame } from '../lib/records';
@@ -248,6 +249,15 @@
       location = settings?.playLocation ?? '';
     });
   });
+
+  /*
+   * Whether the encounter tracker appears at all.
+   *
+   * On unless somebody has turned it off, including on a browser that has
+   * never held the settings row — the tracker is most of why a companion is
+   * open during a game, so absent reads as yes.
+   */
+  const trackEncounter = $derived(appSettings.value.trackEncounter !== false);
   let victoryPoints = $state(0);
   /**
    * Won or lost, once the game is over and before it is written down.
@@ -314,6 +324,17 @@
         ),
       });
       await db.plays.put(play);
+      /*
+       * Where you play is remembered rather than asked every time.
+       *
+       * It is a preference on both platforms, and this is the only moment the
+       * app learns it: somebody who types a table into one game means it for
+       * the next one too. Written only when it changed, so recording a game
+       * does not touch a synced record for nothing.
+       */
+      if (location.trim() !== '' && location !== appSettings.value.playLocation) {
+        await setAppSettings({ playLocation: location });
+      }
       recorded = true;
     } finally {
       recording = false;
@@ -550,7 +571,9 @@
       <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
     </div>
 
-    <Tracker {t} {cardLocale} {index} expert={isExpert} />
+    {#if trackEncounter}
+      <Tracker {t} {cardLocale} {index} expert={isExpert} />
+    {/if}
 
     <label class="awake surface">
       <span>{t.keepScreenOn}</span>

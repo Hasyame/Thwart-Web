@@ -26,6 +26,7 @@
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
+  import { watchAppSettings } from './lib/appsettings.svelte';
   import {
     applyTheme,
     loadCardLocale,
@@ -102,6 +103,10 @@
    * core set can be said — so it is not owned.
    */
   const ownedPacks = $state<{ value: ReadonlySet<string> }>({ value: new Set() });
+
+  // The preferences the account carries, watched for the life of the app so a
+  // sync that brings new ones in is reflected without a reload.
+  $effect(() => (storageOk ? watchAppSettings() : undefined));
 
   $effect(() => {
     if (!storageOk) {
