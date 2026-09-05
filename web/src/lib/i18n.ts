@@ -141,6 +141,37 @@ export interface Strings {
   readonly problemDuplicateUnique: (title: string, total: number) => string;
   readonly problemUnbalanced: (counts: string) => string;
   readonly navDecks: string;
+
+  // Building a deck: the editor, and what the rules say while it is being built.
+  readonly deckName: string;
+  readonly deckSave: string;
+  readonly deckContents: string;
+  readonly deckAddCards: string;
+  readonly deckEmpty: string;
+  readonly deckStats: string;
+  readonly deckCopy: string;
+  readonly deckCopied: string;
+  readonly deckEdit: string;
+  readonly deckNew: string;
+  readonly deckPickHero: string;
+  readonly deckPickAspect: string;
+  readonly deckCreate: string;
+  readonly deckCardCount: (total: number, min: number, max: number) => string;
+  readonly deckAverageCost: (average: string) => string;
+  readonly deckResources: (
+    physical: number,
+    mental: number,
+    energy: number,
+    wild: number,
+  ) => string;
+  readonly deckTooFew: (actual: number, required: number) => string;
+  readonly deckTooMany: (actual: number, allowed: number) => string;
+  readonly deckWrongAspects: (actual: number, required: number) => string;
+  readonly deckOffAspect: (card: string) => string;
+  readonly deckOverLimit: (card: string, quantity: number, limit: number) => string;
+  readonly deckDuplicateUnique: (card: string) => string;
+  readonly deckMissingRequired: (card: string, required: number, actual: number) => string;
+  readonly deckUnbalanced: (counts: string) => string;
   readonly decksTitle: string;
   readonly importDeck: string;
   readonly importDeckNote: string;
@@ -585,6 +616,34 @@ const STRINGS: Record<Locale, Strings> = {
     byDifficulty: 'By difficulty',
     byPlayerCount: 'By number of players',
     navDecks: 'Decks',
+    deckName: 'Deck name',
+    deckSave: 'Save',
+    deckContents: 'In the deck',
+    deckAddCards: 'Add cards',
+    deckEmpty: 'Nothing in it yet. Search on the right and press the plus.',
+    deckStats: 'What it is made of',
+    deckCopy: 'Copy as text',
+    deckCopied: 'Copied',
+    deckEdit: 'Edit',
+    deckNew: 'Build a deck',
+    deckPickHero: 'Hero',
+    deckPickAspect: 'Aspect',
+    deckCreate: 'Start building',
+    deckCardCount: (total, min, max) => `${total} cards (${min}\u2013${max})`,
+    deckAverageCost: (average) => `Average cost ${average}`,
+    deckResources: (physical, mental, energy, wild) =>
+      `Resources: ${physical} physical, ${mental} mental, ${energy} energy, ${wild} wild`,
+    deckTooFew: (actual, required) => `Only ${actual} cards. A deck needs ${required}.`,
+    deckTooMany: (actual, allowed) => `${actual} cards. A deck takes at most ${allowed}.`,
+    deckWrongAspects: (actual, required) =>
+      `${actual} aspect${actual === 1 ? '' : 's'} chosen; this hero takes ${required}.`,
+    deckOffAspect: (card) => `${card} is not in an aspect this deck can take.`,
+    deckOverLimit: (card, quantity, limit) =>
+      `${quantity} copies of ${card}, and ${limit} ${limit === 1 ? 'is' : 'are'} the limit.`,
+    deckDuplicateUnique: (card) => `${card} is unique: only one copy, counting the hero.`,
+    deckMissingRequired: (card, required, actual) =>
+      `${card} is one of the hero's own cards: ${required} needed, ${actual} in the deck.`,
+    deckUnbalanced: (counts) => `The chosen aspects must contribute equally (${counts}).`,
     decksTitle: 'Decks',
     deckLegal: 'This deck is legal.',
     deckLegalShort: 'legal',
@@ -1153,6 +1212,36 @@ const STRINGS: Record<Locale, Strings> = {
     byDifficulty: 'Par difficulté',
     byPlayerCount: 'Par nombre de joueurs',
     navDecks: 'Decks',
+    deckName: 'Nom du deck',
+    deckSave: 'Enregistrer',
+    deckContents: 'Dans le deck',
+    deckAddCards: 'Ajouter des cartes',
+    deckEmpty: 'Encore vide. Cherchez \u00e0 droite et appuyez sur le plus.',
+    deckStats: 'De quoi il est fait',
+    deckCopy: 'Copier en texte',
+    deckCopied: 'Copi\u00e9',
+    deckEdit: 'Modifier',
+    deckNew: 'Construire un deck',
+    deckPickHero: 'H\u00e9ros',
+    deckPickAspect: 'Aspect',
+    deckCreate: 'Commencer',
+    deckCardCount: (total, min, max) => `${total} cartes (${min}\u2013${max})`,
+    deckAverageCost: (average) => `Co\u00fbt moyen ${average}`,
+    deckResources: (physical, mental, energy, wild) =>
+      `Ressources : ${physical} physique, ${mental} mental, ${energy} \u00e9nergie, ${wild} joker`,
+    deckTooFew: (actual, required) => `Seulement ${actual} cartes. Un deck en demande ${required}.`,
+    deckTooMany: (actual, allowed) => `${actual} cartes. Un deck en accepte ${allowed} au plus.`,
+    deckWrongAspects: (actual, required) =>
+      `${actual} aspect${actual === 1 ? '' : 's'} choisi${actual === 1 ? '' : 's'} ; ce h\u00e9ros en prend ${required}.`,
+    deckOffAspect: (card) => `${card} n\u2019est pas dans un aspect que ce deck peut prendre.`,
+    deckOverLimit: (card, quantity, limit) =>
+      `${quantity} exemplaires de ${card}, et la limite est de ${limit}.`,
+    deckDuplicateUnique: (card) =>
+      `${card} est unique : un seul exemplaire, le h\u00e9ros compris.`,
+    deckMissingRequired: (card, required, actual) =>
+      `${card} fait partie des cartes du h\u00e9ros : ${required} attendue${required === 1 ? '' : 's'}, ${actual} dans le deck.`,
+    deckUnbalanced: (counts) =>
+      `Les aspects choisis doivent contribuer \u00e9galement (${counts}).`,
     decksTitle: 'Decks',
     deckLegal: 'Ce deck est légal.',
     deckLegalShort: 'légal',

@@ -7,6 +7,7 @@
   import { loadCardsByCode } from '../lib/data';
   import type { Card } from '../lib/types';
   import DeckContents from './DeckContents.svelte';
+  import DeckEditor from './DeckEditor.svelte';
   import {
     DeckImportError,
     importDeck,
@@ -56,6 +57,60 @@
   let busy = $state(false);
   let error = $state<string | null>(null);
   let openDeckId = $state<string | null>(null);
+  /** The deck being edited, if any. Editing replaces the list rather than sitting under it. */
+  let editingId = $state<string | null>(null);
+  /** The hero and aspect chosen for a deck that does not exist yet. */
+  let building = $state<{ heroCode: string; aspect: string } | null>(null);
+
+  /*
+   * Every hero in the pool, for the build form.
+   *
+   * From the index rather than a list, so a hero from a future pack appears on
+   * its own. The identity's own code is what a deck is built around, and the
+   * alter-ego side is a different card that never goes in the deck.
+   */
+  const heroes = $derived(
+    index
+      .filter((row) => row.typeCode === 'hero')
+      .map((row) => ({ code: row.code, name: row.name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+
+  const ASPECTS = ['aggression', 'justice', 'leadership', 'protection'] as const;
+
+  /**
+   * Creates an empty deck and opens the editor on it.
+   *
+   * `local-<uuid>` is the id shape the sync contract reserves for a deck built
+   * on a device rather than imported, so two devices that both build one never
+   * collide and neither is mistaken for a MarvelCDB import.
+   */
+  async function createDeck(heroCode: string, aspect: string): Promise<void> {
+    const hero = index.find((row) => row.code === heroCode);
+    const id = `local-${crypto.randomUUID()}`;
+    await db.decks.put({
+      id,
+      marvelCdbId: 0,
+      kind: 'LOCAL',
+      url: '',
+      name: hero?.name ?? heroCode,
+      heroCode,
+      heroName: hero?.name ?? heroCode,
+      aspects: aspect,
+      slots: '',
+      ignoreDeckLimitSlots: '',
+      descriptionMd: null,
+      version: null,
+      tags: null,
+      rawJson: '',
+      lastSyncedAt: Date.now(),
+      locallyEdited: true,
+    });
+    building = null;
+    editingId = id;
+  }
+
+  const editing = $derived(saved.decks.find((deck) => deck.id === editingId) ?? null);
 
   const reference = $derived(parseDeckReference(input));
 
@@ -176,11 +231,64 @@
 </script>
 
 <section>
+{#if editing !== null}
+  <!-- Keyed on the deck, so opening another one mounts a fresh editor with its
+       own working copy rather than reusing the previous deck's. -->
+  {#key editing.id}
+    <DeckEditor {t} {cardLocale} {index} deck={editing} onDone={() => (editingId = null)} />
+  {/key}
+{:else}
   <h1>{t.decksTitle}</h1>
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
   {:else}
+    <div class="import surface">
+      <h2>{t.deckNew}</h2>
+      {#if building === null}
+        <button class="btn" type="button" onclick={() => (building = { heroCode: '', aspect: 'justice' })}>
+          {t.deckNew}
+        </button>
+      {:else}
+        <div class="build-row">
+          <label class="field-group grow">
+            <span class="field-label">{t.deckPickHero}</span>
+            <select
+              class="field"
+              value={building.heroCode}
+              onchange={(e) => building !== null && (building.heroCode = e.currentTarget.value)}
+            >
+              <option value="">—</option>
+              {#each heroes as hero (hero.code)}
+                <option value={hero.code}>{hero.name}</option>
+              {/each}
+            </select>
+          </label>
+          <label class="field-group">
+            <span class="field-label">{t.deckPickAspect}</span>
+            <select
+              class="field"
+              value={building.aspect}
+              onchange={(e) => building !== null && (building.aspect = e.currentTarget.value)}
+            >
+              {#each ASPECTS as aspect (aspect)}
+                <option value={aspect}>{aspect}</option>
+              {/each}
+            </select>
+          </label>
+          <button
+            class="btn btn--primary"
+            type="button"
+            disabled={building.heroCode === ''}
+            onclick={() => building !== null && void createDeck(building.heroCode, building.aspect)}
+          >
+            {t.deckCreate}
+          </button>
+          <button class="btn" type="button" onclick={() => (building = null)}>{t.cancel}</button>
+        </div>
+      {/if}
+    </div>
+
     <div class="import surface">
       <h2>{t.importDeck}</h2>
       <p class="muted note">{t.importDeckNote}</p>
@@ -244,6 +352,9 @@
                 <span class="verdict muted">…</span>
               {/if}
             </button>
+            <button type="button" class="btn" onclick={() => (editingId = deck.id)}>
+              {t.deckEdit}
+            </button>
             <button type="button" class="btn remove" onclick={() => remove(deck.id)}>
               {t.removeDeck}
             </button>
@@ -266,9 +377,17 @@
     {/if}
 
   {/if}
+{/if}
 </section>
 
 <style>
+  .build-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-2);
+  }
+
   h1 {
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-4);
