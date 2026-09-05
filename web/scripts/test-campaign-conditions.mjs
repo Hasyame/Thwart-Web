@@ -8,7 +8,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { evaluate } from '../src/lib/campaign/conditions.ts';
-import { EMPTY_STATE } from '../src/lib/campaign/types.ts';
+import { EMPTY_STATE, amountFor, amountInputOf } from '../src/lib/campaign/types.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -92,6 +92,57 @@ check('difficulty can fail', !evaluate({ difficulty: 'expert' }, { state: state(
   // And falls back to the campaign-scoped slot.
   check('bare flag falls back to the campaign', evaluate({ flag: 'ally' }, { state: s, scenarioId: 's2' }));
   check('notFlag', evaluate({ notFlag: 'beaten' }, { state: s, scenarioId: 's2' }));
+}
+
+// --- an amount read off a set of flags ------------------------------------------
+
+{
+  /*
+   * A computed amount usually reads a counter. It can instead name a `flagSet`
+   * and be measured by how many of that set's flags are true — how many jobs
+   * have been settled is a count of flags rather than a number anybody keeps.
+   *
+   * Declaring the key is not the same as honouring it, which is the whole point
+   * of this block. An amount whose counter does not exist reads as zero, zero
+   * is below every threshold, and a step carrying it is simply never shown. So
+   * the sweep further down would pass on a build that ignored `flagSet`
+   * entirely, and the campaign would quietly skip a setup instruction.
+   */
+  const s = state({ flags: { acheve: { s1: true, s2: true, s3: false } }, counters: { acheve: 99 } });
+
+  check(
+    'an amount on a flag set counts the true flags',
+    amountInputOf(s, { flagSet: 'acheve' }) === 2,
+    `got ${amountInputOf(s, { flagSet: 'acheve' })}`,
+  );
+  check(
+    'and does not read a counter that happens to share the name',
+    amountInputOf(s, { flagSet: 'acheve' }) !== 99,
+  );
+  check(
+    'an amount with no flag set still reads its counter',
+    amountInputOf(s, { counter: 'acheve' }) === 99,
+  );
+  check('an absent amount is nothing', amountInputOf(s, null) === 0);
+
+  // And the whole way through, which is what the templates actually do: below
+  // the threshold the step is not shown, at or above it the amount is real.
+  check(
+    'below the threshold a flag-set amount is nothing',
+    amountFor({ flagSet: 'acheve', threshold: 3 }, amountInputOf(s, { flagSet: 'acheve' }), false) === 0,
+  );
+  check(
+    'at the threshold it is one per flag',
+    amountFor({ flagSet: 'acheve', threshold: 2 }, amountInputOf(s, { flagSet: 'acheve' }), false) === 2,
+  );
+  check(
+    'and expert reads its own per-unit',
+    amountFor(
+      { flagSet: 'acheve', threshold: 1, perUnit: 1, perUnitExpert: 2 },
+      amountInputOf(s, { flagSet: 'acheve' }),
+      true,
+    ) === 4,
+  );
 }
 
 // --- countTrue ----------------------------------------------------------------

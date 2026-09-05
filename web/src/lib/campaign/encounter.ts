@@ -1,7 +1,7 @@
 import type { EncounterSetup, EncounterSide } from '../encounter';
 import type { IndexRow } from '../types';
 import { VILLAIN_DRAW_ID } from './deal';
-import { amountFor, counterOf } from './types';
+import { amountFor, amountInputOf } from './types';
 import type {
   BaseSetup,
   CampaignState,
@@ -149,7 +149,7 @@ export function trackerSetupFor(
     // card and cannot be: it depends on how the campaign has gone.
     extraStartingThreat: amountFor(
       tracked.startingThreatFrom,
-      counterOf(state, tracked.startingThreatFrom?.counter ?? ''),
+      amountInputOf(state, tracked.startingThreatFrom),
       expert,
     ),
   });

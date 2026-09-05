@@ -7,6 +7,7 @@
   import { parseCampaignText, resolveAmount, type TextContext } from '../lib/campaign/text';
   import {
     amountFor,
+    amountInputOf,
     counterOf,
     heroCounterOf,
     textOf,
@@ -73,7 +74,7 @@
   const amountOf = (step: SetupStep): number | null =>
     step.compute == null
       ? null
-      : amountFor(step.compute, counterOf(campaign, step.compute.counter), expert);
+      : amountFor(step.compute, amountInputOf(campaign, step.compute), expert);
 
   const shown = (steps: readonly SetupStep[] | undefined): readonly SetupStep[] =>
     (steps ?? [])

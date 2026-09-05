@@ -376,8 +376,16 @@ export interface CampaignTemplate {
  * already holds every part of.
  */
 export interface ComputedAmount {
-  /** The campaign counter the amount is read from. */
-  readonly counter: string;
+  /** The campaign counter the amount is read from. Or {@link flagSet}. */
+  readonly counter?: string;
+  /**
+   * Counts the true flags of a set, instead of reading a counter.
+   *
+   * How many jobs have been settled is a count of flags rather than a number
+   * anybody keeps, and asking the table to count them is asking for arithmetic
+   * the campaign log has already done.
+   */
+  readonly flagSet?: string;
   /** What one unit of that counter is worth, on standard and on expert. */
   readonly perUnit?: number;
   readonly perUnitExpert?: number;
@@ -719,6 +727,27 @@ export const flagOf = (state: CampaignState, setId: string, scenarioId = ''): bo
 
 export const countTrueOf = (state: CampaignState, setId: string): number =>
   Object.values(state.flags[setId] ?? {}).filter(Boolean).length;
+
+/**
+ * The number a computed amount is measured against.
+ *
+ * A counter, or — when the template names a `flagSet` — how many flags in that
+ * set are true. Reading the counter regardless would not fail: an amount whose
+ * counter does not exist is zero, which is below every threshold, so the step
+ * carrying it is simply never shown. That is the failure this resolves, and it
+ * is invisible from the outside, which is why the two are chosen between here
+ * rather than at each call site.
+ */
+export const amountInputOf = (
+  state: CampaignState,
+  amount: ComputedAmount | null | undefined,
+): number => {
+  if (amount == null) {
+    return 0;
+  }
+  const flagSet = amount.flagSet ?? '';
+  return flagSet === '' ? counterOf(state, amount.counter ?? '') : countTrueOf(state, flagSet);
+};
 
 export const heroCardsOf = (
   state: CampaignState,
