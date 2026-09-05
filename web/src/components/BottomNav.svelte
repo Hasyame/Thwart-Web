@@ -121,6 +121,32 @@
     background: var(--accent-soft);
   }
 
+  /*
+   * The band between a phone and a full top bar: 56rem to 80rem.
+   *
+   * Tablets and half-width desktop windows land here, and they keep the tab
+   * bar — that is what tablets do, and it is the only arrangement where every
+   * destination stays both reachable and hittable. What changes is the width:
+   * five tabs stretched across 1200px puts each label a hand's width from the
+   * next and leaves the bar looking like a mistake. Centred and capped, it
+   * reads as one control rather than as a stretched phone layout, while the
+   * bar's own background still spans the window so nothing floats.
+   *
+   * The two dialogs already switch to a centred treatment at 56rem, so the
+   * band gets tablet dialogs with tablet navigation, which is the pairing that
+   * was missing.
+   */
+  @media (min-width: 56rem) {
+    .tabs {
+      justify-content: center;
+    }
+
+    .tabs a,
+    .tabs button {
+      flex: 0 1 9rem;
+    }
+  }
+
   /* Tabs are a phone arrangement. Above this the top bar carries everything.
      80rem is where nine labels fit on one line; see the note in TopBar. */
   @media (min-width: 80rem) {
