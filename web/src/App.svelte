@@ -21,12 +21,13 @@
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
   import { strings } from './lib/i18n';
   import { loadCard, loadIndex, loadMeta, loadPacks, loadSets } from './lib/data';
-  import { db, storageAvailable, toggleFavourite } from './lib/db';
+  import { db, storageAvailable, toggleFavourite as writeFavourite } from './lib/db';
   import { liveQuery } from 'dexie';
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
+  import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
   import type { NavTarget } from './lib/nav';
   import {
@@ -195,6 +196,27 @@
   $effect(() => {
     void loadSession();
   });
+
+  /*
+   * Auto-sync, if this browser has been asked to.
+   *
+   * The listener here is only the one that notices the network coming back: a
+   * game recorded on a train stays owed until then. Everything else fires from
+   * the moment it belongs to.
+   */
+  $effect(() => watchAutoSync());
+
+  /**
+   * Favourites, with a sync asked for after.
+   *
+   * Wrapped here rather than in `toggleFavourite` itself, because the same
+   * helper is what a backup import writes through, and a restore of two hundred
+   * favourites should be one sync at the end rather than two hundred triggers.
+   */
+  async function toggleFavourite(code: string): Promise<void> {
+    await writeFavourite(code);
+    syncAfter('favourite-changed');
+  }
 
   /** Keeps the document attribute in step with the choice, including at startup. */
   $effect(() => {

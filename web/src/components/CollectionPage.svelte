@@ -4,11 +4,39 @@
   import type { Strings } from '../lib/i18n';
   import {
     db,
-    setModularSetExcluded,
-    setPackQuantity,
-    setScenarioExcluded,
+    setModularSetExcluded as writeModularSetExcluded,
+    setPackQuantity as writePackQuantity,
+    setScenarioExcluded as writeScenarioExcluded,
   } from '../lib/db';
   import BackupPanel from './BackupPanel.svelte';
+  import { syncAfter } from '../lib/sync/auto.svelte';
+
+  /*
+   * Every write on this screen, with a sync asked for after it.
+   *
+   * Wrapped here rather than inside the database helpers, because those are
+   * also what a backup import and the sync engine itself write through, and a
+   * sync that triggered on the rows a sync had just written would chase its own
+   * tail.
+   *
+   * Ticking a box is not an event worth a request of its own — somebody
+   * cataloguing a shelf ticks thirty in a row — so `syncAfter` waits for the
+   * flurry to stop and sends once.
+   */
+  async function setPackQuantity(packCode: string, quantity: number): Promise<void> {
+    await writePackQuantity(packCode, quantity);
+    syncAfter('collection-changed');
+  }
+
+  async function setModularSetExcluded(setCode: string, excluded: boolean): Promise<void> {
+    await writeModularSetExcluded(setCode, excluded);
+    syncAfter('collection-changed');
+  }
+
+  async function setScenarioExcluded(scenarioCode: string, excluded: boolean): Promise<void> {
+    await writeScenarioExcluded(scenarioCode, excluded);
+    syncAfter('collection-changed');
+  }
 
   interface Props {
     t: Strings;

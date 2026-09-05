@@ -147,6 +147,21 @@ export interface Statistics {
   readonly byDifficulty: readonly Tally[];
   readonly byPlayerCount: readonly Tally[];
   readonly totalMillis: number;
+  /** Mean length of the games that were timed. Zero when none were. */
+  readonly averageMillis: number;
+  readonly longestMillis: number;
+  /**
+   * Wins in a row ending at the most recent game, and the best run ever.
+   *
+   * Counted per game rather than per seat: a four-player win is one win in a
+   * streak, however many heroes were at the table.
+   */
+  readonly currentStreak: number;
+  readonly bestStreak: number;
+  /** Games recorded against a campaign, which is a different kind of evening. */
+  readonly campaignGames: number;
+  readonly solo: number;
+  readonly group: number;
 }
 
 /**
@@ -190,15 +205,66 @@ export const counts = (play: Play): boolean => play.ignored !== true;
  * remember is a filter one of them will forget — at which point the number the
  * reader set out to change is the one that did not move.
  */
+/**
+ * Wins in a row, most recent first, and the longest run in the history.
+ *
+ * Ordered by when the games were played rather than by the order they were
+ * entered: somebody recording last week's game today has not broken this
+ * week's streak, and reading the list as stored would say they had.
+ *
+ * A game that was set aside is already gone by the time this runs, which is
+ * the intended reading — it did not count, so it neither makes nor breaks a
+ * run.
+ */
+function streaks(plays: readonly Play[]): { current: number; best: number } {
+  const byWhen = [...plays].sort((a, b) => a.playedAt - b.playedAt);
+  let best = 0;
+  let running = 0;
+  for (const play of byWhen) {
+    running = play.won ? running + 1 : 0;
+    best = Math.max(best, running);
+  }
+  // `running` ends on the most recent game, which is exactly the current run.
+  return { current: running, best };
+}
+
 export function computeStatistics(
   all: readonly Play[],
   labels: StatLabels,
 ): Statistics {
   const plays = all.filter(counts);
+  const timed = plays.filter((play) => play.elapsedMillis > 0);
+  const run = streaks(plays);
   return {
     total: plays.length,
     won: plays.filter((p) => p.won).length,
     totalMillis: plays.reduce((sum, p) => sum + p.elapsedMillis, 0),
+
+    /*
+     * Averaged over the games that were actually timed.
+     *
+     * A game recorded after the fact has no clock on it, and folding those in
+     * as zero drags the average towards a length nobody played. The same
+     * reasoning as the deck cost curve leaving out a starred cost.
+     */
+    averageMillis:
+      timed.length === 0
+        ? 0
+        : Math.round(timed.reduce((sum, p) => sum + p.elapsedMillis, 0) / timed.length),
+    longestMillis: plays.reduce((longest, p) => Math.max(longest, p.elapsedMillis), 0),
+
+    currentStreak: run.current,
+    bestStreak: run.best,
+
+    campaignGames: plays.filter((p) => p.campaignRunId !== null && p.campaignRunId !== '').length,
+    /*
+     * Solo against everything else, counted per game.
+     *
+     * One player is a different game from four, and the split is the first
+     * thing anybody asks of a play history that mixes them.
+     */
+    solo: plays.filter((p) => p.players <= 1).length,
+    group: plays.filter((p) => p.players > 1).length,
 
     // Counted per seat, so a four-player game credits four heroes. Counting
     // from heroCode alone credited the first player and ignored three.
@@ -220,6 +286,14 @@ export function computeStatistics(
     // The pairing, which is the question the flat fields could not answer:
     // they paired the first hero against every aspect at the table and so
     // invented combinations nobody played.
+    /*
+     * A pairing earns a row once it has been played twice.
+     *
+     * One game is not a record of how a hero does in an aspect, it is a
+     * anecdote, and a table of them buries the pairings somebody actually
+     * plays under every combination they tried once. The master applies the
+     * same floor.
+     */
     byHeroAspect: sortTallies(
       tally(plays, (play) =>
         seatsOf(play)
@@ -229,7 +303,7 @@ export function computeStatistics(
             label: `${seat.name} · ${labels.aspect(seat.aspect)}`,
           })),
       ),
-    ),
+    ).filter((row) => row.played >= 2),
     byScenario: sortTallies(
       tally(plays, (play) => [
         { key: play.scenarioCode, label: play.scenarioName || play.scenarioCode },

@@ -5,6 +5,7 @@
   import { LANGUAGE_NAMES } from '../lib/i18n';
   import { OVERFLOW, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
   import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
+  import { bgg, bggProfileUrl, setBggUsername } from '../lib/bgg.svelte';
 
   interface Props {
     t: Strings;
@@ -181,7 +182,7 @@
       <label class="tick">
         <input
           type="checkbox"
-          checked={appSettings.value.trackEncounter !== false}
+          checked={appSettings.value.trackEncounter === true}
           onchange={(event) =>
             void setAppSettings({ trackEncounter: event.currentTarget.checked })}
         />
@@ -199,6 +200,34 @@
         />
         <span class="muted note">{t.playLocationNote}</span>
       </label>
+
+      <!--
+        BoardGameGeek, connected on this device and nowhere else.
+
+        Deliberately not part of the account: this name is kept in this
+        browser's own storage, is never synced, and is never written to a backup
+        file. Each device is connected to BGG by the person using it, which is
+        also the only arrangement in which no BGG password is ever held by
+        anything of ours.
+      -->
+      <label class="field-group">
+        <span class="field-label">{t.bggUsername}</span>
+        <input
+          class="field"
+          type="text"
+          autocomplete="off"
+          value={bgg.username}
+          onchange={(event) => setBggUsername(event.currentTarget.value)}
+        />
+        <span class="muted note">{t.bggNote}</span>
+      </label>
+      {#if bgg.username !== ''}
+        <p class="muted note">
+          <a href={bggProfileUrl(bgg.username)} target="_blank" rel="noreferrer noopener">
+            {t.bggOpenProfile}
+          </a>
+        </p>
+      {/if}
     </section>
   </div>
 </dialog>

@@ -112,4 +112,132 @@ const play = (id, extra = {}) => ({
   check('and leaves no rows behind it', stats.byHero.length === 0);
 }
 
+// --- the headline figures ------------------------------------------------------
+
+{
+  /*
+   * Streaks read by when the games were played, not by the order they were
+   * entered. Somebody recording last week's loss today has not broken this
+   * week's run, and reading the list as stored would say they had.
+   */
+  const day = 86_400_000;
+  const at = (n) => 1_700_000_000_000 + n * day;
+
+  const stats = computeStatistics(
+    [
+      // Entered out of order on purpose.
+      play('c', { playedAt: at(3), won: true }),
+      play('a', { playedAt: at(1), won: true }),
+      play('d', { playedAt: at(4), won: true }),
+      play('b', { playedAt: at(2), won: false }),
+    ],
+    LABELS,
+  );
+
+  check('the current streak ends at the most recent game', stats.currentStreak === 2, `${stats.currentStreak}`);
+  check('the best streak is the longest run anywhere', stats.bestStreak === 2, `${stats.bestStreak}`);
+}
+
+{
+  const day = 86_400_000;
+  const at = (n) => 1_700_000_000_000 + n * day;
+  const broken = computeStatistics(
+    [
+      play('a', { playedAt: at(1), won: true }),
+      play('b', { playedAt: at(2), won: true }),
+      play('c', { playedAt: at(3), won: true }),
+      play('d', { playedAt: at(4), won: false }),
+    ],
+    LABELS,
+  );
+  check('a loss on the last game ends the current run', broken.currentStreak === 0);
+  check('but the best run is remembered', broken.bestStreak === 3);
+}
+
+{
+  /*
+   * A game recorded after the fact carries no clock. Folding those in as zero
+   * drags the average towards a length nobody played, so the average is over
+   * the games that were timed while the longest is over all of them.
+   */
+  const stats = computeStatistics(
+    [
+      play('timed-1', { elapsedMillis: 60 * 60 * 1000 }),
+      play('timed-2', { elapsedMillis: 30 * 60 * 1000 }),
+      play('untimed', { elapsedMillis: 0 }),
+    ],
+    LABELS,
+  );
+  check('the average is over the games that were timed', stats.averageMillis === 45 * 60 * 1000, `${stats.averageMillis}`);
+  check('the longest is the longest', stats.longestMillis === 60 * 60 * 1000);
+  check('and the total still counts everything', stats.totalMillis === 90 * 60 * 1000);
+  check(
+    'no timed game is an average of nothing rather than a division by zero',
+    computeStatistics([play('x', { elapsedMillis: 0 })], LABELS).averageMillis === 0,
+  );
+}
+
+{
+  const stats = computeStatistics(
+    [
+      play('solo', { players: 1 }),
+      play('duo', { players: 2 }),
+      play('four', { players: 4 }),
+      play('campaign', { players: 1, campaignRunId: 'run-1' }),
+    ],
+    LABELS,
+  );
+  check('solo and group are split per game', stats.solo === 2 && stats.group === 2, `${stats.solo} solo, ${stats.group} group`);
+  check('campaign games are counted', stats.campaignGames === 1);
+  check(
+    'a play with no campaign is not one',
+    computeStatistics([play('x', { campaignRunId: null })], LABELS).campaignGames === 0,
+  );
+  check(
+    'nor is one carrying an empty campaign id',
+    computeStatistics([play('x', { campaignRunId: '' })], LABELS).campaignGames === 0,
+  );
+}
+
+{
+  /*
+   * A hero-and-aspect pairing earns its row on the second game. One is an
+   * anecdote, and a table of them buries the pairings somebody actually plays.
+   */
+  const once = computeStatistics(
+    [play('a', { heroCode: '01001', heroName: 'Spider-Man', aspects: 'justice' })],
+    LABELS,
+  );
+  check('a pairing played once earns no row', once.byHeroAspect.length === 0);
+
+  const twice = computeStatistics(
+    [
+      play('a', { heroCode: '01001', heroName: 'Spider-Man', aspects: 'justice' }),
+      play('b', { heroCode: '01001', heroName: 'Spider-Man', aspects: 'justice' }),
+    ],
+    LABELS,
+  );
+  check('played twice, it does', twice.byHeroAspect.length === 1, twice.byHeroAspect[0]?.label);
+  check(
+    'and the hero table still counts the single game',
+    once.byHero.length === 1,
+    'the floor is on the pairing, not on the hero',
+  );
+}
+
+{
+  // A game set aside neither makes nor breaks a run: it did not count.
+  const day = 86_400_000;
+  const at = (n) => 1_700_000_000_000 + n * day;
+  const stats = computeStatistics(
+    [
+      play('a', { playedAt: at(1), won: true }),
+      play('b', { playedAt: at(2), won: false, ignored: true }),
+      play('c', { playedAt: at(3), won: true }),
+    ],
+    LABELS,
+  );
+  check('a set-aside loss does not break a streak', stats.currentStreak === 2, `${stats.currentStreak}`);
+}
+
 process.exit(failures === 0 ? 0 : 1);

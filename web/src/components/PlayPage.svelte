@@ -13,6 +13,7 @@
   } from '../lib/pausedGame';
   import type { Strings } from '../lib/i18n';
   import { db, SETTINGS_KEY } from '../lib/db';
+  import { syncAfter } from '../lib/sync/auto.svelte';
   import { loadScenarioRules } from '../lib/data';
   import {
     buildPools,
@@ -257,7 +258,8 @@
    * never held the settings row — the tracker is most of why a companion is
    * open during a game, so absent reads as yes.
    */
-  const trackEncounter = $derived(appSettings.value.trackEncounter !== false);
+  /* Absent means no, which is what the Android app means by it. */
+  const trackEncounter = $derived(appSettings.value.trackEncounter === true);
   let victoryPoints = $state(0);
   /**
    * Won or lost, once the game is over and before it is written down.
@@ -335,6 +337,14 @@
       if (location.trim() !== '' && location !== appSettings.value.playLocation) {
         await setAppSettings({ playLocation: location });
       }
+      /*
+       * The end of a scenario, which is the trigger that matters most.
+       *
+       * It is the moment somebody puts the browser down and might well pick a
+       * phone up, and the whole point of auto-sync is that the game is already
+       * there when they do.
+       */
+      syncAfter('scenario-end');
       recorded = true;
     } finally {
       recording = false;

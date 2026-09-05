@@ -7,6 +7,7 @@
   import { computeStatistics, type Tally } from '../lib/plays';
   import PlayRow from './PlayRow.svelte';
   import { formatElapsed } from '../lib/session.svelte';
+  import { normalizeForSearch } from '../lib/normalize.js';
 
   interface Props {
     t: Strings;
@@ -79,6 +80,71 @@
     return entry.played === 0 ? 0 : Math.round((entry.won / entry.played) * 100);
   }
 
+  /*
+   * How the rows are ordered, and what the bar measures.
+   *
+   * Two separate questions, and the master keeps them separate: a rate is a
+   * proportion of that row's own games, a share is a proportion of every row
+   * together. Sorting by win rate with the bar showing share is a perfectly
+   * reasonable thing to want, so neither control implies the other.
+   */
+  type Sort = 'alpha' | 'played' | 'best' | 'worst';
+  type Measure = 'win' | 'loss' | 'share';
+
+  let sort = $state<Sort>('played');
+  let measure = $state<Measure>('win');
+  /** One field filters every table, as the master does it. */
+  let filter = $state('');
+  /** Tables open to a few rows; the rest are one press away. */
+  const PREVIEW_ROWS = 5;
+  const expanded = $state<Record<string, boolean>>({});
+
+  const matches = (row: Tally): boolean =>
+    filter.trim() === '' || normalizeForSearch(row.label).includes(normalizeForSearch(filter));
+
+  function ordered(rows: readonly Tally[]): Tally[] {
+    const kept = rows.filter(matches);
+    const byRate = (row: Tally) => (row.played === 0 ? 0 : row.won / row.played);
+    switch (sort) {
+      case 'alpha':
+        return [...kept].sort((a, b) => a.label.localeCompare(b.label));
+      case 'best':
+        return [...kept].sort((a, b) => byRate(b) - byRate(a) || b.played - a.played);
+      case 'worst':
+        return [...kept].sort((a, b) => byRate(a) - byRate(b) || b.played - a.played);
+      default:
+        return [...kept].sort((a, b) => b.played - a.played || a.label.localeCompare(b.label));
+    }
+  }
+
+  /**
+   * The length of a row's bar, as a percentage.
+   *
+   * A rate fills against that row's own games. A share fills against the
+   * largest row in the same table, because a share of two per cent drawn
+   * against the full width would say the opposite of what it means.
+   */
+  function bar(row: Tally, rows: readonly Tally[]): number {
+    if (measure === 'win') {
+      return percent(row);
+    }
+    if (measure === 'loss') {
+      return 100 - percent(row);
+    }
+    const largest = rows.reduce((most, entry) => Math.max(most, entry.played), 0);
+    return largest === 0 ? 0 : Math.round((row.played / largest) * 100);
+  }
+
+  function figure(row: Tally): string {
+    if (measure === 'win') {
+      return `${percent(row)}%`;
+    }
+    if (measure === 'loss') {
+      return `${100 - percent(row)}%`;
+    }
+    return `${row.played}`;
+  }
+
   /**
    * Which tables are worth drawing.
    *
@@ -106,7 +172,7 @@
    * and the bottom of the page, and the reason to come here is almost always a
    * recent game. The rest are one button away.
    */
-  const PAGE = 25;
+  const PAGE = 10;
   let shown = $state(PAGE);
   const listed = $derived(store.plays.slice(0, shown));
   const remaining = $derived(Math.max(0, store.plays.length - shown));
@@ -129,9 +195,47 @@
       <p class="rate">{winRate}<span class="pc">%</span></p>
       <div class="headline-detail">
         <p class="muted">{t.winRateOf(stats.won, stats.total)}</p>
+        <!-- The share, drawn. A rate is easier to read against a bar than as a
+             number on its own, and it is the one figure this page leads on. -->
+        <span class="share" aria-hidden="true">
+          <span class="share-fill" style:width={`${winRate}%`}></span>
+        </span>
         <p class="muted">{t.timePlayed(formatElapsed(stats.totalMillis))}</p>
       </div>
     </div>
+
+    <!--
+      The rest of the headline, as figures rather than prose.
+
+      Streaks are counted per game: a four-player win is one win in a run,
+      however many heroes were at the table.
+    -->
+    <ul class="figures">
+      <li>
+        <span class="fig">{formatElapsed(stats.averageMillis)}</span>
+        <span class="muted lbl">{t.statAverageGame}</span>
+      </li>
+      <li>
+        <span class="fig">{formatElapsed(stats.longestMillis)}</span>
+        <span class="muted lbl">{t.statLongestGame}</span>
+      </li>
+      <li>
+        <span class="fig">{stats.currentStreak}</span>
+        <span class="muted lbl">{t.statCurrentStreak}</span>
+      </li>
+      <li>
+        <span class="fig">{stats.bestStreak}</span>
+        <span class="muted lbl">{t.statBestStreak}</span>
+      </li>
+      <li>
+        <span class="fig">{stats.campaignGames}</span>
+        <span class="muted lbl">{t.statCampaignGames}</span>
+      </li>
+      <li>
+        <span class="fig">{stats.solo} / {stats.group}</span>
+        <span class="muted lbl">{t.statSoloGroup}</span>
+      </li>
+    </ul>
 
     <!--
       The games themselves, under the numbers they add up to.
@@ -141,7 +245,7 @@
       and takes it out of the tables above; deleting it does not come back.
     -->
     <section class="table games-section">
-      <h2>{t.statsGames}</h2>
+      <h2>{t.statsGames} <span class="muted count-of">{store.plays.length}</span></h2>
       <p class="muted note">{t.statsGamesNote}</p>
       <ul class="games">
         {#each listed as play (play.id)}
@@ -155,23 +259,78 @@
       {/if}
     </section>
 
+    <!--
+      One filter and two controls for every table at once.
+
+      Sorting and measuring are separate questions: a rate is a proportion of a
+      row's own games, a share is a proportion of all of them together, and
+      wanting to sort by one while looking at the other is perfectly ordinary.
+    -->
+    <div class="table-controls">
+      <label class="grow">
+        <span class="visually-hidden">{t.statsFilter}</span>
+        <input
+          class="field"
+          type="search"
+          placeholder={t.statsFilter}
+          value={filter}
+          oninput={(e) => (filter = e.currentTarget.value)}
+        />
+      </label>
+      <label class="control">
+        <span class="visually-hidden">{t.statsSort}</span>
+        <select class="field" value={sort} onchange={(e) => (sort = e.currentTarget.value as typeof sort)}>
+          <option value="played">{t.sortMostPlayed}</option>
+          <option value="alpha">{t.sortAlphabetical}</option>
+          <option value="best">{t.sortBestRate}</option>
+          <option value="worst">{t.sortWorstRate}</option>
+        </select>
+      </label>
+      <label class="control">
+        <span class="visually-hidden">{t.statsMeasure}</span>
+        <select
+          class="field"
+          value={measure}
+          onchange={(e) => (measure = e.currentTarget.value as typeof measure)}
+        >
+          <option value="win">{t.measureWinRate}</option>
+          <option value="loss">{t.measureLossRate}</option>
+          <option value="share">{t.measureShare}</option>
+        </select>
+      </label>
+    </div>
+
     {#each tables as [title, rows] (title)}
-      <section class="table">
-        <h2>{title}</h2>
-        <ul>
-          {#each rows as row (row.key)}
-            <li>
-              <span class="label">{row.label}</span>
-              <span class="bar" aria-hidden="true">
-                <span class="fill" style:width={`${percent(row)}%`}></span>
-              </span>
-              <span class="numbers muted">
-                {percent(row)}% · {t.wonOf(row.won, row.played)}
-              </span>
-            </li>
-          {/each}
-        </ul>
-      </section>
+      {@const sorted = ordered(rows)}
+      {@const open = expanded[title] === true}
+      {@const shownRows = open ? sorted : sorted.slice(0, PREVIEW_ROWS)}
+      {#if sorted.length > 0}
+        <section class="table">
+          <h2>{title} <span class="muted count-of">{sorted.length}</span></h2>
+          <ul>
+            {#each shownRows as row (row.key)}
+              <li>
+                <span class="label">{row.label}</span>
+                <span class="bar" aria-hidden="true">
+                  <span class="fill" style:width={`${bar(row, sorted)}%`}></span>
+                </span>
+                <span class="numbers muted">
+                  {figure(row)} · {t.wonOf(row.won, row.played)}
+                </span>
+              </li>
+            {/each}
+          </ul>
+          {#if sorted.length > PREVIEW_ROWS}
+            <button
+              class="btn btn--quiet"
+              type="button"
+              onclick={() => (expanded[title] = !open)}
+            >
+              {open ? t.statsShowFewer : t.statsShowMore(sorted.length - PREVIEW_ROWS)}
+            </button>
+          {/if}
+        </section>
+      {/if}
     {/each}
 
     <p class="muted note">{t.statsNote}</p>
@@ -179,6 +338,66 @@
 </section>
 
 <style>
+  .share {
+    display: block;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-3, var(--surface-2));
+    overflow: hidden;
+    margin: var(--space-1) 0;
+    max-width: 16rem;
+  }
+
+  .share-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+
+  .figures {
+    list-style: none;
+    margin: var(--space-3) 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: var(--space-2);
+  }
+
+  .figures li {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-3);
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm);
+  }
+
+  .fig {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lbl {
+    font-size: var(--text-xs);
+  }
+
+  .table-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-4) 0 var(--space-2);
+  }
+
+  .table-controls .grow {
+    flex: 1 1 12rem;
+  }
+
+  .count-of {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular, 400);
+  }
+
   .games-section .note {
     font-size: var(--text-sm);
     margin: 0 0 var(--space-2);

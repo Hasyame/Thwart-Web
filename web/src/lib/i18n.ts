@@ -430,6 +430,14 @@ export interface Strings {
   readonly syncTitle: string;
   readonly syncSwitch: string;
   readonly syncSwitchNote: string;
+  readonly autoSyncSwitch: string;
+  readonly autoSyncNote: string;
+  readonly autoSyncScenario: string;
+  readonly autoSyncCampaign: string;
+  readonly autoSyncBreak: string;
+  readonly autoSyncDeck: string;
+  readonly autoSyncCollection: string;
+  readonly autoSyncFavourite: string;
   readonly syncStaging: string;
   readonly syncWorking: string;
   readonly syncOn: string;
@@ -453,6 +461,20 @@ export interface Strings {
   readonly playSetAside: string;
   readonly playCountAgain: string;
   readonly playSetAsideMark: string;
+  readonly bggUsername: string;
+  readonly bggNote: string;
+  readonly bggOpenProfile: string;
+  readonly bggLogPlay: string;
+  readonly bggFollowUp: string;
+  readonly bggCopy: string;
+  readonly bggCopied: string;
+  readonly bggMark: string;
+  readonly bggUnmark: string;
+  readonly bggLogged: string;
+  readonly playEdit: string;
+  readonly playEditSave: string;
+  readonly playWhen: string;
+  readonly playResult: string;
   readonly playDelete: string;
   readonly playDeleteConfirm: string;
   readonly playDeleteYes: string;
@@ -465,6 +487,23 @@ export interface Strings {
   readonly statsGames: string;
   readonly statsGamesNote: string;
   readonly statsShowMore: (remaining: number) => string;
+  readonly statsShowFewer: string;
+  readonly statAverageGame: string;
+  readonly statLongestGame: string;
+  readonly statCurrentStreak: string;
+  readonly statBestStreak: string;
+  readonly statCampaignGames: string;
+  readonly statSoloGroup: string;
+  readonly statsFilter: string;
+  readonly statsSort: string;
+  readonly statsMeasure: string;
+  readonly sortMostPlayed: string;
+  readonly sortAlphabetical: string;
+  readonly sortBestRate: string;
+  readonly sortWorstRate: string;
+  readonly measureWinRate: string;
+  readonly measureLossRate: string;
+  readonly measureShare: string;
   readonly favourite: string;
   readonly unfavourite: string;
   readonly backupTitle: string;
@@ -993,6 +1032,15 @@ const STRINGS: Record<Locale, Strings> = {
     syncSwitch: 'Sync this browser with the account',
     syncSwitchNote:
       'Signing in only said who you are. This is what moves your collection, decks, games and campaigns between your devices.',
+    autoSyncSwitch: 'Sync on its own',
+    autoSyncNote:
+      'Syncs at the moments where you are most likely to pick up the other device. This choice stays on this browser and is never carried to your other devices, so each one decides for itself.',
+    autoSyncScenario: 'When a scenario ends, in a campaign or not',
+    autoSyncCampaign: 'When a campaign ends',
+    autoSyncBreak: 'When you put a game away for a long break',
+    autoSyncDeck: 'When a deck is built or imported',
+    autoSyncCollection: 'When your collection changes',
+    autoSyncFavourite: 'When a card is added to your favourites',
     syncStaging: 'Reading the account. Nothing on this browser has been touched yet.',
     syncWorking: 'Working\u2026',
     syncOn: 'In step with the account.',
@@ -1033,6 +1081,21 @@ const STRINGS: Record<Locale, Strings> = {
     playSetAside: 'Set aside',
     playCountAgain: 'Count it again',
     playSetAsideMark: 'not counted',
+    bggUsername: 'BoardGameGeek username',
+    bggNote:
+      'Kept on this device only. It is never synced, never written to a backup, and no BoardGameGeek password is ever asked for or stored: you sign in to BoardGameGeek yourself, in this browser, and games are logged on their site.',
+    bggOpenProfile: 'Open this profile on BoardGameGeek',
+    bggLogPlay: 'Log on BGG',
+    bggFollowUp: 'The form is open in another tab.',
+    bggCopy: 'Copy the details',
+    bggCopied: 'Copied',
+    bggMark: 'Mark as logged',
+    bggUnmark: 'Not logged on BGG after all',
+    bggLogged: 'on BGG',
+    playEdit: 'Edit',
+    playEditSave: 'Save the correction',
+    playWhen: 'Played on',
+    playResult: 'Result',
     playDelete: 'Delete',
     playDeleteConfirm: 'Delete this game? It does not come back.',
     playDeleteYes: 'Delete it',
@@ -1055,6 +1118,23 @@ const STRINGS: Record<Locale, Strings> = {
     statsGamesNote:
       'Set a game aside to keep it without counting it \u2014 a demo, a duplicate, a night that went nowhere. One tap puts it back.',
     statsShowMore: (remaining) => `Show ${remaining} more`,
+    statsShowFewer: 'Show fewer',
+    statAverageGame: 'Average game',
+    statLongestGame: 'Longest game',
+    statCurrentStreak: 'Current streak',
+    statBestStreak: 'Best streak',
+    statCampaignGames: 'In a campaign',
+    statSoloGroup: 'Solo / group',
+    statsFilter: 'Filter the tables',
+    statsSort: 'Sort',
+    statsMeasure: 'Measure',
+    sortMostPlayed: 'Most played',
+    sortAlphabetical: 'A to Z',
+    sortBestRate: 'Best rate',
+    sortWorstRate: 'Worst rate',
+    measureWinRate: 'Win rate',
+    measureLossRate: 'Loss rate',
+    measureShare: 'Share of games',
     favourite: 'Add to favourites',
     unfavourite: 'Remove from favourites',
     backupTitle: 'Backup file',
@@ -1595,6 +1675,15 @@ const STRINGS: Record<Locale, Strings> = {
     syncSwitch: 'Synchroniser ce navigateur avec le compte',
     syncSwitchNote:
       'Se connecter n\u2019a fait que dire qui vous \u00eates. Ceci d\u00e9place votre collection, vos decks, vos parties et vos campagnes entre vos appareils.',
+    autoSyncSwitch: 'Synchroniser tout seul',
+    autoSyncNote:
+      "Synchronise aux moments où vous êtes le plus susceptible de prendre l'autre appareil. Ce choix reste sur ce navigateur et n'est jamais transmis à vos autres appareils : chacun décide pour lui-même.",
+    autoSyncScenario: "À la fin d'un scénario, en campagne ou non",
+    autoSyncCampaign: "À la fin d'une campagne",
+    autoSyncBreak: 'Quand vous rangez une partie pour une longue pause',
+    autoSyncDeck: "Quand un deck est créé ou importé",
+    autoSyncCollection: 'Quand votre collection change',
+    autoSyncFavourite: "Quand une carte est ajoutée à vos favoris",
     syncStaging: 'Lecture du compte. Rien n\u2019a encore \u00e9t\u00e9 modifi\u00e9 sur ce navigateur.',
     syncWorking: 'En cours\u2026',
     syncOn: '\u00c0 jour avec le compte.',
@@ -1636,6 +1725,21 @@ const STRINGS: Record<Locale, Strings> = {
     playSetAside: 'Ne pas compter',
     playCountAgain: 'Compter \u00e0 nouveau',
     playSetAsideMark: 'non compt\u00e9e',
+    bggUsername: 'Identifiant BoardGameGeek',
+    bggNote:
+      "Conservé sur cet appareil uniquement. Il n'est jamais synchronisé, jamais écrit dans une sauvegarde, et aucun mot de passe BoardGameGeek n'est demandé ni conservé : vous vous connectez vous-même à BoardGameGeek, dans ce navigateur, et les parties sont enregistrées sur leur site.",
+    bggOpenProfile: 'Ouvrir ce profil sur BoardGameGeek',
+    bggLogPlay: 'Enregistrer sur BGG',
+    bggFollowUp: "Le formulaire est ouvert dans un autre onglet.",
+    bggCopy: 'Copier les détails',
+    bggCopied: 'Copié',
+    bggMark: 'Marquer comme enregistrée',
+    bggUnmark: 'Finalement pas enregistrée sur BGG',
+    bggLogged: 'sur BGG',
+    playEdit: 'Modifier',
+    playEditSave: 'Enregistrer la correction',
+    playWhen: 'Jouée le',
+    playResult: 'Résultat',
     playDelete: 'Supprimer',
     playDeleteConfirm: 'Supprimer cette partie ? C\u2019est d\u00e9finitif.',
     playDeleteYes: 'Supprimer',
@@ -1660,6 +1764,23 @@ const STRINGS: Record<Locale, Strings> = {
     statsGamesNote:
       'Mettez une partie de c\u00f4t\u00e9 pour la conserver sans la compter : une d\u00e9monstration, un doublon, une soir\u00e9e qui n\u2019a rien donn\u00e9. Un appui la remet.',
     statsShowMore: (remaining) => `Afficher ${remaining} de plus`,
+    statsShowFewer: 'Afficher moins',
+    statAverageGame: 'Partie moyenne',
+    statLongestGame: 'Partie la plus longue',
+    statCurrentStreak: 'Série en cours',
+    statBestStreak: 'Meilleure série',
+    statCampaignGames: 'En campagne',
+    statSoloGroup: 'Solo / groupe',
+    statsFilter: 'Filtrer les tableaux',
+    statsSort: 'Trier',
+    statsMeasure: 'Mesure',
+    sortMostPlayed: 'Les plus jouées',
+    sortAlphabetical: 'De A à Z',
+    sortBestRate: 'Meilleur taux',
+    sortWorstRate: 'Pire taux',
+    measureWinRate: 'Taux de victoire',
+    measureLossRate: 'Taux de défaite',
+    measureShare: 'Part des parties',
     favourite: 'Ajouter aux favoris',
     unfavourite: 'Retirer des favoris',
     backupTitle: 'Fichier de sauvegarde',

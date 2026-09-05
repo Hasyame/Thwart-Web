@@ -15,6 +15,7 @@
     parseSlots,
   } from '../lib/decks';
   import { heroRules, validateDeck } from '../lib/deckRules';
+  import { syncAfter } from '../lib/sync/auto.svelte';
 
   interface Props {
     t: Strings;
@@ -108,6 +109,14 @@
     });
     building = null;
     editingId = id;
+    /*
+     * A new deck, however it arrived.
+     *
+     * Built here or imported below: both are a deck the account did not have a
+     * moment ago, and both are worth having on the phone before the next game.
+     * Editing one is not on this list — see the note on the settings toggle.
+     */
+    syncAfter('deck-added');
   }
 
   const editing = $derived(saved.decks.find((deck) => deck.id === editingId) ?? null);
@@ -212,6 +221,7 @@
       await db.decks.put(deck);
       input = '';
       openDeckId = deck.id;
+      syncAfter('deck-added');
     } catch (caught) {
       error =
         caught instanceof DeckImportError && caught.message === 'network'

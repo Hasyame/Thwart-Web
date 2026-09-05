@@ -10,6 +10,7 @@
   import { fold } from '../lib/campaign/engine';
   import { choosableScenarios } from '../lib/campaign/rules';
   import { buildCampaignPlay } from '../lib/campaign/play';
+  import { syncAfter } from '../lib/sync/auto.svelte';
   import {
     currentScenario,
     encounterSetsOf,
@@ -374,6 +375,24 @@
 
   const lastResult = $derived(campaign?.completedScenarios.at(-1) ?? null);
 
+  /*
+   * The end of a campaign, fired once when the run reaches it.
+   *
+   * Read from the settled state rather than from the button that caused it,
+   * because a campaign can end by being finished or by being lost, and because
+   * the write that ends it lands after the handler returns. `finishedSynced`
+   * keeps it to once per mount: re-rendering the finished page is not a second
+   * ending.
+   */
+  let finishedSynced = false;
+  $effect(() => {
+    const over = campaign?.finished === true || campaign?.campaignLost === true;
+    if (over && !finishedSynced) {
+      finishedSynced = true;
+      syncAfter('campaign-end');
+    }
+  });
+
   /**
    * Files the scenario: the campaign event, then the play.
    *
@@ -410,6 +429,14 @@
       endGame();
       override = 'result';
       reload();
+      /*
+       * A scenario ending mid-campaign, which is what lets somebody carry the
+       * run to the other device between chapters. The campaign's own end is a
+       * separate trigger, fired from the settled state rather than from here:
+       * `reload()` has not landed yet, so this is the wrong place to ask
+       * whether the campaign is over.
+       */
+      syncAfter('scenario-end');
     } finally {
       submitting = false;
     }

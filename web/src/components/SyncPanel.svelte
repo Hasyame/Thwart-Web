@@ -10,6 +10,7 @@
     turnOff,
     turnOn,
   } from '../lib/sync/sync.svelte';
+  import { autoSync, setAutoSync } from '../lib/sync/auto.svelte';
 
   /**
    * The switch, and the conversation behind it.
@@ -57,6 +58,36 @@
     <span>{t.syncSwitch}</span>
   </label>
   <p class="muted note">{t.syncSwitchNote}</p>
+
+  <!--
+    Automatic syncing, which is a second question and not a stronger version of
+    the first.
+
+    Offered only once this browser is actually in step, because a switch that
+    can do nothing is worse than one that is not there. The choice is kept on
+    this device and never travels: the settings record is fixed at five keys by
+    the contract with the Android app, and it is a per-device answer in any
+    case — a browser on a shared machine should not start reaching for the
+    account because a phone was told to.
+  -->
+  <label class="tick" class:unavailable={!sync.adopted}>
+    <input
+      type="checkbox"
+      checked={autoSync.enabled}
+      disabled={!sync.adopted}
+      onchange={(event) => setAutoSync(event.currentTarget.checked)}
+    />
+    <span>{t.autoSyncSwitch}</span>
+  </label>
+  <p class="muted note">{t.autoSyncNote}</p>
+  <ul class="muted triggers">
+    <li>{t.autoSyncScenario}</li>
+    <li>{t.autoSyncCampaign}</li>
+    <li>{t.autoSyncBreak}</li>
+    <li>{t.autoSyncDeck}</li>
+    <li>{t.autoSyncCollection}</li>
+    <li>{t.autoSyncFavourite}</li>
+  </ul>
 
   {#if sync.phase.kind === 'staging'}
     <p class="notice">{t.syncStaging}</p>
@@ -155,6 +186,18 @@
   h3 {
     font-size: var(--text-base);
     font-weight: var(--weight-semibold);
+  }
+
+  .triggers {
+    font-size: var(--text-sm);
+    margin: 0;
+    padding-inline-start: var(--space-5);
+    display: grid;
+    gap: var(--space-0-5);
+  }
+
+  .unavailable {
+    opacity: 0.6;
   }
 
   .note {

@@ -8,6 +8,7 @@
     type LongBreakDraft,
   } from '../lib/pausedGame';
   import { endGame, pauseGame, session } from '../lib/session.svelte';
+  import { syncAfter } from '../lib/sync/auto.svelte';
 
   interface Props {
     t: Strings;
@@ -60,6 +61,14 @@
       endGame();
       open = false;
       draft = null;
+      /*
+       * A long break, which almost always means the table is being left.
+       *
+       * The put-away game itself does not travel — `pausedGames` is not one of
+       * the ten collections — but everything the evening produced up to this
+       * point does, and this is the last moment before the screen goes dark.
+       */
+      syncAfter('long-break');
       onSaved();
     } finally {
       saving = false;

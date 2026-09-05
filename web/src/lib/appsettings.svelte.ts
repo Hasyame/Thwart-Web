@@ -21,14 +21,15 @@ const BLANK: StoredSettings = {
   themeChoice: '',
   playLocation: '',
   /*
-   * On by default.
+   * Off by default, because the Android app is off by default.
    *
-   * The tracker is most of why somebody opens a companion during a game, and a
-   * browser that has never seen this row should show it. Absent therefore has
-   * to read as true, which means the stored value is only ever consulted when
-   * the row exists.
+   * `AppPreferences` reads `KEY_TRACK_ENCOUNTER ?: false` and `BackupSettings`
+   * declares `trackEncounter: Boolean = false`, so an account that has never
+   * answered the question means no. This browser used to read an absent value
+   * as yes, which meant the same account showed a tracker here and not on the
+   * phone — the two ends disagreeing about a setting neither of them had.
    */
-  trackEncounter: true,
+  trackEncounter: false,
   dismissedPacks: [],
 };
 
