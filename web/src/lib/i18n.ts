@@ -215,7 +215,6 @@ export interface Strings {
   readonly accountLeaving: string;
   readonly accountSignOut: string;
   readonly accountSignOutKeeps: string;
-  readonly accountSyncNotYet: string;
   readonly accountWhy: string;
   readonly accountWhyBody: string;
   readonly accountPrivacy: string;
@@ -355,6 +354,26 @@ export interface Strings {
   readonly saveResult: string;
   readonly backToGame: string;
   readonly cancel: string;
+
+  // Keeping this browser in step, and the merge it asks about the first time.
+  readonly syncTitle: string;
+  readonly syncSwitch: string;
+  readonly syncSwitchNote: string;
+  readonly syncStaging: string;
+  readonly syncWorking: string;
+  readonly syncOn: string;
+  readonly syncNow: string;
+  readonly syncStopped: string;
+  readonly syncDone: (pulled: number, pushed: number) => string;
+  readonly syncAdoptTitle: string;
+  readonly syncAdoptNothing: string;
+  readonly syncAdoptKeeps: string;
+  readonly syncAdoptGo: string;
+  readonly syncArriving: (n: number) => string;
+  readonly syncUploading: (n: number) => string;
+  readonly syncMerging: (n: number) => string;
+  readonly syncForkNote: (n: number) => string;
+  readonly collectionName: (collection: string) => string;
 
   // Setting a game aside, and removing one. Both live on the play row, and the
   // campaign list uses the same words for the same act.
@@ -645,8 +664,6 @@ const STRINGS: Record<Locale, Strings> = {
     accountSignOut: 'Sign out',
     accountSignOutKeeps:
       'Everything on this browser stays exactly where it is. Signing out forgets the account, not your collection, decks, plays or campaigns.',
-    accountSyncNotYet:
-      'Nothing is syncing yet. The account works and this browser is registered to it, but moving data between your devices is still being built \u2014 so nothing has been uploaded and nothing has been changed here.',
     accountWhy: 'What an account is for',
     accountWhyBody:
       'One place your collection, decks, plays and campaigns live, so the same data is on your phone and in this browser. Until then, the backup file on the Collection page is how it travels.',
@@ -825,6 +842,45 @@ const STRINGS: Record<Locale, Strings> = {
     saveResult: 'Save the game',
     backToGame: 'Back to the game',
     cancel: 'Cancel',
+    syncTitle: 'Keeping this browser in step',
+    syncSwitch: 'Sync this browser with the account',
+    syncSwitchNote:
+      'Signing in only said who you are. This is what moves your collection, decks, games and campaigns between your devices.',
+    syncStaging: 'Reading the account. Nothing on this browser has been touched yet.',
+    syncWorking: 'Working\u2026',
+    syncOn: 'In step with the account.',
+    syncNow: 'Sync now',
+    syncStopped:
+      'A batch did not get through, so the rest is still waiting. It will be sent again next time \u2014 nothing was applied twice.',
+    syncDone: (pulled, pushed) =>
+      pulled === 0 && pushed === 0 ?
+        'Already in step. Nothing to move.'
+      : `Brought down ${pulled} and sent up ${pushed}.`,
+    syncAdoptTitle: 'Before anything moves',
+    syncAdoptNothing: 'This browser and the account already hold the same thing. Nothing to merge.',
+    syncAdoptKeeps:
+      'Nothing here is deleted. What this browser has and the account does not is uploaded; what the account has and this browser does not comes down.',
+    syncAdoptGo: 'Merge them',
+    syncArriving: (n) => `${n} coming down`,
+    syncUploading: (n) => `${n} going up`,
+    syncMerging: (n) => `${n} to reconcile`,
+    syncForkNote: (n) =>
+      n === 1 ?
+        'One deck was edited in both places. Nothing reconciles two card lists, so the account\u2019s copy keeps its name and yours is kept beside it as a second deck.'
+      : `${n} decks were edited in both places. Nothing reconciles two card lists, so the account\u2019s copies keep their names and yours are kept beside them.`,
+    collectionName: (collection) =>
+      ({
+        settings: 'Settings',
+        owned_packs: 'Packs',
+        excluded_modular_sets: 'Excluded modular sets',
+        excluded_scenarios: 'Excluded scenarios',
+        favourite_cards: 'Favourite cards',
+        saved_decks: 'Decks',
+        campaign_runs: 'Campaigns',
+        campaign_events: 'Campaign log',
+        plays: 'Games',
+        randomizer_history: 'Randomiser draws',
+      })[collection] ?? collection,
     playWon: 'won',
     playLost: 'lost',
     playSetAside: 'Set aside',
@@ -1132,8 +1188,6 @@ const STRINGS: Record<Locale, Strings> = {
     accountSignOut: 'Se d\u00e9connecter',
     accountSignOutKeeps:
       'Tout ce qui est sur ce navigateur reste exactement o\u00f9 c\u2019est. Se d\u00e9connecter oublie le compte, pas votre collection, vos decks, vos parties ni vos campagnes.',
-    accountSyncNotYet:
-      'Rien n\u2019est encore synchronis\u00e9. Le compte fonctionne et ce navigateur y est enregistr\u00e9, mais le transfert des donn\u00e9es entre vos appareils est encore en cours d\u2019\u00e9criture : rien n\u2019a \u00e9t\u00e9 envoy\u00e9 et rien n\u2019a \u00e9t\u00e9 modifi\u00e9 ici.',
     accountWhy: '\u00c0 quoi sert un compte',
     accountWhyBody:
       'Un seul endroit pour votre collection, vos decks, vos parties et vos campagnes, afin que les m\u00eames donn\u00e9es soient sur votre t\u00e9l\u00e9phone et dans ce navigateur. En attendant, le fichier de sauvegarde de la page Collection est la fa\u00e7on de les d\u00e9placer.',
@@ -1312,6 +1366,46 @@ const STRINGS: Record<Locale, Strings> = {
     saveResult: 'Enregistrer la partie',
     backToGame: 'Revenir à la partie',
     cancel: 'Annuler',
+    syncTitle: 'Garder ce navigateur \u00e0 jour',
+    syncSwitch: 'Synchroniser ce navigateur avec le compte',
+    syncSwitchNote:
+      'Se connecter n\u2019a fait que dire qui vous \u00eates. Ceci d\u00e9place votre collection, vos decks, vos parties et vos campagnes entre vos appareils.',
+    syncStaging: 'Lecture du compte. Rien n\u2019a encore \u00e9t\u00e9 modifi\u00e9 sur ce navigateur.',
+    syncWorking: 'En cours\u2026',
+    syncOn: '\u00c0 jour avec le compte.',
+    syncNow: 'Synchroniser maintenant',
+    syncStopped:
+      'Un lot n\u2019est pas pass\u00e9 : le reste attend encore. Il sera renvoy\u00e9 la prochaine fois, et rien n\u2019a \u00e9t\u00e9 appliqu\u00e9 deux fois.',
+    syncDone: (pulled, pushed) =>
+      pulled === 0 && pushed === 0 ?
+        'D\u00e9j\u00e0 \u00e0 jour. Rien \u00e0 d\u00e9placer.'
+      : `${pulled} r\u00e9cup\u00e9r\u00e9${pulled === 1 ? '' : 's'}, ${pushed} envoy\u00e9${pushed === 1 ? '' : 's'}.`,
+    syncAdoptTitle: 'Avant que quoi que ce soit ne bouge',
+    syncAdoptNothing:
+      'Ce navigateur et le compte ont d\u00e9j\u00e0 la m\u00eame chose. Rien \u00e0 fusionner.',
+    syncAdoptKeeps:
+      'Rien n\u2019est supprim\u00e9 ici. Ce que ce navigateur a et pas le compte est envoy\u00e9 ; ce que le compte a et pas ce navigateur est r\u00e9cup\u00e9r\u00e9.',
+    syncAdoptGo: 'Fusionner',
+    syncArriving: (n) => `${n} \u00e0 r\u00e9cup\u00e9rer`,
+    syncUploading: (n) => `${n} \u00e0 envoyer`,
+    syncMerging: (n) => `${n} \u00e0 r\u00e9concilier`,
+    syncForkNote: (n) =>
+      n === 1 ?
+        'Un deck a \u00e9t\u00e9 modifi\u00e9 des deux c\u00f4t\u00e9s. Rien ne r\u00e9concilie deux listes de cartes : la copie du compte garde son nom et la v\u00f4tre est conserv\u00e9e \u00e0 c\u00f4t\u00e9, comme un second deck.'
+      : `${n} decks ont \u00e9t\u00e9 modifi\u00e9s des deux c\u00f4t\u00e9s. Rien ne r\u00e9concilie deux listes de cartes : les copies du compte gardent leurs noms et les v\u00f4tres sont conserv\u00e9es \u00e0 c\u00f4t\u00e9.`,
+    collectionName: (collection) =>
+      ({
+        settings: 'R\u00e9glages',
+        owned_packs: 'Paquets',
+        excluded_modular_sets: 'Sets modulaires exclus',
+        excluded_scenarios: 'Sc\u00e9narios exclus',
+        favourite_cards: 'Cartes favorites',
+        saved_decks: 'Decks',
+        campaign_runs: 'Campagnes',
+        campaign_events: 'Journal de campagne',
+        plays: 'Parties',
+        randomizer_history: 'Tirages al\u00e9atoires',
+      })[collection] ?? collection,
     playWon: 'gagn\u00e9e',
     playLost: 'perdue',
     playSetAside: 'Ne pas compter',

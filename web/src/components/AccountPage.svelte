@@ -5,6 +5,7 @@
   import * as api from '../lib/sync/api';
   import { session, signOut } from '../lib/sync/session.svelte';
   import SignInForm, { type FormMode } from './SignInForm.svelte';
+  import SyncPanel from './SyncPanel.svelte';
 
   interface Props {
     t: Strings;
@@ -194,13 +195,9 @@
       {/if}
       <p class="muted note">{t.accountDeviceIs(account.deviceName)}</p>
 
-      <!--
-        Said plainly rather than implied by an idle spinner. Nothing moves yet:
-        the transport exists and the engine that would use it does not, and a
-        screen that looked like it was syncing would be lying.
-      -->
-      <p class="notice">{t.accountSyncNotYet}</p>
     </div>
+
+    <SyncPanel {t} {uiLocale} />
 
     {#if devices.length > 0}
       <div class="panel">
@@ -308,14 +305,6 @@
 
   .recovery {
     border-color: var(--accent);
-  }
-
-  .notice {
-    padding: var(--space-3);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    border-inline-start: 3px solid var(--accent);
-    font-size: var(--text-sm);
   }
 
   .warning {

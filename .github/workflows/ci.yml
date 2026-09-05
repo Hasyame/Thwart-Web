@@ -105,6 +105,15 @@ jobs:
         working-directory: web
         run: npm run test:merge
 
+      # Signing in on a browser that already holds data. The flow it is
+      # unforgivable to get wrong — somebody's history duplicated or gone — so
+      # the plan is a pure function and these assert it before anything is
+      # written, including that a record identical on both sides is left alone
+      # rather than uploaded straight back.
+      - name: Sync adoption
+        working-directory: web
+        run: npm run test:adoption
+
       - name: Service worker routing
         working-directory: web
         run: npm run test:sw

@@ -83,10 +83,6 @@
         </span>
       </div>
 
-      <!-- Said here too, because this is the menu somebody opens to find out
-           whether their data is safe. -->
-      <p class="notice">{t.accountSyncNotYet}</p>
-
       <div class="btn-row">
         <button class="btn btn--primary" type="button" onclick={() => toAccount()}>
           {t.accountManage}
@@ -208,15 +204,6 @@
 
   .sub {
     font-size: var(--text-xs);
-  }
-
-  .notice {
-    padding: var(--space-3);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    border-inline-start: 3px solid var(--accent);
-    font-size: var(--text-sm);
-    margin: 0;
   }
 
   .more {

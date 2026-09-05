@@ -83,6 +83,18 @@ export default defineConfig({
         target: process.env.THWART_API ?? 'https://thwart.app',
         changeOrigin: true,
         secure: true,
+        /*
+         * Strip `/api` when talking to a server on this machine.
+         *
+         * In production nginx owns that prefix and the API never sees it. A
+         * bare `thwart-api` does see it, and answers every request with
+         * `not_found` — so THWART_API, which exists precisely to point at a
+         * local server, did not work until this was here.
+         */
+        rewrite:
+          process.env.THWART_API === undefined ?
+            undefined
+          : (path) => path.replace(/^\/api/, ''),
       },
     },
   },
