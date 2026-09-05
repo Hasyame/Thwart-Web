@@ -31,7 +31,8 @@
     "test:plays": "vite-node scripts/test-plays.mjs",
     "test:merge": "vite-node scripts/test-sync-merge.mjs",
     "test:adoption": "vite-node scripts/test-sync-adoption.mjs",
-    "test:filters": "vite-node scripts/test-search-filters.mjs"
+    "test:filters": "vite-node scripts/test-search-filters.mjs",
+    "test:deckbuilder": "vite-node scripts/test-deckbuilder.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

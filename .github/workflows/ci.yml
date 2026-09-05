@@ -177,6 +177,14 @@ jobs:
         working-directory: web
         run: npm run campaigns
 
+      # Deck legality, against the real pool rather than a fixture — the pool
+      # is where the awkward cases are. A validator wrong in the permissive
+      # direction is useless; one wrong in the strict direction rejects decks
+      # people have actually built. Both failures are quiet.
+      - name: Deck building rules
+        working-directory: web
+        run: npm run test:deckbuilder
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

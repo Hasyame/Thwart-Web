@@ -126,6 +126,16 @@ export interface Card {
   readonly quantity?: number | null;
   readonly deck_limit?: number | null;
   readonly is_unique?: boolean;
+  /**
+   * The deck-building rules an identity carries, kept uninterpreted.
+   *
+   * Two heroes have requirements and five have options, so almost every hero
+   * leaves both empty. Read at use rather than at import, which is why they are
+   * typed as loosely as the data is: a rule changing on MarvelCDB should not
+   * mean rebuilding the card cache.
+   */
+  readonly deck_requirements?: readonly unknown[] | null;
+  readonly deck_options?: readonly unknown[] | null;
   readonly permanent?: boolean;
   readonly double_sided?: boolean;
   readonly url?: string | null;
