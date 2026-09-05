@@ -1,19 +1,22 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
   import type { Play } from '../lib/records';
-  import type { IndexRow } from '../lib/types';
+  import type { IndexRow, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { computeStatistics, type Tally } from '../lib/plays';
+  import PlayRow from './PlayRow.svelte';
   import { formatElapsed } from '../lib/session.svelte';
 
   interface Props {
     t: Strings;
+    /** Dates on the game list read in the interface's language, not the cards'. */
+    uiLocale: Locale;
     index: readonly IndexRow[];
     storageOk: boolean;
   }
 
-  const { t, index, storageOk }: Props = $props();
+  const { t, uiLocale, index, storageOk }: Props = $props();
 
   /**
    * Hero set code to hero card code.
@@ -95,6 +98,18 @@
       ] as ReadonlyArray<readonly [string, readonly Tally[]]>
     ).filter(([, rows]) => rows.length > 1),
   );
+
+  /*
+   * How many games to list before asking.
+   *
+   * Somebody with two hundred plays does not want two hundred rows between them
+   * and the bottom of the page, and the reason to come here is almost always a
+   * recent game. The rest are one button away.
+   */
+  const PAGE = 25;
+  let shown = $state(PAGE);
+  const listed = $derived(store.plays.slice(0, shown));
+  const remaining = $derived(Math.max(0, store.plays.length - shown));
 </script>
 
 <section>
@@ -117,6 +132,28 @@
         <p class="muted">{t.timePlayed(formatElapsed(stats.totalMillis))}</p>
       </div>
     </div>
+
+    <!--
+      The games themselves, under the numbers they add up to.
+
+      This page is where somebody notices a total that looks wrong, so it is
+      where the row causing it should be reachable. Setting one aside keeps it
+      and takes it out of the tables above; deleting it does not come back.
+    -->
+    <section class="table games-section">
+      <h2>{t.statsGames}</h2>
+      <p class="muted note">{t.statsGamesNote}</p>
+      <ul class="games">
+        {#each listed as play (play.id)}
+          <PlayRow {t} {uiLocale} {play} />
+        {/each}
+      </ul>
+      {#if remaining > 0}
+        <button class="btn btn--quiet" type="button" onclick={() => (shown += PAGE)}>
+          {t.statsShowMore(remaining)}
+        </button>
+      {/if}
+    </section>
 
     {#each tables as [title, rows] (title)}
       <section class="table">
@@ -142,6 +179,17 @@
 </section>
 
 <style>
+  .games-section .note {
+    font-size: var(--text-sm);
+    margin: 0 0 var(--space-2);
+  }
+
+  .games {
+    list-style: none;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+  }
+
   h1 {
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);

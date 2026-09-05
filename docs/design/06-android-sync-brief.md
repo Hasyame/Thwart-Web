@@ -331,6 +331,41 @@ If Android would rather define this differently, that is fine — but decide
 before both sides write it, because a mismatch here is silent for the same
 reason a collection name is.
 
+### A play can be set aside
+
+Added to the web on 5 September 2026, and it needs a column on your side.
+
+`plays` gains an optional boolean, `ignored`. A play with it set is kept — it is
+still a row, still in the backup, still on every device — and left out of the
+statistics: a demo taught to somebody, a duplicate entered twice, a night that
+went nowhere. One tap in either direction, which is the point: it is a
+preference, not a deletion, and deletion is offered separately beside it.
+
+```
+collection  "plays"
+body        { ..., "ignored": true }     absent means false
+```
+
+**Absent must read as false, never as unknown.** Every play recorded before
+this existed has no opinion, and a three-state reading of it would put a
+question mark on somebody's entire history.
+
+Until Android has the column this is fragile in one direction, and it is worth
+saying exactly how. The web's `plays` mapping spreads the body it is given, so
+a flag Android does not know about survives a round trip through this client.
+Android rebuilds a play from the fields it knows, so **the first time Android
+edits a play the web has flagged, the flag is dropped** and that game quietly
+returns to the statistics. Adding the field fixes it; nothing else needs to
+change.
+
+Filter it in one place rather than at each screen that counts. The web puts the
+test inside the statistics function itself, because a filter every caller has to
+remember is one a caller will forget — and the failure is silent: the reader
+sets a play aside, the number does not move, and the only way to find out is to
+count by hand.
+
+---
+
 ### What does not sync
 
 - **`paused_games`** — a game put down mid-play describes the table in front of

@@ -355,6 +355,26 @@ export interface Strings {
   readonly saveResult: string;
   readonly backToGame: string;
   readonly cancel: string;
+
+  // Setting a game aside, and removing one. Both live on the play row, and the
+  // campaign list uses the same words for the same act.
+  readonly playWon: string;
+  readonly playLost: string;
+  readonly playSetAside: string;
+  readonly playCountAgain: string;
+  readonly playSetAsideMark: string;
+  readonly playDelete: string;
+  readonly playDeleteConfirm: string;
+  readonly playDeleteYes: string;
+  readonly campaignsInProgress: string;
+  readonly campaignsFinished: string;
+  readonly campaignDelete: string;
+  readonly campaignDeleteConfirm: (plays: number, events: number) => string;
+  readonly campaignDeleteYes: string;
+  readonly campaignGames: string;
+  readonly statsGames: string;
+  readonly statsGamesNote: string;
+  readonly statsShowMore: (remaining: number) => string;
   readonly favourite: string;
   readonly unfavourite: string;
   readonly backupTitle: string;
@@ -484,7 +504,7 @@ const STRINGS: Record<Locale, Strings> = {
       'Record one from My own setup, or import a backup from the Android app on the Collection page.',
     statsNote:
       'Counted per seat, so a four-player game credits all four heroes rather than only the first.',
-    winRateOf: (won, total) => `${won} won of ${total} games`,
+    winRateOf: (won, total) => `${won} won of ${total} ${total === 1 ? 'game' : 'games'}`,
     timePlayed: (formatted) => `${formatted} at the table`,
     wonOf: (won, played) => `${won}/${played}`,
     byHero: 'By hero',
@@ -805,6 +825,33 @@ const STRINGS: Record<Locale, Strings> = {
     saveResult: 'Save the game',
     backToGame: 'Back to the game',
     cancel: 'Cancel',
+    playWon: 'won',
+    playLost: 'lost',
+    playSetAside: 'Set aside',
+    playCountAgain: 'Count it again',
+    playSetAsideMark: 'not counted',
+    playDelete: 'Delete',
+    playDeleteConfirm: 'Delete this game? It does not come back.',
+    playDeleteYes: 'Delete it',
+    campaignsInProgress: 'In progress',
+    campaignsFinished: 'Finished',
+    campaignDelete: 'Delete this campaign',
+    campaignDeleteConfirm: (plays, events) => {
+      const log = `its log of ${events} ${events === 1 ? 'entry' : 'entries'}`;
+      if (plays === 0) {
+        return `This removes the campaign and ${log}. It does not come back.`;
+      }
+      const games =
+        plays === 1 ? 'the game recorded against it' : `the ${plays} games recorded against it`;
+      const leave = plays === 1 ? 'it leaves' : 'they leave';
+      return `This removes the campaign, ${log}, and ${games} \u2014 so ${leave} your statistics too. It does not come back.`;
+    },
+    campaignDeleteYes: 'Delete it',
+    campaignGames: 'Games recorded',
+    statsGames: 'Every game',
+    statsGamesNote:
+      'Set a game aside to keep it without counting it \u2014 a demo, a duplicate, a night that went nowhere. One tap puts it back.',
+    statsShowMore: (remaining) => `Show ${remaining} more`,
     favourite: 'Add to favourites',
     unfavourite: 'Remove from favourites',
     backupTitle: 'Backup file',
@@ -939,7 +986,8 @@ const STRINGS: Record<Locale, Strings> = {
       "Enregistrez-en une depuis Ma propre partie, ou importez une sauvegarde de l'application Android sur la page Collection.",
     statsNote:
       'Compté par siège : une partie à quatre crédite les quatre héros et non le premier seulement.',
-    winRateOf: (won, total) => `${won} victoires sur ${total} parties`,
+    winRateOf: (won, total) =>
+      `${won} victoire${won === 1 ? '' : 's'} sur ${total} partie${total === 1 ? '' : 's'}`,
     timePlayed: (formatted) => `${formatted} de jeu`,
     wonOf: (won, played) => `${won}/${played}`,
     byHero: 'Par héros',
@@ -1264,6 +1312,35 @@ const STRINGS: Record<Locale, Strings> = {
     saveResult: 'Enregistrer la partie',
     backToGame: 'Revenir à la partie',
     cancel: 'Annuler',
+    playWon: 'gagn\u00e9e',
+    playLost: 'perdue',
+    playSetAside: 'Ne pas compter',
+    playCountAgain: 'Compter \u00e0 nouveau',
+    playSetAsideMark: 'non compt\u00e9e',
+    playDelete: 'Supprimer',
+    playDeleteConfirm: 'Supprimer cette partie ? C\u2019est d\u00e9finitif.',
+    playDeleteYes: 'Supprimer',
+    campaignsInProgress: 'En cours',
+    campaignsFinished: 'Termin\u00e9es',
+    campaignDelete: 'Supprimer cette campagne',
+    campaignDeleteConfirm: (plays, events) => {
+      const log = `son journal de ${events} entr\u00e9e${events === 1 ? '' : 's'}`;
+      if (plays === 0) {
+        return `Ceci supprime la campagne et ${log}. C\u2019est d\u00e9finitif.`;
+      }
+      const games =
+        plays === 1 ?
+          'la partie enregistr\u00e9e pour elle'
+        : `les ${plays} parties enregistr\u00e9es pour elle`;
+      const leave = plays === 1 ? 'elle quitte' : 'elles quittent';
+      return `Ceci supprime la campagne, ${log} et ${games} \u2014 ${leave} donc aussi vos statistiques. C\u2019est d\u00e9finitif.`;
+    },
+    campaignDeleteYes: 'Supprimer',
+    campaignGames: 'Parties enregistr\u00e9es',
+    statsGames: 'Toutes les parties',
+    statsGamesNote:
+      'Mettez une partie de c\u00f4t\u00e9 pour la conserver sans la compter : une d\u00e9monstration, un doublon, une soir\u00e9e qui n\u2019a rien donn\u00e9. Un appui la remet.',
+    statsShowMore: (remaining) => `Afficher ${remaining} de plus`,
     favourite: 'Ajouter aux favoris',
     unfavourite: 'Retirer des favoris',
     backupTitle: 'Fichier de sauvegarde',

@@ -100,6 +100,26 @@ export interface Play {
   readonly campaignRunId: string | null;
   readonly reportedToBgg: boolean;
   readonly photos: string;
+  /**
+   * Kept, but left out of the statistics.
+   *
+   * For a game that happened and should not count: a demo taught to somebody,
+   * a run abandoned halfway, a duplicate recorded twice. Deleting it would work
+   * too, and the difference is that this is reversible — the row is still
+   * there, still in the backup, still on the other devices, and one tap puts it
+   * back in the numbers.
+   *
+   * Optional because every play recorded before this existed has no opinion,
+   * and an absent field must read the same as false rather than as unknown.
+   *
+   * **Not yet known to the Android app.** It rides along here because
+   * `plays.rowOf` spreads the body it is given, so a play this browser has
+   * flagged keeps the flag through a sync. But Android rebuilds a play from
+   * the fields it knows, so if it edits that play the flag is dropped. Doc 06
+   * asks for the column; until it exists, treat this as a web-side preference
+   * that usually survives.
+   */
+  readonly ignored?: boolean;
 }
 
 /** `data/db/entity/CampaignEntity.kt` — CampaignRunEntity. */

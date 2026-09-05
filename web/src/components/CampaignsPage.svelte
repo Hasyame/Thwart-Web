@@ -10,6 +10,7 @@
   import type { SavedDeck } from '../lib/records';
   import StartCampaign from './StartCampaign.svelte';
   import CampaignRunView from './CampaignRun.svelte';
+  import PlayRow from './PlayRow.svelte';
 
   interface Props {
     t: Strings;
@@ -88,7 +89,56 @@
     return store.plays.filter((play) => play.campaignRunId === runId);
   }
 
+  /*
+   * Two lists, not one sorted cleverly.
+   *
+   * A finished campaign is a different kind of thing from one being played: you
+   * open the first to read it and the second to carry on. Mixed together, the
+   * one you want is wherever its start date happens to put it, and a shelf of
+   * finished campaigns pushes the live one off the screen.
+   *
+   * Conceded counts as finished. It is over either way, and the run that ended
+   * badly is not one somebody is looking for under "in progress".
+   */
+  const inProgress = $derived(
+    campaigns.filter((campaign) => !campaign.run.finished && !campaign.conceded),
+  );
+  const finished = $derived(
+    campaigns.filter((campaign) => campaign.run.finished || campaign.conceded),
+  );
+
   let openId = $state<string | null>(null);
+  /** The run whose delete has been asked for but not yet confirmed. */
+  let deleting = $state<string | null>(null);
+  let busy = $state(false);
+
+  /**
+   * Removes a campaign, its log, and the games recorded against it.
+   *
+   * The games go too, deliberately: this exists so a campaign somebody does not
+   * want can stop counting, and leaving its plays behind would leave them in
+   * the statistics — which is most of what was being asked for. The confirm
+   * says so in the same breath, with the numbers.
+   *
+   * One transaction, so a browser closed halfway cannot leave a run with no log
+   * or a log with no run.
+   */
+  async function removeCampaign(runId: string): Promise<void> {
+    busy = true;
+    try {
+      await db.transaction('rw', db.campaignRuns, db.campaignEvents, db.plays, async () => {
+        await db.campaignEvents.where('runId').equals(runId).delete();
+        await db.plays.where('campaignRunId').equals(runId).delete();
+        await db.campaignRuns.delete(runId);
+      });
+      if (openId === runId) {
+        openId = null;
+      }
+    } finally {
+      busy = false;
+      deleting = null;
+    }
+  }
 </script>
 
 <section>
@@ -133,8 +183,22 @@
       <p class="muted">{t.campaignsEmptyHint}</p>
     </div>
   {:else}
+    {#if inProgress.length > 0}
+      <h2 class="section-title">{t.campaignsInProgress}</h2>
+      {@render runList(inProgress)}
+    {/if}
+
+    {#if finished.length > 0}
+      <h2 class="section-title">{t.campaignsFinished}</h2>
+      {@render runList(finished)}
+    {/if}
+  {/if}
+  {/if}
+</section>
+
+{#snippet runList(list: readonly CampaignProgress[])}
     <ul class="runs">
-      {#each campaigns as campaign (campaign.run.id)}
+      {#each list as campaign (campaign.run.id)}
         {@const open = openId === campaign.run.id}
         {@const plays = playsFor(campaign.run.id)}
         <li class="surface run" class:open>
@@ -194,7 +258,12 @@
               {/if}
 
               {#if plays.length > 0}
-                <p class="muted">{t.campaignPlays(plays.length)}</p>
+                <h3 class="games-title">{t.campaignGames}</h3>
+                <ul class="games">
+                  {#each plays as play (play.id)}
+                    <PlayRow {t} {uiLocale} {play} />
+                  {/each}
+                </ul>
               {/if}
 
               {#if !campaign.run.finished && !campaign.conceded}
@@ -204,6 +273,43 @@
                   onclick={() => (view = { kind: 'run', id: campaign.run.id })}
                 >
                   {t.campaignOpen}
+                </button>
+              {/if}
+
+              {#if deleting === campaign.run.id}
+                <div class="confirm">
+                  <p class="note">
+                    {t.campaignDeleteConfirm(
+                      plays.length,
+                      (eventsByRun.get(campaign.run.id) ?? []).length,
+                    )}
+                  </p>
+                  <div class="confirm-actions">
+                    <button
+                      class="btn btn--quiet danger"
+                      type="button"
+                      disabled={busy}
+                      onclick={() => void removeCampaign(campaign.run.id)}
+                    >
+                      {t.campaignDeleteYes}
+                    </button>
+                    <button
+                      class="btn btn--quiet"
+                      type="button"
+                      disabled={busy}
+                      onclick={() => (deleting = null)}
+                    >
+                      {t.cancel}
+                    </button>
+                  </div>
+                </div>
+              {:else}
+                <button
+                  class="btn btn--quiet danger delete-run"
+                  type="button"
+                  onclick={() => (deleting = campaign.run.id)}
+                >
+                  {t.campaignDelete}
                 </button>
               {/if}
 
@@ -218,11 +324,56 @@
         </li>
       {/each}
     </ul>
-  {/if}
-  {/if}
-</section>
+{/snippet}
 
 <style>
+  .section-title {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    margin: var(--space-5) 0 var(--space-2);
+  }
+
+  .games-title {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-muted);
+    margin: var(--space-3) 0 0;
+  }
+
+  .games {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .confirm {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border-inline-start: 3px solid var(--danger);
+  }
+
+  .confirm .note {
+    font-size: var(--text-sm);
+    margin: 0;
+  }
+
+  .confirm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .danger {
+    color: var(--danger);
+  }
+
+  .delete-run {
+    justify-self: start;
+  }
+
   .start-button {
     display: block;
     margin: var(--space-4) 0;

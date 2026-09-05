@@ -173,10 +173,28 @@ export interface StatLabels {
   readonly canonicalHero?: (code: string) => string;
 }
 
+/**
+ * Whether a play counts.
+ *
+ * Exported so the two places that show a number of games agree with each
+ * other: a play the reader has set aside should not be in the statistics and
+ * should not be in the count beside their campaign either.
+ */
+export const counts = (play: Play): boolean => play.ignored !== true;
+
+/**
+ * The statistics, over the plays that count.
+ *
+ * Filtered here rather than by the caller, deliberately. There are two screens
+ * that ask for this and there will be more, and a filter every caller has to
+ * remember is a filter one of them will forget — at which point the number the
+ * reader set out to change is the one that did not move.
+ */
 export function computeStatistics(
-  plays: readonly Play[],
+  all: readonly Play[],
   labels: StatLabels,
 ): Statistics {
+  const plays = all.filter(counts);
   return {
     total: plays.length,
     won: plays.filter((p) => p.won).length,
