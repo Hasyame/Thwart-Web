@@ -130,31 +130,33 @@ HTML version would carry nothing the text does not, and a message that is only
 a styled button is the shape people have been taught to distrust.
 
 The wording says what the account is for, what happens if the reader ignores it,
-and what is held about them — because somebody who has just typed their address
+and what is held about them, because somebody who has just typed their address
 into a hobby project deserves all three without having to go and look.
+
+**One line per paragraph, and no hard wrapping.** An earlier version broke every
+line at about sixty-eight characters, which fights whatever width the reader's
+client actually is: sentences snapped mid-clause on a phone and left a ragged
+column on a desktop. Every mail client wraps plain text for itself, and doing it
+here only takes that choice away from it. The lines stay far under the 998-octet
+limit RFC 5322 puts on them, and the whole message is ASCII, so there is nothing
+for the transfer encoding to get wrong either.
 */
 func verificationEmail(handle, link string, expires time.Duration) (subject, body string) {
 	days := int(expires.Hours() / 24)
 	return "Confirm your address for Thwart",
-		fmt.Sprintf(`Somebody — probably you — made a Thwart account with this address,
-under the name %s.
+		fmt.Sprintf(`Somebody (probably you) made a Thwart account with this address, under the name %s.
 
 Confirm the address and the account starts working:
 
 %s
 
-Until you do, the account is disabled: it cannot sign in and nothing
-syncs to it. Thwart is a companion for Marvel Champions, and the only
-reason it holds an address at all is so that your own devices can find
-the same account.
+Until you do, the account is disabled: it cannot sign in and nothing syncs to it. Thwart is a companion for Marvel Champions, and the only reason it holds an address at all is so that your own devices can find the same account.
 
 The link works once and stops working after %d days.
 
-If you did not make this account, do nothing. An account that is never
-confirmed is deleted, along with the address, rather than left sitting
-here.
+If you did not make this account, do nothing. An account that is never confirmed is deleted, along with the address, rather than left sitting here.
 
-— Thwart
-   https://thwart.app
+Thwart
+https://thwart.app
 `, handle, link, days)
 }
