@@ -198,9 +198,21 @@
   {:else}
     <label class="field-group">
       <span class="field-label">{t.accountEmail}</span>
+      <!--
+        `type="text"`, not `type="email"`.
+
+        This field takes an address *or* a pseudonym: the server resolves either,
+        because an account made before addresses existed has nothing else to sign
+        in with. With `type="email"` the browser's own validation refuses to
+        submit a pseudonym at all — the form simply does nothing, with no message,
+        because the control it wants to complain about is the one being typed in.
+        Caught by a console error while signing in with a handle.
+
+        `inputmode="email"` stays, so a phone still offers the @ key.
+      -->
       <input
         class="field"
-        type="email"
+        type="text"
         inputmode="email"
         autocomplete="username"
         autocapitalize="none"
