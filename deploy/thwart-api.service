@@ -17,9 +17,16 @@ User=thwart
 Group=thwart
 WorkingDirectory=/srv/thwart
 
-# `-registration=false` closes the door to new accounts. The ones that already
-# exist still sign in, and a lost password is still recovered with its code:
-# closing an instance must not lock out the person whose account it is.
+# `-registration` was false while there was no way to prove an address belonged
+# to the person who typed it: an open endpoint with no confirmation is a table
+# of invented accounts waiting to happen. Confirmation closes that, so the door
+# opens again. What stands behind it now is a link that has to be opened before
+# the account does anything, five registrations an hour per address, and a sweep
+# that deletes anything nobody confirmed within eight days.
+#
+# Set it back to false to close the instance. The accounts that already exist
+# still sign in, and a lost password is still recovered with its code: closing
+# an instance must not lock out the person whose account it is.
 #
 # `-mail-from` is what turns address confirmation on. With it set, a new account
 # is disabled until somebody opens the link sent to the address they registered
@@ -30,7 +37,13 @@ WorkingDirectory=/srv/thwart
 # The mail itself goes to the Postfix on the loopback that deploy/mail.sh sets
 # up. That hop has no authentication, which is safe only because it never leaves
 # the machine — NewSMTPMailer refuses any host that is not local.
-ExecStart=/srv/thwart/bin/thwart-api   -addr 127.0.0.1:8787   -db /srv/thwart/data/thwart.sqlite   -registration=false   -mail-from "Thwart <no-reply@thwart.app>"   -smtp 127.0.0.1:25   -site https://thwart.app
+ExecStart=/srv/thwart/bin/thwart-api \
+  -addr 127.0.0.1:8787 \
+  -db /srv/thwart/data/thwart.sqlite \
+  -registration=true \
+  -mail-from "Thwart <no-reply@thwart.app>" \
+  -smtp 127.0.0.1:25 \
+  -site https://thwart.app
 
 # The binary handles SIGTERM by draining in-flight requests, which for a
 # password change is the difference between a clear outcome and one nobody can
