@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/smtp"
 	"strings"
 	"time"
@@ -101,16 +102,62 @@ func (m *SMTPMailer) Send(ctx context.Context, to, subject, body string) error {
 	b.WriteString("\r\n")
 	b.WriteString(strings.ReplaceAll(body, "\n", "\r\n"))
 
-	done := make(chan error, 1)
-	go func() {
-		done <- smtp.SendMail(m.Addr, nil, m.fromAddr, []string{to}, []byte(b.String()))
-	}()
-	select {
-	case err := <-done:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
+	/*
+		The conversation, held by hand, and deliberately never upgraded to TLS.
+
+		`smtp.SendMail` cannot be used here. It issues STARTTLS whenever the
+		server advertises it and then verifies the certificate against the host
+		it dialled — which is 127.0.0.1. Postfix advertises STARTTLS with a
+		self-signed certificate carrying no IP SAN, so verification fails and
+		the send dies with "cannot validate certificate for 127.0.0.1". Found in
+		production on the first real registration; a Python check had passed
+		earlier only because smtplib does not upgrade on its own.
+
+		Encrypting a connection to yourself is theatre: the socket is on the
+		loopback, and anything able to read it already owns the machine. The
+		alternative — STARTTLS with InsecureSkipVerify — is worse than none,
+		because it looks like security while verifying nothing. Postfix does use
+		TLS for the hop that actually crosses a network.
+	*/
+	var dialer net.Dialer
+	conn, err := dialer.DialContext(ctx, "tcp", m.Addr)
+	if err != nil {
+		return fmt.Errorf("dial %s: %w", m.Addr, err)
 	}
+	defer func() { _ = conn.Close() }()
+	// So a hung server cannot hold a registration request open forever.
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		deadline = time.Now().Add(30 * time.Second)
+	}
+	if err := conn.SetDeadline(deadline); err != nil {
+		return err
+	}
+
+	host, _, _ := strings.Cut(m.Addr, ":")
+	client, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return fmt.Errorf("smtp greeting: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	if err := client.Mail(m.fromAddr); err != nil {
+		return fmt.Errorf("smtp from: %w", err)
+	}
+	if err := client.Rcpt(to); err != nil {
+		return fmt.Errorf("smtp to: %w", err)
+	}
+	w, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("smtp data: %w", err)
+	}
+	if _, err := w.Write([]byte(b.String())); err != nil {
+		return fmt.Errorf("smtp write: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("smtp end of data: %w", err)
+	}
+	return client.Quit()
 }
 
 func messageID(from string) (string, error) {
