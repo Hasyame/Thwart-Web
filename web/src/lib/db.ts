@@ -110,6 +110,7 @@ class ThwartDatabase extends Dexie {
       syncRecords: '[collection+id], collection',
       syncState: 'id',
     });
+
   }
 }
 

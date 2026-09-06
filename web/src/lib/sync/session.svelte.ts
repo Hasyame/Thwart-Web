@@ -2,6 +2,7 @@ import { db } from '../db';
 import type { Locale } from '../types';
 import * as api from './api';
 import { SYNC_STATE_KEY, type StoredSyncState } from './state';
+import { releaseAccountData } from './device';
 
 /**
  * Who is signed in on this browser.
@@ -187,6 +188,17 @@ export async function signOut(locale: Locale): Promise<void> {
 
 /** Drops the token and the cursor. Everything the app holds stays. */
 export async function forgetLocally(): Promise<void> {
+  /*
+    The account's data goes with the account.
+
+    Only the rows the server holds an identical copy of: those come back by
+    signing in, and everything else on this browser stays. See device.ts for why
+    that one rule is the whole model.
+
+    Before the per-record revisions are cleared, because it reads them.
+  */
+  await releaseAccountData().catch(() => undefined);
+
   await db.syncState.delete(SYNC_STATE_KEY);
   // The per-record revisions go too: they describe an account this browser is
   // no longer signed in to, and keeping them would have a later sign-in to a

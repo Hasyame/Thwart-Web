@@ -185,6 +185,13 @@ jobs:
         working-directory: web
         run: npm run test:deckbuilder
 
+      # Which rows signing out takes and which it leaves. Getting this wrong in
+      # one direction shows one person's games to the next; in the other it
+      # destroys an evening that exists nowhere else.
+      - name: Whose data is on this device
+        working-directory: web
+        run: npm run test:device
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

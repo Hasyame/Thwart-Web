@@ -5,6 +5,8 @@
   import { db } from '../lib/db';
   import { formatElapsed } from '../lib/session.svelte';
   import { bgg, bggLogPlayUrl, bggSummary } from '../lib/bgg.svelte';
+  import { session } from '../lib/sync/session.svelte';
+  import { storedOnServer } from '../lib/sync/stored.svelte';
 
   /**
    * One recorded game, with the three things you can do to it.
@@ -153,6 +155,16 @@
 
   const onBgg = $derived(play.reportedToBgg === true);
 
+  /*
+   * Where this game is kept, said out loud.
+   *
+   * Signing out takes the account's games and leaves the ones this browser
+   * made before signing in. Those look identical in the list, so the one that
+   * would disappear has to be the one that says so.
+   */
+  const signedIn = $derived(session.status === 'signed-in' && storedOnServer.loaded);
+  const onServer = $derived(storedOnServer.plays.has(play.id));
+
   /**
    * Opens BGG's own Log Play form and offers to mark the row afterwards.
    *
@@ -207,6 +219,11 @@
       {#if ignored}· {t.playSetAsideMark}{/if}
       {#if onBgg}· {t.bggLogged}{/if}
     </span>
+    {#if signedIn}
+      <span class="chip" class:is-local={!onServer}>
+        {onServer ? t.savedOnServer : t.savedLocalOnly}
+      </span>
+    {/if}
   </div>
 
   {#if editing}
@@ -383,6 +400,23 @@
   .ignored .scenario {
     text-decoration: line-through;
     text-decoration-thickness: 1px;
+  }
+
+  .chip {
+    align-self: flex-start;
+    margin-top: var(--space-1);
+    font-size: var(--text-2xs);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  /* Marked differently rather than only worded differently, because this is the
+     one that goes away when the account does. */
+  .chip.is-local {
+    background: var(--surface-2);
+    color: var(--text-muted);
   }
 
   .bgg-follow {

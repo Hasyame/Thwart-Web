@@ -4,6 +4,8 @@
   import type { CardSet, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
+  import { session } from '../lib/sync/session.svelte';
+  import { storedOnServer } from '../lib/sync/stored.svelte';
   import { foldCampaign, type CampaignProgress } from '../lib/campaigns';
   import { formatElapsed } from '../lib/session.svelte';
   import type { IndexRow } from '../lib/types';
@@ -24,6 +26,9 @@
   }
 
   const { t, uiLocale, cardLocale, index, sets, storageOk }: Props = $props();
+
+  /** Whether the badge means anything: signed out, everything is local. */
+  const signedIn = $derived(session.status === 'signed-in' && storedOnServer.loaded);
 
   /** Nothing, the start form, or one run being played. */
   let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'run'; id: string }>({
@@ -218,6 +223,16 @@
               · {t.campaignProgress(campaign.completed, campaign.scenarios.length)}
               {#if campaign.conceded}· {t.campaignConceded}{/if}
               {#if campaign.run.finished}· {t.campaignFinished}{/if}
+              <!--
+                Where the campaign is kept. Signing out takes the account's
+                campaigns and leaves the ones this browser made before signing
+                in, and the two are otherwise indistinguishable in this list.
+              -->
+              {#if signedIn}
+                · {storedOnServer.campaigns.has(campaign.run.id)
+                  ? t.savedOnServer
+                  : t.savedLocalOnly}
+              {/if}
             </span>
             <span class="progress" aria-hidden="true">
               <span

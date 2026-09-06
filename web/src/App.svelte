@@ -29,6 +29,7 @@
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
+  import { watchStoredOnServer } from './lib/sync/stored.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
   import type { NavTarget } from './lib/nav';
   import {
@@ -208,6 +209,15 @@
    * the moment it belongs to.
    */
   $effect(() => watchAutoSync());
+
+  /*
+   * Which rows the server has, for the badges on games and campaigns.
+   *
+   * Only meaningful while signed in, but the subscription is cheap and always
+   * on so the answer is already there when somebody signs in rather than a
+   * frame later.
+   */
+  $effect(() => (storageOk ? watchStoredOnServer() : undefined));
 
   /**
    * Favourites, with a sync asked for after.

@@ -252,6 +252,8 @@ export interface Strings {
   readonly accountRecoverAction: string;
   readonly accountHandle: string;
   readonly accountPassword: string;
+  readonly savedOnServer: string;
+  readonly savedLocalOnly: string;
   readonly registeredCheckMail: (address: string) => string;
   readonly registeredThenSignIn: string;
   readonly accountYourData: string;
@@ -837,6 +839,8 @@ const STRINGS: Record<Locale, Strings> = {
     accountRecoverAction: 'Reset the password',
     accountHandle: 'Pseudonym',
     accountPassword: 'Password',
+    savedOnServer: 'On the server',
+    savedLocalOnly: 'On this device only',
     registeredCheckMail: (address) =>
       `The account exists, and it is disabled until you open the link sent to ${address}. Check the spam folder if it is not there.`,
     registeredThenSignIn:
@@ -1510,6 +1514,8 @@ const STRINGS: Record<Locale, Strings> = {
     accountRecoverAction: 'R\u00e9initialiser le mot de passe',
     accountHandle: 'Pseudo',
     accountPassword: 'Mot de passe',
+    savedOnServer: 'Sur le serveur',
+    savedLocalOnly: 'Sur cet appareil seulement',
     registeredCheckMail: (address) =>
       `Le compte existe, et il est désactivé tant que vous n'avez pas ouvert le lien envoyé à ${address}. Regardez dans les indésirables s'il n'y est pas.`,
     registeredThenSignIn:
