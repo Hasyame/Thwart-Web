@@ -112,6 +112,15 @@ SubDomains              no
 # signing without the signature breaking. This is the header-injection defence.
 OversignHeaders         From
 
+# What the signature covers.
+#
+# The built-in default signed only From, To, Subject and Date, which leaves the
+# content type and the message id outside the signature: a relay could change
+# either and the signature would still verify. Naming them here closes that.
+# Read off a real delivered message rather than assumed, because the h= list in
+# the header is the only place the answer actually shows up.
+SignHeaders             From,Reply-To,Subject,Date,To,Cc,Message-ID,MIME-Version,Content-Type,Content-Transfer-Encoding,Auto-Submitted
+
 KeyTable                file:$KEYDIR/keytable
 SigningTable            refile:$KEYDIR/signingtable
 InternalHosts           file:$KEYDIR/trustedhosts
