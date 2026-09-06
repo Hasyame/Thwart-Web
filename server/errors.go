@@ -63,6 +63,10 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"That confirmation link has expired. Ask for a new one.",
 		"Ce lien de confirmation a expiré. Demandez-en un nouveau.",
 	},
+	"server_busy": {
+		"The server is busy checking other passwords. Try again in a moment.",
+		"Le serveur est occupé à vérifier d'autres mots de passe. Réessayez dans un instant.",
+	},
 	"registration_closed": {
 		"This instance is not accepting new accounts.",
 		"Cette instance n'accepte pas de nouveaux comptes.",

@@ -201,7 +201,16 @@ func (s *Server) handleResendVerification(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ok, err := verifySecret(body.Password, account.PasswordHash)
+	/*
+		Gated like every other hash, but a saturated machine still answers the
+		same thing.
+
+		This endpoint's whole design is that it says "sent" whatever happened,
+		so that it cannot be used to find out which addresses are registered. A
+		503 here would be a side channel: it would only ever appear on the path
+		where the password was actually checked.
+	*/
+	ok, err := s.verify(r.Context(), body.Password, account.PasswordHash)
 	if err != nil || !ok {
 		writeJSON(w, http.StatusAccepted, map[string]any{"sent": true})
 		return

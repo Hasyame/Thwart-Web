@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -40,8 +41,17 @@ const (
 type Server struct {
 	store   *Store
 	limiter *limiter
-	log     *slog.Logger
-	build   string
+	/*
+		How many password hashes may run at once.
+
+		Every Argon2 computation in a request path goes through this. Without it
+		the rate limits cap attempts per window while leaving concurrency
+		unbounded, and 64 MiB apiece turns a handful of simultaneous logins into
+		an out-of-memory kill. See hashSlots.
+	*/
+	hashes hashLimiter
+	log    *slog.Logger
+	build  string
 
 	// A hash to verify against when the handle does not exist.
 	//
@@ -88,6 +98,7 @@ func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
 	return &Server{
 		store:            store,
 		limiter:          newLimiter(),
+		hashes:           newHashGate(hashSlots),
 		log:              log,
 		build:            build,
 		decoyHash:        decoy,
@@ -182,6 +193,45 @@ func (s *Server) authenticated(next authedHandler) http.HandlerFunc {
 	}
 }
 
+/*
+Argon2, one caller at a time up to hashSlots.
+
+Wrapped rather than called directly so that no future handler can hash without
+passing through the gate: the plain functions in auth.go are still there for
+tests and for startup, but every request path goes through these two.
+
+A refusal here is 503, not 429. The caller did nothing wrong — the machine is
+saturated — and telling them to slow down would be a lie about whose fault it
+is.
+*/
+func (s *Server) hash(ctx context.Context, secret string) (string, error) {
+	if err := s.hashes.enter(ctx); err != nil {
+		return "", err
+	}
+	defer s.hashes.leave()
+	return hashSecret(secret)
+}
+
+func (s *Server) verify(ctx context.Context, secret, encoded string) (bool, error) {
+	if err := s.hashes.enter(ctx); err != nil {
+		return false, err
+	}
+	defer s.hashes.leave()
+	return verifySecret(secret, encoded)
+}
+
+// busy reports a saturated machine, and is the one error path that is not the
+// caller's doing.
+func (s *Server) busy(w http.ResponseWriter, r *http.Request, err error) bool {
+	if !errors.Is(err, errBusy) {
+		return false
+	}
+	s.log.Warn("hash gate full", "path", r.URL.Path)
+	w.Header().Set("Retry-After", "5")
+	writeError(w, r, apiError{status: http.StatusServiceUnavailable, code: "server_busy"})
+	return true
+}
+
 func bearerToken(r *http.Request) (string, bool) {
 	header := r.Header.Get("Authorization")
 	const prefix = "Bearer "
@@ -239,8 +289,11 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordHash, err := hashSecret(body.Password)
+	passwordHash, err := s.hash(r.Context(), body.Password)
 	if err != nil {
+		if s.busy(w, r, err) {
+			return
+		}
 		s.fail(w, r, "hash password", err)
 		return
 	}
@@ -249,8 +302,11 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, "make recovery code", err)
 		return
 	}
-	recoveryHash, err := hashSecret(normaliseRecoveryCode(recoveryCode))
+	recoveryHash, err := s.hash(r.Context(), normaliseRecoveryCode(recoveryCode))
 	if err != nil {
+		if s.busy(w, r, err) {
+			return
+		}
 		s.fail(w, r, "hash recovery code", err)
 		return
 	}
@@ -351,7 +407,22 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	ip := clientIP(r)
 	handleKey := "login:handle:" + strings.ToLower(identifier)
-	if !s.limiter.allow("login:ip:"+ip, loginPerIP) || !s.limiter.allow(handleKey, loginPerHandle) {
+	dayKey := "login:handle:day:" + strings.ToLower(identifier)
+	/*
+		Two tiers, and every one of them is consulted.
+
+		Written as four separate calls rather than short-circuited with `||`,
+		because `allow` counts as well as reports: a short-circuit would leave
+		the daily counter untouched whenever the quarter-hour one refused, and
+		an attacker pacing themselves at the burst limit would never register on
+		the daily one at all. Counting all four costs nothing and cannot be got
+		subtly wrong later.
+	*/
+	burstIP := s.limiter.allow("login:ip:"+ip, loginPerIP)
+	dayIP := s.limiter.allow("login:ip:day:"+ip, loginPerIPDay)
+	burstHandle := s.limiter.allow(handleKey, loginPerHandle)
+	dayHandle := s.limiter.allow(dayKey, loginPerHandleDay)
+	if !burstIP || !dayIP || !burstHandle || !dayHandle {
 		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
 		return
 	}
@@ -368,8 +439,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		hash = account.PasswordHash
 	}
-	ok, verifyErr := verifySecret(body.Password, hash)
+	ok, verifyErr := s.verify(r.Context(), body.Password, hash)
 	if verifyErr != nil {
+		if s.busy(w, r, verifyErr) {
+			return
+		}
 		s.fail(w, r, "verify password", verifyErr)
 		return
 	}
@@ -378,7 +452,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Both tiers, so a morning of fumbling does not follow somebody around for
+	// the rest of the day once they get it right.
 	s.limiter.forget(handleKey)
+	s.limiter.forget(dayKey)
 
 	/*
 		The password was right, and the account still cannot be used.
@@ -446,7 +523,12 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleKey := "recover:handle:" + strings.ToLower(identifier)
-	if !s.limiter.allow("recover:ip:"+clientIP(r), recoverIP) || !s.limiter.allow(handleKey, recoverHandle) {
+	// Counted, not short-circuited: see the note in handleLogin for why every
+	// tier has to be consulted even when an earlier one has already refused.
+	recIP := s.limiter.allow("recover:ip:"+clientIP(r), recoverIP)
+	recBurst := s.limiter.allow(handleKey, recoverHandle)
+	recDay := s.limiter.allow("recover:handle:day:"+strings.ToLower(identifier), recoverHandleDay)
+	if !recIP || !recBurst || !recDay {
 		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
 		return
 	}
@@ -461,7 +543,7 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		hash = account.RecoveryHash
 	}
-	ok, verifyErr := verifySecret(normaliseRecoveryCode(body.RecoveryCode), hash)
+	ok, verifyErr := s.verify(r.Context(), normaliseRecoveryCode(body.RecoveryCode), hash)
 	if verifyErr != nil {
 		s.fail(w, r, "verify recovery code", verifyErr)
 		return
@@ -471,7 +553,7 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordHash, err := hashSecret(body.NewPassword)
+	passwordHash, err := s.hash(r.Context(), body.NewPassword)
 	if err != nil {
 		s.fail(w, r, "hash password", err)
 		return
@@ -481,7 +563,7 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, "make recovery code", err)
 		return
 	}
-	nextHash, err := hashSecret(normaliseRecoveryCode(nextCode))
+	nextHash, err := s.hash(r.Context(), normaliseRecoveryCode(nextCode))
 	if err != nil {
 		s.fail(w, r, "hash recovery code", err)
 		return
@@ -535,8 +617,25 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request, sess ses
 		return
 	}
 
-	ok, err := verifySecret(body.CurrentPassword, sess.account.PasswordHash)
+	/*
+		Metered, even though this is behind a token.
+
+		A device token was an unmetered supply of Argon2: whoever held one could
+		verify passwords here as fast as the machine would go, which is both a
+		way to grind the current password and a way to exhaust the memory of a
+		box that allows four hashes at a time. Ten an hour is far more than
+		anybody changes a password and far less than anybody grinds one.
+	*/
+	if !s.limiter.allow("password:"+sess.account.ID, passwordPerAccount) {
+		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
+		return
+	}
+
+	ok, err := s.verify(r.Context(), body.CurrentPassword, sess.account.PasswordHash)
 	if err != nil {
+		if s.busy(w, r, err) {
+			return
+		}
 		s.fail(w, r, "verify password", err)
 		return
 	}
@@ -549,8 +648,11 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request, sess ses
 		return
 	}
 
-	hash, err := hashSecret(body.NewPassword)
+	hash, err := s.hash(r.Context(), body.NewPassword)
 	if err != nil {
+		if s.busy(w, r, err) {
+			return
+		}
 		s.fail(w, r, "hash password", err)
 		return
 	}
@@ -624,8 +726,18 @@ func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request, ses
 		return
 	}
 
-	ok, err := verifySecret(body.Password, sess.account.PasswordHash)
+	// Shares the password budget with the change endpoint, because they verify
+	// the same secret and an attacker would otherwise simply alternate.
+	if !s.limiter.allow("password:"+sess.account.ID, passwordPerAccount) {
+		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
+		return
+	}
+
+	ok, err := s.verify(r.Context(), body.Password, sess.account.PasswordHash)
 	if err != nil {
+		if s.busy(w, r, err) {
+			return
+		}
 		s.fail(w, r, "verify password", err)
 		return
 	}
@@ -878,7 +990,13 @@ func (s *Server) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if cause := recover(); cause != nil {
-				s.log.Error("panic", "cause", cause, "path", r.URL.Path)
+				// With the stack. A cause on its own says what went wrong and
+				// not where, which on a server that logs nothing else about a
+				// request is the difference between a fix and a guess.
+				s.log.Error("panic",
+					"cause", cause,
+					"path", r.URL.Path,
+					"stack", string(debug.Stack()))
 				writeError(w, r, apiError{status: http.StatusInternalServerError, code: "server_error"})
 			}
 		}()
