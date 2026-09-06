@@ -98,7 +98,27 @@ export async function register(
   session.busy = true;
   try {
     const result = await api.register(handle, email, password, deviceName, locale);
-    await remember(result, deviceName);
+    /*
+      An account waiting on its address is not a signed-in account.
+
+      The server issues a device token here and refuses every request made with
+      it until the link is opened, so remembering it would put the app in a
+      state where the top bar says somebody is signed in, the account screen
+      agrees, and nothing works. That was reported from production as "I was
+      logged in without confirming", and the reporter was right about what they
+      saw even though the account really was disabled.
+
+      The token is not lost: it is returned to the caller, which shows the
+      recovery code and then says to go and open the link. Signing in
+      afterwards is what stores a session.
+
+      `emailVerified` is absent on a server older than confirmation, and absent
+      means yes — such a server disables nothing, so treating it as unconfirmed
+      would leave that account permanently unable to sign in.
+    */
+    if (result.emailVerified !== false) {
+      await remember(result, deviceName);
+    }
     return result;
   } finally {
     session.busy = false;

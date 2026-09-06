@@ -42,6 +42,79 @@
   let devices = $state.raw<readonly DeviceInfo[]>([]);
 
   /*
+   * Where somebody lands after registering, when the address is not confirmed.
+   *
+   * Registering no longer signs anybody in: the server refuses every request
+   * made with that token until the link is opened, so a signed-in screen would
+   * be the app telling a lie it cannot back up. This is what it says instead.
+   */
+  let awaiting = $state.raw<{ handle: string; email: string } | null>(null);
+
+  /*
+   * Leaving, in both senses the law means.
+   *
+   * Taking the data out (portability) and destroying it (erasure). The server
+   * has had both endpoints since sync existed and neither had a control, which
+   * meant the only way out of this account was to ask me.
+   */
+  let exporting = $state(false);
+  let deleting = $state(false);
+  let confirmingDelete = $state(false);
+  let deletePassword = $state('');
+
+  async function exportData(): Promise<void> {
+    const account = session.account;
+    if (account === null) {
+      return;
+    }
+    error = null;
+    exporting = true;
+    try {
+      const data = await api.exportAccount(account.token, uiLocale);
+      // The same shape the backup file uses, so it can be read straight back
+      // into the app or into the Android one.
+      const text = JSON.stringify(data, null, 2);
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `thwart-${account.handle}-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (cause) {
+      error = say(cause);
+    } finally {
+      exporting = false;
+    }
+  }
+
+  async function destroyAccount(): Promise<void> {
+    const account = session.account;
+    if (account === null) {
+      return;
+    }
+    error = null;
+    deleting = true;
+    try {
+      await api.deleteAccount(account.token, deletePassword, uiLocale);
+      deletePassword = '';
+      confirmingDelete = false;
+      /*
+       * Signed out locally afterwards, not before.
+       *
+       * The account is gone on the server, so the token is worthless, but this
+       * browser's own decks and games are untouched — deleting an account is
+       * leaving the sync service, not throwing away what you play with. The
+       * collection screen is where erasing local data lives.
+       */
+      await signOut(uiLocale).catch(() => undefined);
+    } catch (cause) {
+      error = say(cause);
+    } finally {
+      deleting = false;
+    }
+  }
+
+  /*
    * Whether this account is still waiting on its address to be confirmed.
    *
    * Learned by asking, not by remembering. The registration response says so
@@ -213,9 +286,42 @@
         class="btn btn--primary"
         type="button"
         disabled={!saved}
-        onclick={() => (issued = null)}
+        onclick={() => {
+          // Only an unconfirmed registration has somewhere else to go. A
+          // recovery code issued by `recover` belongs to an account that is
+          // already signed in, and that must land back on the account screen.
+          if (code.emailVerified === false) {
+            awaiting = { handle: code.handle, email: code.email ?? '' };
+          }
+          issued = null;
+        }}
       >
         {t.recoveryDone}
+      </button>
+    </div>
+  {:else if awaiting !== null}
+    {@const pending = awaiting}
+    <!--
+      Registered, and deliberately not signed in.
+
+      The account exists and does nothing until the link is opened. Saying so
+      here is the whole fix for "I was logged in without confirming": the app
+      used to store the session and show a signed-in screen while the server
+      refused every request made with it.
+    -->
+    <div class="panel">
+      <h2>{t.verifyPendingTitle}</h2>
+      <p class="note">{t.registeredCheckMail(pending.email)}</p>
+      <p class="muted note">{t.registeredThenSignIn}</p>
+      <button
+        class="btn btn--primary"
+        type="button"
+        onclick={() => {
+          awaiting = null;
+          form = 'signin';
+        }}
+      >
+        {t.accountSignIn}
       </button>
     </div>
   {:else if session.status === 'signed-in' && session.account !== null}
@@ -289,6 +395,75 @@
       </div>
     {/if}
 
+    <!--
+      Taking the data out, and destroying it.
+
+      Both endpoints have existed on the server since sync did, and neither had
+      a control on this screen — so the only way to leave this account was to
+      ask the person running the server, which is not what "you may leave"
+      means.
+    -->
+    <div class="panel">
+      <h2>{t.accountYourData}</h2>
+      <p class="muted note">{t.accountExportNote}</p>
+      <div class="btn-row">
+        <button class="btn" type="button" disabled={exporting} onclick={() => void exportData()}>
+          {exporting ? t.accountExporting : t.accountExport}
+        </button>
+      </div>
+
+      <h3 class="eyebrow danger-text">{t.accountDeleteTitle}</h3>
+      <p class="muted note">{t.accountDeleteNote}</p>
+      {#if confirmingDelete}
+        <!-- The password again, because the token alone is whatever is on this
+             machine, and this is the one action nothing undoes. -->
+        <form
+          class="stack-4"
+          onsubmit={(event) => {
+            event.preventDefault();
+            void destroyAccount();
+          }}
+        >
+          <p class="warning" role="alert">{t.accountDeleteConfirm}</p>
+          <label class="field-group">
+            <span class="field-label">{t.accountPassword}</span>
+            <input
+              class="field"
+              type="password"
+              autocomplete="current-password"
+              bind:value={deletePassword}
+            />
+          </label>
+          <div class="btn-row">
+            <button
+              class="btn danger"
+              type="submit"
+              disabled={deleting || deletePassword === ''}
+            >
+              {t.accountDeleteYes}
+            </button>
+            <button
+              class="btn"
+              type="button"
+              disabled={deleting}
+              onclick={() => {
+                confirmingDelete = false;
+                deletePassword = '';
+              }}
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </form>
+      {:else}
+        <div class="btn-row">
+          <button class="btn danger" type="button" onclick={() => (confirmingDelete = true)}>
+            {t.accountDelete}
+          </button>
+        </div>
+      {/if}
+    </div>
+
     <div class="panel">
       <h2>{t.accountLeaving}</h2>
       <p class="muted note">{t.accountSignOutKeeps}</p>
@@ -331,6 +506,15 @@
 </section>
 
 <style>
+  .danger {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  .danger-text {
+    color: var(--danger);
+  }
+
   h1 {
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);

@@ -330,6 +330,17 @@ export const listDevices = (token: string, locale?: Locale): Promise<readonly De
 export const revokeDevice = (token: string, id: string, locale?: Locale): Promise<void> =>
   call(`/auth/devices/${encodeURIComponent(id)}`, { method: 'DELETE', token, locale });
 
+/**
+ * Everything the account holds, as the backup file shape.
+ *
+ * The server has had this endpoint since sync existed and nothing ever called
+ * it. Being able to leave with your data is not a feature to add later.
+ */
+export const exportAccount = (
+  token: string,
+  locale?: Locale,
+): Promise<Record<string, unknown>> => call('/account/export', { token, locale });
+
 export const deleteAccount = (token: string, password: string, locale?: Locale): Promise<void> =>
   call('/account', { method: 'DELETE', body: { password }, token, locale });
 

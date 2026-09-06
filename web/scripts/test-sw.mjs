@@ -27,9 +27,25 @@ class FakeResponse {
     this.status = init.status ?? 200;
     this.ok = this.status >= 200 && this.status < 300;
     this.tag = init.tag;
+    // A real Response always has these, and the worker reads Cache-Control to
+    // decide whether a thing may be stored at all. A fake without them tests a
+    // worker the browser will never run.
+    this.headerBag = init.headers ?? {};
+    this.headers = {
+      get: (name) => {
+        const key = Object.keys(this.headerBag).find(
+          (k) => k.toLowerCase() === String(name).toLowerCase(),
+        );
+        return key === undefined ? null : this.headerBag[key];
+      },
+    };
   }
   clone() {
-    return new FakeResponse(this.body, { status: this.status, tag: this.tag });
+    return new FakeResponse(this.body, {
+      status: this.status,
+      tag: this.tag,
+      headers: this.headerBag,
+    });
   }
 }
 
@@ -87,13 +103,19 @@ const self = {
   clients: { claim: async () => undefined },
 };
 
+/** Paths the fake network answers with a no-store header. */
+const noStorePaths = new Set(['/private-thing']);
+
 async function fakeFetch(request) {
   const url = typeof request === 'string' ? request : request.url;
   networkCalls.push(url);
   if (networkFails) {
     throw new Error('offline');
   }
-  return new FakeResponse('fresh', { tag: 'network' });
+  const headers = noStorePaths.has(new URL(url).pathname)
+    ? { 'Cache-Control': 'no-store' }
+    : {};
+  return new FakeResponse('fresh', { tag: 'network', headers });
 }
 
 vm.createContext(
@@ -196,6 +218,70 @@ check('card data is served from cache once seen', () =>
   assert.equal(dataSecond.tag, 'cached'));
 check('card data is still revalidated in the background', () =>
   assert.equal(networkCalls.filter((u) => u.endsWith('index.en.json')).length, 2));
+
+/*
+ * The account API, which must never be touched.
+ *
+ * This is a regression test for a real leak, not a precaution. Every
+ * same-origin GET that was not a navigation or card data fell through to
+ * cacheFirst, so /api/v1/auth/devices was stored keyed by URL alone — the Cache
+ * API has no notion of an Authorization header — and the next account to use
+ * the browser was served the previous one's device list. It was reported from
+ * production: a freshly registered account was shown somebody else's phone.
+ */
+for (const path of [
+  '/api/v1/auth/devices',
+  '/api/v1/sync/changes?since=0',
+  '/api/v1/account/export',
+  '/api/v1/version',
+]) {
+  const handled = await fire('fetch', {
+    request: new FakeRequest(`https://thwart.app${path}`),
+  });
+  check(`leaves ${path} to the network`, () => assert.equal(handled, undefined));
+}
+
+// And nothing of the account API may be sitting in a cache afterwards.
+{
+  const names = await caches.keys();
+  let found = null;
+  for (const name of names) {
+    const cache = await caches.open(name);
+    for (const key of await cache.keys()) {
+      const url = typeof key === 'string' ? key : key.url;
+      if (url.includes('/api/')) {
+        found = `${name} holds ${url}`;
+      }
+    }
+  }
+  check('no account response is left in any cache', () => assert.equal(found, null));
+}
+
+/*
+ * The second lock. The Cache API ignores cache directives — cache.put stores
+ * whatever it is handed — so a response saying no-store has to be refused by
+ * the worker itself or the header means nothing at all.
+ */
+{
+  const before = (await caches.keys()).length;
+  const secret = await fire('fetch', {
+    request: new FakeRequest('https://thwart.app/private-thing'),
+  });
+  check('a no-store response is still served', () => assert.ok(secret !== undefined));
+
+  let stored = false;
+  for (const name of await caches.keys()) {
+    const cache = await caches.open(name);
+    for (const key of await cache.keys()) {
+      const url = typeof key === 'string' ? key : key.url;
+      if (url.includes('/private-thing')) {
+        stored = true;
+      }
+    }
+  }
+  check('a no-store response is not written to a cache', () => assert.equal(stored, false));
+  void before;
+}
 
 // A navigation offline must fall back to the precached document, which is what
 // makes a client-side route work on a train.

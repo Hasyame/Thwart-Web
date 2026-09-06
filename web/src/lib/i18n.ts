@@ -252,6 +252,17 @@ export interface Strings {
   readonly accountRecoverAction: string;
   readonly accountHandle: string;
   readonly accountPassword: string;
+  readonly registeredCheckMail: (address: string) => string;
+  readonly registeredThenSignIn: string;
+  readonly accountYourData: string;
+  readonly accountExport: string;
+  readonly accountExporting: string;
+  readonly accountExportNote: string;
+  readonly accountDeleteTitle: string;
+  readonly accountDelete: string;
+  readonly accountDeleteNote: string;
+  readonly accountDeleteConfirm: string;
+  readonly accountDeleteYes: string;
   readonly verifyTitle: string;
   readonly verifyWorking: string;
   readonly verifyDone: (handle: string) => string;
@@ -826,6 +837,22 @@ const STRINGS: Record<Locale, Strings> = {
     accountRecoverAction: 'Reset the password',
     accountHandle: 'Pseudonym',
     accountPassword: 'Password',
+    registeredCheckMail: (address) =>
+      `The account exists, and it is disabled until you open the link sent to ${address}. Check the spam folder if it is not there.`,
+    registeredThenSignIn:
+      'Registering does not sign you in. Open the link, then sign in here — on this device and on any other you want kept in step.',
+    accountYourData: 'Your data',
+    accountExport: 'Download my data',
+    accountExporting: 'Preparing…',
+    accountExportNote:
+      'Everything this account holds on the server, as the same file the app reads and writes. Yours to keep, to move elsewhere, or to check.',
+    accountDeleteTitle: 'Delete this account',
+    accountDelete: 'Delete my account',
+    accountDeleteNote:
+      'Removes the account and everything synced to it: your address, your decks, your games, your campaigns and your collection. It does not come back, and it is not the same as signing out. What is on this device stays on this device.',
+    accountDeleteConfirm:
+      'This deletes the account and everything on the server. There is no undo. Type your password to confirm.',
+    accountDeleteYes: 'Delete it permanently',
     verifyTitle: 'Confirming your address',
     verifyWorking: 'One moment.',
     verifyDone: (handle) => `Confirmed. The account ${handle} is now working.`,
@@ -1483,6 +1510,22 @@ const STRINGS: Record<Locale, Strings> = {
     accountRecoverAction: 'R\u00e9initialiser le mot de passe',
     accountHandle: 'Pseudo',
     accountPassword: 'Mot de passe',
+    registeredCheckMail: (address) =>
+      `Le compte existe, et il est désactivé tant que vous n'avez pas ouvert le lien envoyé à ${address}. Regardez dans les indésirables s'il n'y est pas.`,
+    registeredThenSignIn:
+      "S'inscrire ne vous connecte pas. Ouvrez le lien, puis connectez-vous ici — sur cet appareil et sur ceux que vous voulez garder synchronisés.",
+    accountYourData: 'Vos données',
+    accountExport: 'Télécharger mes données',
+    accountExporting: 'Préparation…',
+    accountExportNote:
+      "Tout ce que ce compte contient sur le serveur, dans le même fichier que l'application lit et écrit. À vous de le garder, de l'emporter ailleurs ou de le vérifier.",
+    accountDeleteTitle: 'Supprimer ce compte',
+    accountDelete: 'Supprimer mon compte',
+    accountDeleteNote:
+      "Supprime le compte et tout ce qui y est synchronisé : votre adresse, vos decks, vos parties, vos campagnes et votre collection. C'est définitif, et ce n'est pas la même chose que se déconnecter. Ce qui est sur cet appareil y reste.",
+    accountDeleteConfirm:
+      "Ceci supprime le compte et tout ce qui est sur le serveur. Aucun retour en arrière. Saisissez votre mot de passe pour confirmer.",
+    accountDeleteYes: 'Supprimer définitivement',
     verifyTitle: 'Confirmation de votre adresse',
     verifyWorking: 'Un instant.',
     verifyDone: (handle) => `Confirmée. Le compte ${handle} fonctionne désormais.`,

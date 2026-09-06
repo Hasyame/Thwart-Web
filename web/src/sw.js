@@ -26,6 +26,21 @@
  *    and caching them here would be re-hosting somebody else's artwork in a
  *    place we control. The deck API must never be served stale: importing a
  *    deck is a request for what MarvelCDB has *now*.
+ *
+ * 4. **The account API is never touched, at all.** Not cached, not read from
+ *    cache, not revalidated. This was a real leak and not a precaution: every
+ *    same-origin GET that was not a navigation or card data fell through to
+ *    cacheFirst, which includes /api/v1/auth/devices, /api/v1/sync/changes and
+ *    /api/v1/account/export. Those were stored keyed by URL alone — the Cache
+ *    API does not know that `Authorization` exists — so one account's device
+ *    list, records and export were served to whoever used the browser next.
+ *    Reported from production: a newly registered account was shown a phone
+ *    belonging to a different account.
+ *
+ *    The server had already said `Cache-Control: no-store` on every one of
+ *    those responses. **The Cache API ignores cache directives**: `cache.put`
+ *    stores whatever it is handed. That is the whole trap, and it is why the
+ *    rule below is a path check and not a header check.
  */
 
 const BUILD = '__BUILD_ID__';
@@ -75,7 +90,7 @@ async function staleWhileRevalidate(request) {
 
   const network = fetch(request)
     .then((response) => {
-      if (response.ok) {
+      if (response.ok && mayStore(response)) {
         cache.put(request, response.clone());
       }
       return response;
@@ -101,10 +116,24 @@ async function cacheFirst(request) {
     return cached;
   }
   const response = await fetch(request);
-  if (response.ok) {
+  if (response.ok && mayStore(response)) {
     cache.put(request, response.clone());
   }
   return response;
+}
+
+/**
+ * Whether a response may be written to a cache at all.
+ *
+ * The Cache API does not consult cache directives — `cache.put` stores whatever
+ * it is given — so anything that says `no-store` has to be refused here or the
+ * header means nothing. The rule above already keeps the account API out; this
+ * is the second lock, so that a path added later cannot quietly reintroduce the
+ * same leak.
+ */
+function mayStore(response) {
+  const directive = response.headers.get('Cache-Control') ?? '';
+  return !/no-store/i.test(directive);
 }
 
 /**
@@ -140,6 +169,17 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(handleNavigation(request));
+    return;
+  }
+
+  /*
+    The account API, left to the network entirely.
+
+    Before any other rule, because the cost of getting this wrong is one
+    person's data shown to another. `return` rather than respondWith: the
+    request goes to the network exactly as if there were no worker.
+  */
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
