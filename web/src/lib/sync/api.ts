@@ -35,6 +35,14 @@ export type ApiErrorCode =
   | 'record_too_large'
   | 'malformed_record'
   | 'rate_limited'
+  /**
+   * The server is saturated, not the caller misbehaving.
+   *
+   * It caps how many password hashes run at once, because each costs 64 MiB and
+   * enough of them at the same moment is an out-of-memory kill. A caller who
+   * cannot get a slot is told to come back rather than queued.
+   */
+  | 'server_busy'
   | 'not_found'
   | 'server_error'
   /** Not the server's: the request never arrived. */
