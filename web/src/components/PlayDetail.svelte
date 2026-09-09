@@ -5,6 +5,7 @@
   import { db } from '../lib/db';
   import { formatElapsed } from '../lib/session.svelte';
   import { playerBucket } from '../lib/plays';
+  import { runOf } from '../lib/playQuery';
   import { campaignFigures } from '../lib/campaignFigures';
 
   /**
@@ -176,7 +177,7 @@
    */
   let figures = $state.raw<readonly { label: string; value: string }[]>([]);
   $effect(() => {
-    const id = play.campaignRunId;
+    const id = runOf(play);
     if (id === null || run === null) {
       figures = [];
       return;

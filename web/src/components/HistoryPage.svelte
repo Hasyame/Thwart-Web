@@ -4,7 +4,7 @@
   import type { CampaignRun, Play } from '../lib/records';
   import type { HistoryFilter } from '../lib/router';
   import { db } from '../lib/db';
-  import { count, page, type PlayFilter } from '../lib/playQuery';
+  import { count, inCampaign, page, runOf, type PlayFilter } from '../lib/playQuery';
   import { playerBucket } from '../lib/plays';
   import PlayDetail from './PlayDetail.svelte';
 
@@ -449,7 +449,7 @@
         {t}
         {uiLocale}
         play={openPlay}
-        run={openPlay.campaignRunId === null ? null : (runs.get(openPlay.campaignRunId) ?? null)}
+        run={runOf(openPlay) === null ? null : (runs.get(runOf(openPlay) ?? '') ?? null)}
         onClose={() => open('play', '')}
         onOpenRun={(id) => open('run', id)}
       />
@@ -477,7 +477,7 @@
     {:else}
       <ul class="games">
         {#each rows as play (play.id)}
-          {@const run = play.campaignRunId === null ? null : runs.get(play.campaignRunId)}
+          {@const run = runOf(play) === null ? null : runs.get(runOf(play) ?? '')}
           <li class="game">
             <button
               class="link-row"
@@ -500,7 +500,7 @@
                   : t.difficulty(play.difficulty.toUpperCase())}
                 {#if play.standardSet !== ''}· {play.standardSet}{/if}
                 · {t.playerBucket(playerBucket(play.players))}
-                {#if play.campaignRunId !== null}
+                {#if inCampaign(play)}
                   <span class="chip">{run?.name || run?.templateName || t.historyInACampaign}</span>
                 {/if}
               </span>

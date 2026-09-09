@@ -142,6 +142,19 @@ string, which meant a row written with `''` was a campaign game on the phone and
 not on the web. Neither client should ever write `''` — but when one does, both
 must agree about what it means.
 
+> **Three states, not two, and this bit in production.** On the wire the field
+> can be a run id, an empty string, or **absent**. Android serialises with
+> `explicitNulls = false`, so a play with no campaign arrives with no
+> `campaignRunId` key at all — missing, not null. In SQLite a missing column
+> reads as NULL and Android's query is right; in a client that spreads the JSON
+> body onto a record, the field is `undefined`, and `undefined !== null` is
+> true. That put an "in a campaign" badge on every standalone game anybody had
+> synced from their phone, and counted them all here.
+>
+> **Absent and null mean the same thing: no campaign.** An empty string does
+> not. Any client reading this field must collapse absent and null before
+> testing, once, in one place.
+
 No data: `0`.
 
 ---

@@ -276,6 +276,27 @@ const sorted = (values) => [...values].sort();
   check('not null, and nothing else', s.campaignGames === 2, `${s.campaignGames}`);
 }
 
+{
+  /*
+   * The key that is not there at all.
+   *
+   * Android serialises with `explicitNulls = false`, so a play with no campaign
+   * crosses the wire with no `campaignRunId` key — missing, not null. Testing
+   * `!== null` calls that a campaign game, which put an "in a campaign" badge
+   * on every standalone game anybody had ever synced from their phone. Reported
+   * from production against a history full of randomiser games.
+   */
+  const fromAndroid = row([['A', 'Justice']]);
+  delete fromAndroid.campaignRunId;
+
+  const s = stats([fromAndroid, { ...row([['B', 'Justice']]), campaignRunId: 'run-1' }]);
+  check(
+    'a play whose campaign key never arrived is not a campaign game',
+    s.campaignGames === 1,
+    `${s.campaignGames}`,
+  );
+}
+
 // --- deleted plays count for nothing -------------------------------------------
 {
   const s = stats([

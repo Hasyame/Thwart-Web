@@ -1,5 +1,5 @@
 import type { Play, PlayHero } from './records';
-import { isLive } from './playQuery';
+import { inCampaign, isLive } from './playQuery';
 import type { Session } from './session.svelte';
 
 /**
@@ -452,7 +452,7 @@ export function computeStatistics(
       agree about what it means, and Android's test is `IS NOT NULL`.
       docs/spec/statistics.md section 2.7.
     */
-    campaignGames: plays.filter((p) => p.campaignRunId !== null).length,
+    campaignGames: plays.filter(inCampaign).length,
     /*
      * Solo against everything else, counted per game.
      *

@@ -16,6 +16,29 @@ import type { Play } from './records';
  * `docs/spec/statistics.md` and is shared with the Android app.
  */
 
+/**
+ * The run a play belonged to, or null if it belonged to none.
+ *
+ * **Absent is not the same as empty here, and both are different from a run
+ * id.** The Android app serialises with `explicitNulls = false`, so a play with
+ * no campaign arrives over sync with no `campaignRunId` key at all — not null,
+ * missing. Testing `!== null` calls that a campaign game, which put an "in a
+ * campaign" badge on every standalone game somebody had ever synced from their
+ * phone, and counted them all in the campaign figure.
+ *
+ * An empty string still counts as a campaign, per docs/spec/statistics.md
+ * section 2.7: neither client should write one, and if one does, both have to
+ * read it the same way.
+ *
+ * One predicate, used everywhere, because this is three states masquerading as
+ * two and every site that tests it by hand gets it wrong differently.
+ */
+export const runOf = (play: Play): string | null =>
+  play.campaignRunId === null || play.campaignRunId === undefined ? null : play.campaignRunId;
+
+/** Whether a play belonged to a campaign at all. */
+export const inCampaign = (play: Play): boolean => runOf(play) !== null;
+
 /** A play that happened and has not been deleted. */
 export const isLive = (play: Play): boolean => play.deletedAt === null || play.deletedAt === undefined;
 
@@ -72,20 +95,17 @@ export function matches(play: Play, filter: PlayFilter): boolean {
     return false;
   }
   if (filter.campaign !== undefined) {
-    // `campaignRunId` is a campaign game whenever it is not null, empty string
-    // included. docs/spec/statistics.md §2.7: the two clients must agree, and
-    // Android's test is `IS NOT NULL` and nothing else.
-    const inCampaign = play.campaignRunId !== null;
-    if (filter.campaign === 'any' && !inCampaign) {
+    const belongs = inCampaign(play);
+    if (filter.campaign === 'any' && !belongs) {
       return false;
     }
-    if (filter.campaign === 'none' && inCampaign) {
+    if (filter.campaign === 'none' && belongs) {
       return false;
     }
     if (
       filter.campaign !== 'any' &&
       filter.campaign !== 'none' &&
-      play.campaignRunId !== filter.campaign
+      runOf(play) !== filter.campaign
     ) {
       return false;
     }
