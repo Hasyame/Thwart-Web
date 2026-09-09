@@ -457,7 +457,7 @@
 
     <p class="muted count" aria-live="polite">
       {#if loading && rows.length === 0}
-        {t.loading}
+        {t.loadingGames}
       {:else}
         {t.historyCount(rows.length, total)}
       {/if}
@@ -516,7 +516,7 @@
           disabled={loading}
           onclick={() => (shown += PAGE)}
         >
-          {loading ? t.loading : t.statsShowMore(remaining)}
+          {loading ? t.loadingGames : t.statsShowMore(remaining)}
         </button>
       {/if}
     {/if}

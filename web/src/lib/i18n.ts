@@ -89,6 +89,13 @@ export interface Strings {
   readonly navHistory: string;
   readonly statsRecord: string;
   readonly statsSeeHistory: (games: number) => string;
+  /**
+   * Reading recorded games out of storage.
+   *
+   * Not `loading`, which is about fetching the card database — a different
+   * wait, over the network, that a history page never does.
+   */
+  readonly loadingGames: string;
   readonly historyTitle: string;
   readonly historyFilters: string;
   readonly historyFrom: string;
@@ -658,6 +665,7 @@ const STRINGS: Record<Locale, Strings> = {
     navHistory: 'History',
     statsRecord: 'Record',
     statsSeeHistory: (games) => `See all ${games} games in the history`,
+    loadingGames: 'Reading your games…',
     historyTitle: 'History',
     historyFilters: 'Narrow the history',
     historyFrom: 'From',
@@ -1358,6 +1366,7 @@ const STRINGS: Record<Locale, Strings> = {
     statsRecord: 'Bilan',
     statsSeeHistory: (games) =>
       `Voir les ${games} parties dans l'historique`,
+    loadingGames: 'Lecture de vos parties…',
     historyTitle: 'Historique',
     historyFilters: "Restreindre l'historique",
     historyFrom: 'Du',

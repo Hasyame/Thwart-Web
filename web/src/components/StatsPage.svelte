@@ -216,7 +216,7 @@
       hears the page settle rather than being left on a stale announcement.
     -->
     <div class="notice surface" aria-live="polite">
-      <p class="muted">{t.loading}</p>
+      <p class="muted">{t.loadingGames}</p>
     </div>
   {:else if stats.total === 0}
     <div class="notice surface">
