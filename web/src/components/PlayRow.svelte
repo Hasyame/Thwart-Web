@@ -134,8 +134,6 @@
     }
   }
 
-  const ignored = $derived(play.ignored === true);
-
   const when = $derived(
     new Date(play.playedAt).toLocaleDateString(uiLocale, {
       year: 'numeric',
@@ -143,15 +141,6 @@
       day: 'numeric',
     }),
   );
-
-  async function setAside(value: boolean): Promise<void> {
-    busy = true;
-    try {
-      await db.plays.update(play.id, { ignored: value });
-    } finally {
-      busy = false;
-    }
-  }
 
   const onBgg = $derived(play.reportedToBgg === true);
 
@@ -197,10 +186,23 @@
     }
   }
 
+  /**
+   * Deletes the game, as a tombstone.
+   *
+   * The row stays and stops counting. Two reasons it is not a real delete: the
+   * other devices have to be told, and a deletion that leaves no trace can only
+   * be told to a device the server already knew about — a game recorded and
+   * deleted between two syncs would simply vanish. And it means this is
+   * recoverable, here, which a history page had better be.
+   *
+   * The sync protocol carries the deletion as a record-level flag with a null
+   * body, so `deletedAt` is this device's own memory rather than what travels.
+   */
   async function remove(): Promise<void> {
     busy = true;
     try {
-      await db.plays.delete(play.id);
+      const now = Date.now();
+      await db.plays.update(play.id, { deletedAt: now, updatedAt: now });
     } finally {
       busy = false;
       confirming = false;
@@ -208,7 +210,7 @@
   }
 </script>
 
-<li class="play" class:ignored>
+<li class="play">
   <div class="what">
     <span class="scenario">{play.scenarioName || play.scenarioCode}</span>
     <span class="muted sub">
@@ -216,7 +218,6 @@
       {#if play.heroName !== ''}· {play.heroName}{/if}
       · {play.won ? t.playWon : t.playLost}
       {#if play.elapsedMillis > 0}· {formatElapsed(play.elapsedMillis)}{/if}
-      {#if ignored}· {t.playSetAsideMark}{/if}
       {#if onBgg}· {t.bggLogged}{/if}
     </span>
     {#if signedIn}
@@ -304,15 +305,6 @@
       <button class="btn btn--quiet" type="button" disabled={busy} onclick={openEditor}>
         {t.playEdit}
       </button>
-      <button
-        class="btn btn--quiet"
-        type="button"
-        disabled={busy}
-        aria-pressed={ignored}
-        onclick={() => void setAside(!ignored)}
-      >
-        {ignored ? t.playCountAgain : t.playSetAside}
-      </button>
       <!--
         BoardGameGeek, offered only once this browser knows who you are there.
 
@@ -391,16 +383,6 @@
     font-size: var(--text-sm);
   }
 
-  /* Dimmed rather than hidden: it is still a game that happened, and the row
-     has to stay legible enough to put back. */
-  .ignored .what {
-    opacity: 0.62;
-  }
-
-  .ignored .scenario {
-    text-decoration: line-through;
-    text-decoration-thickness: 1px;
-  }
 
   .chip {
     align-self: flex-start;

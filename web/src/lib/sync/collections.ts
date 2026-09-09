@@ -176,7 +176,15 @@ export const PLAYS: Mapping<Play> = {
   idOf: (row) => row.id,
   bodyOf: whole,
   rowOf: (id, body) => ({ ...(body as unknown as Play), id }),
-  updatedAt: (row) => iso(row.playedAt),
+  /*
+    When the row changed, not when the game was played.
+
+    These are different questions and only one of them breaks a merge: editing
+    a game recorded last month must not claim to be a month old, or the older
+    copy on another device wins the tie. Falls back to `playedAt` for a row
+    written before the column existed, which is what the migration uses too.
+  */
+  updatedAt: (row) => iso(row.updatedAt > 0 ? row.updatedAt : row.playedAt),
 };
 
 /**

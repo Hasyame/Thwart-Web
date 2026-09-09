@@ -1,4 +1,5 @@
 import type { Play, PlayHero } from './records';
+import { isLive } from './playQuery';
 import type { Session } from './session.svelte';
 
 /**
@@ -48,6 +49,10 @@ export function buildPlay(input: RecordInput): Play {
 
   return {
     id: crypto.randomUUID(),
+    // Same instant as the game for a new row; an edit moves it and playedAt
+    // stays put. See the note on Play.updatedAt.
+    updatedAt: Date.now(),
+    deletedAt: null,
     playedAt: Date.now(),
     scenarioCode: session.scenarioCode,
     scenarioName: session.scenarioName,
@@ -110,7 +115,28 @@ function tally(
       out.set(key, entry);
     }
   }
-  return [...out.entries()].map(([key, value]) => ({ key, ...value }));
+  /*
+    Merged by label, because two keys can share one.
+
+    A hero played before the roster column existed is grouped by name; the same
+    hero after it is grouped by card code. Both come out labelled "Magneto",
+    which splits one hero's record across two rows — and on Android, where the
+    list keys on the label, crashed the screen outright with a duplicate key.
+  */
+  const byLabel = new Map<string, Tally>();
+  for (const [key, value] of out) {
+    const existing = byLabel.get(value.label);
+    if (existing === undefined) {
+      byLabel.set(value.label, { key, ...value });
+    } else {
+      byLabel.set(value.label, {
+        ...existing,
+        played: existing.played + value.played,
+        won: existing.won + value.won,
+      });
+    }
+  }
+  return [...byLabel.values()];
 }
 
 /**
@@ -125,17 +151,60 @@ function seatsOf(play: Play): readonly PlayHero[] {
   if (play.roster.length > 0) {
     return play.roster;
   }
-  if (play.heroCode === '') {
-    return [];
+
+  const others = splitList(play.otherHeroes);
+
+  /*
+    Solo, and only solo, can be paired with confidence.
+
+    One hero means the aspects listed on the play are necessarily that hero's,
+    so they are attached. See docs/spec/statistics.md section 3.0.
+  */
+  if (others.length === 0) {
+    if (play.heroCode === '' && play.heroName === '') {
+      return [];
+    }
+    return [
+      {
+        code: play.heroCode,
+        name: play.heroName === '' ? play.heroCode : play.heroName,
+        aspect: splitList(play.aspects).join(', '),
+      },
+    ];
   }
+
+  /*
+    A group game recorded before the roster column existed.
+
+    Enough to say who was there, not enough to say who played what: the aspects
+    were kept as one flat list for the whole table. So the aspect is left blank
+    and byHeroAspect skips these rather than inventing pairings nobody played.
+    Only names survived for the other seats; there were never codes for them.
+
+    This browser used to ignore `otherHeroes` altogether — crediting the first
+    hero only, and pairing them with whichever aspect happened to be listed
+    first. Three players vanished from the hero table and a fictional pairing
+    appeared in another.
+  */
   return [
     {
       code: play.heroCode,
-      name: play.heroName,
-      aspect: play.aspects.split(',')[0]?.trim() ?? '',
+      name: play.heroName === '' ? play.heroCode : play.heroName,
+      aspect: '',
     },
+    ...others.map((name) => ({ code: '', name, aspect: '' })),
   ];
 }
+
+/** Comma-separated, trimmed, with the empties dropped. */
+const splitList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part !== '');
+
+/** Code where there is one, name otherwise: old seats have no code. */
+const groupKey = (seat: PlayHero): string => (seat.code === '' ? seat.name : seat.code);
 
 export interface Statistics {
   readonly total: number;
@@ -172,9 +241,22 @@ export interface Statistics {
  * interface's job, in the reader's language. Keeping the codes in the tallies
  * also means the keys stay stable when the language changes.
  */
+/** The bucket a table size falls in. See docs/spec/statistics.md section 3.6. */
+export function playerBucket(players: number): string {
+  if (players <= 1) {
+    return 'players_1';
+  }
+  if (players >= 5) {
+    return 'players_5plus';
+  }
+  return `players_${players}`;
+}
+
 export interface StatLabels {
   readonly aspect: (code: string) => string;
   readonly difficulty: (code: string) => string;
+  /** Names a table-size bucket: `players_1` through `players_5plus`. */
+  readonly players: (bucket: string) => string;
   /**
    * Resolves a hero identifier recorded by an older version of the app.
    *
@@ -195,7 +277,7 @@ export interface StatLabels {
  * other: a play the reader has set aside should not be in the statistics and
  * should not be in the count beside their campaign either.
  */
-export const counts = (play: Play): boolean => play.ignored !== true;
+export const counts = (play: Play): boolean => isLive(play);
 
 /**
  * The statistics, over the plays that count.
@@ -232,7 +314,16 @@ export function computeStatistics(
   all: readonly Play[],
   labels: StatLabels,
 ): Statistics {
-  const plays = all.filter(counts);
+  /*
+    Newest first, and sorted here rather than trusted to the caller.
+
+    Load-bearing: `tally` keeps the first label it sees for a group, so this
+    ordering is what makes a hero's row carry the name it was most recently
+    recorded under — the name the reader currently sees it by. The scenario
+    table depends on it for the same reason. A caller handing rows over in a
+    different order would quietly change the labels.
+  */
+  const plays = [...all].filter(counts).sort((a, b) => b.playedAt - a.playedAt);
   const timed = plays.filter((play) => play.elapsedMillis > 0);
   const run = streaks(plays);
   return {
@@ -256,7 +347,14 @@ export function computeStatistics(
     currentStreak: run.current,
     bestStreak: run.best,
 
-    campaignGames: plays.filter((p) => p.campaignRunId !== null && p.campaignRunId !== '').length,
+    /*
+      Not null, and nothing else. An empty string is a campaign game.
+
+      Neither client should ever write `''`, but when one does the two have to
+      agree about what it means, and Android's test is `IS NOT NULL`.
+      docs/spec/statistics.md section 2.7.
+    */
+    campaignGames: plays.filter((p) => p.campaignRunId !== null).length,
     /*
      * Solo against everything else, counted per game.
      *
@@ -270,18 +368,36 @@ export function computeStatistics(
     // from heroCode alone credited the first player and ignored three.
     byHero: sortTallies(
       tally(plays, (play) =>
-        seatsOf(play).map((seat) => ({
-          key: labels.canonicalHero?.(seat.code) ?? seat.code,
-          label: seat.name,
-        })),
+        seatsOf(play)
+          // A seat with no name has nothing to show, so it is not a row.
+          .filter((seat) => seat.name !== '')
+          .map((seat) => ({
+            key: labels.canonicalHero?.(groupKey(seat)) ?? groupKey(seat),
+            label: seat.name,
+          })),
       ),
     ),
+    /*
+      Per game, not per seat: two players both on Justice is one Justice game.
+
+      Split on commas, because a seat may hold two. Keying on the whole string
+      invented a phantom aspect called "justice, leadership" — and
+      buildCampaignPlay writes exactly that shape for a dual-aspect deck, so it
+      was not hypothetical.
+
+      The fallback to the play's own list is for group games recorded before the
+      roster column: their seats carry no aspect (see seatsOf) but the play
+      still lists what was at the table.
+    */
     byAspect: sortTallies(
-      tally(plays, (play) =>
-        [...new Set(seatsOf(play).map((seat) => seat.aspect))]
-          .filter((aspect) => aspect !== '')
-          .map((aspect) => ({ key: aspect, label: labels.aspect(aspect) })),
-      ),
+      tally(plays, (play) => {
+        const fromSeats = seatsOf(play).flatMap((seat) => splitList(seat.aspect));
+        const aspects = fromSeats.length > 0 ? fromSeats : splitList(play.aspects);
+        return [...new Set(aspects)].map((aspect) => ({
+          key: aspect,
+          label: labels.aspect(aspect),
+        }));
+      }),
     ),
     // The pairing, which is the question the flat fields could not answer:
     // they paired the first hero against every aspect at the table and so
@@ -297,11 +413,16 @@ export function computeStatistics(
     byHeroAspect: sortTallies(
       tally(plays, (play) =>
         seatsOf(play)
-          .filter((seat) => seat.aspect !== '')
-          .map((seat) => ({
-            key: `${labels.canonicalHero?.(seat.code) ?? seat.code}|${seat.aspect}`,
-            label: `${seat.name} · ${labels.aspect(seat.aspect)}`,
-          })),
+          .filter((seat) => seat.name !== '')
+          // Split, so a dual-aspect seat is two pairings rather than one
+          // pairing with a two-word name. Old group seats have no aspect and
+          // so contribute nothing here, which is the intended behaviour.
+          .flatMap((seat) =>
+            splitList(seat.aspect).map((aspect) => ({
+              key: `${labels.canonicalHero?.(groupKey(seat)) ?? groupKey(seat)}|${aspect}`,
+              label: `${seat.name} · ${labels.aspect(aspect)}`,
+            })),
+          ),
       ),
     ).filter((row) => row.played >= 2),
     byScenario: sortTallies(
@@ -309,22 +430,31 @@ export function computeStatistics(
         { key: play.scenarioCode, label: play.scenarioName || play.scenarioCode },
       ]),
     ),
+    /*
+      By difficulty alone.
+
+      This used to fold in `standardSet` as well, producing rows labelled
+      "Standard + standard". More information, but not what the phone shows, and
+      not the question the table answers. docs/spec/statistics.md section 3.5.
+    */
     byDifficulty: sortTallies(
       tally(plays, (play) => [
-        {
-          key: play.difficulty + (play.standardSet === '' ? '' : `+${play.standardSet}`),
-          label:
-            labels.difficulty(play.difficulty) +
-            (play.standardSet === ''
-              ? ''
-              : ` + ${labels.difficulty(play.standardSet)}`),
-        },
+        { key: play.difficulty, label: labels.difficulty(play.difficulty) },
       ]),
     ),
-    byPlayerCount: sortTallies(
-      tally(plays, (play) => [
-        { key: String(play.players), label: String(play.players) },
-      ]),
-    ),
+    /*
+      Five fixed buckets, never the raw count.
+
+      `players_5plus` should never appear: this is a one to four player game, so
+      a row there is a game recorded wrongly, and a visible row saying so is
+      more use than folding it silently into the fours. Keying on the raw number
+      gave a corrupt 7 its own quiet row.
+
+      Ordered by key rather than by count, because the buckets have an order of
+      their own. docs/spec/statistics.md section 3.6.
+    */
+    byPlayerCount: tally(plays, (play) => [
+      { key: playerBucket(play.players), label: labels.players(playerBucket(play.players)) },
+    ]).sort((a, b) => a.key.localeCompare(b.key)),
   };
 }

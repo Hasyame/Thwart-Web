@@ -47,6 +47,8 @@ export function buildCampaignPlay(input: CampaignPlayInput): Play {
 
   return {
     id: crypto.randomUUID(),
+    updatedAt: Date.now(),
+    deletedAt: null,
     playedAt: Date.now(),
     scenarioCode: input.scenarioId,
     // The campaign's own name for the scenario, resolved now, so the history

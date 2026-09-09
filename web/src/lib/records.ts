@@ -101,25 +101,32 @@ export interface Play {
   readonly reportedToBgg: boolean;
   readonly photos: string;
   /**
-   * Kept, but left out of the statistics.
+   * When this row last changed, in epoch milliseconds.
    *
-   * For a game that happened and should not count: a demo taught to somebody,
-   * a run abandoned halfway, a duplicate recorded twice. Deleting it would work
-   * too, and the difference is that this is reversible — the row is still
-   * there, still in the backup, still on the other devices, and one tap puts it
-   * back in the numbers.
+   * Sync metadata rather than something the app shows. It is what a merge
+   * compares when two devices have both touched a play, and `playedAt` cannot
+   * stand in for it: editing a game recorded last month must not claim to be a
+   * month old.
    *
-   * Optional because every play recorded before this existed has no opinion,
-   * and an absent field must read the same as false rather than as unknown.
-   *
-   * **Not yet known to the Android app.** It rides along here because
-   * `plays.rowOf` spreads the body it is given, so a play this browser has
-   * flagged keeps the flag through a sync. But Android rebuilds a play from
-   * the fields it knows, so if it edits that play the flag is dropped. Doc 06
-   * asks for the column; until it exists, treat this as a web-side preference
-   * that usually survives.
+   * The Android app has carried this since the sync contract existed and
+   * serialises it into the body, so a play written here without it produced a
+   * different digest from the same play written there — each device seeing the
+   * other's row as changed and pushing it back.
    */
-  readonly ignored?: boolean;
+  readonly updatedAt: number;
+  /**
+   * When this row was deleted, or null while it is a game that happened.
+   *
+   * A tombstone, matching the Android app. Deleting is not erasing: the row
+   * stays so the delete can reach the other devices, and so it can be undone on
+   * this one. Every query that counts or lists plays must exclude these, which
+   * is why there is exactly one query layer that does it — see lib/plays/query.
+   *
+   * The sync protocol carries the deletion as a record-level flag with a null
+   * body, so this field is never what tells another device about it. It is this
+   * device's own memory of what it did.
+   */
+  readonly deletedAt: number | null;
 }
 
 /** `data/db/entity/CampaignEntity.kt` — CampaignRunEntity. */

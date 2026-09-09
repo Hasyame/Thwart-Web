@@ -1,7 +1,7 @@
 /**
  * Plays that count, and plays that do not.
  *
- * A play can be set aside: a demo taught to somebody, a duplicate recorded
+ * A play can be deleted: a demo taught to somebody, a duplicate recorded
  * twice, a run abandoned halfway. The row stays — it is still in the backup and
  * still on the other devices — but it must leave the numbers, and it must leave
  * *every* number rather than the one screen somebody remembered to filter.
@@ -27,6 +27,7 @@ function check(label, ok, detail = '') {
 const LABELS = {
   aspect: (code) => code,
   difficulty: (code) => code,
+  players: (bucket) => bucket,
 };
 
 const play = (id, extra = {}) => ({
@@ -55,20 +56,20 @@ const play = (id, extra = {}) => ({
 
 {
   check('a play with no opinion counts', counts(play('a')));
-  check('a play recorded before this existed counts', counts(play('b', { ignored: undefined })));
-  check('a play explicitly not ignored counts', counts(play('c', { ignored: false })));
-  check('an ignored play does not', !counts(play('d', { ignored: true })));
+  check('a play recorded before tombstones existed counts', counts(play('b', { deletedAt: undefined })));
+  check('a live play counts', counts(play('c', { deletedAt: null })));
+  check('a deleted one does not', !counts(play('d', { deletedAt: Date.now() })));
 }
 
 {
   const all = [
     play('a', { won: true }),
     play('b', { won: false }),
-    play('c', { won: false, ignored: true }),
+    play('c', { won: false, deletedAt: 1_700_000_100_000 }),
   ];
   const stats = computeStatistics(all, LABELS);
 
-  check('the total leaves out what was set aside', stats.total === 2, `total ${stats.total}`);
+  check('the total leaves out what was deleted', stats.total === 2, `total ${stats.total}`);
   check('and so does the win count', stats.won === 1, `won ${stats.won}`);
   check(
     'so the rate is of the games that count',
@@ -92,7 +93,7 @@ const play = (id, extra = {}) => ({
   const all = [
     play('a', { heroCode: '01001', heroName: 'Spider-Man', won: true }),
     play('b', { heroCode: '01002', heroName: 'Captain Marvel', won: true }),
-    play('c', { heroCode: '01002', heroName: 'Captain Marvel', won: false, ignored: true }),
+    play('c', { heroCode: '01002', heroName: 'Captain Marvel', won: false, deletedAt: 1_700_000_100_000 }),
   ];
   const stats = computeStatistics(all, LABELS);
   const marvel = stats.byHero.find((row) => row.label.includes('Captain Marvel'));
@@ -107,8 +108,8 @@ const play = (id, extra = {}) => ({
 
 {
   // Everything ignored is an empty page, not a division by zero.
-  const stats = computeStatistics([play('a', { ignored: true })], LABELS);
-  check('setting every play aside empties the statistics', stats.total === 0);
+  const stats = computeStatistics([play('a', { deletedAt: 1_700_000_100_000 })], LABELS);
+  check('deleting every play empties the statistics', stats.total === 0);
   check('and leaves no rows behind it', stats.byHero.length === 0);
 }
 
@@ -194,8 +195,9 @@ const play = (id, extra = {}) => ({
     computeStatistics([play('x', { campaignRunId: null })], LABELS).campaignGames === 0,
   );
   check(
-    'nor is one carrying an empty campaign id',
-    computeStatistics([play('x', { campaignRunId: '' })], LABELS).campaignGames === 0,
+    'and an empty campaign id is one, because the phone counts it as one',
+    computeStatistics([play('x', { campaignRunId: '' })], LABELS).campaignGames === 1,
+    'docs/spec/statistics.md section 2.7',
   );
 }
 
@@ -226,18 +228,18 @@ const play = (id, extra = {}) => ({
 }
 
 {
-  // A game set aside neither makes nor breaks a run: it did not count.
+  // A deleted game neither makes nor breaks a run: it did not count.
   const day = 86_400_000;
   const at = (n) => 1_700_000_000_000 + n * day;
   const stats = computeStatistics(
     [
       play('a', { playedAt: at(1), won: true }),
-      play('b', { playedAt: at(2), won: false, ignored: true }),
+      play('b', { playedAt: at(2), won: false, deletedAt: 1_700_000_100_000 }),
       play('c', { playedAt: at(3), won: true }),
     ],
     LABELS,
   );
-  check('a set-aside loss does not break a streak', stats.currentStreak === 2, `${stats.currentStreak}`);
+  check('a deleted loss does not break a streak', stats.currentStreak === 2, `${stats.currentStreak}`);
 }
 
 process.exit(failures === 0 ? 0 : 1);

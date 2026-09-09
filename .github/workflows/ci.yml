@@ -185,6 +185,13 @@ jobs:
         working-directory: web
         run: npm run test:deckbuilder
 
+      # The phone's own statistics tests, run against the browser's
+      # implementation. If this fails the two apps show different numbers for
+      # the same games, which takes two codebases to debug.
+      - name: The two clients agree on the numbers
+        working-directory: web
+        run: npm run test:parity
+
       # Which rows signing out takes and which it leaves. Getting this wrong in
       # one direction shows one person's games to the next; in the other it
       # destroys an evening that exists nowhere else.

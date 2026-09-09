@@ -68,6 +68,7 @@
     computeStatistics(store.plays, {
       aspect: (code) => t.aspect(code),
       difficulty: difficultyLabel,
+      players: (bucket) => t.playerBucket(bucket),
       canonicalHero: (code) => heroBySetCode.get(code) ?? code,
     }),
   );

@@ -111,6 +111,42 @@ class ThwartDatabase extends Dexie {
       syncState: 'id',
     });
 
+    /*
+      v5: a play knows when it changed and whether it was deleted.
+
+      `deletedAt` is indexed because every list and every count filters on it,
+      and a heavy history is thousands of rows: a full scan to hide three
+      deleted games is a scan too many. `[deletedAt+playedAt]` is the compound
+      the history page reads — live rows, newest first — so the page can be
+      served from the index rather than sorted in memory.
+
+      The existing rows are migrated rather than left undefined. A play written
+      before this had neither field, and `undefined` sorts outside an index in
+      IndexedDB: those rows would simply not appear in a query that filters on
+      `deletedAt`, which is every query there now is. `playedAt` stands in for
+      `updatedAt` because it is the only timestamp such a row has.
+    */
+    this.version(5)
+      .stores({
+        plays: 'id, playedAt, heroCode, scenarioCode, campaignRunId, deletedAt, [deletedAt+playedAt]',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('plays')
+          .toCollection()
+          .modify((play) => {
+            if (typeof play.updatedAt !== 'number') {
+              play.updatedAt = typeof play.playedAt === 'number' ? play.playedAt : 0;
+            }
+            if (play.deletedAt === undefined) {
+              play.deletedAt = null;
+            }
+            // The web-only flag this replaces. A game somebody set aside was
+            // never a deleted game, so it comes back as an ordinary play
+            // rather than being tombstoned on their behalf.
+            delete play.ignored;
+          }),
+      );
   }
 }
 

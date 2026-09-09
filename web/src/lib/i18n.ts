@@ -122,6 +122,8 @@ export interface Strings {
   readonly byScenario: string;
   readonly byDifficulty: string;
   readonly byPlayerCount: string;
+  /** Names a table-size bucket. See docs/spec/statistics.md section 3.6. */
+  readonly playerBucket: (bucket: string) => string;
   readonly deckLegal: string;
   readonly deckLegalShort: string;
   readonly deckIllegalShort: string;
@@ -482,9 +484,6 @@ export interface Strings {
   // campaign list uses the same words for the same act.
   readonly playWon: string;
   readonly playLost: string;
-  readonly playSetAside: string;
-  readonly playCountAgain: string;
-  readonly playSetAsideMark: string;
   readonly bggUsername: string;
   readonly bggNote: string;
   readonly bggOpenProfile: string;
@@ -678,6 +677,17 @@ const STRINGS: Record<Locale, Strings> = {
     byScenario: 'By scenario',
     byDifficulty: 'By difficulty',
     byPlayerCount: 'By number of players',
+    playerBucket: (bucket) =>
+      ({
+        players_1: 'Solo',
+        players_2: 'Two players or two hands',
+        players_3: 'Three players',
+        players_4: 'Four players',
+        // Should never appear: this is a one to four player game, so a row
+        // here is a game recorded wrongly and saying so is more use than
+        // folding it into the fours.
+        players_5plus: 'More than four',
+      })[bucket] ?? bucket,
     navDecks: 'Decks',
     deckName: 'Deck name',
     deckSave: 'Save',
@@ -1135,9 +1145,6 @@ const STRINGS: Record<Locale, Strings> = {
       })[collection] ?? collection,
     playWon: 'won',
     playLost: 'lost',
-    playSetAside: 'Set aside',
-    playCountAgain: 'Count it again',
-    playSetAsideMark: 'not counted',
     bggUsername: 'BoardGameGeek username',
     bggNote:
       'Kept on this device only. It is never synced, never written to a backup, and no BoardGameGeek password is ever asked for or stored: you sign in to BoardGameGeek yourself, in this browser, and games are logged on their site.',
@@ -1173,7 +1180,7 @@ const STRINGS: Record<Locale, Strings> = {
     campaignGames: 'Games recorded',
     statsGames: 'Every game',
     statsGamesNote:
-      'Set a game aside to keep it without counting it \u2014 a demo, a duplicate, a night that went nowhere. One tap puts it back.',
+      'Deleting a game removes it from every device and from these numbers. It stays here as a deleted row so the removal can reach your phone, and so it can be undone.',
     statsShowMore: (remaining) => `Show ${remaining} more`,
     statsShowFewer: 'Show fewer',
     statAverageGame: 'Average game',
@@ -1348,6 +1355,14 @@ const STRINGS: Record<Locale, Strings> = {
     byScenario: 'Par scénario',
     byDifficulty: 'Par difficulté',
     byPlayerCount: 'Par nombre de joueurs',
+    playerBucket: (bucket) =>
+      ({
+        players_1: 'Solo',
+        players_2: 'Deux joueurs ou deux mains',
+        players_3: 'Trois joueurs',
+        players_4: 'Quatre joueurs',
+        players_5plus: 'Plus de quatre',
+      })[bucket] ?? bucket,
     navDecks: 'Decks',
     deckName: 'Nom du deck',
     deckSave: 'Enregistrer',
@@ -1812,9 +1827,6 @@ const STRINGS: Record<Locale, Strings> = {
       })[collection] ?? collection,
     playWon: 'gagn\u00e9e',
     playLost: 'perdue',
-    playSetAside: 'Ne pas compter',
-    playCountAgain: 'Compter \u00e0 nouveau',
-    playSetAsideMark: 'non compt\u00e9e',
     bggUsername: 'Identifiant BoardGameGeek',
     bggNote:
       "Conservé sur cet appareil uniquement. Il n'est jamais synchronisé, jamais écrit dans une sauvegarde, et aucun mot de passe BoardGameGeek n'est demandé ni conservé : vous vous connectez vous-même à BoardGameGeek, dans ce navigateur, et les parties sont enregistrées sur leur site.",
@@ -1852,7 +1864,7 @@ const STRINGS: Record<Locale, Strings> = {
     campaignGames: 'Parties enregistr\u00e9es',
     statsGames: 'Toutes les parties',
     statsGamesNote:
-      'Mettez une partie de c\u00f4t\u00e9 pour la conserver sans la compter : une d\u00e9monstration, un doublon, une soir\u00e9e qui n\u2019a rien donn\u00e9. Un appui la remet.',
+      'Supprimer une partie la retire de tous vos appareils et de ces chiffres. Elle reste ici comme ligne supprimée, pour que la suppression atteigne votre téléphone et puisse être annulée.',
     statsShowMore: (remaining) => `Afficher ${remaining} de plus`,
     statsShowFewer: 'Afficher moins',
     statAverageGame: 'Partie moyenne',
