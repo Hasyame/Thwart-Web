@@ -122,7 +122,7 @@
   }
 
   /*
-   * The band between a phone and a full top bar: 56rem to 80rem.
+   * The band between a phone and a full top bar: 56rem to 85rem.
    *
    * Tablets and half-width desktop windows land here, and they keep the tab
    * bar — that is what tablets do, and it is the only arrangement where every
@@ -148,8 +148,8 @@
   }
 
   /* Tabs are a phone arrangement. Above this the top bar carries everything.
-     80rem is where nine labels fit on one line; see the note in TopBar. */
-  @media (min-width: 80rem) {
+     85rem is where ten labels fit on one line; see the note in TopBar. */
+  @media (min-width: 85rem) {
     .tabs {
       display: none;
     }

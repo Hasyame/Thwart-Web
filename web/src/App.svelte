@@ -17,6 +17,7 @@
   import BottomNav from './components/BottomNav.svelte';
   import MoreSheet from './components/MoreSheet.svelte';
   import VerifyPage from './components/VerifyPage.svelte';
+  import HistoryPage from './components/HistoryPage.svelte';
   import RulesPage from './components/RulesPage.svelte';
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
@@ -448,8 +449,17 @@
     <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
   {:else if route.name === 'play'}
     <PlayPage {t} {sets} {index} {cardLocale} {storageOk} />
+  {:else if route.name === 'history'}
+    <HistoryPage
+      {t}
+      {uiLocale}
+      {index}
+      {storageOk}
+      filter={route.filter ?? {}}
+      onFilter={(filter) => navigate({ name: 'history', filter })}
+    />
   {:else if route.name === 'stats'}
-    <StatsPage {t} {uiLocale} {index} {storageOk} />
+    <StatsPage {t} {index} {storageOk} base={BASE} />
   {:else if route.name === 'campaigns'}
     <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
   {:else if route.name === 'account'}

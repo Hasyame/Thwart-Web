@@ -17,6 +17,7 @@ export type NavTarget =
   | 'versus'
   | 'play'
   | 'campaigns'
+  | 'history'
   | 'stats'
   | 'rules';
 
@@ -61,6 +62,7 @@ export const DESTINATIONS: readonly Destination[] = [
   { id: 'randomizer', label: (t) => t.navRandomizer, tab: (t) => t.navRandomizer, glyph: '✦' },
   { id: 'versus', label: (t) => t.navVersus, tab: (t) => t.navVersus, glyph: '⚔' },
   { id: 'collection', label: (t) => t.navCollection, tab: (t) => t.navCollection, glyph: '▣' },
+  { id: 'history', label: (t) => t.navHistory, tab: (t) => t.navHistory, glyph: '⏱' },
   { id: 'stats', label: (t) => t.navStats, tab: (t) => t.navStats, glyph: '▥' },
   { id: 'rules', label: (t) => t.navRules, tab: (t) => t.navRules, glyph: '❔' },
 ];

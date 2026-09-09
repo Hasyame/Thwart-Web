@@ -1,23 +1,23 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
   import type { Play } from '../lib/records';
-  import type { IndexRow, Locale } from '../lib/types';
+  import type { IndexRow } from '../lib/types';
   import type { Strings } from '../lib/i18n';
-  import { db } from '../lib/db';
+  import { all as allPlays } from '../lib/playQuery';
+  import { pathForRoute } from '../lib/router';
   import { computeStatistics, type Tally } from '../lib/plays';
-  import PlayRow from './PlayRow.svelte';
   import { formatElapsed } from '../lib/session.svelte';
   import { normalizeForSearch } from '../lib/normalize.js';
 
   interface Props {
     t: Strings;
-    /** Dates on the game list read in the interface's language, not the cards'. */
-    uiLocale: Locale;
+    /** The app's base path, for the link to the history. */
+    base: string;
     index: readonly IndexRow[];
     storageOk: boolean;
   }
 
-  const { t, uiLocale, index, storageOk }: Props = $props();
+  const { t, index, storageOk, base }: Props = $props();
 
   /**
    * Hero set code to hero card code.
@@ -35,17 +35,36 @@
     return map;
   });
 
-  const store = $state<{ plays: readonly Play[] }>({ plays: [] });
+  const store = $state<{ plays: readonly Play[]; loaded: boolean }>({ plays: [], loaded: false });
 
+  /*
+   * Read through the shared query layer, not the table.
+   *
+   * The history page reads the same function, which is the point: the rule that
+   * a deleted play is not a played game lives in one place, so the two screens
+   * cannot come to disagree about which games exist. Reading the table directly
+   * here counted the tombstones — the figures were right, because
+   * computeStatistics filters again, but the count beside the link to the
+   * history was not.
+   *
+   * Wrapped in a liveQuery so the page follows a write: recording a game on
+   * another tab, or a sync arriving, updates this without a reload.
+   */
   $effect(() => {
     if (!storageOk) {
+      store.loaded = true;
       return;
     }
-    const sub = liveQuery(() =>
-      db.plays.orderBy('playedAt').reverse().toArray(),
-    ).subscribe((rows) => {
-      store.plays = rows;
-    });
+    const sub = liveQuery(() => allPlays()).subscribe(
+      (rows) => {
+        store.plays = rows;
+        store.loaded = true;
+      },
+      () => {
+        store.plays = [];
+        store.loaded = true;
+      },
+    );
     return () => sub.unsubscribe();
   });
 
@@ -136,6 +155,11 @@
     return largest === 0 ? 0 : Math.round((row.played / largest) * 100);
   }
 
+  /** What the measure control is currently showing, for the column header. */
+  const measureLabel = $derived(
+    measure === 'win' ? t.measureWinRate : measure === 'loss' ? t.measureLossRate : t.measureShare,
+  );
+
   function figure(row: Tally): string {
     if (measure === 'win') {
       return `${percent(row)}%`;
@@ -173,10 +197,8 @@
    * and the bottom of the page, and the reason to come here is almost always a
    * recent game. The rest are one button away.
    */
-  const PAGE = 10;
-  let shown = $state(PAGE);
-  const listed = $derived(store.plays.slice(0, shown));
-  const remaining = $derived(Math.max(0, store.plays.length - shown));
+  /** Where the individual games are, now that this screen is only aggregates. */
+  const historyHref = $derived(pathForRoute({ name: 'history' }, base));
 </script>
 
 <section>
@@ -184,6 +206,18 @@
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
+  {:else if !store.loaded}
+    <!--
+      Loading, said rather than implied.
+
+      Without this branch a real history shows the "no games yet" panel for as
+      long as the read takes, on every single visit — telling somebody with
+      four hundred games that they have none. `aria-live` so a screen reader
+      hears the page settle rather than being left on a stale announcement.
+    -->
+    <div class="notice surface" aria-live="polite">
+      <p class="muted">{t.loading}</p>
+    </div>
   {:else if stats.total === 0}
     <div class="notice surface">
       <p>{t.statsEmpty}</p>
@@ -211,32 +245,32 @@
       Streaks are counted per game: a four-player win is one win in a run,
       however many heroes were at the table.
     -->
-    <ul class="figures">
-      <li>
-        <span class="fig">{formatElapsed(stats.averageMillis)}</span>
-        <span class="muted lbl">{t.statAverageGame}</span>
-      </li>
-      <li>
-        <span class="fig">{formatElapsed(stats.longestMillis)}</span>
-        <span class="muted lbl">{t.statLongestGame}</span>
-      </li>
-      <li>
-        <span class="fig">{stats.currentStreak}</span>
-        <span class="muted lbl">{t.statCurrentStreak}</span>
-      </li>
-      <li>
-        <span class="fig">{stats.bestStreak}</span>
-        <span class="muted lbl">{t.statBestStreak}</span>
-      </li>
-      <li>
-        <span class="fig">{stats.campaignGames}</span>
-        <span class="muted lbl">{t.statCampaignGames}</span>
-      </li>
-      <li>
-        <span class="fig">{stats.solo} / {stats.group}</span>
-        <span class="muted lbl">{t.statSoloGroup}</span>
-      </li>
-    </ul>
+    <dl class="figures">
+      <div>
+        <dt class="muted lbl">{t.statAverageGame}</dt>
+        <dd class="fig">{formatElapsed(stats.averageMillis)}</dd>
+      </div>
+      <div>
+        <dt class="muted lbl">{t.statLongestGame}</dt>
+        <dd class="fig">{formatElapsed(stats.longestMillis)}</dd>
+      </div>
+      <div>
+        <dt class="muted lbl">{t.statCurrentStreak}</dt>
+        <dd class="fig">{stats.currentStreak}</dd>
+      </div>
+      <div>
+        <dt class="muted lbl">{t.statBestStreak}</dt>
+        <dd class="fig">{stats.bestStreak}</dd>
+      </div>
+      <div>
+        <dt class="muted lbl">{t.statCampaignGames}</dt>
+        <dd class="fig">{stats.campaignGames}</dd>
+      </div>
+      <div>
+        <dt class="muted lbl">{t.statSoloGroup}</dt>
+        <dd class="fig">{stats.solo} / {stats.group}</dd>
+      </div>
+    </dl>
 
     <!--
       The games themselves, under the numbers they add up to.
@@ -245,20 +279,16 @@
       where the row causing it should be reachable. Setting one aside keeps it
       and takes it out of the tables above; deleting it does not come back.
     -->
-    <section class="table games-section">
-      <h2>{t.statsGames} <span class="muted count-of">{store.plays.length}</span></h2>
-      <p class="muted note">{t.statsGamesNote}</p>
-      <ul class="games">
-        {#each listed as play (play.id)}
-          <PlayRow {t} {uiLocale} {play} />
-        {/each}
-      </ul>
-      {#if remaining > 0}
-        <button class="btn btn--quiet" type="button" onclick={() => (shown += PAGE)}>
-          {t.statsShowMore(remaining)}
-        </button>
-      {/if}
-    </section>
+    <!--
+      The games themselves live on the history page now.
+
+      This screen is aggregates; that one is the record, with filters, a detail
+      view and the campaigns. Keeping a second list here would be two things to
+      keep in step for no gain.
+    -->
+    <p class="muted note">
+      <a href={historyHref}>{t.statsSeeHistory(stats.total)}</a>
+    </p>
 
     <!--
       One filter and two controls for every table at once.
@@ -307,20 +337,39 @@
       {@const shownRows = open ? sorted : sorted.slice(0, PREVIEW_ROWS)}
       {#if sorted.length > 0}
         <section class="table">
-          <h2>{title} <span class="muted count-of">{sorted.length}</span></h2>
-          <ul>
-            {#each shownRows as row (row.key)}
-              <li>
-                <span class="label">{row.label}</span>
-                <span class="bar" aria-hidden="true">
-                  <span class="fill" style:width={`${bar(row, sorted)}%`}></span>
-                </span>
-                <span class="numbers muted">
-                  {figure(row)} · {t.wonOf(row.won, row.played)}
-                </span>
-              </li>
-            {/each}
-          </ul>
+          <h2 id={`h-${title}`}>{title} <span class="muted count-of">{sorted.length}</span></h2>
+          <!--
+            A real table, not a styled list.
+
+            The bars are decoration and are hidden from assistive technology;
+            everything they depict is in the cell beside them as text, and the
+            column headers are what say which number is which. A screen reader
+            reads "Spider-Man, 67%, 8 of 12" rather than three unrelated spans.
+          -->
+          <table aria-labelledby={`h-${title}`}>
+            <caption class="visually-hidden">{title}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{title}</th>
+                <th scope="col">{measureLabel}</th>
+                <th scope="col">{t.statsRecord}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each shownRows as row (row.key)}
+                <tr>
+                  <th scope="row" class="label">{row.label}</th>
+                  <td class="measure">
+                    <span class="bar" aria-hidden="true">
+                      <span class="fill" style:width={`${bar(row, sorted)}%`}></span>
+                    </span>
+                    <span class="numbers">{figure(row)}</span>
+                  </td>
+                  <td class="numbers muted">{t.wonOf(row.won, row.played)}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
           {#if sorted.length > PREVIEW_ROWS}
             <button
               class="btn btn--quiet"
@@ -364,13 +413,23 @@
     gap: var(--space-2);
   }
 
-  .figures li {
+  /*
+   * The label is before the number in the markup, because that is what a
+   * definition list means and it is what a screen reader announces; the number
+   * reads first on screen because that is what an eye wants.
+   */
+  .figures > div {
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
+    justify-content: end;
     padding: var(--space-3);
     background: var(--surface-1);
     border: 1px solid var(--hairline);
     border-radius: var(--radius-sm);
+  }
+
+  .figures dd {
+    margin: 0;
   }
 
   .fig {
@@ -399,16 +458,7 @@
     font-weight: var(--weight-regular, 400);
   }
 
-  .games-section .note {
-    font-size: var(--text-sm);
-    margin: 0 0 var(--space-2);
-  }
 
-  .games {
-    list-style: none;
-    margin: 0 0 var(--space-3);
-    padding: 0;
-  }
 
   h1 {
     font-size: var(--text-2xl);
@@ -459,20 +509,45 @@
     margin-bottom: var(--space-5);
   }
 
-  .table ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: var(--space-1);
+  .table table {
+    width: 100%;
+    border-collapse: collapse;
   }
 
-  .table li {
-    display: grid;
-    grid-template-columns: minmax(8rem, 14rem) 1fr minmax(7rem, auto);
+  /* The header row carries the meaning for a screen reader and is redundant
+     to anyone reading the bars, so it is present and not shown. */
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .table th,
+  .table td {
+    padding: var(--space-1) var(--space-2) var(--space-1) 0;
+    text-align: start;
+    font-weight: inherit;
+    vertical-align: middle;
+  }
+
+  .table th[scope='row'] {
+    width: minmax(8rem, 14rem);
+    max-width: 14rem;
+  }
+
+  .measure {
+    display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-1) 0;
+    width: 100%;
+  }
+
+  .measure .bar {
+    flex: 1 1 auto;
+    min-width: 3rem;
   }
 
   .label {
@@ -507,12 +582,10 @@
   }
 
   @media (max-width: 40rem) {
-    .table li {
-      grid-template-columns: 1fr auto;
-    }
-
-    .bar {
-      grid-column: 1 / -1;
+    /* The bar is the first thing to go when there is no room: the numbers
+       beside it say everything it does. */
+    .measure .bar {
+      display: none;
     }
   }
 </style>

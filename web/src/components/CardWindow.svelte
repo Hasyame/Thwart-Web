@@ -91,7 +91,18 @@
     color: var(--text);
     padding: 0;
     width: min(60rem, calc(100vw - 2rem));
+    /*
+      `dvh`, not `vh`.
+
+      On iOS Safari `100vh` is the height with the toolbars *retracted*, which
+      is taller than the window actually is while they are showing: a dialog
+      sized to it runs off the bottom of the screen and its last line cannot be
+      reached. `dvh` is the viewport as it currently stands. The fallback line
+      is for anything old enough not to know `dvh`, where the previous
+      behaviour is what it gets.
+    */
     max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
     overflow: auto;
   }
 

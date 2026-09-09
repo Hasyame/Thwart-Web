@@ -18,6 +18,15 @@ export type Route =
   | { readonly name: 'stats' }
   | { readonly name: 'campaigns' }
   | { readonly name: 'rules' }
+  /**
+   * The games and campaigns already played.
+   *
+   * The filters ride in the query string rather than in component state, so a
+   * filtered view is a URL: it can be bookmarked, shared, and comes back the
+   * same after a reload. `play` opens one game's detail and `run` one
+   * campaign's, both by id, for the same reason.
+   */
+  | { readonly name: 'history'; readonly filter?: HistoryFilter }
   /** The account, which exists whether or not anybody is signed in to one. */
   | { readonly name: 'account' }
   /**
@@ -41,6 +50,72 @@ const CAMPAIGNS_PATH = /^\/campaigns\/?$/;
 const RULES_PATH = /^\/rules\/?$/;
 const ACCOUNT_PATH = /^\/account\/?$/;
 const VERIFY_PATH = /^\/verify\/?$/;
+const HISTORY_PATH = /^\/history\/?$/;
+
+/**
+ * The filter state a history URL carries.
+ *
+ * Every field is optional and absent means no restriction, which is what makes
+ * `/history` with no query string the whole history rather than nothing.
+ *
+ * Dates are `YYYY-MM-DD` rather than epoch millis: a URL somebody might paste
+ * into a message should be readable, and a day is what the control offers.
+ */
+export interface HistoryFilter {
+  readonly from?: string;
+  readonly to?: string;
+  readonly hero?: string;
+  readonly aspect?: string;
+  readonly scenario?: string;
+  readonly result?: 'won' | 'lost';
+  readonly campaign?: string;
+  /** A game's id, when one is open. */
+  readonly play?: string;
+  /** A campaign run's id, when one is open. */
+  readonly run?: string;
+}
+
+const HISTORY_KEYS = [
+  'from',
+  'to',
+  'hero',
+  'aspect',
+  'scenario',
+  'result',
+  'campaign',
+  'play',
+  'run',
+] as const;
+
+function historyFilterFrom(search: string): HistoryFilter {
+  const params = new URLSearchParams(search);
+  const out: Record<string, string> = {};
+  for (const key of HISTORY_KEYS) {
+    const value = params.get(key)?.trim();
+    if (value !== undefined && value !== '') {
+      out[key] = value;
+    }
+  }
+  // Anything else is not a result. A URL saying `result=maybe` should show
+  // everything rather than nothing at all.
+  if (out.result !== 'won' && out.result !== 'lost') {
+    delete out.result;
+  }
+  return out as HistoryFilter;
+}
+
+/** The query string for a filter, with the empty fields left out. */
+export function historyQuery(filter: HistoryFilter): string {
+  const params = new URLSearchParams();
+  for (const key of HISTORY_KEYS) {
+    const value = filter[key];
+    if (value !== undefined && value !== '') {
+      params.set(key, value);
+    }
+  }
+  const query = params.toString();
+  return query === '' ? '' : `?${query}`;
+}
 
 export function routeFromPath(pathname: string, base: string, search = ''): Route {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
@@ -81,6 +156,9 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (VERIFY_PATH.test(normalised)) {
     return { name: 'verify', token: new URLSearchParams(search).get('token') ?? '' };
   }
+  if (HISTORY_PATH.test(normalised)) {
+    return { name: 'history', filter: historyFilterFrom(search) };
+  }
   if (RULES_PATH.test(normalised)) {
     return { name: 'rules' };
   }
@@ -118,6 +196,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'account') {
     return `${trimmedBase}/account`;
+  }
+  if (route.name === 'history') {
+    return `${trimmedBase}/history${historyQuery(route.filter ?? {})}`;
   }
   if (route.name === 'verify') {
     // Written without the token. The address bar keeps the one it arrived with;

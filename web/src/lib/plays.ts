@@ -310,6 +310,98 @@ function streaks(plays: readonly Play[]): { current: number; best: number } {
   return { current: running, best };
 }
 
+/*
+ * The last answer, kept.
+ *
+ * Statistics are an aggregate over the whole history, so the work grows with
+ * the history while the answer changes only when a game does. Without this,
+ * every visit to the page recomputed thousands of rows to produce the numbers
+ * it had produced a moment earlier — and the page is one tab away from the
+ * history, so that is a round trip somebody makes often.
+ *
+ * Keyed on what can change the answer and nothing else: how many plays there
+ * are, and the newest `updatedAt` among them. An edit moves `updatedAt`, a
+ * delete moves it too (a tombstone is a write), and a new game changes both.
+ * The labels are part of the key because they change with the interface
+ * language, and the tables are labelled in it.
+ *
+ * One entry. There is one history and one language on screen at a time, so a
+ * larger cache would hold answers nobody is going to ask for again.
+ */
+let cached: { key: string; value: Statistics } | null = null;
+
+function cacheKey(plays: readonly Play[], labels: StatLabels): string {
+  /*
+    A hash over the fields the computation actually reads.
+
+    Two weaker keys were tried and both were wrong, in the same way. Length plus
+    the newest `updatedAt` collides whenever two histories of the same size end
+    at the same moment. Adding the row ids collides whenever the same ids carry
+    different content — which the tests do constantly, and which a backup
+    restore does in earnest, since it writes rows keeping the stamps they had.
+
+    So the key covers what the tallies read. That is more work than a timestamp
+    and still far less than the tallies themselves: this reads fields and
+    multiplies, they expand every seat of every play and build maps.
+
+    **If a metric starts reading a field that is not mixed in here, it must be
+    added.** That is the standing cost of this cache, and the reason the fields
+    are listed one per line rather than looped over: the list is meant to be
+    read next to the computation below.
+  */
+  let hash = 0x811c9dc5;
+  const mix = (value: string | number | boolean | null | undefined): void => {
+    /*
+      Null is not the empty string here.
+
+      `String(value ?? '')` folds them together, and section 2.7 is precisely
+      the rule that tells them apart: a null campaign id is not a campaign game
+      and an empty one is. Two plays differing only in that hashed the same and
+      the second was answered with the first one's numbers.
+    */
+    const text = value === null || value === undefined ? '\u0000' : String(value);
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    hash ^= 0x1f;
+    hash = Math.imul(hash, 0x01000193);
+  };
+
+  for (const play of plays) {
+    mix(play.id);
+    mix(play.updatedAt);
+    mix(play.deletedAt);
+    mix(play.playedAt);
+    mix(play.won);
+    mix(play.players);
+    mix(play.elapsedMillis);
+    mix(play.difficulty);
+    mix(play.scenarioCode);
+    mix(play.scenarioName);
+    mix(play.campaignRunId);
+    mix(play.heroCode);
+    mix(play.heroName);
+    mix(play.aspects);
+    mix(play.otherHeroes);
+    for (const seat of play.roster) {
+      mix(seat.code);
+      mix(seat.name);
+      mix(seat.aspect);
+    }
+  }
+
+  // A sample of the labels rather than all of them: they come from one string
+  // table, so one of them changing means the language did.
+  return `${plays.length}|${hash >>> 0}|${labels.aspect('justice')}|${labels.players('players_2')}`;
+}
+
+
+/** Forgets the cached answer. For tests, which build many histories in a row. */
+export function forgetStatistics(): void {
+  cached = null;
+}
+
 export function computeStatistics(
   all: readonly Play[],
   labels: StatLabels,
@@ -323,10 +415,16 @@ export function computeStatistics(
     table depends on it for the same reason. A caller handing rows over in a
     different order would quietly change the labels.
   */
+  const key = cacheKey(all, labels);
+  if (cached !== null && cached.key === key) {
+    return cached.value;
+  }
+
   const plays = [...all].filter(counts).sort((a, b) => b.playedAt - a.playedAt);
   const timed = plays.filter((play) => play.elapsedMillis > 0);
   const run = streaks(plays);
-  return {
+
+  const value: Statistics = {
     total: plays.length,
     won: plays.filter((p) => p.won).length,
     totalMillis: plays.reduce((sum, p) => sum + p.elapsedMillis, 0),
@@ -457,4 +555,7 @@ export function computeStatistics(
       { key: playerBucket(play.players), label: labels.players(playerBucket(play.players)) },
     ]).sort((a, b) => a.key.localeCompare(b.key)),
   };
+
+  cached = { key, value };
+  return value;
 }

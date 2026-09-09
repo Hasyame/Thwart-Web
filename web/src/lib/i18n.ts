@@ -86,6 +86,25 @@ export interface Strings {
   readonly campaignUnread: (n: number) => string;
   readonly attempts: (n: number) => string;
   readonly navPlay: string;
+  readonly navHistory: string;
+  readonly statsRecord: string;
+  readonly statsSeeHistory: (games: number) => string;
+  readonly historyTitle: string;
+  readonly historyFilters: string;
+  readonly historyFrom: string;
+  readonly historyTo: string;
+  readonly historyAny: string;
+  readonly historyResult: string;
+  readonly historyInACampaign: string;
+  readonly historyOutsideACampaign: string;
+  readonly historyClear: string;
+  readonly historyCount: (shown: number, total: number) => string;
+  readonly historyEmpty: string;
+  readonly historyEmptyHint: string;
+  readonly historyNoMatches: string;
+  readonly historyNoMatchesHint: string;
+  readonly historyRunEmpty: string;
+  readonly historyDeleteConfirm: string;
   readonly navStats: string;
   readonly playTitle: string;
   readonly playSetupNote: string;
@@ -636,6 +655,28 @@ const STRINGS: Record<Locale, Strings> = {
         : `${n} events in this campaign's log are not read by this page.`,
     attempts: (n) => `${n} attempts`,
     navPlay: 'My own setup',
+    navHistory: 'History',
+    statsRecord: 'Record',
+    statsSeeHistory: (games) => `See all ${games} games in the history`,
+    historyTitle: 'History',
+    historyFilters: 'Narrow the history',
+    historyFrom: 'From',
+    historyTo: 'To',
+    historyAny: 'Any',
+    historyResult: 'Result',
+    historyInACampaign: 'In a campaign',
+    historyOutsideACampaign: 'Outside a campaign',
+    historyClear: 'Clear the filters',
+    historyCount: (shown, total) =>
+      shown === total ? `${total} games` : `${shown} of ${total} games`,
+    historyEmpty: 'No games recorded yet.',
+    historyEmptyHint:
+      'Record one from Your own game, or import a backup from the Android app on the Collection page. Everything you play shows up here.',
+    historyNoMatches: 'No game matches these filters.',
+    historyNoMatchesHint: 'Widen the range, or clear them and start again.',
+    historyRunEmpty: 'No scenario recorded against this campaign yet.',
+    historyDeleteConfirm:
+      'This removes the game from every device and from your statistics. It is kept as a deleted row so the removal can travel, and so it can be undone.',
     navStats: 'Stats',
     playTitle: 'My own setup',
     playSetupNote: 'Choose everything yourself. The clock runs while you play.',
@@ -1313,6 +1354,29 @@ const STRINGS: Record<Locale, Strings> = {
         : `${n} événements du journal de cette campagne ne sont pas lus par cette page.`,
     attempts: (n) => `${n} tentatives`,
     navPlay: 'Ma propre partie',
+    navHistory: 'Historique',
+    statsRecord: 'Bilan',
+    statsSeeHistory: (games) =>
+      `Voir les ${games} parties dans l'historique`,
+    historyTitle: 'Historique',
+    historyFilters: "Restreindre l'historique",
+    historyFrom: 'Du',
+    historyTo: 'Au',
+    historyAny: 'Toutes',
+    historyResult: 'Résultat',
+    historyInACampaign: 'En campagne',
+    historyOutsideACampaign: 'Hors campagne',
+    historyClear: 'Effacer les filtres',
+    historyCount: (shown, total) =>
+      shown === total ? `${total} parties` : `${shown} parties sur ${total}`,
+    historyEmpty: 'Aucune partie enregistrée pour le moment.',
+    historyEmptyHint:
+      "Enregistrez-en une depuis Ma propre partie, ou importez une sauvegarde de l'application Android sur la page Ma collection. Tout ce que vous jouez apparaît ici.",
+    historyNoMatches: 'Aucune partie ne correspond à ces filtres.',
+    historyNoMatchesHint: 'Élargissez la période, ou effacez-les pour recommencer.',
+    historyRunEmpty: 'Aucun scénario enregistré pour cette campagne.',
+    historyDeleteConfirm:
+      'Ceci retire la partie de tous vos appareils et de vos statistiques. Elle est conservée comme ligne supprimée, pour que la suppression circule et puisse être annulée.',
     navStats: 'Stats',
     playTitle: 'Ma propre partie',
     playSetupNote: 'Choisissez tout vous-même. Le chronomètre tourne pendant la partie.',

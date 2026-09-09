@@ -32,8 +32,15 @@ export interface PlayFilter {
   readonly from?: number;
   /** Inclusive, epoch millis. */
   readonly to?: number;
-  /** Hero card code, matched against every seat of the game. */
-  readonly hero?: string;
+  /**
+   * Hero identifiers, matched against every seat of the game.
+   *
+   * A list rather than one code, because the same hero is spelled two ways in
+   * the history: a play recorded now carries the card code, one recorded before
+   * that carries the set code. Filtering on a single spelling silently hides
+   * half of somebody's games with that hero.
+   */
+  readonly heroes?: readonly string[];
   /** A single aspect, matched against every seat and the play's own list. */
   readonly aspect?: string;
   readonly scenario?: string;
@@ -83,9 +90,9 @@ export function matches(play: Play, filter: PlayFilter): boolean {
       return false;
     }
   }
-  if (filter.hero !== undefined) {
+  if (filter.heroes !== undefined && filter.heroes.length > 0) {
     const seats = play.roster.length > 0 ? play.roster.map((s) => s.code) : [play.heroCode];
-    if (!seats.includes(filter.hero)) {
+    if (!seats.some((code) => filter.heroes?.includes(code))) {
       return false;
     }
   }

@@ -233,6 +233,18 @@
    * the account button, the settings button and the page padding the whole bar
    * needs 1229px — 78.8rem. So 80rem, with a little room.
    *
+   * **Now 85rem**, because History made it ten destinations. Measured the same
+   * way and not estimated: `scrollWidth` said 86.6rem and was wrong, because
+   * the items shrink. Narrowing a real page in an iframe until the header
+   * doubled put the wrap between 1320px and 1360px, so 85rem — 1360px — is the
+   * first width measured to hold one row.
+   *
+   * The worst case is ten and not nine: Versus is hidden for anybody who owns
+   * none of the boxes that print two main schemes, so a profile that owns one
+   * is what has to be measured. Measuring the default profile showed nine
+   * labels fitting comfortably and would have shipped a two-row header to
+   * everybody who owns Civil War.
+   *
    * It was 56rem when there were eight shorter destinations. Adding Versus and
    * lengthening Collection to "Ma collection" pushed it past what 56rem holds,
    * and the bar wrapped to two rows: the header grew from 57px to 93px, which
@@ -243,7 +255,7 @@
    * the two dialogs is a different question — sheet or centred dialog — and is
    * deliberately left where it is.
    */
-  @media (min-width: 80rem) {
+  @media (min-width: 85rem) {
     .spacer {
       display: none;
     }

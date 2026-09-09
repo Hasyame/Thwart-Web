@@ -242,4 +242,72 @@ const play = (id, extra = {}) => ({
   check('a deleted loss does not break a streak', stats.currentStreak === 2, `${stats.currentStreak}`);
 }
 
+// --- the cache, which must never answer a question it was not asked -----------
+
+{
+  /*
+   * Statistics are memoised, because the page is one tab from the history and
+   * recomputing thousands of rows on every visit is a round trip somebody makes
+   * often. A stale answer is far worse than a slow one, so these are the four
+   * ways the history can change.
+   */
+  const a = play('a', { won: true, playedAt: 1_000, updatedAt: 1_000 });
+  const b = play('b', { won: false, playedAt: 2_000, updatedAt: 2_000 });
+
+  const first = computeStatistics([a], LABELS);
+  check('the cache returns the same answer for the same history', computeStatistics([a], LABELS) === first);
+
+  const added = computeStatistics([a, b], LABELS);
+  check('a new game is a new answer', added.total === 2, `${added.total}`);
+
+  const edited = computeStatistics([{ ...a, won: false, updatedAt: 9_000 }], LABELS);
+  check('an edit is a new answer', edited.won === 0, `${edited.won}`);
+
+  const deleted = computeStatistics([{ ...a, deletedAt: 10_000 }], LABELS);
+  check('a delete is a new answer', deleted.total === 0, `${deleted.total}`);
+
+  const other = computeStatistics([a], { ...LABELS, aspect: () => 'Justicia' });
+  check('a change of language is a new answer', other !== first);
+}
+
+{
+  /*
+   * Collisions, which is how a cache lies.
+   *
+   * Three keys were tried before one was right, and every failure had the same
+   * shape: two different histories hashing the same, the second answered with
+   * the first one's numbers. These are the near-misses that caught each one.
+   */
+  const base = { playedAt: 1_000, updatedAt: 0, deletedAt: null };
+
+  const spider = computeStatistics([play('x', { ...base, heroCode: '01001', heroName: 'Spider-Man' })], LABELS);
+  const marvel = computeStatistics([play('x', { ...base, heroCode: '01002', heroName: 'Captain Marvel' })], LABELS);
+  check(
+    'same id, same stamps, different hero: a different answer',
+    marvel.byHero[0]?.label === 'Captain Marvel',
+    marvel.byHero[0]?.label,
+  );
+  check('and the first answer was not the second', spider.byHero[0]?.label === 'Spider-Man');
+
+  const outside = computeStatistics([play('y', { ...base, campaignRunId: null })], LABELS);
+  const inside = computeStatistics([play('y', { ...base, campaignRunId: '' })], LABELS);
+  check(
+    'null and an empty campaign id are told apart',
+    outside.campaignGames === 0 && inside.campaignGames === 1,
+    `${outside.campaignGames} then ${inside.campaignGames}`,
+  );
+
+  const lost = computeStatistics([play('z', { ...base, won: false })], LABELS);
+  const beat = computeStatistics([play('z', { ...base, won: true })], LABELS);
+  check('and a result flipped is a different answer', lost.won === 0 && beat.won === 1);
+
+  const solo = computeStatistics([play('w', { ...base, players: 1 })], LABELS);
+  const four = computeStatistics([play('w', { ...base, players: 4 })], LABELS);
+  check(
+    'as is a table size',
+    solo.byPlayerCount[0]?.key === 'players_1' && four.byPlayerCount[0]?.key === 'players_4',
+    `${solo.byPlayerCount[0]?.key} then ${four.byPlayerCount[0]?.key}`,
+  );
+}
+
 process.exit(failures === 0 ? 0 : 1);
