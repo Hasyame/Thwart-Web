@@ -4,6 +4,13 @@
 **Amended 2026-09-04:** accounts now carry an email address, and signing in uses
 it. Section 3 and the new section 4 are the parts that changed; if you read the
 first version of this document, read those two again and nothing else.
+**Amended 2026-09-10:** both clients now sync. Android built the transport,
+the engine, adoption and the account screen; the web client finished too and
+gained two things Android does not have yet — **address confirmation** and the
+**live stream**. Sections 1, 2, 3 and 4 are corrected below. If you read this
+document before today, the part that has genuinely reversed is §4's "Not
+verified": there is a confirmation link now, it is mandatory, and an
+unconfirmed account cannot sign in.
 **Audience:** whoever implements sync in `Hasyame/Thwart`.
 
 This is not a design document. Doc 02 is the design and it is settled; this says
@@ -14,15 +21,20 @@ will go wrong if they are approached casually.
 
 ## 1. What already exists
 
-**The server is finished and deployed** at `https://thwart.app/api/v1`. Eleven
-endpoints, accounts with Argon2id passwords and recovery codes, per-account
-revision counters, tombstones, batch idempotency. It has tests. Nothing about
-it needs changing to add a client.
+**The server is finished and deployed** at `https://thwart.app/api/v1`.
+Fifteen endpoints, accounts with Argon2id passwords and recovery codes,
+per-account revision counters, tombstones, batch idempotency. It has tests.
+Nothing about it needs changing to add a client.
 
-**The web client has the transport, the account screen and change detection.**
-It does not yet pull, push or merge. Both clients are being written against the
-same protocol at roughly the same time, which is the reason for this document:
-the two must agree without either being able to see the other.
+> **Amended 2026-09-10.** Eleven when this was written. The four added since
+> are the two confirmation endpoints, the live stream and the account export;
+> none of them changes anything described here, and a client that ignores all
+> four still syncs correctly.
+
+**The web client is finished**, including pull, push, merge, adoption, sign-out
+and the live stream. It was written against this document and the protocol it
+describes, so where the two of you disagree about the contract, this document
+and doc 02 are the arbiter rather than either implementation.
 
 **The Android app already has the local half of the state.**
 `SyncStateEntity.kt` defines `SyncCollection` with nine keys, and those keys are
@@ -32,8 +44,18 @@ server stores whatever key it is handed and never parses a body, so a mismatch
 does not error, it quietly builds a second set of records the other client never
 sees.
 
-What Android does not have is the transport: nothing in the app has ever called
-the server.
+> **Amended 2026-09-10.** This paragraph used to end "What Android does not
+> have is the transport: nothing in the app has ever called the server." That
+> is done: `data/sync/` now holds `SyncApi`, `SyncClient`, `SyncEngine`,
+> `SyncMerge`, `AdoptionPlan` and `AutoSync`, and the account screen exists.
+>
+> **What Android does not have is §4's confirmation flow and the live stream.**
+> `SyncApi` knows eight endpoint groups; it does not know `/v1/auth/verify`,
+> `/v1/auth/verify/resend` or `/v1/sync/stream`. The first of those is the one
+> that matters, because since confirmation became mandatory a new account
+> cannot sign in until its address is confirmed, and `email_not_verified` is
+> not in `SERVER_KNOWS_BEST` — so the app shows its own generic wording instead
+> of the server's explanation of what to do next. See §4.
 
 ---
 
@@ -49,6 +71,13 @@ the server.
 6. First-sign-in adoption.
 
 Steps 4 and 6 are where the risk is. Steps 1 to 3 are ordinary work.
+
+> **Amended 2026-09-10.** All six are done. What is left is smaller and listed
+> here so the list is still the list:
+>
+> 7. **Confirmation.** Handle `email_not_verified`, offer the resend, and say
+>    what the person has to do. §4.
+> 8. **The live stream**, which is optional and an optimisation. §3.
 
 ---
 
@@ -70,16 +99,40 @@ GET  /v1/auth/devices    -> {devices: [{id, name, current, createdAt, lastSeen}]
 DELETE /v1/auth/devices/{id}                                             auth
 ```
 
+Added since, and the two Android still needs:
+
+```
+POST /v1/auth/verify         {token}         -> {handle, email}          200
+POST /v1/auth/verify/resend  {handle, password}
+     -> {sent: true}                                                     202
+```
+
+`verify` takes the token out of the link in the message. It is single-use and
+lives seven days. Three failures, and the client should tell them apart:
+`invalid_verification` (never existed, already used, or the account is gone —
+the server deliberately will not say which), `verification_expired`, and
+`rate_limited`.
+
+`verify/resend` answers `202 {sent: true}` whatever happened, including for an
+address that has no account and for a wrong password. That is on purpose: it
+must not become a way to ask whether an address is registered. Do not report
+success as though delivery were confirmed — say a message is on its way if the
+address is right.
+
 `recoveryCode` is returned **once** and the server keeps only its hash. The
 screen must refuse to move on until the user has saved it, and must offer it as
-a file. The server cannot send email yet, so until it can, that code is still
-the only way back into an account whose password has been forgotten — the
-address does not rescue anybody on its own.
+a file. **That code is still the only way back into an account whose password
+has been forgotten.** The server can send mail now, but only confirmation
+links: there is no password reset by email, and the address does not rescue
+anybody on its own.
 
-`registrationOpen` is published by `GET /v1/version`. thwart.app currently has
-registration closed; an instance that refuses will answer
-`403 registration_closed`. Offer the form only when the instance says it is
-open, but do not rely on that — the refusal is the server's.
+`registrationOpen` is published by `GET /v1/version`. An instance that refuses
+answers `403 registration_closed`. Offer the form only when the instance says
+it is open, but do not rely on that — the refusal is the server's.
+
+> **Amended 2026-09-10.** This said "thwart.app currently has registration
+> closed". It is open, and has been since confirmation shipped — closing it was
+> what stood in for confirmation while there was no way to send a link.
 
 ### Sync
 
@@ -102,6 +155,25 @@ saw for that record, absent when it is new to the server.
 
 Limits come from `GET /v1/version` rather than being hardcoded: currently 500
 records or 2 MB per batch, 256 KB per record, 1000 per page.
+
+**The live stream, which is optional.** Added 2026-09-10 and used by the web
+client; Android syncs correctly without ever opening it.
+
+```
+GET /v1/sync/stream?since=<cursor>&token=<device token>
+    -> text/event-stream, `event: changed`, `data: {"revision": N}`
+```
+
+It carries **an invalidation, not a record**: being told means "there is
+something to fetch", and the fetching is the ordinary pull you already have. So
+it can drop, buffer, or be switched off entirely and the result is data that is
+stale, never data that is wrong. Treat it as an optimisation and never as a
+source of truth, and do not write a merge path that only the stream reaches.
+
+The token is in the query string because the web's `EventSource` cannot set
+headers. This is the one endpoint where that is true, its access log is off on
+the server for exactly that reason, and a native client should send the
+`Authorization` header instead — the route accepts either.
 
 ---
 
@@ -145,16 +217,48 @@ the account made before this change has none until it is set.
 
 ### What it is not
 
-- **Not verified.** There is no confirmation link, because there is no SMTP
-  relay yet. Do not build a screen that waits for one. The column
-  `email_verified_at` exists in the schema so that adding it later is not a
-  fourth migration; it is null for everybody and the API does not expose it.
-- **Not a way back in yet.** See above: the recovery code still is.
+- **Verified, and this is the one that reversed.** This section used to read
+  "Not verified. There is no confirmation link, because there is no SMTP relay
+  yet. Do not build a screen that waits for one." There is a relay now, and the
+  advice is the opposite: **a new account is disabled until its address is
+  confirmed.** It cannot sign in and nothing syncs to it. What that means for
+  the app is in the box below.
+- **Not a way back in.** See above: the recovery code still is. Confirming an
+  address proves you own it; it does not reset a password.
 - **Not required to use the app.** This is the part that matters legally and
   the part easiest to erode by accident. Thwart works with no account at all —
   collection, decks, plays, campaigns, all local. An account buys sync and
   nothing else. Nothing in the app may become unreachable behind a sign-in, and
   no screen should ask for an address in order to do something local.
+
+> ### What confirmation means for the app
+>
+> **Registering still succeeds and still returns a token.** The response shape
+> did not change — dropping a field would have broken a released app to make a
+> point — but it now carries `emailVerified: false`, and that token is refused
+> by every authenticated endpoint until the address is confirmed.
+>
+> **So the screen after registering is a new one.** Not a spinner and not the
+> synced state: a page that says a message has been sent, offers *resend*, and
+> lets the person say they have confirmed and try again. The link opens in a
+> browser, not in the app — there is no deep link and none is needed.
+>
+> **Signing in to an unconfirmed account answers `403 email_not_verified`.**
+> Add it to `SERVER_KNOWS_BEST`. Every code there prints `error.message`, which
+> the server sends in English or French by `Accept-Language`, and for this one
+> the message is the only thing that tells the person what to do — the app's own
+> generic sign-in failure is actively unhelpful here, because nothing they can
+> retype will fix it.
+>
+> **Accounts made before all this keep working.** `email_verified_at` was
+> backfilled for them: they have no address, they sign in with their handle,
+> and they never see any of this.
+>
+> **An account nobody confirms is deleted** after eight days — the link's seven
+> plus a day — address and all, rather than left sitting there. So "register,
+> never confirm, come back next week" finds a handle that is free again, not an
+> account waiting. A resend also invalidates the previous link, so only the
+> newest one in somebody's mailbox works.
 
 ### Passwords
 
@@ -182,11 +286,15 @@ stale one.
 | `email_taken` | that address already has an account (case-insensitively) |
 | `invalid_handle` | pseudonym outside 3–32 chars of `[A-Za-z0-9._-]` |
 | `weak_password` | fails the rule above |
+| `email_not_verified` | signing in to an account whose address is unconfirmed — **belongs in `SERVER_KNOWS_BEST`** |
+| `invalid_verification` | a confirmation token that never existed, was already used, or whose account is gone |
+| `verification_expired` | a confirmation token older than seven days |
 
 `invalid_handle` and `weak_password` existed before but were not listed here.
-All four come back with English and French messages, chosen by
-`Accept-Language`, so a client with nothing to say for a code can print
-`error.message` and be correct in both languages.
+The last three were added with confirmation on 2026-09-10. All of them come
+back with English and French messages, chosen by `Accept-Language`, so a client
+with nothing to say for a code can print `error.message` and be correct in both
+languages.
 
 ### Storage on the device
 
