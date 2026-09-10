@@ -1,4 +1,5 @@
 import { db, SETTINGS_KEY } from './db';
+import { completePlay } from './playShape';
 import {
   BACKUP_FORMAT_VERSION,
   type Backup,
@@ -172,7 +173,9 @@ export async function importBackup(
     await db.excludedScenarios.bulkPut([...(backup.excludedScenarios ?? [])]);
     await db.favouriteCards.bulkPut([...backup.favouriteCards]);
     await db.decks.bulkPut([...backup.decks]);
-    await db.plays.bulkPut([...backup.plays]);
+    // Completed the same way a synced body is: a backup written by the phone
+    // has the same fields missing, for the same reason.
+    await db.plays.bulkPut(backup.plays.map((play) => completePlay(play, play.id)));
     await db.campaignRuns.bulkPut([...backup.campaignRuns]);
     await db.campaignEvents.bulkPut([...backup.campaignEvents]);
     await db.randomizerHistory.bulkPut([...backup.randomizerHistory]);

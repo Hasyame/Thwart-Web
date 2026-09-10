@@ -14,6 +14,7 @@
  *   npm run test:parity
  */
 import { computeStatistics } from '../src/lib/plays.ts';
+import { completePlay } from '../src/lib/playShape.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -321,6 +322,58 @@ const sorted = (values) => [...values].sort();
   check('one game is one game', s.total === 1 && s.won === 1);
   check('its streak is one', s.currentStreak === 1 && s.bestStreak === 1);
   check('and its pairing is still below the floor', s.byHeroAspect.length === 0);
+}
+
+// --- a body exactly as Android sends one ---------------------------------------
+
+{
+  /*
+   * The shape that blanked the statistics page for a real account.
+   *
+   * kotlinx omits every property equal to its declared default as well as
+   * every explicit null, so PlayEntity crosses the wire missing most of its
+   * optional fields. The web spread that body onto a row whose type claimed
+   * every field was present. `roster` was absent, iterating it threw inside the
+   * aggregate, the render aborted, and the page kept showing its loading line.
+   */
+  const wire = {
+    id: 'sync-1',
+    playedAt: 1_700_000_000_000,
+    scenarioCode: '01097',
+    scenarioName: 'Rhino',
+    difficulty: 'standard',
+    heroCode: '01001a',
+    heroName: 'Spider-Man',
+    aspects: 'justice',
+    won: true,
+  };
+
+  const filled = completePlay(wire, wire.id);
+  check('a missing roster becomes an empty one', Array.isArray(filled.roster) && filled.roster.length === 0);
+  check('a missing player count is one, not nought', filled.players === 1, String(filled.players));
+  check('a missing campaign id is null, not undefined', filled.campaignRunId === null);
+  check('a missing deletedAt is null, so the play is live', filled.deletedAt === null);
+  check('a missing updatedAt falls back to when it was played', filled.updatedAt === wire.playedAt);
+  check('missing text fields are empty strings', filled.notes === '' && filled.location === '' && filled.standardSet === '');
+  check('and a missing victoryPoints is nought', filled.victoryPoints === 0);
+
+  let threw = null;
+  let computed = null;
+  try {
+    computed = stats([filled]);
+  } catch (error) {
+    threw = String(error);
+  }
+  check('the statistics compute over it rather than throwing', threw === null, threw ?? '');
+  check(
+    'and count it as one solo game outside a campaign',
+    computed !== null && computed.total === 1 && computed.campaignGames === 0 &&
+      computed.byPlayerCount[0] !== undefined && computed.byPlayerCount[0].key === 'players_1',
+  );
+  check('crediting the hero it names', computed?.byHero[0]?.label === 'Spider-Man', computed?.byHero[0]?.label);
+
+  const again = completePlay(filled, filled.id);
+  check('completing a complete row changes nothing', JSON.stringify(again) === JSON.stringify(filled));
 }
 
 console.log(failures === 0 ? '\nthe two clients agree' : `\n${failures} FAILED`);

@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { completePlay } from './playShape';
 import type {
   BackupSettings,
   CampaignEvent,
@@ -147,6 +148,32 @@ class ThwartDatabase extends Dexie {
             delete play.ignored;
           }),
       );
+
+    /*
+      v6: repair the rows a synced body left half-written.
+
+      v5 filled in `updatedAt` and `deletedAt` for rows this browser had
+      written itself. It did not touch what sync had put there, and that is
+      where the real damage was: Android's kotlinx omits every property equal
+      to its default, so a play arriving from a phone was missing most of them.
+      `roster` absent is the one that mattered — iterating it threw inside the
+      statistics and left the page showing its loading line for ever.
+
+      The fix is at the boundary now (lib/playShape.ts), so nothing new arrives
+      broken. This is for what is already stored, on every device that has ever
+      synced.
+    */
+    this.version(6).upgrade((tx) =>
+      tx
+        .table('plays')
+        .toCollection()
+        .modify((play) => {
+          const complete = completePlay(play, play.id);
+          for (const [key, value] of Object.entries(complete)) {
+            play[key] = value;
+          }
+        }),
+    );
   }
 }
 

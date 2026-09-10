@@ -1,5 +1,6 @@
 import type { Table } from 'dexie';
 import { db, SETTINGS_KEY, type StoredSettings } from '../db';
+import { completePlay } from '../playShape';
 import type {
   CampaignEvent,
   CampaignRun,
@@ -175,7 +176,16 @@ export const PLAYS: Mapping<Play> = {
   table: () => db.plays,
   idOf: (row) => row.id,
   bodyOf: whole,
-  rowOf: (id, body) => ({ ...(body as unknown as Play), id }),
+  /*
+    Filled in, not spread.
+
+    Android's kotlinx omits every property equal to its default as well as
+    every null, so a body arrives missing most of PlayEntity's optional fields.
+    Spreading that produced rows whose type said "complete" and whose data was
+    not: `roster` was absent and iterating it threw inside the statistics,
+    which blanked the page. See lib/playShape.ts.
+  */
+  rowOf: (id, body) => completePlay(body, id),
   /*
     When the row changed, not when the game was played.
 

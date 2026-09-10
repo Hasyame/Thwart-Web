@@ -148,11 +148,22 @@ function tally(
  * what is missing. The app's own comment on the field says as much.
  */
 function seatsOf(play: Play): readonly PlayHero[] {
-  if (play.roster.length > 0) {
-    return play.roster;
+  /*
+    Defensive, deliberately.
+
+    Rows enter through lib/playShape.ts now and a migration repaired the ones
+    already stored, so a play here should always have a roster. This still
+    reads it defensively because the cost of being wrong is not one bad row: an
+    aggregate runs inside a `$derived`, so a throw here aborts the render and
+    leaves the page showing whatever was painted last. That is how the
+    statistics came to show a loading line for ever.
+  */
+  const roster = play.roster ?? [];
+  if (roster.length > 0) {
+    return roster;
   }
 
-  const others = splitList(play.otherHeroes);
+  const others = splitList(play.otherHeroes ?? '');
 
   /*
     Solo, and only solo, can be paired with confidence.
@@ -168,7 +179,7 @@ function seatsOf(play: Play): readonly PlayHero[] {
       {
         code: play.heroCode,
         name: play.heroName === '' ? play.heroCode : play.heroName,
-        aspect: splitList(play.aspects).join(', '),
+        aspect: splitList(play.aspects ?? '').join(', '),
       },
     ];
   }
@@ -384,7 +395,7 @@ function cacheKey(plays: readonly Play[], labels: StatLabels): string {
     mix(play.heroName);
     mix(play.aspects);
     mix(play.otherHeroes);
-    for (const seat of play.roster) {
+    for (const seat of play.roster ?? []) {
       mix(seat.code);
       mix(seat.name);
       mix(seat.aspect);
@@ -490,7 +501,7 @@ export function computeStatistics(
     byAspect: sortTallies(
       tally(plays, (play) => {
         const fromSeats = seatsOf(play).flatMap((seat) => splitList(seat.aspect));
-        const aspects = fromSeats.length > 0 ? fromSeats : splitList(play.aspects);
+        const aspects = fromSeats.length > 0 ? fromSeats : splitList(play.aspects ?? '');
         return [...new Set(aspects)].map((aspect) => ({
           key: aspect,
           label: labels.aspect(aspect),
