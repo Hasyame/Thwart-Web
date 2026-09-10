@@ -156,7 +156,7 @@
   .sheet {
     display: grid;
     gap: var(--space-4);
-    padding-block: var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+    padding-block: var(--space-5) calc(var(--space-6) + var(--safe-bottom));
     padding-inline: max(var(--space-5), env(safe-area-inset-left))
       max(var(--space-5), env(safe-area-inset-right));
   }

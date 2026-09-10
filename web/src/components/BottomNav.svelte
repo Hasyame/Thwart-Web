@@ -69,7 +69,7 @@
      * padded out from under it rather than being hidden by it. Zero everywhere
      * that has no such thing.
      */
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: var(--safe-bottom);
     padding-inline: max(0px, env(safe-area-inset-left)) max(0px, env(safe-area-inset-right));
   }
 

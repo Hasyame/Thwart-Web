@@ -199,6 +199,13 @@ jobs:
         working-directory: web
         run: npm run test:device
 
+      # The rule that decides whether the bottom safe-area inset is real. It can
+      # only remove padding, so the way it does harm is dropping an inset that
+      # was needed and putting the tab bar under a gesture bar.
+      - name: The bottom inset is believed only when it is true
+        working-directory: web
+        run: npm run test:safe-area
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

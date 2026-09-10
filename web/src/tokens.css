@@ -169,6 +169,27 @@
      a floor, which is what stops a nav item rendering 30px tall. */
   --tap-min: 44px;
 
+  /*
+   * How much room the system bar at the bottom of the screen needs.
+   *
+   * Every rule that would otherwise reach for env(safe-area-inset-bottom) uses
+   * this instead, and the default is that same value -- so with no JavaScript,
+   * an old browser, or the script failing outright, the behaviour is exactly
+   * what it has always been. Nothing here can make the bar less safe.
+   *
+   * What it buys is the case where the inset is a lie. Firefox and Chrome on
+   * Android report a 48px bottom inset while *also* ending the page above the
+   * navigation bar, so a layout that trusts the inset reserves the space twice
+   * and the tab bar comes out 48px too tall with a dead strip inside it.
+   * Measured on a Pixel: window 823 CSS px inside a 929 px screen, an inset of
+   * 48.3, and a bar pinned to the page bottom plainly visible above the
+   * navigation buttons.
+   *
+   * `watchSafeArea()` overwrites this with 0px once it has proved that is what
+   * is happening. See web/src/lib/safeArea.ts for the proof it requires.
+   */
+  --safe-bottom: env(safe-area-inset-bottom);
+
   /* ==== Motion =========================================================== */
 
   --motion-fast: 120ms;

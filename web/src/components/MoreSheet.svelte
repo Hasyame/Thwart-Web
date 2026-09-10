@@ -276,7 +276,7 @@
     gap: var(--space-5);
     padding-block: var(--space-5)
       /* Clear of the home indicator, which sits over the bottom of the sheet. */
-      calc(var(--space-6) + env(safe-area-inset-bottom));
+      calc(var(--space-6) + var(--safe-bottom));
     padding-inline: max(var(--space-5), env(safe-area-inset-left))
       max(var(--space-5), env(safe-area-inset-right));
   }

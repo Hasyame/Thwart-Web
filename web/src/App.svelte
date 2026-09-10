@@ -31,6 +31,7 @@
   import { loadSession, session } from './lib/sync/session.svelte';
   import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
   import { watchLive } from './lib/sync/live.svelte';
+  import { watchSafeArea } from './lib/safeArea';
   import { watchStoredOnServer } from './lib/sync/stored.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
   import type { NavTarget } from './lib/nav';
@@ -211,6 +212,15 @@
    * the moment it belongs to.
    */
   $effect(() => watchAutoSync());
+
+  /*
+   * How much room the system bar at the bottom really needs.
+   *
+   * Android reports a bottom inset for a navigation bar it has already kept
+   * outside the page, so padding for it pads twice. This measures whether that
+   * is happening and, only when it is, sets --safe-bottom to zero.
+   */
+  $effect(() => watchSafeArea());
 
   /*
    * The live channel, re-opened whenever the account changes.
