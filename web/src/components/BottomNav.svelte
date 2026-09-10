@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import { TABS, type ActiveTarget, type NavTarget } from '../lib/nav';
+  import { tabFor, tabsFor, type ActiveTarget, type NavTarget } from '../lib/nav';
 
   interface Props {
     t: Strings;
@@ -10,9 +10,13 @@
     onMore: () => void;
     /** True while the More sheet is open, so the tab can say so. */
     moreOpen: boolean;
+    /** Whether the ways of playing share one tab. See `groupedPlay`. */
+    grouped: boolean;
   }
 
-  const { t, active, onNavigate, hrefFor, onMore, moreOpen }: Props = $props();
+  const { t, active, onNavigate, hrefFor, onMore, moreOpen, grouped }: Props = $props();
+
+  const tabs = $derived(tabsFor(grouped));
 
   function go(event: MouseEvent, name: NavTarget): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
@@ -22,9 +26,15 @@
     onNavigate(name);
   }
 
-  /** A card is opened from the list, so the Cards tab stays lit while reading one. */
-  const isCurrent = (id: NavTarget): boolean =>
-    active === id || (id === 'search' && active === 'card');
+  /*
+    Which tab is lit.
+
+    Worked out by `tabFor`, because with the play screens grouped there is no
+    Campaigns tab to light when somebody is on /campaigns and the hub has to
+    take it — the same rule the More sheet needs, so it lives in one place.
+  */
+  const current = $derived(tabFor(active, grouped));
+  const isCurrent = (id: NavTarget): boolean => current === id;
 </script>
 
 <!--
@@ -36,7 +46,7 @@
   arrangement where every destination is both reachable and hittable.
 -->
 <nav class="tabs" aria-label={t.navMoreTitle}>
-  {#each TABS as tab (tab.id)}
+  {#each tabs as tab (tab.id)}
     <a
       href={hrefFor(tab.id)}
       class:current={isCurrent(tab.id)}

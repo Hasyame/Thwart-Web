@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import { DESTINATIONS, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
+  import { TOP_BAR, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
   import Logo from './Logo.svelte';
 
   interface Props {
@@ -56,7 +56,7 @@
     </button>
 
     <nav aria-label={t.appName}>
-      {#each visible(DESTINATIONS, hidden) as destination (destination.id)}
+      {#each visible(TOP_BAR, hidden) as destination (destination.id)}
         <a
           href={hrefFor(destination.id)}
           class:current={active === destination.id ||

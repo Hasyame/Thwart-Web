@@ -15,6 +15,14 @@ export type Route =
   | { readonly name: 'versus' }
   | { readonly name: 'decks' }
   | { readonly name: 'play' }
+  /**
+   * The Play hub: the four ways of playing on one screen, as the phone has it.
+   *
+   * Deliberately not `/play`. That path is your own setup and stays that way
+   * whichever navigation somebody has chosen, because a URL that meant one
+   * thing on one device and another elsewhere is a URL nobody can share.
+   */
+  | { readonly name: 'hub' }
   | { readonly name: 'stats' }
   | { readonly name: 'campaigns' }
   | { readonly name: 'rules' }
@@ -45,6 +53,7 @@ const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 const VERSUS_PATH = /^\/versus\/?$/;
 const DECKS_PATH = /^\/decks\/?$/;
 const PLAY_PATH = /^\/play\/?$/;
+const HUB_PATH = /^\/hub\/?$/;
 const STATS_PATH = /^\/stats\/?$/;
 const CAMPAIGNS_PATH = /^\/campaigns\/?$/;
 const RULES_PATH = /^\/rules\/?$/;
@@ -144,6 +153,9 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (PLAY_PATH.test(normalised)) {
     return { name: 'play' };
   }
+  if (HUB_PATH.test(normalised)) {
+    return { name: 'hub' };
+  }
   if (STATS_PATH.test(normalised)) {
     return { name: 'stats' };
   }
@@ -184,6 +196,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'play') {
     return `${trimmedBase}/play`;
+  }
+  if (route.name === 'hub') {
+    return `${trimmedBase}/hub`;
   }
   if (route.name === 'stats') {
     return `${trimmedBase}/stats`;

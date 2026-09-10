@@ -11,6 +11,15 @@ import type { Strings } from './i18n';
 
 export type NavTarget =
   | 'search'
+  /**
+   * The Play hub, which exists only when the play screens are grouped.
+   *
+   * Its own route rather than a second meaning for `/play`, so no URL ever
+   * changes what it points at: `/play` is your own setup whichever way the
+   * navigation is arranged, and a link somebody saved still lands where they
+   * expect. See `groupedPlay` in preferences.
+   */
+  | 'hub'
   | 'collection'
   | 'decks'
   | 'randomizer'
@@ -56,6 +65,7 @@ export interface Destination {
  */
 export const DESTINATIONS: readonly Destination[] = [
   { id: 'search', label: (t) => t.navCards, tab: (t) => t.navCards, glyph: '▤' },
+  { id: 'hub', label: (t) => t.navPlayShort, tab: (t) => t.navPlayShort, glyph: '▶' },
   { id: 'decks', label: (t) => t.navDecks, tab: (t) => t.navDecks, glyph: '❐' },
   { id: 'campaigns', label: (t) => t.navCampaigns, tab: (t) => t.navCampaigns, glyph: '◈' },
   { id: 'play', label: (t) => t.navPlay, tab: (t) => t.navPlayShort, glyph: '▶' },
@@ -70,21 +80,84 @@ export const DESTINATIONS: readonly Destination[] = [
 /**
  * The four that get a tab, plus More.
  *
- * Four rather than eight because a tab bar is only usable while every tab is
- * wide enough to hit: eight of them on a 375px screen is 47px each, under the
- * 44pt floor once the label has any padding at all. These four are the ones a
- * game is played out of; the rest are things you visit between games.
+ * Four rather than ten because a tab bar is only usable while every tab is
+ * wide enough to hit: ten of them on a 375px screen is 37px each, under the
+ * 44pt floor before the label has any padding at all.
+ *
+ * Two arrangements, because the phone app and the browser have earned
+ * different ones and there is no answer that suits both.
+ *
+ *   separate  what the browser has always had. Campaigns and your own setup
+ *             are tabs; the random draw and versus are in the More sheet.
+ *
+ *   grouped   what the phone does. One Play tab opens a hub holding all four
+ *             ways of playing, which frees a slot, and the statistics take it
+ *             -- the phone has a Stats tab too, and a bar that dropped to
+ *             three tabs would read as something having gone missing.
+ *
+ * Everything stays reachable in both: the four play screens keep their URLs
+ * and are one tap from the hub, so grouping moves things without hiding any.
  */
-export const TAB_IDS: readonly NavTarget[] = ['search', 'decks', 'campaigns', 'play'];
+const SEPARATE_TABS: readonly NavTarget[] = ['search', 'decks', 'campaigns', 'play'];
+const GROUPED_TABS: readonly NavTarget[] = ['search', 'decks', 'hub', 'stats'];
 
-export const TABS: readonly Destination[] = TAB_IDS.map(
-  (id) => DESTINATIONS.find((d) => d.id === id) as Destination,
-);
+/** What the hub gathers, and therefore what the More sheet must not repeat. */
+export const PLAY_TARGETS: readonly NavTarget[] = ['play', 'randomizer', 'campaigns', 'versus'];
 
-/** Everything the tab bar does not carry, which is what the More sheet holds. */
-export const OVERFLOW: readonly Destination[] = DESTINATIONS.filter(
-  (d) => !TAB_IDS.includes(d.id),
-);
+const byId = (id: NavTarget): Destination =>
+  DESTINATIONS.find((d) => d.id === id) as Destination;
+
+/** The tabs, for the arrangement in force. */
+export const tabsFor = (grouped: boolean): readonly Destination[] =>
+  (grouped ? GROUPED_TABS : SEPARATE_TABS).map(byId);
+
+/**
+ * Everything the tab bar does not carry, which is what the More sheet holds.
+ *
+ * When the play screens are grouped they are left out entirely: the hub is
+ * where they live, and listing them here as well would put the same four
+ * destinations in two places and undo the grouping the setting asked for.
+ */
+export const overflowFor = (grouped: boolean): readonly Destination[] => {
+  const tabs = grouped ? GROUPED_TABS : SEPARATE_TABS;
+  return DESTINATIONS.filter((d) => {
+    if (d.id === 'hub') {
+      // Never in the sheet: it is a tab or it is nothing.
+      return false;
+    }
+    if (tabs.includes(d.id)) {
+      return false;
+    }
+    return !(grouped && PLAY_TARGETS.includes(d.id));
+  });
+};
+
+/**
+ * What the wide header shows, which is every destination and not the hub.
+ *
+ * Above the breakpoint there is room for all ten on one row, so there is
+ * nothing for a hub to solve -- and offering both it and the four screens it
+ * gathers would be the same places twice.
+ */
+export const TOP_BAR: readonly Destination[] = DESTINATIONS.filter((d) => d.id !== 'hub');
+
+/**
+ * Which tab a destination lights up.
+ *
+ * A card is read from the card list, so Cards stays lit. With the play screens
+ * grouped there is no Campaigns tab to light when somebody is on `/campaigns`,
+ * and leaving nothing lit reads as having fallen out of the app: the hub tab
+ * takes it, which is also the tab that would take you back.
+ */
+export const tabFor = (active: ActiveTarget, grouped: boolean): ActiveTarget => {
+  if (active === 'card') {
+    return 'search';
+  }
+  if (grouped && PLAY_TARGETS.includes(active as NavTarget)) {
+    return 'hub';
+  }
+  return active;
+};
 
 /**
  * Everything except the destinations a build has nothing to show for.

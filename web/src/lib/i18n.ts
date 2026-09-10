@@ -268,6 +268,21 @@ export interface Strings {
   /** The Play tab's label, which has about six characters of room. */
   readonly navPlayShort: string;
   readonly navMore: string;
+
+  /*
+   * The Play hub, when the ways of playing share one tab.
+   *
+   * The wording is the phone's own, taken across rather than written again, so
+   * somebody moving between the two reads the same sentences about the same
+   * screens.
+   */
+  readonly hubStart: string;
+  readonly hubRandomDetail: string;
+  readonly hubOwnDetail: string;
+  readonly hubCampaignDetail: string;
+  readonly hubPaused: string;
+  readonly settingsGroupedPlay: string;
+  readonly settingsGroupedPlayHint: string;
   readonly navMoreTitle: string;
   readonly settingsTitle: string;
   readonly close: string;
@@ -890,6 +905,14 @@ const STRINGS: Record<Locale, Strings> = {
     navCollection: 'My collection',
     navPlayShort: 'Play',
     navMore: 'More',
+    hubStart: 'Start a game',
+    hubRandomDetail: 'Let the app pick a scenario, heroes and aspects from what you own.',
+    hubOwnDetail: 'Choose everything yourself. The app times the game.',
+    hubCampaignDetail: 'Start a campaign, or open one you have finished.',
+    hubPaused: 'A game is waiting',
+    settingsGroupedPlay: 'One Play tab',
+    settingsGroupedPlayHint:
+      'Puts the random game, your own setup, the campaigns and versus behind a single Play tab, the way the Android app does.',
     navMoreTitle: 'Everything else',
     settingsTitle: 'Settings',
     close: 'Close',
@@ -1598,6 +1621,15 @@ const STRINGS: Record<Locale, Strings> = {
     navCollection: 'Ma collection',
     navPlayShort: 'Jouer',
     navMore: 'Plus',
+    hubStart: 'Commencer une partie',
+    hubRandomDetail:
+      'Laissez l’application choisir un scénario, des héros et des affinités parmi ce que vous possédez.',
+    hubOwnDetail: 'Choisissez tout vous-même. L’application chronomètre la partie.',
+    hubCampaignDetail: 'Démarrez une campagne, ou ouvrez-en une terminée.',
+    hubPaused: 'Une partie vous attend',
+    settingsGroupedPlay: 'Un seul onglet Jouer',
+    settingsGroupedPlayHint:
+      'Regroupe la partie aléatoire, votre propre partie, les campagnes et le compétitif derrière un seul onglet Jouer, comme l’application Android.',
     navMoreTitle: 'Tout le reste',
     settingsTitle: 'Paramètres',
     close: 'Fermer',

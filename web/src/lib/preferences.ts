@@ -18,6 +18,7 @@ export type ThemeChoice = 'system' | 'light' | 'dark';
 const KEY_UI_LOCALE = 'thwart.uiLocale';
 const KEY_CARD_LOCALE = 'thwart.cardLocale';
 const KEY_THEME = 'thwart.theme';
+const KEY_GROUPED_PLAY = 'thwart.groupedPlay';
 
 function read(key: string): string | null {
   try {
@@ -70,6 +71,34 @@ export function saveCardLocale(locale: Locale): void {
 
 export function saveTheme(theme: ThemeChoice): void {
   write(KEY_THEME, theme);
+}
+
+/**
+ * Whether the ways of playing share one tab.
+ *
+ * The phone app puts the random draw, your own setup, the campaigns and versus
+ * behind a single Play screen, and this is how the browser can do the same.
+ *
+ * A setting rather than something worked out from `display-mode`, which would
+ * have been the obvious way to tell an installed app from a tab. Firefox for
+ * Android reports `browser` even when the site was opened from the home
+ * screen -- it has never supported installing a manifest, so there is no
+ * standalone mode there to detect -- and a feature that silently never appears
+ * on one of the two browsers people actually use is not a feature.
+ *
+ * Device-local, like the other three here, and never synced: the `settings`
+ * record is fixed at five keys by the contract with the phone, so a sixth would
+ * be dropped on its next write and the toggle would turn itself off.
+ *
+ * Off by default. Somebody who has used the web app already knows where things
+ * are, and moving them without being asked is not an improvement.
+ */
+export function loadGroupedPlay(): boolean {
+  return read(KEY_GROUPED_PLAY) === 'on';
+}
+
+export function saveGroupedPlay(grouped: boolean): void {
+  write(KEY_GROUPED_PLAY, grouped ? 'on' : 'off');
 }
 
 /**

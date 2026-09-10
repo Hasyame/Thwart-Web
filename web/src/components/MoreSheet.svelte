@@ -3,7 +3,7 @@
   import type { Strings } from '../lib/i18n';
   import type { ThemeChoice } from '../lib/preferences';
   import { LANGUAGE_NAMES } from '../lib/i18n';
-  import { OVERFLOW, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
+  import { overflowFor, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
   import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
   import { bgg, bggProfileUrl, setBggUsername } from '../lib/bgg.svelte';
 
@@ -27,6 +27,9 @@
     accountHandle: string | null;
     /** Destinations this build has nothing to show for. */
     hidden?: ReadonlySet<NavTarget>;
+    /** Whether the ways of playing share one tab. See `groupedPlay`. */
+    grouped: boolean;
+    onGrouped: (grouped: boolean) => void;
     onClose: () => void;
   }
 
@@ -43,6 +46,8 @@
     onTheme,
     onNavigate,
     hrefFor,
+    grouped,
+    onGrouped,
     onAccount,
     accountHandle,
     hidden = new Set<NavTarget>(),
@@ -92,7 +97,7 @@
            than a grid: a row can hold "Partie aléatoire" without shrinking its
            own hit area to fit. -->
       <nav>
-        {#each visible(OVERFLOW, hidden) as destination (destination.id)}
+        {#each visible(overflowFor(grouped), hidden) as destination (destination.id)}
           <a
             href={hrefFor(destination.id)}
             class:current={active === destination.id}
@@ -174,6 +179,25 @@
           <option value="dark">{t.themeDark}</option>
         </select>
       </label>
+
+      <!--
+        One Play tab, or four separate destinations.
+
+        A setting rather than something detected: telling an installed app from
+        a browser tab means `display-mode`, and Firefox for Android reports
+        `browser` either way because it has never supported installing a
+        manifest at all. This also lets somebody have the grouped arrangement
+        in an ordinary tab, which detection would never have offered.
+      -->
+      <label class="tick">
+        <input
+          type="checkbox"
+          checked={grouped}
+          onchange={(event) => onGrouped(event.currentTarget.checked)}
+        />
+        <span>{t.settingsGroupedPlay}</span>
+      </label>
+      <p class="muted note">{t.settingsGroupedPlayHint}</p>
 
       <!--
         The two preferences the account carries that had nowhere to be set.

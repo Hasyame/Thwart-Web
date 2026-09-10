@@ -206,6 +206,13 @@ jobs:
         working-directory: web
         run: npm run test:safe-area
 
+      # That every destination is still reachable in both arrangements. A page
+      # on no tab and in no sheet cannot be found: there is no horizontal
+      # scroll over the navigation and no search across it.
+      - name: Every destination is reachable
+        working-directory: web
+        run: npm run test:nav
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

@@ -32,15 +32,18 @@
   import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
   import { watchLive } from './lib/sync/live.svelte';
   import { watchSafeArea } from './lib/safeArea';
+  import PlayHub from './components/PlayHub.svelte';
   import { watchStoredOnServer } from './lib/sync/stored.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
   import type { NavTarget } from './lib/nav';
   import {
     applyTheme,
     loadCardLocale,
+    loadGroupedPlay,
     loadTheme,
     loadUiLocale,
     saveCardLocale,
+    saveGroupedPlay,
     saveTheme,
     saveUiLocale,
     type ThemeChoice,
@@ -54,6 +57,7 @@
   let uiLocale = $state<Locale>(loadUiLocale());
   let cardLocale = $state<Locale>(loadCardLocale(loadUiLocale()));
   let theme = $state<ThemeChoice>(loadTheme());
+  let grouped = $state<boolean>(loadGroupedPlay());
 
   let route = $state<Route>(
     routeFromPath(window.location.pathname, BASE, window.location.search),
@@ -372,6 +376,21 @@
     saveTheme(next);
   }
 
+  /*
+   * Grouping the ways of playing behind one tab.
+   *
+   * Turning it off while sitting on the hub would leave somebody on a page
+   * with no tab and no way back to it, so that case walks them to the screen
+   * the hub is mostly a door to.
+   */
+  function setGrouped(next: boolean): void {
+    grouped = next;
+    saveGroupedPlay(next);
+    if (!next && route.name === 'hub') {
+      navigate({ name: 'play' });
+    }
+  }
+
   function retry(): void {
     // Reassigning to the same value would not restart the effect, so nudge
     // through the other language and back. Cheap, and avoids a reload.
@@ -472,6 +491,14 @@
     <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
   {:else if route.name === 'play'}
     <PlayPage {t} {sets} {index} {cardLocale} {storageOk} />
+  {:else if route.name === 'hub'}
+    <PlayHub
+      {t}
+      {storageOk}
+      onNavigate={(name) => navigate({ name })}
+      hrefFor={(name) => pathForRoute({ name }, BASE)}
+      hidden={hiddenDestinations}
+    />
   {:else if route.name === 'history'}
     <HistoryPage
       {t}
@@ -549,6 +576,7 @@
   hrefFor={(name) => pathForRoute({ name }, BASE)}
   onMore={() => (sheetOpen = true)}
   moreOpen={sheetOpen}
+  {grouped}
 />
 
 <MoreSheet
@@ -567,6 +595,8 @@
   onAccount={() => navigate({ name: 'account' })}
   accountHandle={session.account?.handle ?? null}
   hidden={hiddenDestinations}
+  {grouped}
+  onGrouped={setGrouped}
   onClose={() => (sheetOpen = false)}
 />
 
