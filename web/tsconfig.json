@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "skipLibCheck": true,
 
-    /* The app rule from CLAUDE.md carried over: never `any`, everything typed. */
+    /* The app's own rule, carried over: never `any`, everything typed. */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
