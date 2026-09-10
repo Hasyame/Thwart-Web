@@ -44,12 +44,25 @@ postconf -e "mydomain = $DOMAIN"
 postconf -e "myorigin = \$mydomain"
 postconf -e "smtp_helo_name = $HOST"
 
-# The two lines that make this a send-only machine. Loopback-only means no
-# listener on the public interface at all; an empty-ish mydestination means it
-# would not claim to be the final destination for the domain even if it could
-# be reached.
+# The line that makes this a send-only machine: no listener on the public
+# interface at all. It is the whole of the protection, which is worth being
+# clear about, because the next line reads like it weakens it and does not.
 postconf -e "inet_interfaces = loopback-only"
-postconf -e "mydestination = localhost, localhost.localdomain"
+
+# The domain is in mydestination so that mail to a bare local name stays local.
+#
+# Postfix appends $myorigin -- $mydomain -- to any address without one, so a
+# bounce or a cron report addressed to `root` becomes root@thwart.app. Leave the
+# domain out of mydestination and Postfix concludes it is not the final
+# destination, looks the domain up, finds the MX pointing back at this host, and
+# tries to connect to a port it is deliberately not listening on. The mail is
+# not lost; it queues, and retries for five days, and the queue grows for as
+# long as the machine runs.
+#
+# This costs nothing in exposure. mydestination decides what *locally submitted*
+# mail counts as local; nothing outside can reach the SMTP port to take
+# advantage of it.
+postconf -e "mydestination = \$myhostname, localhost, localhost.localdomain, \$mydomain"
 postconf -e "mynetworks = 127.0.0.0/8 [::1]/128"
 postconf -e "smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination"
 
