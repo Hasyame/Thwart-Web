@@ -11,6 +11,7 @@
     turnOn,
   } from '../lib/sync/sync.svelte';
   import { autoSync, setAutoSync } from '../lib/sync/auto.svelte';
+  import { live } from '../lib/sync/live.svelte';
 
   /**
    * The switch, and the conversation behind it.
@@ -58,6 +59,21 @@
     <span>{t.syncSwitch}</span>
   </label>
   <p class="muted note">{t.syncSwitchNote}</p>
+
+  <!--
+    The connection, said quietly or not at all.
+
+    Offline is a normal state for this app — somebody is on a train, or at a
+    table with bad wifi — so it is never an error and never red. Connected says
+    nothing, because the absence of a problem is not news. The only thing worth
+    a line is that changes are waiting, which is information the reader can act
+    on by finding a signal.
+  -->
+  {#if live.state === 'offline'}
+    <p class="muted note" aria-live="polite">{t.liveOffline}</p>
+  {:else if live.state === 'live'}
+    <p class="muted note quiet" aria-live="polite">{t.liveOn}</p>
+  {/if}
 
   <!--
     Automatic syncing, which is a second question and not a stronger version of
@@ -122,9 +138,16 @@
         </ul>
 
         {#if plan.forks > 0}
-          <!-- Named on its own, because it is the one outcome that produces
-               something the reader did not have before and has to understand. -->
+          <!--
+            Named on its own, because it is the one outcome that produces
+            something the reader did not have before and has to understand.
+
+            Without the second line somebody sees a deck they did not make and
+            concludes that syncing duplicated it. It did not: the same deck was
+            edited in two places and neither edit is safe to throw away.
+          -->
           <p class="note">{t.syncForkNote(plan.forks)}</p>
+          <p class="muted note">{t.syncForkExplain}</p>
         {/if}
       {/if}
 
@@ -198,6 +221,11 @@
 
   .unavailable {
     opacity: 0.6;
+  }
+
+  /* Present for anyone who looks for it, and not competing for attention. */
+  .quiet {
+    opacity: 0.7;
   }
 
   .note {

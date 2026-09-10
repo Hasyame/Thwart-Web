@@ -181,6 +181,19 @@ client pulling in that window stores cursor 42 and never sees 41 again. Taking
 the number under the account's row lock makes revisions become visible in the
 order they were issued, so no gap can be observed.
 */
+/*
+AccountCursor is the account's current revision.
+
+Read outside any write, for the stream to tell a reconnecting client whether it
+is behind. Cheap: one indexed row.
+*/
+func (s *Store) AccountCursor(ctx context.Context, accountID string) (int64, error) {
+	var cursor int64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT revision FROM account WHERE id = ?`, accountID).Scan(&cursor)
+	return cursor, err
+}
+
 func (s *Store) ApplyBatch(ctx context.Context, accountID string, records []IncomingRecord) ([]RecordResult, int64, error) {
 	unlock := s.writes.lock(accountID)
 	defer unlock()

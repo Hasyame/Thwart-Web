@@ -482,6 +482,9 @@ export interface Strings {
   readonly syncTitle: string;
   readonly syncSwitch: string;
   readonly syncSwitchNote: string;
+  readonly liveOn: string;
+  readonly liveOffline: string;
+  readonly syncForkExplain: string;
   readonly autoSyncSwitch: string;
   readonly autoSyncNote: string;
   readonly autoSyncScenario: string;
@@ -1146,6 +1149,10 @@ const STRINGS: Record<Locale, Strings> = {
     cancel: 'Cancel',
     syncTitle: 'Keeping this browser in step',
     syncSwitch: 'Sync this browser with the account',
+    liveOn: 'Changes from your other devices arrive here as they happen.',
+    liveOffline: 'Offline. Anything you record is kept and sent when you are back.',
+    syncForkExplain:
+      'The same deck was edited on two devices and neither version is safe to discard, so you get both: the second is renamed rather than overwritten. Nothing was duplicated, and nothing was lost.',
     syncSwitchNote:
       'Signing in only said who you are. This is what moves your collection, decks, games and campaigns between your devices.',
     autoSyncSwitch: 'Sync on its own',
@@ -1851,6 +1858,10 @@ const STRINGS: Record<Locale, Strings> = {
     cancel: 'Annuler',
     syncTitle: 'Garder ce navigateur \u00e0 jour',
     syncSwitch: 'Synchroniser ce navigateur avec le compte',
+    liveOn: 'Les modifications de vos autres appareils arrivent ici en direct.',
+    liveOffline: "Hors ligne. Ce que vous enregistrez est conservé et envoyé à votre retour.",
+    syncForkExplain:
+      "Le même deck a été modifié sur deux appareils et aucune version ne peut être écartée sans risque : vous gardez les deux, la seconde étant renommée plutôt qu'écrasée. Rien n'a été dupliqué, et rien n'a été perdu.",
     syncSwitchNote:
       'Se connecter n\u2019a fait que dire qui vous \u00eates. Ceci d\u00e9place votre collection, vos decks, vos parties et vos campagnes entre vos appareils.',
     autoSyncSwitch: 'Synchroniser tout seul',

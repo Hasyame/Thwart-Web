@@ -233,6 +233,16 @@ func (s *Server) handlePush(w http.ResponseWriter, r *http.Request, sess session
 		return
 	}
 
+	/*
+		Tell this account's other devices, after the transaction has committed.
+
+		After, never inside: a listener told about a revision the write then
+		failed to land would pull and find nothing, and record a cursor ahead of
+		what exists. `notify` never blocks, so a slow listener cannot hold up
+		this response.
+	*/
+	s.streams.notify(sess.account.ID, cursor)
+
 	response, err := json.Marshal(map[string]any{"cursor": cursor, "results": results})
 	if err != nil {
 		s.fail(w, r, "encode batch response", err)

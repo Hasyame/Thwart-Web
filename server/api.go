@@ -81,6 +81,15 @@ type Server struct {
 	*/
 	mailer  Mailer
 	SiteURL string
+
+	/*
+		Who is listening for changes, per account.
+
+		A stream is an optimisation over the pull endpoint and never a source of
+		truth: it carries a revision number, and a client that misses one is
+		late rather than wrong. See stream.go.
+	*/
+	streams *broadcaster
 }
 
 // UseMailer turns address confirmation on, with the link pointing at siteURL.
@@ -102,6 +111,7 @@ func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
 		log:              log,
 		build:            build,
 		decoyHash:        decoy,
+		streams:          newBroadcaster(),
 		OpenRegistration: true,
 		SiteURL:          "https://thwart.app",
 	}, nil
@@ -122,6 +132,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /v1/auth/devices/{id}", s.authenticated(s.handleDeleteDevice))
 	mux.HandleFunc("GET /v1/sync/changes", s.authenticated(s.handlePull))
 	mux.HandleFunc("POST /v1/sync/changes", s.authenticated(s.handlePush))
+	// Long-lived. Authenticated by the same middleware as everything else, so
+	// there is no second authorisation path to keep in step.
+	mux.HandleFunc("GET /v1/sync/stream", s.authenticatedStream(s.handleStream))
 	mux.HandleFunc("GET /v1/account/export", s.authenticated(s.handleExport))
 	mux.HandleFunc("DELETE /v1/account", s.authenticated(s.handleDeleteAccount))
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
@@ -146,8 +159,47 @@ type session struct {
 type authedHandler func(http.ResponseWriter, *http.Request, session)
 
 func (s *Server) authenticated(next authedHandler) http.HandlerFunc {
+	return s.authenticatedBy(bearerToken, next)
+}
+
+/*
+The same, for the one endpoint that cannot send a header.
+
+`EventSource` has no way to set `Authorization` — the API simply does not offer
+it — so the stream reads its token from the query string instead. This is a
+deliberate exception and it is confined to one route rather than widened into
+the general middleware, so nothing else can pick the habit up.
+
+**The reason this is acceptable, and the condition on it.** The token travels
+over TLS to the same origin, `EventSource` creates no history entry, the
+service worker refuses to touch /api/, and this server logs paths without query
+strings. The one place it would otherwise be written down is nginx's access log,
+which records the full request line — so deploy/nginx-thwart.app.conf turns
+logging off for this location. Without that directive this is a credential in a
+plaintext file, which is precisely what the `tw_live_` prefix exists to make
+greppable.
+
+A single-use ticket endpoint would avoid the question entirely. It was not built
+because it adds issuing, expiry and consumption — three more things to get wrong
+— to protect a token that is already confined to one origin and one log line
+that is switched off.
+*/
+func (s *Server) authenticatedStream(next authedHandler) http.HandlerFunc {
+	return s.authenticatedBy(func(r *http.Request) (string, bool) {
+		if token, ok := bearerToken(r); ok {
+			return token, true
+		}
+		token := r.URL.Query().Get("token")
+		return token, token != ""
+	}, next)
+}
+
+func (s *Server) authenticatedBy(
+	tokenOf func(*http.Request) (string, bool),
+	next authedHandler,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, ok := bearerToken(r)
+		token, ok := tokenOf(r)
 		if !ok {
 			writeError(w, r, apiError{status: http.StatusUnauthorized, code: "unauthorized"})
 			return

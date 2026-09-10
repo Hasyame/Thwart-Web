@@ -30,6 +30,7 @@
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
+  import { watchLive } from './lib/sync/live.svelte';
   import { watchStoredOnServer } from './lib/sync/stored.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
   import type { NavTarget } from './lib/nav';
@@ -210,6 +211,18 @@
    * the moment it belongs to.
    */
   $effect(() => watchAutoSync());
+
+  /*
+   * The live channel, re-opened whenever the account changes.
+   *
+   * Reading `session.account` inside the effect is what makes signing in open a
+   * connection and signing out close one, without either path having to know
+   * this exists.
+   */
+  $effect(() => {
+    void session.account?.token;
+    return watchLive();
+  });
 
   /*
    * Which rows the server has, for the badges on games and campaigns.

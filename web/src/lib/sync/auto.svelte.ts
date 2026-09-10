@@ -45,6 +45,44 @@ export type SyncTrigger =
 
 const KEY = 'thwart.autoSync';
 
+/*
+ * That a sync is owed, remembered across a reload.
+ *
+ * **There is no queue of writes here, and there does not need to be.** The
+ * writes are already in IndexedDB the moment they happen, and the sync engine
+ * works out what to send by comparing digests rather than by reading a dirty
+ * flag — so the local database *is* the durable queue, and it survives a reload,
+ * a crash and a flat battery without any help.
+ *
+ * What did not survive was the intention: record a game on a train, close the
+ * tab, and nothing remembered that the account had not heard about it until
+ * some later trigger happened to fire. One boolean fixes that, and building a
+ * second queue beside the database would have been a second thing to keep in
+ * step with it.
+ */
+const OWED_KEY = 'thwart.autoSync.owed';
+
+function rememberOwed(value: boolean): void {
+  try {
+    if (value) {
+      localStorage.setItem(OWED_KEY, '1');
+    } else {
+      localStorage.removeItem(OWED_KEY);
+    }
+  } catch {
+    // No storage: the intention lives for this session only, which is what it
+    // did before.
+  }
+}
+
+function wasOwed(): boolean {
+  try {
+    return localStorage.getItem(OWED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * How long to wait before going.
  *
@@ -87,6 +125,7 @@ export function setAutoSync(enabled: boolean): void {
   }
   if (!enabled) {
     owed = false;
+    rememberOwed(false);
     clear();
   }
 }
@@ -94,7 +133,7 @@ export function setAutoSync(enabled: boolean): void {
 let timer: ReturnType<typeof setTimeout> | null = null;
 let running = false;
 /** A trigger has fired and the sync it asked for has not happened yet. */
-let owed = false;
+let owed = wasOwed();
 let retried = false;
 
 function clear(): void {
@@ -145,6 +184,7 @@ async function flush(): Promise<void> {
   }
 
   owed = false;
+  rememberOwed(false);
   running = true;
   try {
     await runSync(account.token, loadUiLocale());
@@ -155,6 +195,7 @@ async function flush(): Promise<void> {
   if (sync.phase.kind === 'failed' && !retried) {
     retried = true;
     owed = true;
+    rememberOwed(true);
     schedule(RETRY_MS);
   } else if (sync.phase.kind !== 'failed') {
     retried = false;
@@ -174,6 +215,7 @@ export function syncAfter(trigger: SyncTrigger): void {
   }
   autoSync.lastTrigger = trigger;
   owed = true;
+  rememberOwed(true);
   retried = false;
   schedule(SETTLE_MS);
 }
@@ -185,6 +227,17 @@ export function syncAfter(trigger: SyncTrigger): void {
  * pays it: somebody records a game on a train and it goes up when they surface.
  */
 export function watchAutoSync(): () => void {
+  /*
+    A sync owed from a previous visit is owed now.
+
+    Scheduled rather than fired immediately: the app has just started, the
+    session may still be loading, and the settle delay is what lets those
+    finish first.
+  */
+  if (owed) {
+    schedule(SETTLE_MS);
+  }
+
   const wake = (): void => {
     if (owed) {
       schedule(SETTLE_MS);

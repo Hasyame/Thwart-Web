@@ -154,6 +154,37 @@ plaintext use case — the Android client should refuse `http://` origins outrig
 
 ---
 
+### The live sync stream
+
+`GET /api/v1/sync/stream` is a Server-Sent Events response that never ends. It
+needs its own location because its timeouts differ from every other endpoint's,
+and it must come **before** `location /api/` — nginx takes the longest matching
+prefix.
+
+Four directives, and what happens if each is missed:
+
+| Directive | If you leave it out |
+|---|---|
+| `proxy_buffering off` | nginx holds events until its buffer fills. The feature looks broken rather than slow — the commonest way to get this wrong. The handler also sends `X-Accel-Buffering: no`, so this is true twice. |
+| `proxy_read_timeout 1h` | The default 60s closes an idle stream every minute. Not fatal: the client reconnects and catches up, so it degrades to polling. |
+| `proxy_http_version 1.1` | HTTP/1.0 upstream has no chunked transfer, so the response cannot stream at all. |
+| `access_log off` | **A live credential is written to a plaintext file on every connect.** `EventSource` cannot send an `Authorization` header, so this is the one route whose token travels in the query string, and the access log records the full request line. This one is not optional. |
+
+Also raise the descriptor limit. Each connected browser holds one socket in
+nginx and one upstream, and the default `ulimit -n` of 1024 starts to matter at
+a few hundred users — with a failure mode (`accept: too many open files`) that
+refuses ordinary requests, not just streams. `LimitNOFILE=8192` is set on the
+unit; raise `worker_connections` in nginx to match if you expect that many.
+
+**Behind Cloudflare or another CDN**: buffering has to be off there too.
+Cloudflare does not buffer `text/event-stream`, but its 100-second idle timeout
+applies — harmless here, because the server sends a comment every 20 seconds.
+
+**What it costs.** Per connection: about 20 KB in the Go process and 16 KB in
+nginx. Two hundred concurrent users is roughly 6.5 MB and 3 MB — noise against
+the 384 MB soft cap in the unit file. The idle CPU is one heartbeat per
+connection every 20 seconds. See doc 07 §6.
+
 ## 3. Backup and restore
 
 The whole procedure, because with SQLite it fits here.

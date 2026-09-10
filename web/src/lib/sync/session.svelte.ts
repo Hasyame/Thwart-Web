@@ -3,6 +3,7 @@ import type { Locale } from '../types';
 import * as api from './api';
 import { SYNC_STATE_KEY, type StoredSyncState } from './state';
 import { releaseAccountData } from './device';
+import { stopLive } from './live.svelte';
 
 /**
  * Who is signed in on this browser.
@@ -197,6 +198,9 @@ export async function forgetLocally(): Promise<void> {
 
     Before the per-record revisions are cleared, because it reads them.
   */
+  // The stream belongs to an account that is no longer signed in here.
+  stopLive();
+
   await releaseAccountData().catch(() => undefined);
 
   await db.syncState.delete(SYNC_STATE_KEY);

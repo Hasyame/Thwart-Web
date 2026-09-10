@@ -51,6 +51,14 @@ ExecStart=/srv/thwart/bin/thwart-api \
 KillSignal=SIGTERM
 TimeoutStopSec=30
 
+# Long-lived connections, one file descriptor each.
+#
+# The live sync stream holds a socket open per signed-in browser, and nginx
+# holds a matching one upstream. The default 1024 is close enough to matter at a
+# few hundred users, and the failure mode is "accept: too many open files" —
+# which refuses ordinary requests, not just streams.
+LimitNOFILE=8192
+
 Restart=on-failure
 RestartSec=5s
 
