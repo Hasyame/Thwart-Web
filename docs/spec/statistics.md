@@ -329,11 +329,28 @@ raw player count as the key, so a corrupt `7` quietly got its own row.
 ## 4. Naming
 
 The two clients disagree in French about what an *aspect* is called: the web
-says **aspect** throughout, Android says **affinité** in
-`plays_by_hero_aspect` and *aspect* elsewhere. Android is inconsistent with
-itself. Neither is wrong as French; **the web's "aspect" is used here**, and
-Android's one stray "affinité" should be changed to match. Recorded rather than
-silently harmonised, because it is a user-visible string in a released app.
+says **aspect** throughout, Android says **affinité**.
+
+**Corrected 2026-09-10.** This section previously said Android used *affinité*
+in `plays_by_hero_aspect` and *aspect* elsewhere, and called it an
+inconsistency to be tidied by changing one string. That was checked and is
+wrong. Of the French values in `values-fr/strings.xml`, **fifteen say
+*affinité* and none say *aspect*** — the filter, the randomiser, the deck
+builder's prompts, the statistics heading, all of them. Android is entirely
+consistent; the two apps simply chose different words. Changing the one string
+would *create* the inconsistency this section set out to remove.
+
+So this is not a typo to fix but a terminology decision across two apps, and it
+is Benoît's to make rather than either client's:
+
+- **Both say *aspect*** — fifteen Android strings change, and it matches what
+  the French edition prints on the cards.
+- **Both say *affinité*** — the web changes instead, and the phone's released
+  wording is left alone.
+
+Until it is decided, neither client should change: a released app's user-facing
+noun is not worth churning on a premise nobody has confirmed. What must not
+happen is the half-measure of changing `plays_by_hero_aspect` alone.
 
 ---
 

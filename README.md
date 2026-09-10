@@ -95,10 +95,11 @@ it.
 Sync is a per-account revision counter, a pull by revision, a push of batches
 that are idempotent on retry, and tombstones with a horizon — doc 02 has the
 protocol and doc 06 the brief both clients were written from. Changes also
-arrive **live**: a small server-sent-events stream tells a signed-in browser
-that something changed elsewhere, and the ordinary sync does the fetching, so
-the stream is an optimisation and never a source of truth. One connection per
-browser rather than per tab, elected with the Web Locks API.
+arrive **live**: a small server-sent-events stream tells a signed-in client that
+something changed elsewhere, and the ordinary sync does the fetching, so the
+stream is an optimisation and never a source of truth. One connection per
+browser rather than per tab, elected with the Web Locks API; the phone holds one
+while it is on screen and closes it when it leaves.
 
 The server holds **no understanding of the data it syncs**. A record is a
 collection name, an id and a JSON body the server never parses, so adding an
@@ -218,17 +219,23 @@ brief and the live-sync design.
 - **Making this repository public.** It was kept private until the server ran
   somewhere other than a laptop, which it now does. The history was written to
   be read, so it goes public in place rather than being squashed.
-- **Email confirmation on Android.** The phone does not yet know
-  `/v1/auth/verify`, and `email_not_verified` is not in its `SERVER_KNOWS_BEST`
-  set, so signing in to an unconfirmed account there shows the app's own
-  wording instead of the server's explanation of what to do about it.
-- **Live sync on Android.** The stream is web-only so far; the phone pulls and
-  pushes but is not told when something changed elsewhere.
-- **Three corrections on Android** that
-  [`docs/spec/statistics.md`](docs/spec/statistics.md) records: taking a
-  scenario's name from the most recent play rather than an arbitrary row, the
-  French `plays_by_hero_aspect` string reading *affinité* where it should read
-  *aspect*, and dropping `Play.ignored`.
+- **Confirming an address from Android.** Since Thwart 1.47.0 the phone knows
+  `email_not_verified` and says, in its own words, that the link is in your
+  inbox — which is the part that was actually missing, because before that it
+  showed a general error and left you guessing. It still does not know
+  `/v1/auth/verify` itself, so the link has to be opened somewhere else and
+  there is no way to ask for another one from the app.
+- **One correction on Android** that
+  [`docs/spec/statistics.md`](docs/spec/statistics.md) records: `plays_by_scenario`
+  groups by `scenarioCode` while selecting a bare `scenarioName`, so a scenario
+  ever recorded under two spellings gets an undefined label. It should take the
+  name from the most recent play in the group, as the hero labels do.
+
+  Two others listed here have been settled. `Play.ignored` is already gone from
+  the phone. The French *affinité* was recorded as a stray word to tidy; it is
+  not one — fifteen Android strings say *affinité* and none say *aspect*, so the
+  apps chose different words rather than one being inconsistent. That is a
+  terminology decision, and until it is made neither client should change.
 
 Known and not planned: on Android, Firefox reports a bottom safe-area inset for
 a navigation bar it has already kept outside the page, and its own toolbar

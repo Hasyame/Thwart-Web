@@ -3,8 +3,25 @@
 **Numbered 07, not 06.** `06-android-sync-brief.md` already exists. Same
 document you asked for, one number along.
 
-**Status: proposed.** Step 1 of the brief. Nothing here is implemented; §8 is a
-question for you rather than a decision I have made.
+**Status: built, on both clients.** Proposed here, then implemented as
+described — the server broadcaster and `GET /v1/sync/stream`, the web
+subscriber with leader election, and as of Thwart 1.47.0 the Android one. The
+design below is left as it was written rather than rewritten in the past tense,
+because the reasoning is the useful part; §8's question was answered by keeping
+what shipped, with the one addition it asked for.
+
+What changed on the way, none of it structural:
+
+- **Android does not use the query-string token.** §2's exception exists because
+  `EventSource` cannot set a header. A native client can, so the phone sends
+  `Authorization` and the nginx log concern in api.go does not apply to it.
+- **Android reconnects on its own**, since it has no `EventSource` to do it. Same
+  rule as §3 — catch up first, then listen — with exponential backoff and jitter
+  in `SyncStream.kt`.
+- **Android listens only in the foreground** and closes the connection on
+  leaving. §7's leader election is a browser problem; a phone has one app.
+- **§8's extra line is in**: both clients now say when a merge would keep a deck
+  twice.
 
 ---
 
