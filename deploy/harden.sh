@@ -225,6 +225,34 @@ if [ -d /etc/nginx ]; then
     echo "          every location that sets an add_header. See the repo copy."
 fi
 
+# ---------------------------------------------------------------------------
+say "log rotation"
+#
+# The image ships without logrotate and without cron, so every config in
+# /etc/logrotate.d — nginx's, fail2ban's, apt's — sat there doing nothing and
+# no log on the machine had ever been rotated. nginx's access log had reached
+# 12MB of one unbroken file.
+#
+# That is a privacy problem before it is a disk problem. The access log records
+# a full IP address for every request, and an IP is personal data: keeping ten
+# days of them because nothing was deleting them is not a decision anybody made.
+# The package's own nginx config is already `daily` with `rotate 14`, which is
+# the retention we want, so installing logrotate is the whole fix.
+#
+# The timer rather than cron.daily, because cron is not running here either.
+if ! command -v logrotate >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends logrotate >/dev/null
+    echo "    installed"
+else
+    echo "    already installed"
+fi
+systemctl enable --now logrotate.timer >/dev/null 2>&1 || true
+if systemctl is-active logrotate.timer >/dev/null 2>&1; then
+    echo "    logrotate.timer active, nginx logs kept 14 days"
+else
+    echo "    WARNING: logrotate.timer is not active; logs will not rotate"
+fi
+
 say "done"
 echo "Check before you close this session:"
 echo "  ssh -p $SSH_PORT root@<host> true"
