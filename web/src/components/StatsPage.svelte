@@ -348,6 +348,21 @@
           -->
           <table aria-labelledby={`h-${title}`}>
             <caption class="visually-hidden">{title}</caption>
+            <!--
+              The columns, declared rather than inferred.
+
+              `table-layout: fixed` takes its widths from the first row, and
+              this table's first row is a `thead` that is visually hidden by
+              being taken out of flow — so there is no first row to measure and
+              the browser falls back to equal thirds, ignoring any width set on
+              the cells. A `colgroup` is read directly by the fixed algorithm
+              and does not care that the header is hidden.
+            -->
+            <colgroup>
+              <col class="col-name" />
+              <col />
+              <col class="col-record" />
+            </colgroup>
             <thead>
               <tr>
                 <th scope="col">{title}</th>
@@ -358,14 +373,25 @@
             <tbody>
               {#each shownRows as row (row.key)}
                 <tr>
-                  <th scope="row" class="label">{row.label}</th>
+                  <th scope="row" class="label" title={row.label}>{row.label}</th>
                   <td class="measure">
-                    <span class="bar" aria-hidden="true">
-                      <span class="fill" style:width={`${bar(row, sorted)}%`}></span>
-                    </span>
-                    <span class="numbers">{figure(row)}</span>
+                    <!--
+                      The flex row is this div and not the cell itself.
+
+                      A `td` set to `display: flex` stops being a table cell:
+                      the browser wraps it in an anonymous one, column sizing
+                      stops being predictable, and the label column ended up
+                      589px wide in one table and 778px in another — which is
+                      why the bars did not line up between sections.
+                    -->
+                    <div class="measure-row">
+                      <span class="bar" aria-hidden="true">
+                        <span class="fill" style:width={`${bar(row, sorted)}%`}></span>
+                      </span>
+                      <span class="numbers">{figure(row)}</span>
+                    </div>
                   </td>
-                  <td class="numbers muted">{t.wonOf(row.won, row.played)}</td>
+                  <td class="numbers muted record">{t.wonOf(row.won, row.played)}</td>
                 </tr>
               {/each}
             </tbody>
@@ -507,10 +533,34 @@
 
   .table {
     margin-bottom: var(--space-5);
+
+    /*
+     * How wide a row is allowed to get.
+     *
+     * Not the full page. A name on the left and its bar three hundred pixels
+     * away on the right is two facts the eye has to carry between, and on a
+     * wide screen the table was running the whole width doing exactly that.
+     * Short enough to take in at once, long enough for the bars to still be
+     * worth drawing.
+     */
+    --stats-max: 56rem;
   }
 
+  /*
+   * Fixed layout, so every section's columns are the same width.
+   *
+   * With `auto` the label column is sized by its own longest name, so "Par
+   * héros" and "Par héros et aspect" each picked a different width and the
+   * bars started at a different place in every section. Nothing lined up down
+   * the page, and there was no way to compare two sections by eye.
+   *
+   * Fixed takes the widths below and applies them everywhere, so the bars all
+   * begin on the same line whatever the names happen to be.
+   */
   .table table {
     width: 100%;
+    max-width: var(--stats-max);
+    table-layout: fixed;
     border-collapse: collapse;
   }
 
@@ -533,21 +583,84 @@
     vertical-align: middle;
   }
 
-  .table th[scope='row'] {
-    width: minmax(8rem, 14rem);
-    max-width: 14rem;
+  /*
+   * The name column.
+   *
+   * This said `width: minmax(8rem, 14rem)`, which is not a width: `minmax()`
+   * is a grid function and the declaration was dropped, leaving only a
+   * `max-width` that a table cell in auto layout treats as a hint and ignored.
+   * The column then took whatever it liked, differently in every section.
+   *
+   * **18rem because that is what the names measure.** Every hero, every main
+   * scheme and every hero-and-aspect pairing in both card databases, rendered
+   * at this cell's own font: 553 French labels and 540 English ones. The
+   * widest is "La Sorcière Rouge · Commandement" at 258px, and French is what
+   * decides it — the widest English label is 214px. With the cell's padding
+   * that needs 274px, so 15rem clipped sixteen labels, 17rem clipped one, and
+   * 18rem clips none.
+   *
+   * The ellipsis and the `title` stay for a name from some future pack that
+   * outgrows this.
+   */
+  .table .col-name {
+    width: 18rem;
   }
 
-  .measure {
+  /* Just enough for "10/12", and fixed so the bars all end on the same line
+     too. */
+  .table .col-record {
+    width: 5rem;
+  }
+
+  /*
+   * Banding, so a bar belongs to the name on its line.
+   *
+   * The other half of the same complaint: even lined up, a row is a name at
+   * one end and a bar at the other with a gap between, and nothing said the
+   * two were the same row. One surface step is enough — the ladder is
+   * deliberately shallow, and a stronger stripe would read as a table of
+   * boxes rather than as rows.
+   */
+  .table tbody tr:nth-child(even) th,
+  .table tbody tr:nth-child(even) td {
+    background: var(--surface-1);
+  }
+
+  .table tbody tr:hover th,
+  .table tbody tr:hover td {
+    background: var(--surface-2);
+  }
+
+  /* The banding needs the row to start somewhere, and the first cell had no
+     leading padding at all. */
+  .table th[scope='row'] {
+    padding-inline-start: var(--space-2);
+    border-start-start-radius: var(--radius-xs);
+    border-end-start-radius: var(--radius-xs);
+  }
+
+  .table .record {
+    padding-inline-end: var(--space-2);
+    border-start-end-radius: var(--radius-xs);
+    border-end-end-radius: var(--radius-xs);
+  }
+
+  .measure-row {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    width: 100%;
   }
 
-  .measure .bar {
+  .measure-row .bar {
     flex: 1 1 auto;
     min-width: 3rem;
+  }
+
+  /* Enough room for "100%", so the bars are not one character shorter on the
+     rows that reach it. */
+  .measure-row .numbers {
+    flex: none;
+    min-width: 2.5rem;
   }
 
   .label {
@@ -584,8 +697,14 @@
   @media (max-width: 40rem) {
     /* The bar is the first thing to go when there is no room: the numbers
        beside it say everything it does. */
-    .measure .bar {
+    .measure-row .bar {
       display: none;
+    }
+
+    /* And the name gives up its fixed column, because at this width the
+       alignment it buys is worth less than the room. */
+    .table .col-name {
+      width: 55%;
     }
   }
 </style>
