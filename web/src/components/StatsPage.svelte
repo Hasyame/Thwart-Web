@@ -331,7 +331,17 @@
       </label>
     </div>
 
-    {#each tables as [title, rows] (title)}
+    <!--
+      Two columns where there is room for two, rather than one long one.
+
+      A single column capped for readability left half a wide screen empty,
+      and the answer to that is not a wider table: a row whose name is at one
+      end and its bar a thousand pixels away at the other is harder to read,
+      not easier. Putting two tables side by side spends the width on more
+      information at once and keeps every row short.
+    -->
+    <div class="tables">
+      {#each tables as [title, rows] (title)}
       {@const sorted = ordered(rows)}
       {@const open = expanded[title] === true}
       {@const shownRows = open ? sorted : sorted.slice(0, PREVIEW_ROWS)}
@@ -407,7 +417,8 @@
           {/if}
         </section>
       {/if}
-    {/each}
+      {/each}
+    </div>
 
     <p class="muted note">{t.statsNote}</p>
   {/if}
@@ -531,19 +542,36 @@
     margin: 0;
   }
 
+  /*
+   * The columns the sections sit in.
+   *
+   * A table fills whatever column it is given, and there is no width at which
+   * the page leaves a band of nothing down one side. Below the breakpoint that
+   * means one column using the full measure; above it, two.
+   *
+   * 78rem, worked out rather than picked: the name column is a fixed 18rem and
+   * the record column 5rem, so a bar of about 200px — the least that is worth
+   * drawing — needs a column near 600px. Two of those, plus the gap between
+   * them and the page's own padding, is 1248px. Switching any earlier buys a
+   * second column by making both of them too thin to read.
+   *
+   * `start`-aligned so a short table does not stretch to match a long one
+   * beside it.
+   */
+  .tables {
+    display: grid;
+    gap: 0 var(--space-5);
+    align-items: start;
+  }
+
+  @media (min-width: 78rem) {
+    .tables {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
   .table {
     margin-bottom: var(--space-5);
-
-    /*
-     * How wide a row is allowed to get.
-     *
-     * Not the full page. A name on the left and its bar three hundred pixels
-     * away on the right is two facts the eye has to carry between, and on a
-     * wide screen the table was running the whole width doing exactly that.
-     * Short enough to take in at once, long enough for the bars to still be
-     * worth drawing.
-     */
-    --stats-max: 56rem;
   }
 
   /*
@@ -559,7 +587,6 @@
    */
   .table table {
     width: 100%;
-    max-width: var(--stats-max);
     table-layout: fixed;
     border-collapse: collapse;
   }
@@ -702,9 +729,13 @@
     }
 
     /* And the name gives up its fixed column, because at this width the
-       alignment it buys is worth less than the room. */
+       alignment it buys is worth less than the room.
+
+       62% rather than 55%: with the bar gone the rest of the row only has to
+       hold "100%" and "12/18", and the room that frees is better spent on
+       names that would otherwise be cut. */
     .table .col-name {
-      width: 55%;
+      width: 62%;
     }
   }
 </style>
