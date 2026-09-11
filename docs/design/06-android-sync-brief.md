@@ -42,10 +42,17 @@ and doc 02 are the arbiter rather than either implementation.
 **The Android app already has the local half of the state.**
 `SyncStateEntity.kt` defines `SyncCollection` with nine keys, and those keys are
 the contract. The web client reads them from that file. Do not rename one
-without changing both, and understand that a rename **fails silently** — the
-server stores whatever key it is handed and never parses a body, so a mismatch
-does not error, it quietly builds a second set of records the other client never
-sees.
+without changing both.
+
+> **Corrected 2026-09-11.** This used to say a rename "fails silently — the
+> server stores whatever key it is handed". It does not, any more: since the
+> hardening, `validateRecords` in `server/sync.go` checks every record's
+> collection against the `collections` map and **refuses the whole batch**
+> with `400 malformed_record` ("unknown collection") for a name it does not
+> know. So a rename fails loudly on the first push, which is better — but it
+> also means **a new collection must be added to that map before any client
+> pushes it**, or that client's sync stops. `favourite_plays` and `ratings`
+> were added on 2026-09-11 for exactly this reason.
 
 > **Amended 2026-09-10.** This paragraph used to end "What Android does not
 > have is the transport: nothing in the app has ever called the server." That

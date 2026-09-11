@@ -73,6 +73,8 @@ func main() {
 		"loopback SMTP to hand mail to; must be local, since this hop has no authentication")
 	siteURL := flag.String("site", "https://thwart.app",
 		"public address of the web app, used to build the confirmation link")
+	ratingThreshold := flag.Int("rating-threshold", defaultRatingThreshold,
+		"how many ratings a subject needs before its community average is served; a self-hosted instance with one player may set it lower")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -86,7 +88,7 @@ func main() {
 		return
 	}
 
-	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, log); err != nil {
+	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, *ratingThreshold, log); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
@@ -117,7 +119,7 @@ func backup(dbPath, to string) error {
 	return store.Backup(context.Background(), to)
 }
 
-func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, log *slog.Logger) error {
+func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, ratingThreshold int, log *slog.Logger) error {
 	store, err := OpenStore(dbPath)
 	if err != nil {
 		return err
@@ -129,6 +131,9 @@ func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL
 		return err
 	}
 	server.OpenRegistration = openRegistration
+	if ratingThreshold >= 1 {
+		server.RatingThreshold = ratingThreshold
+	}
 	log.Info("configured", "registration", map[bool]string{true: "open", false: "closed"}[openRegistration])
 
 	if mailFrom != "" {

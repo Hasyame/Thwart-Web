@@ -83,6 +83,18 @@ type Server struct {
 	SiteURL string
 
 	/*
+		Difficulty ratings: the served summaries, and the count a subject needs
+		before its average is served at all.
+
+		Five by default. A self-hosted instance with one player never reaches it
+		and may set it lower; see -rating-threshold. The threshold lives here and
+		not in the client so that no client can display a mean the contract says
+		not to.
+	*/
+	summaries       *summaryCache
+	RatingThreshold int
+
+	/*
 		Who is listening for changes, per account.
 
 		A stream is an optimisation over the pull endpoint and never a source of
@@ -105,6 +117,8 @@ func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
 		return nil, err
 	}
 	return &Server{
+		summaries:       newSummaryCache(),
+		RatingThreshold: defaultRatingThreshold,
 		store:            store,
 		limiter:          newLimiter(),
 		hashes:           newHashGate(hashSlots),
@@ -136,6 +150,8 @@ func (s *Server) Handler() http.Handler {
 	// there is no second authorisation path to keep in step.
 	mux.HandleFunc("GET /v1/sync/stream", s.authenticatedStream(s.handleStream))
 	mux.HandleFunc("GET /v1/account/export", s.authenticated(s.handleExport))
+	// Community averages. No auth: the scenario browser shows them to anyone.
+	mux.HandleFunc("GET /v1/ratings/summary", s.handleRatingSummary)
 	mux.HandleFunc("DELETE /v1/account", s.authenticated(s.handleDeleteAccount))
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
@@ -802,6 +818,9 @@ func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request, ses
 		s.fail(w, r, "delete account", err)
 		return
 	}
+	// The averages have just changed for every subject this person rated, and
+	// a summary served from memory must not go on counting them.
+	s.summaries.clear()
 	s.log.Info("account deleted", "account", sess.account.ID)
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
 }

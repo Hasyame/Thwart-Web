@@ -52,6 +52,8 @@ type RecordResult struct {
 	Revision           int64  `json:"revision"`
 	Outcome            string `json:"outcome"`
 	SupersededRevision *int64 `json:"supersededRevision,omitempty"`
+	// Why a record was rejected. Only ever set with outcomeRejected.
+	Reason string `json:"reason,omitempty"`
 }
 
 const (
@@ -61,6 +63,9 @@ const (
 	// a conflict and does not rewrite the row, because the ids are stable and
 	// the same event pushed twice is the same event.
 	outcomeAlreadyPresent = "already_present"
+	// Not stored, and the client must not retry: a rating for something this
+	// account never played, or malformed. The batch around it still applies.
+	outcomeRejected = "rejected"
 )
 
 /*
@@ -228,6 +233,28 @@ func (s *Store) ApplyBatch(ctx context.Context, accountID string, records []Inco
 func applyOne(ctx context.Context, tx *sql.Tx, accountID string, in IncomingRecord) (RecordResult, error) {
 	spec := collections[in.Collection]
 
+	/*
+		Ratings are checked before they are stored.
+
+		The one collection the server reads inside, and it reads to check, never
+		to serve: a rating is refused unless this account holds the play or run
+		it cites, and the subject matches. Refused means not written at all —
+		no revision spent, no row for another device to pull — and the client
+		is told why, once, so it can drop its copy. See ratings.go and
+		docs/spec/ratings-and-modular-sets.md §2.4.
+	*/
+	var rating *ratingRow
+	if in.Collection == "ratings" && !in.Deleted {
+		row, reason, err := validateRating(ctx, tx, accountID, in)
+		if err != nil {
+			return RecordResult{}, err
+		}
+		if reason != "" {
+			return RecordResult{ID: in.ID, Collection: in.Collection, Outcome: outcomeRejected, Reason: reason}, nil
+		}
+		rating = row
+	}
+
 	var stored sql.NullInt64
 	err := tx.QueryRowContext(ctx,
 		`SELECT revision FROM record WHERE account_id = ? AND collection = ? AND id = ?`,
@@ -273,6 +300,18 @@ func applyOne(ctx context.Context, tx *sql.Tx, accountID string, in IncomingReco
 		accountID, in.Collection, in.ID, revision, in.UpdatedAt, boolToInt(in.Deleted), body, deletedAt,
 	); err != nil {
 		return RecordResult{}, err
+	}
+
+	// The index and the summary move in the same transaction as the record,
+	// so a rating that is stored is counted and one that is tombstoned is not.
+	if in.Collection == "ratings" {
+		if in.Deleted {
+			if err := unindexRating(ctx, tx, accountID, in.ID); err != nil {
+				return RecordResult{}, err
+			}
+		} else if err := indexRating(ctx, tx, accountID, *rating); err != nil {
+			return RecordResult{}, err
+		}
 	}
 
 	result := RecordResult{

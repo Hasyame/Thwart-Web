@@ -164,6 +164,38 @@ var migrations = []string{
 		ON account (verify_hash) WHERE verify_hash IS NOT NULL;
 
 	UPDATE account SET email_verified_at = created_at WHERE email_verified_at IS NULL;`,
+
+	// v5: difficulty ratings, indexed and summarised.
+	//
+	// Both tables are derived from the `ratings` collection in `record` and can
+	// be rebuilt from it; they exist because an average has to be read without
+	// parsing every body, and checked without scanning them. The summary is
+	// kept by delta inside the transaction that applies each record — see
+	// ratings.go — so it never counts a rating that was not stored or a player
+	// who no longer exists. docs/spec/ratings-and-modular-sets.md §3.2.
+	`CREATE TABLE rating (
+		account_id    TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,
+		subject       TEXT NOT NULL,
+		kind          TEXT NOT NULL,
+		set_code      TEXT NOT NULL,
+		scenario_code TEXT,
+		score         INTEGER NOT NULL,
+		rated_at      INTEGER NOT NULL,
+		PRIMARY KEY (account_id, subject)
+	);
+	CREATE INDEX rating_subject ON rating (subject);
+
+	CREATE TABLE rating_summary (
+		subject TEXT PRIMARY KEY,
+		count   INTEGER NOT NULL DEFAULT 0,
+		sum     INTEGER NOT NULL DEFAULT 0,
+		h0 INTEGER NOT NULL DEFAULT 0,
+		h1 INTEGER NOT NULL DEFAULT 0,
+		h2 INTEGER NOT NULL DEFAULT 0,
+		h3 INTEGER NOT NULL DEFAULT 0,
+		h4 INTEGER NOT NULL DEFAULT 0,
+		h5 INTEGER NOT NULL DEFAULT 0
+	);`,
 }
 
 type Store struct {
@@ -509,7 +541,18 @@ func (s *Store) SetRecoveryHash(ctx context.Context, accountID, hash string, iss
 // Doc 02 is explicit that this is real rather than a flag: an account that
 // cannot be left is a trap.
 func (s *Store) DeleteAccount(ctx context.Context, accountID string) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM account WHERE id = ?`, accountID)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Before the cascade takes the rows: an average must never count a player
+	// who no longer exists, and after the cascade there is nothing to subtract.
+	if err := unindexAccountRatings(ctx, tx, accountID); err != nil {
+		return err
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM account WHERE id = ?`, accountID)
 	if err != nil {
 		return err
 	}
@@ -520,7 +563,7 @@ func (s *Store) DeleteAccount(ctx context.Context, accountID string) error {
 	if n == 0 {
 		return ErrNotFound
 	}
-	return nil
+	return tx.Commit()
 }
 
 func (s *Store) CreateDevice(ctx context.Context, d Device, tokenHash string) error {
