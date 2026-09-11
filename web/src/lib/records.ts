@@ -86,6 +86,16 @@ export interface Play {
   readonly scenarioName: string;
   readonly difficulty: string;
   readonly standardSet: string;
+  /**
+   * The modular sets shuffled in, by code, comma separated. Empty when none
+   * were, and on plays recorded before either client kept this.
+   *
+   * The names have always gone into `notes` as a line for a reader, and still
+   * do. Names are not enough to set the same game up again: they are in
+   * whichever card language was current that day. So both clients keep the
+   * codes beside them, for "play again"; see lib/replay.
+   */
+  readonly modularSets: string;
   readonly heroCode: string;
   readonly heroName: string;
   readonly aspects: string;

@@ -70,6 +70,8 @@ export function completePlay(body: unknown, id: string): Play {
     difficulty: text(raw.difficulty),
     // PlayEntity: `standardSet: String = ""`
     standardSet: text(raw.standardSet),
+    // PlayEntity: `modularSets: String = ""`
+    modularSets: text(raw.modularSets),
     heroCode: text(raw.heroCode),
     heroName: text(raw.heroName),
     aspects: text(raw.aspects),

@@ -56,6 +56,7 @@ export function buildCampaignPlay(input: CampaignPlayInput): Play {
     scenarioName: textOf(input.scenario?.name, input.locale) || input.scenarioId,
     difficulty: input.campaign.difficulty,
     standardSet: '',
+    modularSets: '',
     heroCode: first?.code ?? '',
     heroName: first?.name ?? '',
     aspects: aspects.join(', '),

@@ -19,15 +19,18 @@ import { seatsOf } from './plays';
  *   the seat carries the hero alone, which is what a game put away and picked
  *   up later already does.
  *
- * - **The modular sets.** Neither client stores them as a field. The web writes
- *   them into the notes as a line, `Modular sets: A, B`, by name, so a game
- *   recorded here gets them back by looking the names up; a game recorded on
- *   the phone has no such line and starts with none chosen. That is stated on
- *   the setup screen rather than silently guessed at.
+ * - **The modular sets.** Kept by code on the play since both clients grew
+ *   the `modularSets` field, and read straight back. Before that, both wrote
+ *   only a line into the notes, `Modular sets: A, B`, by name, so an older
+ *   play gets them back by looking the names up, in both card languages; a
+ *   name that matches nothing is dropped rather than guessed at. A play that
+ *   comes back with none says so on the setup screen.
  *
- * Every play qualifies, including one that was part of a campaign. What is
- * replayed is the scenario as it was laid out, as an ordinary game — not the
- * campaign, which has its own way of being continued.
+ * Only a play recorded from the setup page or from a draw comes back this
+ * way. A campaign's scenario is logged under the campaign's own scenario id
+ * (`s1_unus`, not a card set code) and the campaign's own difficulty word,
+ * and neither is something the one-off setup can put on a table; a campaign
+ * is played again from its own box.
  */
 
 /** The line `buildPlay` writes, and the only thing this reads out of the notes. */
@@ -132,7 +135,9 @@ export function replayOf(play: Play, decks: readonly SavedDeck[], sets: readonly
     ? difficultyOf(play.standardSet)
     : null;
 
-  const modularSetCodes = modularCodesFrom(play.notes, sets);
+  // The field when the play has one, the notes line for a play older than it.
+  const recorded = play.modularSets.split(',').map((c) => c.trim()).filter((c) => c !== '');
+  const modularSetCodes = recorded.length > 0 ? recorded : modularCodesFrom(play.notes, sets);
 
   return {
     session: {

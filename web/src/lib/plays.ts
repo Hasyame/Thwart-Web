@@ -59,6 +59,9 @@ export function buildPlay(input: RecordInput): Play {
     // The enum name lowercased, as the app records it.
     difficulty: session.difficulty.toLowerCase(),
     standardSet: session.standardSet?.toLowerCase() ?? '',
+    // By code, so the same game can be set up again from the history. The
+    // names in the notes line are for reading, not for that.
+    modularSets: session.modularSetCodes.join(','),
     heroCode: first?.code ?? '',
     heroName: first?.name ?? '',
     aspects: [...new Set(roster.map((seat) => seat.aspect))].join(', '),

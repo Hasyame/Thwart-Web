@@ -348,13 +348,18 @@
       <div class="actions">
         <!--
           First and filled, because it is the reason most people open a game
-          they have already played: the same table, again. Every game gets it,
-          a campaign scenario included — what comes back is the scenario as it
-          was laid out, played on its own, not the campaign.
+          they have already played: the same table, again.
+
+          Not for a campaign's scenario. It is logged under the campaign's own
+          scenario id, which is not a card set code, so what came back was a
+          setup page with a scenario it could not find. A campaign is played
+          again from its own box; the link above leads there.
         -->
-        <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
-          {t.playAgain}
-        </button>
+        {#if play.campaignRunId === null}
+          <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
+            {t.playAgain}
+          </button>
+        {/if}
         <button class="btn" type="button" disabled={busy} onclick={openEditor}>{t.playEdit}</button>
         <button class="btn btn--quiet danger" type="button" onclick={() => (confirming = true)}>
           {t.playDelete}

@@ -216,6 +216,7 @@ playedAt       INTEGER            -- indexed
 scenarioCode, scenarioName  TEXT
 difficulty     TEXT
 standardSet    TEXT DEFAULT ''
+modularSets    TEXT DEFAULT ''    -- codes, comma separated (added later, for "play again")
 heroCode, heroName TEXT           -- indexed on heroCode
 aspects        TEXT               -- comma separated
 otherHeroes    TEXT

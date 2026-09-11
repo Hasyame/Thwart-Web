@@ -81,11 +81,29 @@ function record(s, over = {}) {
   check('every seat comes back', back.seats.length === 2);
   check('and each seat is the deck it was', back.seats.map((s) => s.deckId).join(',') === 'd-spidey,d-cap');
   check('with its aspects', back.seats[1].aspect === 'leadership, protection');
+  check('modular sets come back by code, in the order they were chosen',
+    back.modularSetCodes.join(',') === 'masters_of_evil,bomb_scare', back.modularSetCodes.join(','));
+  check('and are not reported as unknown', replayOf(record(original), DECKS, SETS).modularSetsUnknown === false);
+  check('the codes are on the play itself, not only in the notes',
+    record(original).modularSets === 'masters_of_evil,bomb_scare', record(original).modularSets);
+}
+
+// --- modular sets, on a play older than the field ---------------------------------
+
+// Everything below blanks `modularSets`, because the point is what happens to
+// a play recorded before either client kept the codes: the notes line is all
+// there is.
+const older = (over) => ({ ...record(session()), modularSets: '', ...over });
+
+{
+  const back = replayOf(older({}), DECKS, SETS).session;
   // As a set: buildPlay sorts the names when it writes the line, and the order
   // modular sets are listed in means nothing at setup.
   check('modular sets come back from the notes line',
     [...back.modularSetCodes].sort().join(',') === 'bomb_scare,masters_of_evil', back.modularSetCodes.join(','));
-  check('and are not reported as unknown', replayOf(record(original), DECKS, SETS).modularSetsUnknown === false);
+  check('the field wins over the notes when both are there',
+    replayOf({ ...record(session()), notes: 'Modular sets: Legions of Hydra' }, DECKS, SETS)
+      .session.modularSetCodes.join(',') === 'masters_of_evil,bomb_scare');
 }
 
 // --- what lands on the setup screen, and what must not ---------------------------
@@ -138,16 +156,16 @@ function record(s, over = {}) {
 // --- modular sets ------------------------------------------------------------------
 
 {
-  const noLine = { ...record(session()), notes: 'Great game.' };
+  const noLine = older({ notes: 'Great game.' });
   const r = replayOf(noLine, DECKS, SETS);
   check('a play with no modular line starts with none', r.session.modularSetCodes.length === 0);
   check('and says so, for the setup screen', r.modularSetsUnknown === true);
 
-  const unknown = { ...record(session()), notes: 'Modular sets: Masters of Evil, Something Made Up' };
+  const unknown = older({ notes: 'Modular sets: Masters of Evil, Something Made Up' });
   check('a name the database does not know is dropped, not guessed',
     replayOf(unknown, DECKS, SETS).session.modularSetCodes.join(',') === 'masters_of_evil');
 
-  const mixed = { ...record(session()), notes: 'Tough one.\nModular sets: Legions of Hydra\nRematch soon.' };
+  const mixed = older({ notes: 'Tough one.\nModular sets: Legions of Hydra\nRematch soon.' });
   check('the line is found among other notes',
     replayOf(mixed, DECKS, SETS).session.modularSetCodes.join(',') === 'legions_of_hydra');
 }
@@ -161,16 +179,16 @@ function record(s, over = {}) {
     { code: 'masters_of_evil', name: 'Maîtres du Mal', type: 'modular', packCode: 'core' },
     { code: 'bomb_scare', name: 'Alerte à la Bombe', type: 'modular', packCode: 'core' },
   ];
-  const french = { ...record(session()), notes: 'Modular sets: Alerte à la Bombe, Maîtres du Mal' };
+  const french = older({ notes: 'Modular sets: Alerte à la Bombe, Maîtres du Mal' });
   const back = replayOf(french, DECKS, both).session;
   check('a note written in the other card language still resolves',
     [...back.modularSetCodes].sort().join(',') === 'bomb_scare,masters_of_evil', back.modularSetCodes.join(','));
-  const english = { ...record(session()), notes: 'Modular sets: Masters of Evil' };
+  const english = older({ notes: 'Modular sets: Masters of Evil' });
   check('and a code never comes back twice when both languages name it',
     replayOf(english, DECKS, both).session.modularSetCodes.length === 1);
 }
 
-// --- a play from the phone, and a play from a campaign -----------------------------
+// --- a play from the phone ----------------------------------------------------------
 
 {
   // Android-shaped: no roster, the seats implied by heroCode and otherHeroes.
@@ -186,12 +204,6 @@ function record(s, over = {}) {
   check('with the first hero named', back.seats[0].heroName === 'Spider-Man');
 }
 
-{
-  const fromCampaign = { ...record(session()), campaignRunId: 'run-42' };
-  const back = replayOf(fromCampaign, DECKS, SETS).session;
-  check('a campaign scenario can be played again as an ordinary game',
-    back.scenarioCode === 'rhino' && back.seats.length === 2);
-}
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
