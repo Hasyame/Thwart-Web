@@ -70,6 +70,11 @@ export interface PlayFilter {
   readonly result?: 'won' | 'lost';
   /** A specific run, or `any` for "belonged to some campaign". */
   readonly campaign?: string | 'any' | 'none';
+  /**
+   * Only these games. The starred ids, resolved by the caller from the
+   * favourites table, so this stays a function of the play and the filter.
+   */
+  readonly favouriteIds?: ReadonlySet<string>;
 }
 
 const EMPTY: PlayFilter = {};
@@ -89,6 +94,9 @@ export function matches(play: Play, filter: PlayFilter): boolean {
     return false;
   }
   if (filter.result !== undefined && play.won !== (filter.result === 'won')) {
+    return false;
+  }
+  if (filter.favouriteIds !== undefined && !filter.favouriteIds.has(play.id)) {
     return false;
   }
   if (filter.scenario !== undefined && play.scenarioCode !== filter.scenario) {

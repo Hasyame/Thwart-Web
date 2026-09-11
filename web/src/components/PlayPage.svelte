@@ -5,7 +5,7 @@
   import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
   import Briefing from './Briefing.svelte';
   import LongBreak from './LongBreak.svelte';
-  import type { PausedGame } from '../lib/records';
+  import type { PausedGame, Play } from '../lib/records';
   import {
     discardPausedGame,
     loadPausedGame,
@@ -46,9 +46,38 @@
     /** Which language the tracker reads the scenario's cards in. */
     cardLocale: Locale;
     storageOk: boolean;
+    /** Lays a starred game out on this screen. Owned by App, which resolves it. */
+    onReplay: (play: Play) => void;
   }
 
-  const { t, sets, index, cardLocale, storageOk }: Props = $props();
+  const { t, sets, index, cardLocale, storageOk, onReplay }: Props = $props();
+
+  /*
+   * The starred games, joined to their plays.
+
+   * The point of a star is that the game is easy to get back to, and "back to"
+   * means here: the screen where it gets laid out. Read live, so a star put on
+   * in the history is on this list when the person comes across.
+   */
+  let starred = $state.raw<readonly Play[]>([]);
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const sub = liveQuery(async () => {
+      const stars = await db.favouritePlays.orderBy('addedAt').reverse().toArray();
+      const plays = await db.plays.bulkGet(stars.map((s) => s.playId));
+      return plays.filter((p): p is Play => p !== undefined && (p.deletedAt ?? null) === null);
+    }).subscribe((rows) => {
+      starred = rows;
+    });
+    return () => sub.unsubscribe();
+  });
+
+  const tableOf = (play: Play): string =>
+    (play.roster.length > 0 ? play.roster.map((s) => s.name) : [play.heroName])
+      .filter((n) => n !== '')
+      .join(', ');
 
   const owned = $state<{ packs: Set<string>; excludedSets: Set<string>; excludedScenarios: Set<string> }>({
     packs: new Set(),
@@ -405,6 +434,26 @@
       </div>
     {/if}
 
+    {#if starred.length > 0 && session.current.phase === 'setup'}
+      <div class="setup surface">
+        <h2>{t.favouriteGames}</h2>
+        <p class="muted note">{t.favouriteGamesNote}</p>
+        <ul class="starred">
+          {#each starred as play (play.id)}
+            <li>
+              <span class="words">
+                <span class="scenario">{play.scenarioName || play.scenarioCode}</span>
+                <span class="muted sub">{tableOf(play)}</span>
+              </span>
+              <button class="btn small" type="button" onclick={() => onReplay(play)}>
+                {t.playAgain}
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
     <div class="setup surface">
       <label class="field-group">
         <span class="field-label">{t.scenario}</span>
@@ -675,6 +724,34 @@
   .running {
     padding: var(--space-4);
     margin: var(--space-3) 0;
+  }
+
+  .starred {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .starred li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .starred .words {
+    display: grid;
+    min-width: 0;
+  }
+
+  .starred .scenario {
+    font-weight: var(--weight-semibold);
+  }
+
+  .starred .sub {
+    font-size: var(--text-sm);
   }
 
   .replay-note {

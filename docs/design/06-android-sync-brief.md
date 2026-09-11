@@ -11,6 +11,9 @@ gained two things Android does not have yet — **address confirmation** and the
 document before today, the part that has genuinely reversed is §4's "Not
 verified": there is a confirmation link now, it is mandatory, and an
 unconfirmed account cannot sign in.
+**Amended 2026-09-11:** §6 withdraws `Play.ignored` and adds the
+`favourite_plays` collection — a starred game — which the web now syncs and
+the phone should add. The phone defers it safely in the meantime.
 **Audience:** whoever implements sync in `Hasyame/Thwart`.
 
 This is not a design document. Doc 02 is the design and it is settled; this says
@@ -441,6 +444,18 @@ reason a collection name is.
 
 ### A play can be set aside
 
+> **Withdrawn 2026-09-11.** This section asked for an optional `ignored`
+> boolean on `plays`, and warned that until Android had the column, the first
+> time the phone edited a flagged play the flag would be dropped. That warning
+> was the whole story. `Play.ignored` was removed from the web instead — see
+> `docs/spec/statistics.md` §1 — and the lesson it left is the rule the next
+> section follows: **a per-play fact the phone does not know must not be a
+> field on the play.** The original text is kept below so the reasoning about
+> "absent reads as false" is not lost; do not implement it.
+
+<details>
+<summary>The withdrawn text</summary>
+
 Added to the web on 5 September 2026, and it needs a column on your side.
 
 `plays` gains an optional boolean, `ignored`. A play with it set is kept — it is
@@ -471,6 +486,55 @@ test inside the statistics function itself, because a filter every caller has to
 remember is one a caller will forget — and the failure is silent: the reader
 sets a play aside, the number does not move, and the only way to find out is to
 count by hand.
+
+---
+
+</details>
+
+---
+
+### A game can be starred
+
+Added to the web on 11 September 2026, as a **new collection**, and it needs
+a table and a `SyncCollection` entry on your side.
+
+Somebody finds a table worth keeping — a scenario, heroes and modular sets that
+made a good evening, or a clean introduction to the game for a friend — and
+stars it in the history. Starred games are one filter away there, and are
+listed on the setup screen with a "play again" that lays the same game out.
+
+```
+collection  "favourite_plays"
+id          the play's id
+body        { "playId": "<play id>", "addedAt": <epoch millis> }
+```
+
+**Why a collection and not a field on the play.** The section above is why.
+A field the phone does not know is dropped the next time the phone writes the
+play; a collection the phone does not know is deferred by it, untouched, and
+the cursor held short of it — your own `SyncEngine` comment describes exactly
+this — so the star waits on the server for the build that adds the name. It
+is also how the contract already models a favourite: `favourite_cards` is a
+row keyed by what it points at, and this is the same row keyed by a play.
+
+**Until the phone has it, what the phone experiences.** Every known record
+still applies. The cursor pins just before the first `favourite_plays` record,
+so each sync re-pulls from there; idempotent, so correct, and at these sizes a
+few kilobytes. It self-heals the moment a build that knows the collection
+pulls.
+
+**Merge rule: the earlier `addedAt` wins**, as for a card. A star is put on
+once; two devices disagreeing about when should settle on the first time.
+
+**Unstarring is deleting the row**, which the engine turns into a tombstone,
+as for a card. **Deleting a play deletes its star** on the same device in the
+same action, so a star never syncs as a favourite of nothing. Treat a star
+whose play is gone or tombstoned as absent when reading, in case one arrives
+out of order.
+
+**Not in the phone's backup**, and harmless there: a web backup carries a
+`favouritePlays` list that `ignoreUnknownKeys` lets the phone skip, and a
+phone backup restored on the web simply has none.
 
 ---
 

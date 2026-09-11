@@ -26,16 +26,22 @@ function check(label, ok, detail = '') {
   }
 }
 
-// --- the ten collections ----------------------------------------------------------
+// --- the collections ----------------------------------------------------------------
 
 {
   const names = COLLECTIONS.map((collection) => collection.name).sort();
+  // Ten are the contract with the phone. The eleventh, favourite_plays, is the
+  // web one release ahead: the phone defers a collection it cannot name and
+  // holds its cursor short of it, so the rows wait on the server for the build
+  // that adds it. If this list ever gains a twelfth without the phone knowing,
+  // this is the line that should make somebody stop and check.
   const expected = [
     'campaign_events',
     'campaign_runs',
     'excluded_modular_sets',
     'excluded_scenarios',
     'favourite_cards',
+    'favourite_plays',
     'owned_packs',
     'plays',
     'randomizer_history',
@@ -43,7 +49,7 @@ function check(label, ok, detail = '') {
     'settings',
   ];
   check(
-    'all ten collections are synced, spelled as the contract spells them',
+    'every collection is synced, spelled as the contract spells them',
     names.length === expected.length && names.every((name, i) => name === expected[i]),
     names.join(', '),
   );
@@ -101,6 +107,20 @@ function check(label, ok, detail = '') {
     { cardCode: '01001', addedAt: 100 },
   );
   check('and from the incoming side', incoming.body.addedAt === 100);
+}
+
+// --- when a game was starred ---------------------------------------------------------
+
+{
+  // The same rule as a card, and worth its own line: the day somebody first
+  // starred a game must not move because a second device starred it later.
+  const game = mergeBodies(
+    'favourite_plays',
+    { playId: 'p1', addedAt: 900 },
+    { playId: 'p1', addedAt: 100 },
+  );
+  check('a starred game keeps the earlier date too', game.body.addedAt === 100);
+  check('and its play id', game.body.playId === 'p1');
 }
 
 // --- the timer columns that never travel ---------------------------------------------

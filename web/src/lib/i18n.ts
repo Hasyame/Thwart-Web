@@ -543,6 +543,12 @@ export interface Strings {
   readonly playAgain: string;
   /** Shown on setup after a replay whose modular sets could not be recovered. */
   readonly playAgainModularNote: string;
+  readonly favouritePlayAdd: string;
+  readonly favouritePlayRemove: string;
+  readonly historyFavouritesOnly: string;
+  /** The starred games on the setup screen, each one tap from being laid out. */
+  readonly favouriteGames: string;
+  readonly favouriteGamesNote: string;
   readonly playEditSave: string;
   readonly playWhen: string;
   readonly playResult: string;
@@ -1220,6 +1226,7 @@ const STRINGS: Record<Locale, Strings> = {
         excluded_modular_sets: 'Excluded modular sets',
         excluded_scenarios: 'Excluded scenarios',
         favourite_cards: 'Favourite cards',
+        favourite_plays: 'Starred games',
         saved_decks: 'Decks',
         campaign_runs: 'Campaigns',
         campaign_events: 'Campaign log',
@@ -1243,6 +1250,11 @@ const STRINGS: Record<Locale, Strings> = {
     playAgain: 'Play again',
     playAgainModularNote:
       'Same scenario, difficulty and heroes as that game. The modular sets are not recorded on a game, so choose them again.',
+    favouritePlayAdd: 'Star this game',
+    favouritePlayRemove: 'Remove the star',
+    historyFavouritesOnly: 'Starred only',
+    favouriteGames: 'Starred games',
+    favouriteGamesNote: 'Games you starred in the history, to lay out again in one tap.',
     playEditSave: 'Save the correction',
     playWhen: 'Played on',
     playResult: 'Result',
@@ -1942,6 +1954,7 @@ const STRINGS: Record<Locale, Strings> = {
         excluded_modular_sets: 'Sets modulaires exclus',
         excluded_scenarios: 'Sc\u00e9narios exclus',
         favourite_cards: 'Cartes favorites',
+        favourite_plays: 'Parties favorites',
         saved_decks: 'Decks',
         campaign_runs: 'Campagnes',
         campaign_events: 'Journal de campagne',
@@ -1965,6 +1978,11 @@ const STRINGS: Record<Locale, Strings> = {
     playAgain: 'Rejouer',
     playAgainModularNote:
       'Même scénario, même difficulté et mêmes héros que cette partie. Les sets modulaires ne sont pas enregistrés sur une partie, choisissez-les à nouveau.',
+    favouritePlayAdd: 'Mettre en favori',
+    favouritePlayRemove: 'Retirer des favoris',
+    historyFavouritesOnly: 'Favoris seulement',
+    favouriteGames: 'Parties favorites',
+    favouriteGamesNote: 'Les parties que vous avez mises en favori dans l’historique, à remettre en place en un geste.',
     playEditSave: 'Enregistrer la correction',
     playWhen: 'Jouée le',
     playResult: 'Résultat',

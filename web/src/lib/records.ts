@@ -47,6 +47,24 @@ export interface FavouriteCard {
 }
 
 /**
+ * A game somebody has starred, to find again and play again.
+ *
+ * Its own row rather than a flag on the play, and that is a sync decision
+ * before it is a data one. A field the phone does not know is dropped the
+ * next time the phone writes the play — that is how `Play.ignored` was lost
+ * and why it was removed — whereas a collection the phone does not know is
+ * deferred by it, untouched, until a build that does. It is also how the
+ * contract already models a favourite: `favourite_cards` is a row keyed by
+ * what it points at, and this is the same shape keyed by a play.
+ *
+ * Proposed to Android as `favourite_plays`; see doc 06.
+ */
+export interface FavouritePlay {
+  readonly playId: string;
+  readonly addedAt: number;
+}
+
+/**
  * `data/db/entity/SavedDeckEntity.kt`.
  *
  * Not written by this app yet — decks are a later phase — but declared and
@@ -269,6 +287,12 @@ export interface Backup {
   readonly plays: readonly Play[];
   readonly randomizerHistory: readonly RandomizerHistoryRow[];
   readonly favouriteCards: readonly FavouriteCard[];
+  /**
+   * Absent from a backup the phone wrote, and ignored by the phone when it
+   * reads one — `ignoreUnknownKeys` is on there — so carrying it costs the
+   * round trip nothing and keeps a web backup whole.
+   */
+  readonly favouritePlays: readonly FavouritePlay[];
   readonly photos: readonly string[];
   /**
    * Null, not absent, is meaningful: the app reads it as "this file has no

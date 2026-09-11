@@ -25,6 +25,7 @@ const TABLES = () => [
   db.excludedModularSets,
   db.excludedScenarios,
   db.favouriteCards,
+  db.favouritePlays,
   db.decks,
   db.campaignRuns,
   db.campaignEvents,

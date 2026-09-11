@@ -33,7 +33,9 @@
   import { watchLive } from './lib/sync/live.svelte';
   import { watchSafeArea } from './lib/safeArea';
   import PlayHub from './components/PlayHub.svelte';
-  import { replayOf } from './lib/replay';
+  import { campaignLayoutOf, replayOf, type CampaignLayout } from './lib/replay';
+  import { eventsOf } from './lib/campaign/store';
+  import { inCampaign, runOf } from './lib/playQuery';
   import { prepareSession, setupNotice } from './lib/session.svelte';
   import type { Play } from './lib/records';
   import { watchStoredOnServer } from './lib/sync/stored.svelte';
@@ -398,7 +400,21 @@
       after the first load, so this costs one fetch, once.
     */
     const bothLanguages = (await Promise.all([loadSets('en'), loadSets('fr')])).flat();
-    const prepared = replayOf(play, decks, bothLanguages);
+    /*
+      A campaign's scenario is recorded under the campaign's own id for it, not
+      a card set, so the template it came from says what was actually on the
+      table. If the run is gone the replay still lands, with the scenario left
+      for the person to pick.
+    */
+    let layout: CampaignLayout | null = null;
+    if (inCampaign(play) && storageOk) {
+      const runId = runOf(play);
+      const run = runId === null || runId === '' ? undefined : await db.campaignRuns.get(runId);
+      if (run !== undefined) {
+        layout = campaignLayoutOf(play, run, await eventsOf(run.id), index, bothLanguages);
+      }
+    }
+    const prepared = replayOf(play, decks, bothLanguages, layout);
     prepareSession(prepared.session);
     setupNotice.text = prepared.modularSetsUnknown ? t.playAgainModularNote : null;
     navigate({ name: 'play' });
@@ -518,7 +534,7 @@
   {:else if route.name === 'versus'}
     <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
   {:else if route.name === 'play'}
-    <PlayPage {t} {sets} {index} {cardLocale} {storageOk} />
+    <PlayPage {t} {sets} {index} {cardLocale} {storageOk} onReplay={(play) => void replay(play)} />
   {:else if route.name === 'hub'}
     <PlayHub
       {t}

@@ -82,6 +82,8 @@ export interface HistoryFilter {
   readonly play?: string;
   /** A campaign run's id, when one is open. */
   readonly run?: string;
+  /** `1` to show only starred games. */
+  readonly favourite?: string;
 }
 
 const HISTORY_KEYS = [
@@ -94,6 +96,7 @@ const HISTORY_KEYS = [
   'campaign',
   'play',
   'run',
+  'favourite',
 ] as const;
 
 function historyFilterFrom(search: string): HistoryFilter {

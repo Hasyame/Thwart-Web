@@ -3,6 +3,7 @@
   import type { IndexRow, Locale } from '../lib/types';
   import type { CampaignRun, Play } from '../lib/records';
   import type { HistoryFilter } from '../lib/router';
+  import { liveQuery } from 'dexie';
   import { db } from '../lib/db';
   import { count, inCampaign, page, runOf, type PlayFilter } from '../lib/playQuery';
   import { playerBucket } from '../lib/plays';
@@ -42,6 +43,24 @@
 
   const PAGE = 25;
 
+  /*
+   * Which games are starred.
+
+   * Small — a handful of ids — and read whole, because it is joined against
+   * every row that renders and against the filter. `$state.raw`: a Set is not
+   * something a deep proxy has anything useful to do with.
+   */
+  let favouriteIds = $state.raw<ReadonlySet<string>>(new Set());
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const sub = liveQuery(() => db.favouritePlays.toArray()).subscribe((rows) => {
+      favouriteIds = new Set(rows.map((row) => row.playId));
+    });
+    return () => sub.unsubscribe();
+  });
+
   /** The URL's filter as the query layer wants it: days become instants. */
   const asQuery = $derived.by((): PlayFilter => {
     const out: PlayFilter = {};
@@ -60,6 +79,7 @@
       ...(filter.scenario === undefined ? {} : { scenario: filter.scenario }),
       ...(filter.result === undefined ? {} : { result: filter.result }),
       ...(filter.campaign === undefined ? {} : { campaign: filter.campaign }),
+      ...(filter.favourite === '1' ? { favouriteIds } : {}),
     };
   });
 
@@ -259,7 +279,8 @@
       filter.aspect !== undefined ||
       filter.scenario !== undefined ||
       filter.result !== undefined ||
-      filter.campaign !== undefined,
+      filter.campaign !== undefined ||
+      filter.favourite !== undefined,
   );
 
   const openPlay = $derived(rows.find((play) => play.id === filter.play) ?? null);
@@ -396,6 +417,15 @@
         </select>
       </label>
 
+      <label class="tick">
+        <input
+          type="checkbox"
+          checked={filter.favourite === '1'}
+          onchange={(e) => narrow('favourite', e.currentTarget.checked ? '1' : '')}
+        />
+        <span>{t.historyFavouritesOnly}</span>
+      </label>
+
       {#if filtering}
         <button class="btn btn--quiet clear" type="button" onclick={() => onFilter({})}>
           {t.historyClear}
@@ -455,6 +485,7 @@
         onClose={() => open('play', '')}
         onOpenRun={(id) => open('run', id)}
         {onReplay}
+        starred={favouriteIds.has(openPlay.id)}
       />
     {/if}
 
@@ -489,7 +520,14 @@
               onclick={() => open('play', filter.play === play.id ? '' : play.id)}
             >
               <span class="top">
-                <span class="scenario">{play.scenarioName || play.scenarioCode}</span>
+                <span class="scenario">
+                  {#if favouriteIds.has(play.id)}
+                    <!-- Said in the accessible name too: the star is the whole
+                         reason this row is easy to find. -->
+                    <span class="star" aria-label={t.favouriteGames}>★</span>
+                  {/if}
+                  {play.scenarioName || play.scenarioCode}
+                </span>
                 <span class="result" class:won={play.won}>
                   {play.won ? t.playWon : t.playLost}
                 </span>
@@ -620,6 +658,13 @@
 
   .scenario {
     font-weight: var(--weight-semibold);
+  }
+
+  /* The accent, because a star is the one thing on a row that is there to be
+     spotted from across the list. */
+  .star {
+    color: var(--accent);
+    margin-inline-end: var(--space-1);
   }
 
   .sub {

@@ -44,7 +44,11 @@ truth for what every number means, written to be read by both.
   an apology is worse than no menu entry.
 - **History.** Every game and campaign run, filtered by hero, aspect, scenario,
   result, campaign or date. The filters live in the URL, so a filtered view can
-  be bookmarked and shared and comes back the same after a reload.
+  be bookmarked and shared and comes back the same after a reload. Any game can
+  be **played again** — laid out on the setup screen with the same scenario,
+  difficulty, heroes and modular sets, a campaign's scenario included, resolved
+  through its template — and **starred**, to find in one filter and to see
+  listed on the setup screen with a one-tap replay.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
 - **BoardGameGeek.** A game can be handed to BGG's own play form, prefilled.
@@ -152,6 +156,7 @@ the real modules:
 | `npm run test:device` | Which rows signing out takes, and which it leaves |
 | `npm run test:engine-sync` | Campaign runs through the sync path |
 | `npm run test:nav` | That every destination is reachable, in both arrangements |
+| `npm run test:replay` | That a game played again is the game that was played, a campaign's included |
 | `npm run test:safe-area` | Whether the bottom system-bar inset is believed |
 | `npm run test:filters` | Search and history filtering |
 | `npm run test:deckbuilder` | Deck legality against a collection |
@@ -225,6 +230,12 @@ brief and the live-sync design.
   showed a general error and left you guessing. It still does not know
   `/v1/auth/verify` itself, so the link has to be opened somewhere else and
   there is no way to ask for another one from the app.
+- **Starred games on Android.** The web syncs a `favourite_plays` collection
+  — a game somebody starred, to find again and play again — and the phone does
+  not have it yet. Its sync engine defers a collection it cannot name and holds
+  its cursor short of it, so nothing is lost and nothing breaks; the star
+  arrives the moment a build that knows the name pulls. Doc 06 §6 has the
+  contract, and it is the same shape as `favourite_cards`.
 - **One correction on Android** that
   [`docs/spec/statistics.md`](docs/spec/statistics.md) records: `plays_by_scenario`
   groups by `scenarioCode` while selecting a bare `scenarioName`, so a scenario

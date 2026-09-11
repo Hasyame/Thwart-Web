@@ -2,7 +2,7 @@
   import type { Strings } from '../lib/i18n';
   import type { Locale } from '../lib/types';
   import type { CampaignRun, Play } from '../lib/records';
-  import { db } from '../lib/db';
+  import { db, toggleFavouritePlay } from '../lib/db';
   import { formatElapsed } from '../lib/session.svelte';
   import { playerBucket } from '../lib/plays';
   import { runOf } from '../lib/playQuery';
@@ -35,9 +35,20 @@
     onOpenRun: (id: string) => void;
     /** Lays this game out again on the setup screen. */
     onReplay: (play: Play) => void;
+    /** Whether this game is starred, from the history's own live set. */
+    starred: boolean;
   }
 
-  const { t, uiLocale, play, run, onClose, onOpenRun, onReplay }: Props = $props();
+  const { t, uiLocale, play, run, onClose, onOpenRun, onReplay, starred }: Props = $props();
+
+  async function toggleStar(): Promise<void> {
+    busy = true;
+    try {
+      await toggleFavouritePlay(play.id);
+    } finally {
+      busy = false;
+    }
+  }
 
   let editing = $state(false);
   let confirming = $state(false);
@@ -141,6 +152,9 @@
     try {
       const now = Date.now();
       await db.plays.update(play.id, { deletedAt: now, updatedAt: now });
+      // The star goes with the game. A row pointing at a deleted play would
+      // sync to the phone as a favourite of nothing.
+      await db.favouritePlays.delete(play.id);
       confirming = false;
       onClose();
     } finally {
@@ -350,16 +364,29 @@
           First and filled, because it is the reason most people open a game
           they have already played: the same table, again.
 
-          Not for a campaign's scenario. It is logged under the campaign's own
-          scenario id, which is not a card set code, so what came back was a
-          setup page with a scenario it could not find. A campaign is played
-          again from its own box; the link above leads there.
+          Every game, a campaign's scenario included. Those are logged under
+          the campaign's own scenario id rather than a card set, which is why
+          this was briefly hidden for them; the replay now resolves the set
+          through the campaign's template instead — see lib/replay. What comes
+          back is the scenario as it was laid out, played on its own, not the
+          campaign, which the link above continues.
         -->
-        {#if play.campaignRunId === null}
-          <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
-            {t.playAgain}
-          </button>
-        {/if}
+        <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
+          {t.playAgain}
+        </button>
+        <!-- Pressed state on the button itself, so a screen reader hears
+             "starred" rather than two labels that differ by one word. -->
+        <button
+          class="btn"
+          class:starred
+          type="button"
+          aria-pressed={starred}
+          disabled={busy}
+          onclick={() => void toggleStar()}
+        >
+          <span aria-hidden="true">{starred ? '★' : '☆'}</span>
+          {starred ? t.favouritePlayRemove : t.favouritePlayAdd}
+        </button>
         <button class="btn" type="button" disabled={busy} onclick={openEditor}>{t.playEdit}</button>
         <button class="btn btn--quiet danger" type="button" onclick={() => (confirming = true)}>
           {t.playDelete}
@@ -459,6 +486,13 @@
 
   .lbl {
     font-size: var(--text-xs);
+  }
+
+  /* The accent when starred: the one button on this row whose state is the
+     point of it. */
+  .starred {
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .actions,

@@ -127,7 +127,8 @@ export function mergeBodies(
       return { kind: 'take', body: { ...base, reportedToBgg: reported } };
     }
 
-    case 'favourite_cards': {
+    case 'favourite_cards':
+    case 'favourite_plays': {
       /*
        * The earlier date wins while both sides are live.
        *

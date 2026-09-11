@@ -9,6 +9,7 @@ import {
   type ExcludedModularSet,
   type ExcludedScenario,
   type FavouriteCard,
+  type FavouritePlay,
   type OwnedPack,
   type Play,
   type RandomizerHistoryRow,
@@ -99,6 +100,8 @@ export function parseBackup(text: string): Backup {
     plays: asArray<Play>(record['plays']),
     randomizerHistory: asArray<RandomizerHistoryRow>(record['randomizerHistory']),
     favouriteCards: asArray<FavouriteCard>(record['favouriteCards']),
+    // Absent from a phone's backup, so an empty list rather than a failure.
+    favouritePlays: asArray<FavouritePlay>(record['favouritePlays']),
     photos: asArray<string>(record['photos']),
     settings: asSettings(record['settings']),
   };
@@ -172,6 +175,7 @@ export async function importBackup(
     await db.excludedModularSets.bulkPut([...backup.excludedModularSets]);
     await db.excludedScenarios.bulkPut([...(backup.excludedScenarios ?? [])]);
     await db.favouriteCards.bulkPut([...backup.favouriteCards]);
+    await db.favouritePlays.bulkPut([...(backup.favouritePlays ?? [])]);
     await db.decks.bulkPut([...backup.decks]);
     // Completed the same way a synced body is: a backup written by the phone
     // has the same fields missing, for the same reason.
@@ -209,6 +213,7 @@ export async function exportBackup(): Promise<Backup> {
     excludedModularSets,
     excludedScenarios,
     favouriteCards,
+    favouritePlays,
     decks,
     plays,
     campaignRuns,
@@ -220,6 +225,7 @@ export async function exportBackup(): Promise<Backup> {
     db.excludedModularSets.toArray(),
     db.excludedScenarios.toArray(),
     db.favouriteCards.toArray(),
+    db.favouritePlays.toArray(),
     db.decks.toArray(),
     db.plays.toArray(),
     db.campaignRuns.toArray(),
@@ -241,6 +247,7 @@ export async function exportBackup(): Promise<Backup> {
     plays,
     randomizerHistory,
     favouriteCards,
+    favouritePlays,
     // Null when this browser has never been handed any, which the app reads as
     // "leave the device's own settings alone". Emitting an empty object instead
     // would tell it to reset them to the defaults.

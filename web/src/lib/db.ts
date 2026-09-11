@@ -7,6 +7,7 @@ import type {
   ExcludedModularSet,
   ExcludedScenario,
   FavouriteCard,
+  FavouritePlay,
   OwnedPack,
   PausedGame,
   Play,
@@ -47,6 +48,7 @@ class ThwartDatabase extends Dexie {
   excludedModularSets!: Table<ExcludedModularSet, string>;
   excludedScenarios!: Table<ExcludedScenario, string>;
   favouriteCards!: Table<FavouriteCard, string>;
+  favouritePlays!: Table<FavouritePlay, string>;
 
   // Carried, not yet written. See the class comment.
   decks!: Table<SavedDeck, string>;
@@ -174,6 +176,12 @@ class ThwartDatabase extends Dexie {
           }
         }),
     );
+
+    // v7: starred games. A new store and nothing else, so no existing row is
+    // touched; keyed by the play so starring twice is one row.
+    this.version(7).stores({
+      favouritePlays: 'playId, addedAt',
+    });
   }
 }
 
@@ -246,6 +254,17 @@ export async function toggleFavourite(cardCode: string): Promise<boolean> {
   return false;
 }
 
+/** Stars a game, or takes the star off. Returns whether it is starred now. */
+export async function toggleFavouritePlay(playId: string): Promise<boolean> {
+  const existing = await db.favouritePlays.get(playId);
+  if (existing === undefined) {
+    await db.favouritePlays.put({ playId, addedAt: Date.now() });
+    return true;
+  }
+  await db.favouritePlays.delete(playId);
+  return false;
+}
+
 // --- wholesale -------------------------------------------------------------
 
 /** Every table, in one place, so import and erase cannot forget one. */
@@ -254,6 +273,7 @@ export const ALL_TABLES = [
   'excludedModularSets',
   'excludedScenarios',
   'favouriteCards',
+  'favouritePlays',
   'decks',
   'plays',
   'campaignRuns',

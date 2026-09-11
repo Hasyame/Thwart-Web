@@ -7,6 +7,7 @@ import type {
   ExcludedModularSet,
   ExcludedScenario,
   FavouriteCard,
+  FavouritePlay,
   OwnedPack,
   Play,
   RandomizerHistoryRow,
@@ -41,6 +42,7 @@ export type CollectionName =
   | 'excluded_modular_sets'
   | 'excluded_scenarios'
   | 'favourite_cards'
+  | 'favourite_plays'
   | 'saved_decks'
   | 'campaign_runs'
   | 'campaign_events'
@@ -122,6 +124,24 @@ export const FAVOURITE_CARDS: Mapping<FavouriteCard> = {
   idOf: (row) => row.cardCode,
   bodyOf: whole,
   rowOf: (id, body) => ({ cardCode: id, addedAt: Number(body.addedAt ?? 0) }),
+  updatedAt: (row) => iso(row.addedAt),
+};
+
+/**
+ * Starred games. The same shape as favourite cards, keyed by the play.
+ *
+ * The phone does not know this collection yet. What it does with a record it
+ * cannot name is defer it and hold its cursor short of it — its own comment
+ * says so — so the star is kept safe on the server, and reaches the phone the
+ * moment a build that knows the name pulls. Until then the phone re-pulls from
+ * that point each sync, which at these sizes is a few kilobytes.
+ */
+export const FAVOURITE_PLAYS: Mapping<FavouritePlay> = {
+  name: 'favourite_plays',
+  table: () => db.favouritePlays,
+  idOf: (row) => row.playId,
+  bodyOf: whole,
+  rowOf: (id, body) => ({ playId: id, addedAt: Number(body.addedAt ?? 0) }),
   updatedAt: (row) => iso(row.addedAt),
 };
 
@@ -261,6 +281,7 @@ export const COLLECTIONS = [
   EXCLUDED_MODULAR_SETS,
   EXCLUDED_SCENARIOS,
   FAVOURITE_CARDS,
+  FAVOURITE_PLAYS,
   SAVED_DECKS,
   CAMPAIGN_RUNS,
   CAMPAIGN_EVENTS,

@@ -10,8 +10,9 @@
  *
  *   npm run test:replay
  */
+import { readFileSync } from 'node:fs';
 import { buildPlay } from '../src/lib/plays.ts';
-import { replayOf } from '../src/lib/replay.ts';
+import { campaignLayoutOf, replayOf } from '../src/lib/replay.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -204,6 +205,58 @@ const older = (over) => ({ ...record(session()), modularSets: '', ...over });
   check('with the first hero named', back.seats[0].heroName === 'Spider-Man');
 }
 
+
+// --- the mode a campaign records --------------------------------------------------
+
+{
+  // A campaign writes only `standard` or `expert`: the template chose the cards.
+  const expert = { ...record(session()), difficulty: 'expert', standardSet: '' };
+  check('a campaign\'s "expert" comes back as Expert, not Standard',
+    replayOf(expert, DECKS, SETS).session.difficulty === 'EXPERT_I');
+  const standard = { ...record(session()), difficulty: 'standard', standardSet: '' };
+  check('and its "standard" as Standard I', replayOf(standard, DECKS, SETS).session.difficulty === 'STANDARD_I');
+}
+
+// --- a campaign's scenario, resolved through its template -----------------------------
+//
+// Real data, not a mock: the Galaxy's Most Wanted template as shipped and the
+// English card index, because the resolution walks villain card -> set code
+// and a hand-written index would only prove the test agrees with itself.
+
+{
+  const raw = JSON.parse(readFileSync(new URL('../public/data/campaigns/gmw.json', import.meta.url), 'utf8'));
+  const indexFile = JSON.parse(readFileSync(new URL('../public/data/index.en.json', import.meta.url), 'utf8'));
+  const index = Array.isArray(indexFile) ? indexFile : (indexFile.cards ?? indexFile.rows);
+  const setsFile = JSON.parse(readFileSync(new URL('../public/data/sets.en.json', import.meta.url), 'utf8'));
+  const realSets = Array.isArray(setsFile) ? setsFile : Object.values(setsFile);
+
+  const run = { id: 'run-gmw', templateJson: JSON.stringify(raw) };
+  const first = raw.scenarios[0];
+  const play = { ...record(session()), campaignRunId: 'run-gmw', scenarioCode: first.id, scenarioName: 'Brotherhood of Badoon', notes: '', modularSets: '' };
+
+  const layout = campaignLayoutOf(play, run, [], index, realSets);
+  check('a campaign scenario resolves to a card set', layout !== null && layout.scenarioCode === 'brotherhood_of_badoon',
+    JSON.stringify(layout));
+  check('with the modular sets the template shuffles in',
+    layout !== null && [...layout.modularSetCodes].sort().join(',') === 'band_of_badoon,ship_command',
+    layout && layout.modularSetCodes.join(','));
+  check('and not the villain\'s own set or the standard set among them',
+    layout !== null && !layout.modularSetCodes.includes('brotherhood_of_badoon') && !layout.modularSetCodes.includes('standard'));
+
+  const back = replayOf(play, DECKS, realSets, layout);
+  check('the replay uses the resolved set', back.session.scenarioCode === 'brotherhood_of_badoon');
+  check('named as the set is named, not as the campaign names it', back.session.scenarioName === 'Brotherhood Of Badoon', back.session.scenarioName);
+  check('and does not call the modular sets unknown', back.modularSetsUnknown === false);
+
+  const unknownScenario = { ...play, scenarioCode: 'no_such_scenario' };
+  check('a scenario the template does not have resolves to nothing, not to a guess',
+    campaignLayoutOf(unknownScenario, run, [], index, realSets) === null);
+  const brokenRun = { id: 'run-x', templateJson: '{not json' };
+  check('an unreadable template resolves to nothing', campaignLayoutOf(play, brokenRun, [], index, realSets) === null);
+  const fallback = replayOf(play, DECKS, realSets, null);
+  check('and the replay still lands, leaving the scenario to be picked',
+    fallback.session.scenarioCode === first.id && fallback.session.seats.length === 2);
+}
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
