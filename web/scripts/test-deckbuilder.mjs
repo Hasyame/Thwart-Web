@@ -17,6 +17,7 @@ import {
   heroRules,
   validateDeck,
 } from '../src/lib/deckRules.ts';
+import { heroIdentities } from '../src/lib/decks.ts';
 
 /*
  * The deck size, which is the one rule not in the card data anywhere. Named
@@ -457,6 +458,34 @@ const rules = heroRules(spiderMan, packOf(spiderMan));
 
   const withUrl = deckAsText('D', 'H', [], new Map(), 'https://marvelcdb.com/decklist/view/1');
   check('a MarvelCDB link is appended when there is one', withUrl.endsWith('/decklist/view/1'));
+}
+
+// --- the heroes offered to build for --------------------------------------------------
+//
+// One per hero, not per hero card. The index has Giant forms and Ironheart's
+// three versions as separate hero cards, and two heroes really do share a
+// name; the list must fold the first and tell the second apart.
+{
+  const index = JSON.parse(readFileSync(join(DATA, '..', '..', 'index.en.json'), 'utf8'));
+  const rows = Array.isArray(index) ? index : (index.cards ?? index.rows);
+  const heroes = heroIdentities(rows);
+  const codes = new Set(heroes.map((h) => h.code));
+  const labels = heroes.map((h) => h.label);
+
+  check('every listed hero is a hero card', heroes.every((h) => rows.find((r) => r.code === h.code)?.typeCode === 'hero'));
+  check('no two entries share a label', new Set(labels).size === labels.length,
+    labels.filter((l, i) => labels.indexOf(l) !== i).join(', '));
+  check('Ant-Man once, as the Tiny card a decklist is keyed on', codes.has('12001a') && !codes.has('12001c'));
+  check('Wasp likewise', codes.has('13001a') && !codes.has('13001c'));
+  check('Ironheart once, at version 1', codes.has('29001a') && !codes.has('29002a') && !codes.has('29003a'));
+  check('both Spider-Men, told apart by alter ego',
+    labels.includes('Spider-Man (Peter Parker)') && labels.includes('Spider-Man (Miles Morales)'),
+    labels.filter((l) => l.startsWith('Spider-Man')).join(' / '));
+  check('both Black Panthers likewise',
+    labels.includes("Black Panther (T'Challa)") && labels.includes('Black Panther (Shuri)'));
+  check('a hero nobody shares a name with keeps its plain name', labels.includes('Iron Man'));
+  const heroCards = rows.filter((r) => r.typeCode === 'hero').length;
+  check('the list is shorter than the count of hero cards', heroes.length < heroCards, `${heroes.length} of ${heroCards}`);
 }
 
 process.exit(failures === 0 ? 0 : 1);

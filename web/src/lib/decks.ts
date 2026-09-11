@@ -193,6 +193,67 @@ export async function importDeck(reference: DeckReference): Promise<SavedDeck> {
   };
 }
 
+/** A hero somebody can build a deck for, as the build form lists them. */
+export interface HeroIdentity {
+  /** The hero card's code — what a deck is built around. */
+  readonly code: string;
+  /** The name, with the alter ego added when two heroes share it. */
+  readonly label: string;
+}
+
+/**
+ * Every hero in the pool, once each, told apart when they need to be.
+ *
+ * The index holds more hero *cards* than there are heroes. Ant-Man and Wasp
+ * have a Giant form printed as a second hero card, and Ironheart levels up
+ * through three; those are forms of one identity, not three decks to build.
+ * A hero's cards share its set, so one identity per hero set, and the
+ * first-printed card is the one a deck is keyed on — it is the code MarvelCDB
+ * puts on every decklist, which is what an import arrives with.
+ *
+ * And then two heroes really can share a name: there are two Spider-Men and
+ * two Black Panthers. Those get their alter ego in brackets, read from the
+ * alter-ego card of the same set, so the list says Spider-Man (Peter Parker)
+ * and Spider-Man (Miles Morales) rather than Spider-Man twice.
+ */
+export function heroIdentities(index: readonly IndexRow[]): readonly HeroIdentity[] {
+  const firstOfSet = new Map<string, IndexRow>();
+  for (const row of index) {
+    if (row.typeCode !== 'hero') {
+      continue;
+    }
+    const key = row.setCode ?? row.code;
+    const held = firstOfSet.get(key);
+    if (held === undefined || row.code < held.code) {
+      firstOfSet.set(key, row);
+    }
+  }
+
+  const alterEgoOfSet = new Map<string, string>();
+  for (const row of index) {
+    if (row.typeCode === 'alter_ego' && row.setCode !== null && !alterEgoOfSet.has(row.setCode)) {
+      alterEgoOfSet.set(row.setCode, row.name);
+    }
+  }
+
+  const heroes = [...firstOfSet.values()];
+  const sharingName = new Map<string, number>();
+  for (const hero of heroes) {
+    sharingName.set(hero.name, (sharingName.get(hero.name) ?? 0) + 1);
+  }
+
+  return heroes
+    .map((hero) => {
+      const alterEgo = hero.setCode === null ? undefined : alterEgoOfSet.get(hero.setCode);
+      const ambiguous = (sharingName.get(hero.name) ?? 0) > 1;
+      return {
+        code: hero.code,
+        label: ambiguous && alterEgo !== undefined ? `${hero.name} (${alterEgo})` : hero.name,
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 export interface DeckCard {
   readonly card: IndexRow;
   readonly quantity: number;

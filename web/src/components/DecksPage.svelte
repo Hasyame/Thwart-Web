@@ -10,6 +10,7 @@
   import DeckEditor from './DeckEditor.svelte';
   import {
     DeckImportError,
+    heroIdentities,
     importDeck,
     parseDeckReference,
     parseSlots,
@@ -67,15 +68,11 @@
    * Every hero in the pool, for the build form.
    *
    * From the index rather than a list, so a hero from a future pack appears on
-   * its own. The identity's own code is what a deck is built around, and the
-   * alter-ego side is a different card that never goes in the deck.
+   * its own. One entry per hero, not per hero card — the Giant forms and
+   * Ironheart's versions are folded in `heroIdentities`, which is also where
+   * the two Spider-Men get their alter egos so they can be told apart.
    */
-  const heroes = $derived(
-    index
-      .filter((row) => row.typeCode === 'hero')
-      .map((row) => ({ code: row.code, name: row.name }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  );
+  const heroes = $derived(heroIdentities(index));
 
   const ASPECTS = ['aggression', 'justice', 'leadership', 'protection'] as const;
 
@@ -270,7 +267,7 @@
             >
               <option value="">—</option>
               {#each heroes as hero (hero.code)}
-                <option value={hero.code}>{hero.name}</option>
+                <option value={hero.code}>{hero.label}</option>
               {/each}
             </select>
           </label>
