@@ -14,6 +14,7 @@
     type DeckProblem,
   } from '../lib/deckRules';
   import { searchCards, NO_FILTERS } from '../lib/search';
+  import { loadDeckOwnedOnly, saveDeckOwnedOnly } from '../lib/preferences';
 
   /**
    * Building a deck, rather than looking at one.
@@ -30,10 +31,12 @@
     cardLocale: Locale;
     index: readonly IndexRow[];
     deck: SavedDeck;
+    /** Packs the collection says are owned; what the owned-only search keeps. */
+    ownedPackCodes: ReadonlySet<string>;
     onDone: () => void;
   }
 
-  const { t, cardLocale, index, deck, onDone }: Props = $props();
+  const { t, cardLocale, index, deck, ownedPackCodes, onDone }: Props = $props();
 
   /*
    * Card code to copies. The identity is not in here; it is the deck's hero.
@@ -48,6 +51,14 @@
   );
   let name = $state(untrack(() => deck.name));
   let query = $state('');
+  /*
+   * Whether the search offers the whole pool or only what is owned.
+   *
+   * A deck is usually built from one's own boxes, and a search that keeps
+   * offering cards from packs you do not have is a list of things to buy
+   * rather than a list of things to play. Remembered per browser.
+   */
+  let ownedOnly = $state(loadDeckOwnedOnly());
   let saving = $state(false);
   let copied = $state(false);
 
@@ -138,10 +149,18 @@
   const results = $derived(
     query.trim() === ''
       ? []
-      : searchCards(index, { query, filters: NO_FILTERS, limit: 40 }).rows.filter(
-          (row) => PLAYER_TYPES.has(row.typeCode) && row.factionCode !== 'encounter',
-        ),
+      : searchCards(index, {
+          query,
+          filters: { ...NO_FILTERS, ownedOnly },
+          collection: { ownedPacks: ownedPackCodes, favourites: new Set() },
+          limit: 40,
+        }).rows.filter((row) => PLAYER_TYPES.has(row.typeCode) && row.factionCode !== 'encounter'),
   );
+
+  function setOwnedOnly(next: boolean): void {
+    ownedOnly = next;
+    saveDeckOwnedOnly(next);
+  }
 
   function add(code: string): void {
     slots[code] = (slots[code] ?? 0) + 1;
@@ -302,13 +321,29 @@
           oninput={(e) => (query = e.currentTarget.value)}
         />
       </label>
+      <label class="tick">
+        <input
+          type="checkbox"
+          checked={ownedOnly}
+          onchange={(e) => setOwnedOnly(e.currentTarget.checked)}
+        />
+        <span>{t.ownedOnly}</span>
+      </label>
+      {#if ownedOnly && ownedPackCodes.size === 0}
+        <p class="muted small">{t.deckOwnedOnlyEmpty}</p>
+      {/if}
       <ul class="cards">
         {#each results as row (row.code)}
           <li>
             <span class="qty muted">{slots[row.code] ?? 0}×</span>
             <span class="name">
               {row.name}
-              <span class="muted small">{row.typeName} · {row.factionName}</span>
+              <span class="muted small">
+                {row.typeName} · {row.factionName}
+                {#if !ownedPackCodes.has(row.packCode)}
+                  <span class="tag">{t.notOwned}</span>
+                {/if}
+              </span>
             </span>
             <span class="steppers">
               {#if (slots[row.code] ?? 0) > 0}
@@ -431,6 +466,19 @@
   .qty {
     font-variant-numeric: tabular-nums;
     min-width: 2.2rem;
+  }
+
+  /* The same mark the deck's own list puts on a card from a pack not owned,
+     so the search and the list say it the same way. */
+  .tag {
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--danger);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-1);
+    margin-inline-start: var(--space-1);
   }
 
   .name {

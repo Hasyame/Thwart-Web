@@ -176,6 +176,8 @@ export interface Strings {
   readonly deckContents: string;
   readonly deckAddCards: string;
   readonly deckEmpty: string;
+  /** The editor's search is limited to owned packs, and none is ticked. */
+  readonly deckOwnedOnlyEmpty: string;
   readonly deckStats: string;
   readonly deckCopy: string;
   readonly deckCopied: string;
@@ -798,6 +800,7 @@ const STRINGS: Record<Locale, Strings> = {
     deckContents: 'In the deck',
     deckAddCards: 'Add cards',
     deckEmpty: 'Nothing in it yet. Search on the right and press the plus.',
+    deckOwnedOnlyEmpty: 'Your collection is empty, so nothing can match. Tick your packs on the Collection page, or untick this to see every card.',
     deckStats: 'What it is made of',
     deckCopy: 'Copy as text',
     deckCopied: 'Copied',
@@ -1547,6 +1550,7 @@ const STRINGS: Record<Locale, Strings> = {
     deckContents: 'Dans le deck',
     deckAddCards: 'Ajouter des cartes',
     deckEmpty: 'Encore vide. Cherchez \u00e0 droite et appuyez sur le plus.',
+    deckOwnedOnlyEmpty: 'Votre collection est vide, rien ne peut correspondre. Cochez vos paquets sur la page Collection, ou d\u00e9cochez ceci pour voir toutes les cartes.',
     deckStats: 'De quoi il est fait',
     deckCopy: 'Copier en texte',
     deckCopied: 'Copi\u00e9',

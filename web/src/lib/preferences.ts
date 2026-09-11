@@ -19,6 +19,7 @@ const KEY_UI_LOCALE = 'thwart.uiLocale';
 const KEY_CARD_LOCALE = 'thwart.cardLocale';
 const KEY_THEME = 'thwart.theme';
 const KEY_GROUPED_PLAY = 'thwart.groupedPlay';
+const KEY_DECK_OWNED_ONLY = 'thwart.deckOwnedOnly';
 
 function read(key: string): string | null {
   try {
@@ -99,6 +100,22 @@ export function loadGroupedPlay(): boolean {
 
 export function saveGroupedPlay(grouped: boolean): void {
   write(KEY_GROUPED_PLAY, grouped ? 'on' : 'off');
+}
+
+/**
+ * Whether the deck editor's search offers only cards from packs you own.
+ *
+ * Off by default: the editor has always offered the whole pool and marked what
+ * is not owned, and a deck built for a friend's table needs their cards, not
+ * yours. Remembered per browser once switched, because somebody who builds
+ * from their own boxes does so every time.
+ */
+export function loadDeckOwnedOnly(): boolean {
+  return read(KEY_DECK_OWNED_ONLY) === 'on';
+}
+
+export function saveDeckOwnedOnly(ownedOnly: boolean): void {
+  write(KEY_DECK_OWNED_ONLY, ownedOnly ? 'on' : 'off');
 }
 
 /**

@@ -245,7 +245,7 @@
   <!-- Keyed on the deck, so opening another one mounts a fresh editor with its
        own working copy rather than reusing the previous deck's. -->
   {#key editing.id}
-    <DeckEditor {t} {cardLocale} {index} deck={editing} onDone={() => (editingId = null)} />
+    <DeckEditor {t} {cardLocale} {index} deck={editing} ownedPackCodes={saved.owned} onDone={() => (editingId = null)} />
   {/key}
 {:else}
   <h1>{t.decksTitle}</h1>

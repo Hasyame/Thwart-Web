@@ -22,7 +22,9 @@ truth for what every number means, written to be read by both.
   missing.
 - **Decks.** Import a decklist from MarvelCDB by link or number, or build one
   here, and read it against your collection; it tells you whether you can
-  build it.
+  build it. While building, the search can be limited to packs you own, or
+  offer every card and mark the ones you would have to buy — remembered per
+  browser.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own. Up to five **extra modular
