@@ -39,6 +39,19 @@ type collectionSpec struct {
 	immutable bool
 	// One record, and an object rather than a list in Backup. Only settings.
 	single bool
+	/*
+		Sent on a pull only to a client that names it.
+
+		A collection added after clients were already in the field. A pull
+		that does not say which collections it wants is such a client, and it
+		gets the collections that existed when it was built. Sending it a
+		record it cannot read is not harmless: the phone's engine held its
+		cursor short of the first record it could not apply, so one such
+		record, followed by a page's worth of ordinary changes, stalled its
+		sync for good on the same page. See the `collections` parameter in
+		handlePull.
+	*/
+	optIn bool
 }
 
 /*
@@ -66,9 +79,9 @@ var collections = map[string]collectionSpec{
 	// web has synced it since 2026-09-11. Not listing it here would refuse the
 	// whole batch it arrives in — this map is the push's allowlist as well as
 	// the export's table of contents.
-	"favourite_plays": {backupField: "favouritePlays"},
+	"favourite_plays": {backupField: "favouritePlays", optIn: true},
 	// Difficulty ratings. Validated and indexed on the way in; see ratings.go.
-	"ratings": {backupField: "ratings"},
+	"ratings": {backupField: "ratings", optIn: true},
 
 	"excluded_scenarios": {backupField: "excludedScenarios"},
 
@@ -144,7 +157,24 @@ func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess session
 		return
 	}
 
-	changes, err := s.store.Changes(r.Context(), sess.account.ID, since, limit)
+	/*
+		Which collections this client can read.
+
+		Named by the client, comma separated, or defaulted to the ones that
+		predate the parameter for a client that does not send it. A name the
+		server does not know is dropped rather than refused: a client one
+		release ahead of this server is the ordinary case for a self-hosted
+		instance, and refusing its pull would stop everything else too.
+
+		The cursor the client keeps is then only a position among the
+		collections it asked for. A build that asks for more than the one
+		before it has to pull from zero once, which both clients do when the
+		set they declare changes; the records it never asked for are exactly
+		the ones its cursor already passed.
+	*/
+	wanted := pullCollections(r.URL.Query().Get("collections"))
+
+	changes, err := s.store.Changes(r.Context(), sess.account.ID, since, limit, wanted)
 	if err != nil {
 		s.fail(w, r, "read changes", err)
 		return
@@ -429,6 +459,32 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request, sess sessi
 }
 
 // --- helpers -----------------------------------------------------------------
+
+/*
+pullCollections resolves the `collections` parameter of a pull to the names
+that will be served: the named ones this server knows, or, when nothing was
+named, every collection that is not opt-in. Never empty as long as the map
+has a collection that is not opt-in.
+*/
+func pullCollections(param string) []string {
+	if param == "" {
+		out := make([]string, 0, len(collections))
+		for name, spec := range collections {
+			if !spec.optIn {
+				out = append(out, name)
+			}
+		}
+		return out
+	}
+	out := make([]string, 0, len(collections))
+	for _, name := range strings.Split(param, ",") {
+		name = strings.TrimSpace(name)
+		if _, known := collections[name]; known && !slices.Contains(out, name) {
+			out = append(out, name)
+		}
+	}
+	return out
+}
 
 func intParam(r *http.Request, name string, fallback int) (int, error) {
 	raw := r.URL.Query().Get(name)

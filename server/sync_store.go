@@ -103,13 +103,28 @@ func (w *writeLocks) lock(accountID string) func() {
 //
 // Ordering by revision is not a nicety: it is what lets a client store the
 // highest revision it has seen and resume from there.
-func (s *Store) Changes(ctx context.Context, accountID string, since int64, limit int) ([]Record, error) {
+func (s *Store) Changes(ctx context.Context, accountID string, since int64, limit int, wanted []string) ([]Record, error) {
+	// Filtered in the query rather than after it, so a page is a page of
+	// records the client asked for: filtering afterwards could hand back an
+	// empty page with hasMore set, and a client that stops on an empty page
+	// would stop short.
+	if len(wanted) == 0 {
+		return []Record{}, nil
+	}
+	args := []any{accountID, since}
+	marks := make([]string, len(wanted))
+	for i, name := range wanted {
+		marks[i] = "?"
+		args = append(args, name)
+	}
+	args = append(args, limit)
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT collection, id, revision, updated_at, deleted, body
 		   FROM record
 		  WHERE account_id = ? AND revision > ?
+		    AND collection IN (`+strings.Join(marks, ",")+`)
 		  ORDER BY revision
-		  LIMIT ?`, accountID, since, limit)
+		  LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
 	}
