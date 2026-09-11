@@ -53,9 +53,9 @@ const (
 	reasonRateLimited     = "rate_limited"
 )
 
-/* Ratings per account per day. Nobody rates two hundred subjects in a day; a
-client that does is a bug or a script. The excess is rejected one by one
-rather than the batch failing, so the plays beside them still land. */
+// Ratings per account per day. Nobody rates two hundred subjects in a day; a
+// client that does is a bug or a script. The excess is rejected one by one
+// rather than the batch failing, so the plays beside them still land.
 var ratingsPerAccountDay = limitRule{200, 24 * time.Hour}
 
 // How many ratings a subject needs before its average is served at all.
@@ -115,8 +115,8 @@ func parseSubject(key string) (kind, set, scenario string, ok bool) {
 
 // The four fields of a play the check reads.
 type playEvidence struct {
-	ScenarioCode  string `json:"scenarioCode"`
-	ModularSets   string `json:"modularSets"`
+	ScenarioCode  string  `json:"scenarioCode"`
+	ModularSets   string  `json:"modularSets"`
 	CampaignRunID *string `json:"campaignRunId"`
 }
 

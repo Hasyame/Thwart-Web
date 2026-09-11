@@ -117,8 +117,8 @@ func NewServer(store *Store, log *slog.Logger, build string) (*Server, error) {
 		return nil, err
 	}
 	return &Server{
-		summaries:       newSummaryCache(),
-		RatingThreshold: defaultRatingThreshold,
+		summaries:        newSummaryCache(),
+		RatingThreshold:  defaultRatingThreshold,
 		store:            store,
 		limiter:          newLimiter(),
 		hashes:           newHashGate(hashSlots),

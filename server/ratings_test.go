@@ -156,7 +156,7 @@ func TestACampaignIsRatedOnlyOnceFinished(t *testing.T) {
 		return record("campaign_runs", "run1", map[string]any{
 			"id": "run1", "templateId": "gmw", "templateName": "GMW", "name": "",
 			"difficulty": "standard", "standardSet": "", "createdAt": 1, "finished": finished,
-			"templateJson": `{"scenarios":[{"id":"s1_badoon","baseSetup":{"encounterSets":["brotherhood_of_badoon","band_of_badoon","standard"]}}]}`,
+			"templateJson":           `{"scenarios":[{"id":"s1_badoon","baseSetup":{"encounterSets":["brotherhood_of_badoon","band_of_badoon","standard"]}}]}`,
 			"timerAccumulatedMillis": 0, "timerRunningSince": nil, "timerScenarioId": "",
 			"updatedAt": 1, "deletedAt": nil,
 		})
