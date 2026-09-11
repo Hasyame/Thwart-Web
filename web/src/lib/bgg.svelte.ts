@@ -1,5 +1,3 @@
-import type { Play } from './records';
-
 /**
  * BoardGameGeek, kept deliberately at arm's length.
  *
