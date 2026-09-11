@@ -34,9 +34,11 @@
     filter: HistoryFilter;
     /** Replaces the URL, which is where the filter state lives. */
     onFilter: (filter: HistoryFilter) => void;
+    /** Lays a game out again on the setup screen. */
+    onReplay: (play: Play) => void;
   }
 
-  const { t, uiLocale, index, storageOk, filter, onFilter }: Props = $props();
+  const { t, uiLocale, index, storageOk, filter, onFilter, onReplay }: Props = $props();
 
   const PAGE = 25;
 
@@ -452,6 +454,7 @@
         run={runOf(openPlay) === null ? null : (runs.get(runOf(openPlay) ?? '') ?? null)}
         onClose={() => open('play', '')}
         onOpenRun={(id) => open('run', id)}
+        {onReplay}
       />
     {/if}
 

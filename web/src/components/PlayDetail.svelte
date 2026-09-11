@@ -33,9 +33,11 @@
     run: CampaignRun | null;
     onClose: () => void;
     onOpenRun: (id: string) => void;
+    /** Lays this game out again on the setup screen. */
+    onReplay: (play: Play) => void;
   }
 
-  const { t, uiLocale, play, run, onClose, onOpenRun }: Props = $props();
+  const { t, uiLocale, play, run, onClose, onOpenRun, onReplay }: Props = $props();
 
   let editing = $state(false);
   let confirming = $state(false);
@@ -344,6 +346,15 @@
       </div>
     {:else}
       <div class="actions">
+        <!--
+          First and filled, because it is the reason most people open a game
+          they have already played: the same table, again. Every game gets it,
+          a campaign scenario included — what comes back is the scenario as it
+          was laid out, played on its own, not the campaign.
+        -->
+        <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
+          {t.playAgain}
+        </button>
         <button class="btn" type="button" disabled={busy} onclick={openEditor}>{t.playEdit}</button>
         <button class="btn btn--quiet danger" type="button" onclick={() => (confirming = true)}>
           {t.playDelete}

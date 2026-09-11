@@ -33,6 +33,9 @@
   import { watchLive } from './lib/sync/live.svelte';
   import { watchSafeArea } from './lib/safeArea';
   import PlayHub from './components/PlayHub.svelte';
+  import { replayOf } from './lib/replay';
+  import { prepareSession, setupNotice } from './lib/session.svelte';
+  import type { Play } from './lib/records';
   import { watchStoredOnServer } from './lib/sync/stored.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
   import type { NavTarget } from './lib/nav';
@@ -377,6 +380,31 @@
   }
 
   /*
+   * Playing a game again.
+   *
+   * Reads the saved decks here rather than in the history page, because it is
+   * the one thing the conversion needs that the history has no other reason to
+   * hold. The result lands on the setup screen, not in a running game: the
+   * person may want to swap a seat, and the modular sets may need choosing.
+   */
+  async function replay(play: Play): Promise<void> {
+    const decks = storageOk ? await db.decks.toArray() : [];
+    /*
+      Both languages' set lists, not just the current one.
+
+      The modular sets are read back out of the notes by *name*, in whatever
+      card language was current when the game was recorded. Somebody who has
+      switched language since would otherwise get none of them back. Cached
+      after the first load, so this costs one fetch, once.
+    */
+    const bothLanguages = (await Promise.all([loadSets('en'), loadSets('fr')])).flat();
+    const prepared = replayOf(play, decks, bothLanguages);
+    prepareSession(prepared.session);
+    setupNotice.text = prepared.modularSetsUnknown ? t.playAgainModularNote : null;
+    navigate({ name: 'play' });
+  }
+
+  /*
    * Grouping the ways of playing behind one tab.
    *
    * Turning it off while sitting on the hub would leave somebody on a page
@@ -507,6 +535,7 @@
       {storageOk}
       filter={route.filter ?? {}}
       onFilter={(filter) => navigate({ name: 'history', filter })}
+      onReplay={(play) => void replay(play)}
     />
   {:else if route.name === 'stats'}
     <StatsPage {t} {index} {storageOk} base={BASE} />

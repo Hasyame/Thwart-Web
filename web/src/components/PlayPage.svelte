@@ -37,7 +37,7 @@
   } from '../lib/session.svelte';
   import { buildPlay } from '../lib/plays';
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
-  import { resumeSession } from '../lib/session.svelte';
+  import { resumeSession, setupNotice } from '../lib/session.svelte';
 
   interface Props {
     t: Strings;
@@ -182,6 +182,7 @@
   );
 
   function setScenario(code: string): void {
+    setupNotice.text = null;
     session.current.scenarioCode = code;
     session.current.scenarioName = setNames.get(code) ?? code;
     session.current.modularSetCodes = [];
@@ -386,6 +387,23 @@
     </div>
   {:else if session.current.phase === 'setup'}
     <p class="muted note">{t.playSetupNote}</p>
+
+    {#if setupNotice.text !== null}
+      <!--
+        How this game got here, said once.
+
+        After "play again", the seats and the scenario are already filled in
+        and it is worth a line saying what was carried over and what was not —
+        the modular sets are the thing people would otherwise wonder about.
+        Cleared on dismiss or on the next game, so it never becomes furniture.
+      -->
+      <div class="notice surface replay-note" role="status">
+        <p>{setupNotice.text}</p>
+        <button class="btn btn--quiet small" type="button" onclick={() => (setupNotice.text = null)}>
+          {t.close}
+        </button>
+      </div>
+    {/if}
 
     <div class="setup surface">
       <label class="field-group">
@@ -657,6 +675,18 @@
   .running {
     padding: var(--space-4);
     margin: var(--space-3) 0;
+  }
+
+  .replay-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .replay-note p {
+    margin: 0;
   }
 
   .note {

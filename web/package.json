@@ -36,7 +36,8 @@
     "test:device": "vite-node scripts/test-device-data.mjs",
     "test:parity": "vite-node scripts/test-android-parity.mjs",
     "test:safe-area": "vite-node scripts/test-safe-area.mjs",
-    "test:nav": "vite-node scripts/test-nav.mjs"
+    "test:nav": "vite-node scripts/test-nav.mjs",
+    "test:replay": "vite-node scripts/test-replay.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

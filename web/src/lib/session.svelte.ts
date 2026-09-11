@@ -102,6 +102,8 @@ export function backToSetup(): void {
 export function startGame(): void {
   session.current.phase = 'playing';
   session.current.runningSince = Date.now();
+  // Whatever brought this game to the setup screen has been read by now.
+  setupNotice.text = null;
 }
 
 export function pauseGame(): void {
@@ -145,6 +147,35 @@ export function updateEncounter(change: (current: Encounter) => Encounter): void
 export function resumeSession(restored: Partial<Session>): void {
   session.current = { ...empty(), ...restored, phase: 'playing', runningSince: null };
 }
+
+/**
+ * Lays a game out on the setup screen, ready to be checked and started.
+ *
+ * The difference from `resumeSession` is the phase: a paused game comes back
+ * *playing*, with its clock, because it was mid-way; a game being played again
+ * comes back to *setup*, with nothing on the clock, because it has not started
+ * and the person may want to change a seat first. Anything the caller does not
+ * supply is the empty default, so a half-described game never inherits the
+ * previous one's leftovers.
+ */
+export function prepareSession(prepared: Partial<Session>): void {
+  session.current = {
+    ...empty(),
+    ...prepared,
+    phase: 'setup',
+    accumulatedMillis: 0,
+    runningSince: null,
+    encounter: null,
+  };
+}
+
+/**
+ * A line for the setup screen to show once, about how the game got there.
+ *
+ * Not part of the session, which is the game; this is about the hand-off and
+ * is cleared as soon as it has been shown.
+ */
+export const setupNotice = $state<{ text: string | null }>({ text: null });
 
 /**
  * Manual correction, because the stop button gets forgotten.

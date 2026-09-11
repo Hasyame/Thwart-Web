@@ -539,6 +539,10 @@ export interface Strings {
   readonly bggUnmark: string;
   readonly bggLogged: string;
   readonly playEdit: string;
+  /** Lays the same game out again on the setup screen. */
+  readonly playAgain: string;
+  /** Shown on setup after a replay whose modular sets could not be recovered. */
+  readonly playAgainModularNote: string;
   readonly playEditSave: string;
   readonly playWhen: string;
   readonly playResult: string;
@@ -1236,6 +1240,9 @@ const STRINGS: Record<Locale, Strings> = {
     bggUnmark: 'Not logged on BGG after all',
     bggLogged: 'on BGG',
     playEdit: 'Edit',
+    playAgain: 'Play again',
+    playAgainModularNote:
+      'Same scenario, difficulty and heroes as that game. The modular sets are not recorded on a game, so choose them again.',
     playEditSave: 'Save the correction',
     playWhen: 'Played on',
     playResult: 'Result',
@@ -1955,6 +1962,9 @@ const STRINGS: Record<Locale, Strings> = {
     bggUnmark: 'Finalement pas enregistrée sur BGG',
     bggLogged: 'sur BGG',
     playEdit: 'Modifier',
+    playAgain: 'Rejouer',
+    playAgainModularNote:
+      'Même scénario, même difficulté et mêmes héros que cette partie. Les sets modulaires ne sont pas enregistrés sur une partie, choisissez-les à nouveau.',
     playEditSave: 'Enregistrer la correction',
     playWhen: 'Jouée le',
     playResult: 'Résultat',

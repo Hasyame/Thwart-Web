@@ -147,7 +147,7 @@ function tally(
  * four-handed game — and the counting falls back to them rather than inventing
  * what is missing. The app's own comment on the field says as much.
  */
-function seatsOf(play: Play): readonly PlayHero[] {
+export function seatsOf(play: Play): readonly PlayHero[] {
   /*
     Defensive, deliberately.
 
