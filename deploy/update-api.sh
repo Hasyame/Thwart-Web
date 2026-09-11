@@ -18,7 +18,7 @@ set -eu
 
 REPO="${REPO:-/srv/thwart/repo}"
 BIN="${BIN:-/srv/thwart/bin}"
-DATA="${DATA:-/srv/thwart/data}"
+DATA="${DATA:-/srv/thwart/db}"
 # Which branch to build. `main` by default, so running this by hand does what
 # it always did; release.sh passes `api-release`, which moves only when a
 # person presses the button.

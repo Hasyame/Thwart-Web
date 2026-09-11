@@ -25,7 +25,7 @@
 set -eu
 
 BIN="${BIN:-/srv/thwart/bin}"
-DATA="${DATA:-/srv/thwart/data}"
+DATA="${DATA:-/srv/thwart/db}"
 DEST="${DEST:-/srv/thwart/backups}"
 KEEP_DAYS="${KEEP_DAYS:-30}"
 

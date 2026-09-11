@@ -39,7 +39,7 @@ WorkingDirectory=/srv/thwart
 # the machine — NewSMTPMailer refuses any host that is not local.
 ExecStart=/srv/thwart/bin/thwart-api \
   -addr 127.0.0.1:8787 \
-  -db /srv/thwart/data/thwart.sqlite \
+  -db /srv/thwart/db/thwart.sqlite \
   -registration=true \
   -mail-from "Thwart <no-reply@thwart.app>" \
   -smtp 127.0.0.1:25 \
@@ -98,7 +98,7 @@ LockPersonality=true
 MemoryDenyWriteExecute=true
 
 # The database, the WAL and the shared-memory file all live here.
-ReadWritePaths=/srv/thwart/data
+ReadWritePaths=/srv/thwart/db
 
 # Loopback only, so no need for anything but IPv4 and IPv6.
 RestrictAddressFamilies=AF_INET AF_INET6

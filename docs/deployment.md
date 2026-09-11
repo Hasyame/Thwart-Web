@@ -173,6 +173,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now thwart-api
 ```
 
+The database lives in `/srv/thwart/db`, not `/srv/thwart/data`. It was
+`data` until 11 September 2026, and the rename is deliberate: the web app
+serves its card index and campaign templates at `https://thwart.app/data/…`,
+and two things called `data` -- one public by design, one the account
+database -- invited exactly the scare it caused. Nothing under the web root
+was ever the database (nginx's root is `/srv/thwart/current`, a sibling), but
+a name that needs that explanation is the wrong name. A host installed before
+the rename moves it once, with the service stopped, and takes the new unit:
+
+```bash
+sudo systemctl stop thwart-api
+sudo mv /srv/thwart/data /srv/thwart/db
+sudo cp /srv/thwart/repo/deploy/thwart-api.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl start thwart-api
+curl -s http://127.0.0.1:8787/v1/version
+```
+
+`mv` on the same filesystem is a rename of the directory entry, so the WAL and
+shared-memory files beside the database move with it and nothing is copied.
+
 The service listens on `127.0.0.1:8787` and nothing outside the box can reach
 it. nginx is the only way in, through the `location /api/` block in
 `deploy/nginx-thwart.app.conf`.
@@ -230,7 +251,7 @@ a few megabytes at most:
 
 ```bash
 apt-get install -y sqlite3   # not installed by default
-sudo -u thwart sqlite3 /srv/thwart/data/thwart.sqlite     ".backup '/srv/thwart/data/backup-$(date -u +%Y%m%d).sqlite'"
+sudo -u thwart sqlite3 /srv/thwart/db/thwart.sqlite     ".backup '/srv/thwart/db/backup-$(date -u +%Y%m%d).sqlite'"
 ```
 
 `.backup` rather than `cp`, because the database runs in WAL mode and copying

@@ -229,8 +229,8 @@ under 100 MB. Thirty daily snapshots is a rounding error on any disk.
 
 ```bash
 docker compose stop api
-gunzip -c /var/backups/thwart/thwart-20260914T030000Z.db.gz > /srv/thwart/data/thwart.db
-rm -f /srv/thwart/data/thwart.db-wal /srv/thwart/data/thwart.db-shm
+gunzip -c /var/backups/thwart/thwart-20260914T030000Z.db.gz > /srv/thwart/db/thwart.db
+rm -f /srv/thwart/db/thwart.db-wal /srv/thwart/db/thwart.db-shm
 docker compose start api
 ```
 
