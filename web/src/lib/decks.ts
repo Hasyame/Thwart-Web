@@ -254,6 +254,33 @@ export function heroIdentities(index: readonly IndexRow[]): readonly HeroIdentit
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
+/** The card types a player deck can hold. */
+const PLAYER_TYPES: ReadonlySet<string> = new Set(['ally', 'event', 'upgrade', 'support', 'resource']);
+
+/**
+ * Whether a card can be offered to a deck being built for a hero.
+ *
+ * Two cuts. The first is by type: treacheries, minions and main schemes are
+ * the encounter deck's and can never go in a player's deck; the first editor
+ * offered them, and the validator had nothing to say about it — off-aspect is
+ * the wrong complaint for a card that is not a player card at all.
+ *
+ * The second is by set. Aspect and basic cards belong to nobody and are the
+ * pool a deck is built from. A card that belongs to a set belongs to
+ * something: a hero's signature cards go only in that hero's deck, and the
+ * rest — invocations and weather decks, campaign upgrades, an ally a
+ * scenario hands out — are put on the table by a rule, never chosen. So a
+ * card with a set is offered only when the set is the hero's own. Hulk Smash
+ * stops appearing in a Spider-Man deck, and Spider-Woman's four aspect events
+ * appear in hers alone.
+ */
+export function buildableFor(row: IndexRow, heroSetCode: string | null): boolean {
+  if (!PLAYER_TYPES.has(row.typeCode) || row.factionCode === 'encounter') {
+    return false;
+  }
+  return row.setCode === null || row.setCode === heroSetCode;
+}
+
 export interface DeckCard {
   readonly card: IndexRow;
   readonly quantity: number;

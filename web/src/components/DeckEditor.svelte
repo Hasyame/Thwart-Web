@@ -5,7 +5,7 @@
   import type { SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { loadCardsByCode } from '../lib/data';
-  import { parseSlots } from '../lib/decks';
+  import { buildableFor, parseSlots } from '../lib/decks';
   import {
     deckAsText,
     deckStatistics,
@@ -134,18 +134,11 @@
 
   const total = $derived(Object.values(slots).reduce((sum, quantity) => sum + quantity, 0));
 
-/*
-   * The card types a player deck can hold.
-   *
-   * Without this the search offers treacheries, minions and main schemes,
-   * which are the encounter deck's and can never go in a deck somebody builds.
-   * The first version did exactly that, and the validator had nothing to say
-   * about it — off-aspect is the wrong complaint for a card that is not a
-   * player card at all.
-   */
-  const PLAYER_TYPES = new Set(['ally', 'event', 'upgrade', 'support', 'resource']);
+  /* The hero's own set, from the index: what decides which set-bound cards
+     the search may offer. See `buildableFor`. */
+  const heroSetCode = $derived(index.find((row) => row.code === deck.heroCode)?.setCode ?? null);
 
-  /** What the search offers to add. */
+  /** What the search offers to add: player cards that can go in *this* deck. */
   const results = $derived(
     query.trim() === ''
       ? []
@@ -154,7 +147,7 @@
           filters: { ...NO_FILTERS, ownedOnly },
           collection: { ownedPacks: ownedPackCodes, favourites: new Set() },
           limit: 40,
-        }).rows.filter((row) => PLAYER_TYPES.has(row.typeCode) && row.factionCode !== 'encounter'),
+        }).rows.filter((row) => buildableFor(row, heroSetCode)),
   );
 
   function setOwnedOnly(next: boolean): void {

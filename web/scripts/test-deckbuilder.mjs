@@ -17,7 +17,7 @@ import {
   heroRules,
   validateDeck,
 } from '../src/lib/deckRules.ts';
-import { heroIdentities } from '../src/lib/decks.ts';
+import { buildableFor, heroIdentities } from '../src/lib/decks.ts';
 
 /*
  * The deck size, which is the one rule not in the card data anywhere. Named
@@ -486,6 +486,24 @@ const rules = heroRules(spiderMan, packOf(spiderMan));
   check('a hero nobody shares a name with keeps its plain name', labels.includes('Iron Man'));
   const heroCards = rows.filter((r) => r.typeCode === 'hero').length;
   check('the list is shorter than the count of hero cards', heroes.length < heroCards, `${heroes.length} of ${heroCards}`);
+}
+
+// --- what the search may offer a deck ---------------------------------------------------
+{
+  const index = JSON.parse(readFileSync(join(DATA, '..', '..', 'index.en.json'), 'utf8'));
+  const rows = Array.isArray(index) ? index : (index.cards ?? index.rows);
+  const byCode = new Map(rows.map((r) => [r.code, r]));
+  const offered = (code, heroCode) => buildableFor(byCode.get(code), byCode.get(heroCode).setCode);
+
+  check('a basic card is offered to anyone', offered('01092', '01001a') && offered('01092', '10001a'));
+  check("Spider-Man's Web-Shooter is offered to Peter Parker", offered('01008', '01001a'));
+  check('and not to Miles Morales, whose own set has its own', !offered('01008', '27030a') && offered('27039', '27030a'));
+  check('Hulk Smash is not offered to Spider-Man', !offered('10003', '01001a'));
+  check('but is to Hulk', offered('10003', '10001a'));
+  check("Spider-Woman's aspect events are hers alone", offered('04035', '04031a') && !offered('04035', '01001a'));
+  check('a campaign upgrade is never offered', !offered('04155', '01001a'));
+  check("Doctor Strange's invocations are put on the table, not chosen", !offered('09032', '09001a'));
+  check('a treachery is never offered', !rows.filter((r) => r.typeCode === 'treachery').some((r) => buildableFor(r, null)));
 }
 
 process.exit(failures === 0 ? 0 : 1);
