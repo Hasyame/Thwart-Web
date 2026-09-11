@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -721,5 +722,59 @@ func TestBodyIsOpaque(t *testing.T) {
 	have, _ := json.Marshal(got)
 	if string(want) != string(have) {
 		t.Errorf("body changed in transit:\n  sent %s\n  got  %s", want, have)
+	}
+}
+
+// --- collections a client can read ---------------------------------------------
+
+/*
+A pull serves only the collections the client can read.
+
+Found from the Android side. Its engine held the cursor short of the first
+record it could not apply, which was the right thing for an orphaned campaign
+event and the wrong thing for a whole collection it had never heard of: one
+starred game on the web, followed by a page's worth of ordinary changes, and
+every later pull returned the same page from the same cursor, for good. The
+server cannot tell an old client's version, so the contract is the other way
+round: a client names what it reads, and one that names nothing is one that
+predates the parameter and gets what existed then.
+*/
+func TestAPullServesOnlyTheCollectionsNamed(t *testing.T) {
+	s := newTestServer(t)
+	token := register(t, s, "benoit", "a long enough password").str("token")
+
+	push(t, s, token, "batch-play", record("plays", "play-1", map[string]any{"note": 1}))
+	push(t, s, token, "batch-star", record("favourite_plays", "play-1", map[string]any{"playId": "play-1", "addedAt": 1}))
+	push(t, s, token, "batch-deck", record("saved_decks", "deck-1", map[string]any{"name": "d"}))
+
+	ids := func(query string) []string {
+		res := call(t, s, "GET", "/v1/sync/changes?since=0&limit=10"+query, token, nil)
+		if res.status != http.StatusOK {
+			t.Fatalf("pull %q refused: %d %q", query, res.status, res.code())
+		}
+		out := []string{}
+		for _, change := range changesOf(t, res) {
+			out = append(out, change["collection"].(string))
+		}
+		return out
+	}
+
+	// A client that names nothing is a client from before the parameter.
+	if got := ids(""); !slices.Equal(got, []string{"plays", "saved_decks"}) {
+		t.Errorf("unnamed pull served %v; an opt-in collection reached a client that cannot read it", got)
+	}
+	// One that names the opt-in collection gets it, in revision order.
+	if got := ids("&collections=plays,favourite_plays"); !slices.Equal(got, []string{"plays", "favourite_plays"}) {
+		t.Errorf("named pull served %v", got)
+	}
+	// A name this server does not know is dropped, not refused.
+	if got := ids("&collections=plays,playss"); !slices.Equal(got, []string{"plays"}) {
+		t.Errorf("pull with an unknown name served %v", got)
+	}
+	// And the cursor is a position among the records served: after the play,
+	// the next page for a client that reads only plays is empty, not stuck.
+	res := call(t, s, "GET", "/v1/sync/changes?since=1&limit=10&collections=plays", token, nil)
+	if n := len(changesOf(t, res)); n != 0 {
+		t.Errorf("a plays-only client got %d records after its last play", n)
 	}
 }

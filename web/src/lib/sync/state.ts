@@ -33,6 +33,17 @@ export interface StoredSyncState {
   readonly token: string;
   /** The highest revision this browser has read. Zero means nothing yet. */
   readonly cursor: number;
+  /**
+   * The collections the cursor was read with, sorted and comma-joined.
+   *
+   * The server serves a pull only the collections it names, so the cursor is
+   * a position among those and no other. A build that reads more than the
+   * one before it finds this differs from its own list and pulls from zero
+   * once: the records it never asked for are exactly the ones its cursor has
+   * already passed. Absent on a row written before this existed, which reads
+   * as "different" and costs one resync, the honest price of not knowing.
+   */
+  readonly collections?: string;
   readonly recoveryCodeIssuedAt: string;
   readonly lastSyncedAt: number | null;
   /**

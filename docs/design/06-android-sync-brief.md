@@ -13,7 +13,8 @@ verified": there is a confirmation link now, it is mandatory, and an
 unconfirmed account cannot sign in.
 **Amended 2026-09-11:** §6 withdraws `Play.ignored` and adds the
 `favourite_plays` collection — a starred game — which the web now syncs and
-the phone should add. The phone defers it safely in the meantime.
+the phone should add. **Corrected later the same day:** the phone did *not*
+defer it safely; see §6, and doc 02's `collections=` amendment.
 **Audience:** whoever implements sync in `Hasyame/Thwart`.
 
 This is not a design document. Doc 02 is the design and it is settled; this says
@@ -518,11 +519,23 @@ body        { "playId": "<play id>", "addedAt": <epoch millis> }
 
 **Why a collection and not a field on the play.** The section above is why.
 A field the phone does not know is dropped the next time the phone writes the
-play; a collection the phone does not know is deferred by it, untouched, and
-the cursor held short of it — your own `SyncEngine` comment describes exactly
-this — so the star waits on the server for the build that adds the name. It
-is also how the contract already models a favourite: `favourite_cards` is a
-row keyed by what it points at, and this is the same row keyed by a play.
+play; a collection the phone does not know is skipped by it. It is also how
+the contract already models a favourite: `favourite_cards` is a row keyed by
+what it points at, and this is the same row keyed by a play.
+
+> **Corrected 2026-09-11, later.** The paragraph above first said the phone
+> "defers it, untouched, and the cursor held short of it", citing the
+> `SyncEngine` comment. The comment was right about intent and the loop was
+> not: holding the cursor short of a record that will *never* become
+> applicable meant every later pull returned the same page, and once more
+> than a page of changes followed the star, the phone pulled that page
+> forever. Two things changed. The server now serves a pull only the
+> collections it names (`collections=`, doc 02), defaulting to the
+> pre-ratings set for a client that names none, which is what protects the
+> phones already installed. And the phone, from 1.50.1, names its
+> collections, lets the cursor pass a record it cannot apply, and pulls from
+> zero once when the set it names has grown, so the star reaches it the
+> release it learns the name.
 
 **Until the phone has it, what the phone experiences.** Every known record
 still applies. The cursor pins just before the first `favourite_plays` record,

@@ -3,10 +3,13 @@ import { db } from '../db';
 import * as api from './api';
 import type { Limits, OutgoingRecord, PullPage, PushResponse, PushResult, ServerRecord } from './api';
 import { COLLECTIONS, collectionByName, type CollectionName } from './collections';
-import { digestForPulled, isUnknown, type LocalRow, type SyncPorts } from './engine';
+import { digestForPulled, isUnknown, KNOWN_COLLECTIONS, type LocalRow, type SyncPorts } from './engine';
 import { LOCAL_ONLY_FIELDS } from './merge';
 import { digestOf, SYNC_STATE_KEY, type SyncRecordState } from './state';
 import type { AdoptionPlan } from './adoption';
+
+/** The collections this build reads, as the cursor records them. */
+const DECLARED_COLLECTIONS = [...KNOWN_COLLECTIONS].sort().join(',');
 
 /**
  * The engine's world, made of IndexedDB and the network.
@@ -111,6 +114,20 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             continue;
           }
 
+          /*
+            Already applied at this revision or a later one: nothing to do.
+
+            A pull from zero on a browser that has data — the set of
+            collections it reads has grown — sends every record again. Without
+            this, a row edited here since would be put back to the server's
+            older body and the edit lost, whereas an ordinary pull would never
+            have re-sent a revision below the cursor.
+          */
+          const known = await db.syncRecords.get([record.collection, record.id]);
+          if (known !== undefined && known.revision >= record.revision) {
+            continue;
+          }
+
           const existing = (await table.get(record.id)) as Record<string, unknown> | undefined;
           const row = keepLocalColumns(
             record.collection,
@@ -178,7 +195,13 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
 
     async readCursor(): Promise<number> {
       const state = await db.syncState.get(SYNC_STATE_KEY);
-      return state?.cursor ?? 0;
+      // A cursor read with another set of collections is a position among
+      // records this build did not ask for; from zero, once, is the only
+      // cursor that means the same thing to both.
+      if (state === undefined || state.collections !== DECLARED_COLLECTIONS) {
+        return 0;
+      }
+      return state.cursor;
     },
 
     async writeCursor(cursor: number): Promise<void> {
@@ -186,11 +209,16 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
       if (state === undefined) {
         return;
       }
-      await db.syncState.put({ ...state, cursor, lastSyncedAt: Date.now() });
+      await db.syncState.put({
+        ...state,
+        cursor,
+        collections: DECLARED_COLLECTIONS,
+        lastSyncedAt: Date.now(),
+      });
     },
 
     pull: (since: number, limit: number, resync: boolean): Promise<PullPage> =>
-      api.pull(token, since, limit, locale, undefined, resync),
+      api.pull(token, since, limit, [...KNOWN_COLLECTIONS], locale, undefined, resync),
 
     push: (batchId: string, records: readonly OutgoingRecord[]): Promise<PushResponse> =>
       api.push(token, batchId, records, locale),
@@ -226,7 +254,7 @@ export async function stageAccount(
   const records: ServerRecord[] = [];
   let cursor = 0;
   for (;;) {
-    const page = await api.pull(token, cursor, limits.pageSize, locale, undefined, true);
+    const page = await api.pull(token, cursor, limits.pageSize, [...KNOWN_COLLECTIONS], locale, undefined, true);
     records.push(...page.changes);
     cursor = page.cursor;
     if (!page.hasMore) {
@@ -271,7 +299,12 @@ export async function applyAdoption(plan: AdoptionPlan, cursor: number): Promise
 
     const state = await db.syncState.get(SYNC_STATE_KEY);
     if (state !== undefined) {
-      await db.syncState.put({ ...state, cursor, lastSyncedAt: Date.now() });
+      await db.syncState.put({
+        ...state,
+        cursor,
+        collections: DECLARED_COLLECTIONS,
+        lastSyncedAt: Date.now(),
+      });
     }
   });
 }

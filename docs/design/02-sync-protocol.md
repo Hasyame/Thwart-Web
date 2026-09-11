@@ -87,7 +87,7 @@ except where noted.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/v1/sync/changes?since=<cursor>&limit=<n>&resync=<0 or 1>` | Pull everything changed after `cursor`. |
+| `GET` | `/v1/sync/changes?since=<cursor>&limit=<n>&resync=<0 or 1>&collections=<a,b,c>` | Pull everything changed after `cursor`, in the collections named. |
 | `POST` | `/v1/sync/changes` | Push a batch of dirty records. |
 
 ### Account rights and housekeeping
@@ -289,6 +289,30 @@ GET /v1/sync/changes?since=1840&limit=500
   > exists to prevent. A resync is rebuilding from nothing and has no deletion
   > to miss, which is the same reason `since=0` was exempt in the first place.
 - `since=0` means "everything", which is both first sign-in and full resync.
+
+  > **Amended 2026-09-11: `collections=`.** A pull names the collections the
+  > client can read, comma separated, and is served only those. A pull that
+  > names none is a client from before the parameter and gets the collections
+  > that existed then (everything but `favourite_plays` and `ratings`, which
+  > the server marks opt-in). A name the server does not know is dropped, not
+  > refused: a client one release ahead of a self-hosted server is ordinary.
+  >
+  > Found from the phone. The Android engine held its cursor short of the
+  > first record it could not apply — right for a campaign event whose run has
+  > not arrived, wrong for a whole collection it had never heard of: one
+  > starred game on the web, then a page's worth of ordinary changes, and every
+  > later pull returned the same page from the same cursor, for good. The
+  > server cannot tell an old client's version, so the contract runs the other
+  > way: the client says what it reads.
+  >
+  > The cursor is then a position among the collections named and no other.
+  > A build that names more than the build before it must pull from zero once
+  > (`since=0&resync=1`), because the records it never asked for are exactly
+  > the ones its cursor has already passed; both clients keep the list they
+  > last pulled with beside the cursor and do this when it differs. A pull
+  > from zero on a client that has data must not put a locally edited row back
+  > to an older body it has already applied: skip any record whose revision
+  > is not above the one recorded for it.
 
 ### Push
 

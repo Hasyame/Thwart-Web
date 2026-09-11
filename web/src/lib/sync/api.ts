@@ -370,15 +370,20 @@ export const pull = (
   token: string,
   since: number,
   limit: number,
+  collections: readonly string[],
   locale?: Locale,
   signal?: AbortSignal,
   resync = false,
 ): Promise<PullPage> =>
-  call(`/sync/changes?since=${since}&limit=${limit}${resync ? '&resync=1' : ''}`, {
-    token,
-    locale,
-    signal,
-  });
+  call(
+    `/sync/changes?since=${since}&limit=${limit}` +
+      // Which collections this build reads. The server serves only those, so
+      // a collection added later never reaches a build that cannot store it;
+      // one that names nothing gets the set from before the parameter.
+      `&collections=${encodeURIComponent(collections.join(','))}` +
+      `${resync ? '&resync=1' : ''}`,
+    { token, locale, signal },
+  );
 
 export const push = (
   token: string,

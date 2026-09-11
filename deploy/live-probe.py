@@ -313,8 +313,14 @@ check("a rating of a scenario this game was not is refused, by name",
 check("and one citing a game never pushed",
       outcomes.get("scenario:rhino-nobody") == ("rejected", "not_played"), str(outcomes.get("scenario:rhino-nobody")))
 
-status, page = call("GET", "/sync/changes?since=0", token=token_a)
+# Named, because a pull that names no collections is served the set from
+# before ratings existed: that is what keeps an older phone from being handed a
+# record it cannot read.
+status, page = call("GET", "/sync/changes?since=0&collections=plays,ratings", token=token_a)
 held = sorted(c["id"] for c in page.get("changes", []) if c.get("collection") == "ratings" and not c.get("deleted"))
+status, unnamed = call("GET", "/sync/changes?since=0", token=token_a)
+check("and a pull that names no collections is not handed a rating",
+      not any(c.get("collection") == "ratings" for c in unnamed.get("changes", [])))
 check("the server holds exactly the two honest ratings",
       held == ["modular:bomb_scare@rhino", "scenario:rhino"], ",".join(held))
 
