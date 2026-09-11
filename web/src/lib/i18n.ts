@@ -549,6 +549,20 @@ export interface Strings {
   /** The starred games on the setup screen, each one tap from being laid out. */
   readonly favouriteGames: string;
   readonly favouriteGamesNote: string;
+
+  /* Extra modular sets. docs/spec/ratings-and-modular-sets.md section 1. */
+  readonly extraModulars: string;
+  /** One locked scenario, its candidate count, and the extras asked for. */
+  readonly extrasShortLocked: (scenario: string, available: number, extras: number) => string;
+  readonly extrasShortAll: (extras: number) => string;
+  readonly extrasShortSome: (scenarios: number, extras: number) => string;
+  readonly playThisDraw: string;
+  readonly modularSearch: string;
+  readonly modularSelectedCount: (n: number) => string;
+  readonly modularRequired: string;
+  readonly modularShowAll: string;
+  readonly modularNotOwned: string;
+  readonly modularRemove: string;
   readonly playEditSave: string;
   readonly playWhen: string;
   readonly playResult: string;
@@ -1255,6 +1269,20 @@ const STRINGS: Record<Locale, Strings> = {
     historyFavouritesOnly: 'Starred only',
     favouriteGames: 'Starred games',
     favouriteGamesNote: 'Games you starred in the history, to lay out again in one tap.',
+    extraModulars: 'Extra modular sets',
+    extrasShortLocked: (scenario, available, extras) =>
+      `Your collection has ${available} modular set${available === 1 ? '' : 's'} for ${scenario}; it cannot add ${extras}.`,
+    extrasShortAll: (extras) =>
+      `No scenario in your collection can take ${extras} extra modular set${extras === 1 ? '' : 's'}.`,
+    extrasShortSome: (scenarios, extras) =>
+      `${scenarios} scenario${scenarios === 1 ? '' : 's'} cannot take ${extras} extra${extras === 1 ? '' : 's'} and ${scenarios === 1 ? 'is' : 'are'} left out of this draw.`,
+    playThisDraw: 'Play this game',
+    modularSearch: 'Find a modular set\u2026',
+    modularSelectedCount: (n) => (n === 1 ? '1 modular set' : `${n} modular sets`),
+    modularRequired: 'Required by the scenario',
+    modularShowAll: 'Show sets I do not own',
+    modularNotOwned: 'Not in your collection',
+    modularRemove: 'Remove',
     playEditSave: 'Save the correction',
     playWhen: 'Played on',
     playResult: 'Result',
@@ -1983,6 +2011,20 @@ const STRINGS: Record<Locale, Strings> = {
     historyFavouritesOnly: 'Favoris seulement',
     favouriteGames: 'Parties favorites',
     favouriteGamesNote: 'Les parties que vous avez mises en favori dans l’historique, à remettre en place en un geste.',
+    extraModulars: 'Sets modulaires en plus',
+    extrasShortLocked: (scenario, available, extras) =>
+      `Votre collection a ${available} set${available === 1 ? '' : 's'} modulaire${available === 1 ? '' : 's'} pour ${scenario} : impossible d\u2019en ajouter ${extras}.`,
+    extrasShortAll: (extras) =>
+      `Aucun sc\u00e9nario de votre collection ne peut prendre ${extras} set${extras === 1 ? '' : 's'} modulaire${extras === 1 ? '' : 's'} en plus.`,
+    extrasShortSome: (scenarios, extras) =>
+      `${scenarios} sc\u00e9nario${scenarios === 1 ? '' : 's'} ne ${scenarios === 1 ? 'peut' : 'peuvent'} pas prendre ${extras} set${extras === 1 ? '' : 's'} en plus et ${scenarios === 1 ? 'est laiss\u00e9' : 'sont laiss\u00e9s'} de c\u00f4t\u00e9 pour ce tirage.`,
+    playThisDraw: 'Jouer cette partie',
+    modularSearch: 'Chercher un set modulaire\u2026',
+    modularSelectedCount: (n) => (n === 1 ? '1 set modulaire' : `${n} sets modulaires`),
+    modularRequired: 'Requis par le sc\u00e9nario',
+    modularShowAll: 'Afficher les sets que je ne poss\u00e8de pas',
+    modularNotOwned: 'Hors collection',
+    modularRemove: 'Retirer',
     playEditSave: 'Enregistrer la correction',
     playWhen: 'Jouée le',
     playResult: 'Résultat',

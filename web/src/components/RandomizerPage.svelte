@@ -9,7 +9,11 @@
     buildPools,
     EMPTY_DRAW,
     noFilters,
+    MAX_EXTRA_MODULARS,
+    modularCandidatesFor,
+    modularShortfall,
     roll,
+    scenariosShortOfExtras,
     standardSetFor,
     type Aspect,
     type DifficultyId,
@@ -25,9 +29,41 @@
     sets: readonly CardSet[];
     index: readonly IndexRow[];
     storageOk: boolean;
+    /**
+     * Lays the draw out on the setup screen, as the phone's "play this game".
+     *
+     * Owned by App: it is the same door a replayed game goes through. Until
+     * this existed a drawn game was never recorded as played, which is what
+     * the history, the statistics and the ratings all need it to be.
+     */
+    onPlay: (draw: Draw) => void;
   }
 
-  const { t, sets, index, storageOk }: Props = $props();
+  const { t, sets, index, storageOk, onPlay }: Props = $props();
+
+  /*
+   * Extra modular sets on top of the scenario's own. 0 to 5, default 0, and a
+   * device preference rather than a synced one: it answers "how do I like to
+   * play here", and the settings record is fixed at five keys by the phone.
+   */
+  const EXTRAS_KEY = 'thwart.randomizer.extraModulars';
+  const storedExtras = (): number => {
+    try {
+      const n = Number.parseInt(localStorage.getItem(EXTRAS_KEY) ?? '0', 10);
+      return Number.isFinite(n) ? Math.max(0, Math.min(MAX_EXTRA_MODULARS, n)) : 0;
+    } catch {
+      return 0;
+    }
+  };
+  let extras = $state(storedExtras());
+  function setExtras(n: number): void {
+    extras = Math.max(0, Math.min(MAX_EXTRA_MODULARS, n));
+    try {
+      localStorage.setItem(EXTRAS_KEY, String(extras));
+    } catch {
+      // Remembered for this visit only.
+    }
+  }
 
   const collection = $state<{
     owned: Set<string>;
@@ -160,15 +196,42 @@
   /** Names come from the card database, already in the reader's language. */
   const setNames = $derived(new Map(sets.map((s) => [s.code, s.name] as const)));
 
+  /*
+   * What the collection cannot supply, said before the roll.
+   *
+   * The scenario is drawn, so with extras asked for there is no single answer:
+   * scenarios that cannot take that many are left out of the draw and named
+   * here by count. When the scenario is locked the answer is exact, and a
+   * locked scenario that is short is the one case the roll is refused — the
+   * player chose it, and drawing it short would be the silent shortfall the
+   * rule forbids.
+   */
+  const short = $derived(pools === null ? [] : scenariosShortOfExtras(pools, playerCount, extras));
+  const lockedRule = $derived(
+    pools === null || !locked.has('scenario')
+      ? null
+      : (pools.scenarios.find((r) => r.code === draw.scenarioCode) ?? null),
+  );
+  const lockedShortBy = $derived(
+    lockedRule === null || pools === null ? 0 : modularShortfall(pools, lockedRule, playerCount, extras),
+  );
+  const nothingCanTakeExtras = $derived(
+    pools !== null && extras > 0 && short.length === pools.scenarios.length,
+  );
+
   const canRoll = $derived(
-    pools !== null && pools.scenarios.length > 0 && pools.heroes.length >= playerCount,
+    pools !== null &&
+      pools.scenarios.length > 0 &&
+      pools.heroes.length >= playerCount &&
+      !nothingCanTakeExtras &&
+      lockedShortBy === 0,
   );
 
   function doRoll(): void {
     if (pools === null) {
       return;
     }
-    draw = roll({ pools, previous: draw, locked, playerCount });
+    draw = roll({ pools, previous: draw, locked, playerCount, extraModularSets: extras });
     saved = false;
   }
 
@@ -372,9 +435,34 @@
         </select>
       </label>
 
-      <button class="roll" type="button" onclick={doRoll} disabled={!canRoll}>
-        {draw.scenarioCode === null ? t.roll : t.reroll}
-      </button>
+      <label class="players">
+        <span class="muted">{t.extraModulars}</span>
+        <select class="field" value={extras} onchange={(e) => setExtras(Number.parseInt(e.currentTarget.value, 10))}>
+          {#each [0, 1, 2, 3, 4, 5] as n (n)}
+            <option value={n}>{n}</option>
+          {/each}
+        </select>
+      </label>
+
+      {#if lockedShortBy > 0 && lockedRule !== null && pools !== null}
+        <!-- Plain words in place of the button, never a shorter draw. -->
+        <p class="notice muted extras-short" role="status">
+          {t.extrasShortLocked(
+            setNames.get(lockedRule.code) ?? lockedRule.code,
+            modularCandidatesFor(pools, lockedRule).length,
+            extras,
+          )}
+        </p>
+      {:else if nothingCanTakeExtras}
+        <p class="notice muted extras-short" role="status">{t.extrasShortAll(extras)}</p>
+      {:else}
+        <button class="roll" type="button" onclick={doRoll} disabled={!canRoll}>
+          {draw.scenarioCode === null ? t.roll : t.reroll}
+        </button>
+        {#if short.length > 0}
+          <p class="muted pool-note" role="status">{t.extrasShortSome(short.length, extras)}</p>
+        {/if}
+      {/if}
 
       <p class="muted pool-note">
         {t.poolNote(pools.scenarios.length, pools.heroes.length, pools.modularSets.length)}
@@ -615,13 +703,19 @@
         </div>
       </div>
 
-      {#if storageOk}
-        <div class="actions">
+      <div class="actions">
+        <!-- First, because it is what a draw is for. The phone has had this
+             since its randomiser existed; the web recorded the draw and then
+             left the person to rebuild it by hand on the setup screen. -->
+        <button class="btn btn--primary" type="button" onclick={() => onPlay(draw)}>
+          {t.playThisDraw}
+        </button>
+        {#if storageOk}
           <button type="button" onclick={save} disabled={saved}>
             {saved ? t.savedToHistory : t.saveToHistory}
           </button>
-        </div>
-      {/if}
+        {/if}
+      </div>
     {/if}
 
     {#if storageOk && history.rows.length > 0}

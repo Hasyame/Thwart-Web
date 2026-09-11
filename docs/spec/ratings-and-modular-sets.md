@@ -1,9 +1,11 @@
 # Extra modular sets, and difficulty ratings
 
-**Status.** Draft for decision, 2026-09-11. Nothing here is implemented. Sections
-marked *Rule* are the contract as proposed; *Open* sections need an answer before
-either client writes code. Where a rule leans on something that already exists
-in the code, the file is named so it can be checked rather than trusted.
+**Status.** Decided 2026-09-11, with one answer outstanding. §8.1, §8.2 and
+§8.5 are settled as recommended; §8.3, §8.6, §8.7 and §8.8 stand as recommended
+unless the operator says otherwise; **§8.4 (rating history) awaits one word**,
+and the `ratings` record's key depends on it. Feature 1 does not, and is being
+built. Where a rule leans on something that already exists in the code, the
+file is named so it can be checked rather than trusted.
 
 **Audience.** Both clients. Thwart Android implements this against the same
 server and the same rules; if the two ever disagree about what a rating means,
@@ -53,12 +55,22 @@ Android `RandomizerModels`:
    with no repeats. This falls out of drawing without replacement from a pool
    that excludes the mandated sets; it is stated here so a client that builds
    the draw differently still guarantees it.
-5. **A collection that cannot supply the request is told so before the roll.**
-   If `candidates.length < (counted − mandated) + extras`, the roll button is
-   replaced by a sentence: *"Your collection has N modular sets for this
-   scenario; it cannot add K."* The randomiser never silently draws fewer than
-   asked. Locking the modular sets and rerolling the rest keeps the locked
-   list, extras included, as locking works today.
+5. **A collection that cannot supply the request is told so before the roll,
+   and the randomiser never silently draws fewer than asked.** The scenario is
+   drawn, not known, so this has three cases, all decided from
+   `modularShortfall(pools, rule, players, extras)`:
+   - **Scenario locked and short:** the roll button is replaced by the
+     sentence *"Your collection has N modular sets for this scenario; it
+     cannot add K."* The player chose it; drawing it short would be the silent
+     shortfall this rule forbids.
+   - **Scenario free, some short:** those scenarios are **left out of this
+     draw**, and a line under the button says how many: *"3 scenarios cannot
+     take 4 extras and are left out of this draw."*
+   - **Scenario free, all short:** the button is replaced by *"No scenario in
+     your collection can take K extra modular sets."*
+
+   Locking the modular sets and rerolling the rest keeps the locked list,
+   extras included, as locking works today.
 
 The extras count is **a device preference, not synced**, like the auto-sync
 toggle: it is an answer to "how do I like to play on this device", and the
@@ -425,9 +437,14 @@ Laid out there with the trade-offs.
 Each with the options, what each costs, and a recommendation. **Nothing
 below is decided.**
 
-### 8.1 Anonymous users
+### 8.1 Anonymous users — *Decided: local only*
 
-**Recommendation: as your instinct says.** A person with no account records
+Only a signed-in player's ratings reach the server; an anonymous player's stay
+on the device and never count. Stated reason: to limit what a bot or a troll
+can do to the averages, since the gating in §2.4 needs an account to check
+against.
+
+**Recommendation, as adopted: as your instinct says.** A person with no account records
 ratings locally, sees their own everywhere the contract says, and nothing is
 uploaded or counted. An endpoint that accepts unauthenticated ratings is an
 invitation to stuff them, and the gating in §2.4 is meaningless without an
@@ -444,7 +461,7 @@ Two consequences worth stating:
 
 No disagreement.
 
-### 8.2 Self-hosted instances
+### 8.2 Self-hosted instances — *Decided: (b) now, (c) in bulk form if asked*
 
 A self-hosted instance has one user and never reaches five ratings. Three
 options:
@@ -494,7 +511,13 @@ Cost: a player who has played Bomb Scare with four villains has four Bomb
 Scare ratings, and the history's rating row shows the one for *this* game. The
 overall per-set average is a view (§3.2). Nothing else changes.
 
-### 8.4 Rating history
+### 8.4 Rating history — *Awaiting one word: history, or current*
+
+The operator answered "yes" to a question that offered two readings. If
+**history**: every rating is its own record, `ratings` is keyed by a UUID,
+`current` is the newest `ratedAt` per subject, and the server index carries a
+`current` flag that the summary counts by. If **current**: as §2.3 is written.
+Nothing in Feature 1 depends on this.
 
 **What keeping it costs:** the `ratings` record can no longer be keyed by
 subject, so "current" becomes a derivation over records rather than a lookup;
@@ -514,7 +537,10 @@ a `rating_history` collection can be added without touching the current one.
 Adding history later costs the same as adding it now; adding it now and not
 using it costs every day in between.
 
-### 8.5 Campaign scope
+### 8.5 Campaign scope — *Decided: one per campaign, replacing, same threshold*
+
+As for a scenario: one rating per player per campaign, the newer replacing
+the older, and the community average shown only from five ratings.
 
 Two readings of "replaying the same campaign":
 

@@ -25,8 +25,13 @@ truth for what every number means, written to be read by both.
   build it.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
-  field can be locked and rerolled on its own.
-- **My own setup.** Choose everything yourself, read the scenario's own setup
+  field can be locked and rerolled on its own. Up to five **extra modular
+  sets** on top of the scenario's own, from the same pool, and a collection
+  that cannot supply them is told so before the roll rather than drawn short.
+  A draw is one tap from the setup screen, as on the phone.
+- **My own setup.** Choose everything yourself — as many modular sets as you
+  like, through a picker with a search, the count in view and the scenario's
+  required sets placed and not removable — read the scenario's own setup
   off its main scheme card, then run the clock and count the villain and the
   main scheme while you play: damage against the printed health, threat against
   the limit, and an end-of-round button that applies the acceleration. Counters
@@ -157,6 +162,7 @@ the real modules:
 | `npm run test:engine-sync` | Campaign runs through the sync path |
 | `npm run test:nav` | That every destination is reachable, in both arrangements |
 | `npm run test:replay` | That a game played again is the game that was played, a campaign's included |
+| `npm run test:randomizer` | The draw with extra modular sets: exact count, no duplicate, the scenario's own pool |
 | `npm run test:safe-area` | Whether the bottom system-bar inset is believed |
 | `npm run test:filters` | Search and history filtering |
 | `npm run test:deckbuilder` | Deck legality against a collection |

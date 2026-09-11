@@ -300,6 +300,72 @@ export interface RollInput {
   readonly previous: Draw;
   readonly locked: ReadonlySet<DrawField>;
   readonly playerCount: number;
+  /**
+   * Modular sets on top of what the scenario takes. 0 to MAX_EXTRA_MODULARS,
+   * default 0, and the default must stay what the randomiser has always done.
+   * See docs/spec/ratings-and-modular-sets.md §1.1.
+   */
+  readonly extraModularSets?: number;
+}
+
+export const MAX_EXTRA_MODULARS = 5;
+
+/**
+ * The modular sets a scenario may draw from, in this collection.
+ *
+ * Owned sets, minus the ones the scenario mandates — those are placed, not
+ * drawn — restricted to the scenario's own packs when it names them. This is
+ * the one pool for the scenario's own count and for any extras on top: a
+ * MojoMania scenario's extras come only from MojoMania, and a Civil War set
+ * never turns up as an extra elsewhere, because the pool already says so.
+ */
+export function modularCandidatesFor(pools: Pools, rule: ScenarioRule): readonly CardSet[] {
+  const restrictedTo = rule.modularPacks ?? [];
+  return pools.modularSets.filter(
+    (set) =>
+      !rule.mandatoryModulars.includes(set.code) &&
+      (restrictedTo.length === 0 || restrictedTo.includes(set.packCode)),
+  );
+}
+
+/**
+ * How many sets short the collection is for this scenario at this table, with
+ * this many extras asked for. Zero means the draw can be made.
+ *
+ * What the page uses to say so *before* the roll: the randomiser never
+ * silently draws fewer than it was asked for.
+ */
+export function modularShortfall(
+  pools: Pools,
+  rule: ScenarioRule,
+  playerCount: number,
+  extras: number,
+): number {
+  const mandatoryHere = rule.mandatoryModulars.filter((code) =>
+    pools.modularSets.some((set) => set.code === code),
+  ).length;
+  const needed = Math.max(0, modularCountFor(rule, playerCount) - mandatoryHere) + extras;
+  return Math.max(0, needed - modularCandidatesFor(pools, rule).length);
+}
+
+/**
+ * The scenarios that cannot take this many extras from this collection.
+ *
+ * The scenario is drawn, not known, so "can the collection supply K extras"
+ * has no single answer before the roll: Rhino draws from everything and
+ * MojoMania from three sets. With extras asked for, these are left out of the
+ * draw and the page says how many — the alternative, drawing them with fewer,
+ * is exactly the silent shortfall the rule forbids.
+ */
+export function scenariosShortOfExtras(
+  pools: Pools,
+  playerCount: number,
+  extras: number,
+): readonly ScenarioRule[] {
+  if (extras <= 0) {
+    return [];
+  }
+  return pools.scenarios.filter((rule) => modularShortfall(pools, rule, playerCount, extras) > 0);
 }
 
 /**
@@ -314,6 +380,7 @@ function modularCountFor(rule: ScenarioRule, playerCount: number): number {
 
 export function roll(input: RollInput): Draw {
   const { pools, previous, locked, playerCount } = input;
+  const extras = Math.max(0, Math.min(MAX_EXTRA_MODULARS, input.extraModularSets ?? 0));
 
   // Nothing both ownable and allowed means the filter and the collection
   // disagree. The collection wins: a draw the player cannot put on the table
@@ -337,9 +404,13 @@ export function roll(input: RollInput): Draw {
   const standardSet =
     keepStandard ?? standardSetFor(difficulty, pools.difficulties, pools.ownedDifficulties);
 
+  // With extras asked for, only scenarios that can take them are drawn; see
+  // scenariosShortOfExtras. A locked scenario is the player's choice and is
+  // kept even if it is short — the page has already told them.
+  const short = new Set(scenariosShortOfExtras(pools, playerCount, extras).map((r) => r.code));
   const scenarioRule = locked.has('scenario')
     ? (pools.scenarios.find((rule) => rule.code === previous.scenarioCode) ?? null)
-    : pick(pools.scenarios);
+    : pick(pools.scenarios.filter((rule) => !short.has(rule.code)));
 
   const heroes = locked.has('heroes')
     ? previous.heroes
@@ -365,16 +436,11 @@ export function roll(input: RollInput): Draw {
     if (locked.has('modularSets')) {
       drawn = previous.modularSetCodes;
     } else {
-      // A scenario that names its own pool draws only from it. MojoMania is
-      // read this way, and versus packs work the same, because their sets are
-      // illegal anywhere else.
-      const restrictedTo = scenarioRule.modularPacks ?? [];
-      const candidates = pools.modularSets.filter(
-        (set) =>
-          !mandatory.includes(set.code) &&
-          (restrictedTo.length === 0 || restrictedTo.includes(set.packCode)),
-      );
-      const wanted = modularCountFor(scenarioRule, playerCount) - mandatory.length;
+      // The one pool, for the scenario's own count and the extras alike:
+      // sampled without replacement, so no set is drawn twice and none that
+      // is mandated is drawn at all.
+      const candidates = modularCandidatesFor(pools, scenarioRule);
+      const wanted = modularCountFor(scenarioRule, playerCount) - mandatory.length + extras;
       drawn = sample(candidates, wanted).map((set) => set.code);
     }
   }

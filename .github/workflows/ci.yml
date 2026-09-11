@@ -220,6 +220,13 @@ jobs:
         working-directory: web
         run: npm run test:replay
 
+      # The draw with extras on top: the count exactly as asked, nothing drawn
+      # twice, nothing mandated drawn, nothing from outside the scenario's own
+      # pool, and a short collection told so rather than drawn short.
+      - name: The randomiser draws what it was asked and says what it cannot
+        working-directory: web
+        run: npm run test:randomizer
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

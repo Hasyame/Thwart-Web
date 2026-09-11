@@ -38,6 +38,7 @@
   import { buildPlay } from '../lib/plays';
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
   import { resumeSession, setupNotice } from '../lib/session.svelte';
+  import { normalizeForSearch } from '../lib/normalize';
 
   interface Props {
     t: Strings;
@@ -214,8 +215,16 @@
     setupNotice.text = null;
     session.current.scenarioCode = code;
     session.current.scenarioName = setNames.get(code) ?? code;
-    session.current.modularSetCodes = [];
+    // What the scenario mandates is on the table from the moment it is chosen,
+    // and cannot be taken off: the picker shows those as required. Owned or
+    // not — the person is saying what is in front of them, and the rules put
+    // these there. docs/spec/ratings-and-modular-sets.md section 1.2.
+    session.current.modularSetCodes = [...mandatedFor(code)];
+    modularSearch = '';
   }
+
+  const mandatedFor = (code: string): readonly string[] =>
+    pools?.scenarios.find((rule) => rule.code === code)?.mandatoryModulars ?? [];
 
   function setDifficulty(id: DifficultyId): void {
     session.current.difficulty = id;
@@ -251,13 +260,6 @@
 
   function removeSeat(seatIndex: number): void {
     session.current.seats = session.current.seats.filter((_, i) => i !== seatIndex);
-  }
-
-  function toggleModular(code: string): void {
-    const current = session.current.modularSetCodes;
-    session.current.modularSetCodes = current.includes(code)
-      ? current.filter((c) => c !== code)
-      : [...current, code];
   }
 
   // --- recording -----------------------------------------------------------
@@ -395,9 +397,55 @@
     ),
   );
 
-  const availableModulars = $derived(
-    [...(pools?.modularSets ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+  /*
+   * The modular set picker.
+   *
+   * No cap on how many, so it has to stay usable at twenty: a search, the
+   * count in view, the chosen sets first with their own remove, the mandated
+   * ones shown as placed and not removable, and the rest behind the search.
+   * Sets outside the collection are offered behind one tap, marked, because
+   * a friend's cards on the table are a real game; refusing them teaches
+   * people to tick packs they do not own.
+   */
+  let modularSearch = $state('');
+  let showAllModulars = $state(false);
+
+  const ownedModularCodes = $derived(new Set((pools?.modularSets ?? []).map((set) => set.code)));
+  const everyModular = $derived(
+    [...sets.filter((set) => set.type === 'modular')].sort((a, b) => a.name.localeCompare(b.name)),
   );
+  const mandated = $derived(new Set(mandatedFor(session.current.scenarioCode)));
+  /** Chosen by hand, in the order chosen; the mandated ones are shown apart. */
+  const chosenModulars = $derived(
+    session.current.modularSetCodes
+      .filter((code) => !mandated.has(code))
+      .map((code) => everyModular.find((set) => set.code === code) ?? { code, name: code, type: 'modular', packCode: '' }),
+  );
+  const mandatedModulars = $derived(
+    [...mandated].map((code) => everyModular.find((set) => set.code === code) ?? { code, name: code, type: 'modular', packCode: '' }),
+  );
+  const offeredModulars = $derived.by(() => {
+    const needle = normalizeForSearch(modularSearch.trim());
+    return everyModular.filter(
+      (set) =>
+        !mandated.has(set.code) &&
+        !session.current.modularSetCodes.includes(set.code) &&
+        (showAllModulars || ownedModularCodes.has(set.code)) &&
+        (needle === '' || normalizeForSearch(set.name).includes(needle)),
+    );
+  });
+
+  function addModular(code: string): void {
+    if (!session.current.modularSetCodes.includes(code)) {
+      session.current.modularSetCodes = [...session.current.modularSetCodes, code];
+    }
+  }
+
+  function removeModular(code: string): void {
+    if (!mandated.has(code)) {
+      session.current.modularSetCodes = session.current.modularSetCodes.filter((c) => c !== code);
+    }
+  }
 </script>
 
 <section>
@@ -570,21 +618,74 @@
     {/if}
 
     {#if session.current.scenarioCode !== ''}
-      <div class="setup surface">
-        <h2>{t.modularSets}</h2>
+      <div class="setup surface picker">
+        <div class="picker-head">
+          <h2>{t.modularSets}</h2>
+          <!-- Live, so the count is heard as it changes. -->
+          <span class="muted count" aria-live="polite">
+            {t.modularSelectedCount(session.current.modularSetCodes.length)}
+          </span>
+        </div>
         <p class="muted note">{t.modularChooseNote}</p>
+
+        {#if mandatedModulars.length > 0}
+          <ul class="chosen" aria-label={t.modularRequired}>
+            {#each mandatedModulars as set (set.code)}
+              <li class="chip required">
+                <span>{set.name}</span>
+                <span class="muted tag">{t.modularRequired}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
+        {#if chosenModulars.length > 0}
+          <ul class="chosen">
+            {#each chosenModulars as set (set.code)}
+              <li class="chip">
+                <span>{set.name}</span>
+                {#if !ownedModularCodes.has(set.code)}
+                  <span class="muted tag">{t.modularNotOwned}</span>
+                {/if}
+                <button
+                  type="button"
+                  class="remove"
+                  aria-label={`${t.modularRemove} ${set.name}`}
+                  onclick={() => removeModular(set.code)}
+                >
+                  ×
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
+        <!-- 16px, so iOS does not zoom the page when it is focused. -->
+        <input
+          class="field search"
+          type="search"
+          placeholder={t.modularSearch}
+          aria-label={t.modularSearch}
+          value={modularSearch}
+          oninput={(e) => (modularSearch = e.currentTarget.value)}
+        />
+
         <div class="options">
-          {#each availableModulars as set (set.code)}
-            <label class="tick">
-              <input
-                type="checkbox"
-                checked={session.current.modularSetCodes.includes(set.code)}
-                onchange={() => toggleModular(set.code)}
-              />
+          {#each offeredModulars as set (set.code)}
+            <button type="button" class="offer" onclick={() => addModular(set.code)}>
+              <span aria-hidden="true">+</span>
               <span>{set.name}</span>
-            </label>
+              {#if !ownedModularCodes.has(set.code)}
+                <span class="muted tag">{t.modularNotOwned}</span>
+              {/if}
+            </button>
           {/each}
         </div>
+
+        <label class="tick show-all">
+          <input type="checkbox" checked={showAllModulars} onchange={(e) => (showAllModulars = e.currentTarget.checked)} />
+          <span>{t.modularShowAll}</span>
+        </label>
       </div>
     {/if}
 
@@ -822,6 +923,91 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
     gap: var(--space-1) var(--space-3);
+  }
+
+  .picker-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .picker-head h2 {
+    margin: 0;
+  }
+
+  .picker .search {
+    margin-block: var(--space-3);
+    font-size: 16px;
+  }
+
+  .chosen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding-inline: var(--space-3) var(--space-1);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-pill);
+    color: var(--text);
+  }
+
+  .chip.required {
+    border-color: var(--hairline);
+    background: var(--surface-2);
+    padding-inline-end: var(--space-3);
+  }
+
+  .chip .remove {
+    display: grid;
+    place-items: center;
+    width: var(--tap-min);
+    height: var(--tap-min);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    cursor: pointer;
+  }
+
+  .chip .remove:hover {
+    color: var(--accent);
+  }
+
+  .tag {
+    font-size: var(--text-sm);
+  }
+
+  .offer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .offer:hover {
+    background: var(--surface-2);
+  }
+
+  .show-all {
+    margin-top: var(--space-3);
   }
 
   .tick {

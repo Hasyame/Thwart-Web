@@ -34,6 +34,7 @@
   import { watchSafeArea } from './lib/safeArea';
   import PlayHub from './components/PlayHub.svelte';
   import { campaignLayoutOf, replayOf, type CampaignLayout } from './lib/replay';
+  import type { Draw } from './lib/randomizer';
   import { eventsOf } from './lib/campaign/store';
   import { inCampaign, runOf } from './lib/playQuery';
   import { prepareSession, setupNotice } from './lib/session.svelte';
@@ -421,6 +422,38 @@
   }
 
   /*
+   * A draw, laid out on the setup screen.
+   *
+   * The phone's "play this game", and the same door a replayed game goes
+   * through. Mandated and drawn sets go together into one list: what is on
+   * the table is what gets recorded, and the play does not care why a set was
+   * there. Seats carry the hero alone, as a paused game's do, since a draw
+   * names heroes and not decks.
+   */
+  function playDraw(draw: Draw): void {
+    if (draw.scenarioCode === null) {
+      return;
+    }
+    const setName = sets.find((s) => s.code === draw.scenarioCode)?.name;
+    prepareSession({
+      scenarioCode: draw.scenarioCode,
+      scenarioName: setName ?? draw.scenarioCode,
+      difficulty: draw.difficulty ?? 'STANDARD_I',
+      standardSet: draw.standardSet,
+      seats: draw.heroes.map((hero) => ({
+        deckId: hero.code,
+        deckName: hero.name,
+        heroCode: hero.code,
+        heroName: hero.name,
+        aspect: hero.aspect,
+      })),
+      modularSetCodes: [...draw.mandatoryModularCodes, ...draw.modularSetCodes],
+    });
+    setupNotice.text = null;
+    navigate({ name: 'play' });
+  }
+
+  /*
    * Grouping the ways of playing behind one tab.
    *
    * Turning it off while sitting on the hub would leave somebody on a page
@@ -530,7 +563,7 @@
   {:else if route.name === 'collection'}
     <CollectionPage {t} {packs} {sets} {storageOk} />
   {:else if route.name === 'randomizer'}
-    <RandomizerPage {t} {sets} {index} {storageOk} />
+    <RandomizerPage {t} {sets} {index} {storageOk} onPlay={playDraw} />
   {:else if route.name === 'versus'}
     <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
   {:else if route.name === 'play'}
