@@ -13,6 +13,10 @@
   const { t, summary, own = null }: Props = $props();
 
   const shown = $derived(summary !== undefined && summary.mean !== undefined);
+  /* Below the threshold the server sends the count and withholds the mean.
+     Say the count: a badge that stays blank until five people have rated
+     reads as broken, and "2 ratings so far" is both true and an invitation. */
+  const countOnly = $derived(summary !== undefined && summary.mean === undefined && summary.count > 0);
   const tallest = $derived(Math.max(1, ...(summary?.histogram ?? [1])));
 </script>
 
@@ -21,10 +25,10 @@
 
   Shown where somebody is choosing — a drawn scenario, a set in the picker, a
   campaign to start — and never on the rating row itself, where it would
-  anchor the answer. Nothing at all below the threshold: a mean from two
-  opinions is not a mean.
+  anchor the answer. No mean below the threshold — a mean from two opinions
+  is not a mean — but the count, so it is clear that rating is a thing.
 -->
-{#if shown || own !== null}
+{#if shown || countOnly || own !== null}
   <span class="badge" title={summary?.histogram?.join(' / ')}>
     {#if own !== null}
       <span class="own" aria-label={t.ratingYours}>★ {own}</span>
@@ -36,6 +40,8 @@
           <span class="bar" style:height={`${Math.max(2, (n / tallest) * 100)}%`}></span>
         {/each}
       </span>
+    {:else if countOnly && summary !== undefined}
+      <span class="count">{t.ratingCountOnly(summary.count)}</span>
     {/if}
   </span>
 {/if}

@@ -64,9 +64,9 @@ truth for what every number means, written to be read by both.
   against the game it cites and refuses one that does not match, which the app
   then drops and says so. Signed-in players' ratings are pooled; the community
   average and its spread show beside a scenario, a drawn set, a set in the
-  picker and a campaign once enough people have rated it (five, by default),
-  and never on the rating row itself. Signed out, a rating stays on the
-  device.
+  picker and a campaign once enough people have rated it (five, by default;
+  before that, only how many have), and never on the rating row itself.
+  Signed out, a rating stays on the device.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
 - **BoardGameGeek.** A game can be handed to BGG's own play form, prefilled.
