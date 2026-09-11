@@ -69,9 +69,14 @@ truth for what every number means, written to be read by both.
   Signed out, a rating stays on the device.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
-- **BoardGameGeek.** A game can be handed to BGG's own play form, prefilled.
-  The username is kept in this browser and never synced, so no BGG password is
-  ever held by anything of ours.
+- **BoardGameGeek.** A game can be handed to BGG: the app opens the game's
+  page, where the Log Play form is, and puts the play on your clipboard as
+  the comment the phone would post — result and scenario, heroes, aspects,
+  the day and the start–end times, your notes — so filling the form is a
+  paste. Not more than that, honestly: BGG has no write API, the phone logs
+  in with your BGG password to post, and a page on thwart.app neither can
+  nor should. The username is kept in this browser and never synced, so no
+  BGG password is ever held by anything of ours.
 
 Optionally, the navigation can be arranged the way the phone arranges it: one
 **Play** tab opening a hub that holds the random draw, your own setup, the
@@ -177,6 +182,7 @@ the real modules:
 | `npm run test:replay` | That a game played again is the game that was played, a campaign's included |
 | `npm run test:randomizer` | The draw with extra modular sets: exact count, no duplicate, the scenario's own pool |
 | `npm run test:ratings` | That a rating cites the right subject and game, a campaign's scenario resolved, and that a refused one does not stall the cursor |
+| `npm run test:bgg` | That the BGG comment is the phone's, line for line |
 | `npm run test:safe-area` | Whether the bottom system-bar inset is believed |
 | `npm run test:filters` | Search and history filtering |
 | `npm run test:deckbuilder` | Deck legality against a collection |

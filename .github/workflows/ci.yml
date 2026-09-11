@@ -235,6 +235,12 @@ jobs:
         working-directory: web
         run: npm run test:ratings
 
+      # The BGG comment, line for line as the phone posts it, so one person's
+      # log does not read as two people's.
+      - name: The BGG comment matches the phone's
+        working-directory: web
+        run: npm run test:bgg
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

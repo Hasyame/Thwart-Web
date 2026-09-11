@@ -4,7 +4,8 @@
   import type { Play } from '../lib/records';
   import { db } from '../lib/db';
   import { formatElapsed } from '../lib/session.svelte';
-  import { bgg, bggLogPlayUrl, bggSummary } from '../lib/bgg.svelte';
+  import { bgg, bggLogPlayUrl } from '../lib/bgg.svelte';
+  import { bggComment } from '../lib/bggComment';
   import { session } from '../lib/sync/session.svelte';
   import { storedOnServer } from '../lib/sync/stored.svelte';
 
@@ -167,7 +168,7 @@
 
   async function copyDetails(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(bggSummary(play));
+      await navigator.clipboard.writeText(bggComment(play, t.difficulty));
       copied = true;
     } catch {
       // Clipboard permission refused, or an insecure context. Nothing to say

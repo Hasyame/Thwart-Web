@@ -71,30 +71,3 @@ export const bggProfileUrl = (username: string): string =>
 /** The game's page, which is where the Log Play form lives. */
 export const bggLogPlayUrl = (): string =>
   `https://boardgamegeek.com/boardgame/${BGG_GAME_ID}`;
-
-/**
- * The play as one line, for pasting into BGG's comment field.
- *
- * Written for a person reading their own play log later, not for a parser: the
- * scenario, who was played, how it went, and how long it took.
- */
-export function bggSummary(play: Play): string {
-  const parts: string[] = [play.scenarioName || play.scenarioCode];
-  if (play.difficulty !== '') {
-    parts.push(play.difficulty);
-  }
-  if (play.heroName !== '') {
-    parts.push(play.otherHeroes === '' ? play.heroName : `${play.heroName}, ${play.otherHeroes}`);
-  }
-  if (play.aspects !== '') {
-    parts.push(play.aspects);
-  }
-  parts.push(play.won ? 'Win' : 'Loss');
-  if (play.elapsedMillis > 0) {
-    parts.push(`${Math.round(play.elapsedMillis / 60_000)} min`);
-  }
-  if (play.notes.trim() !== '') {
-    parts.push(play.notes.trim());
-  }
-  return parts.join(' · ');
-}
