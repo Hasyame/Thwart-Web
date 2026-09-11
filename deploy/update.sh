@@ -48,7 +48,22 @@ data_digest() {
 
 cd "$REPO"
 
-WAS_HEAD="$(git rev-parse HEAD 2>/dev/null || echo none)"
+# What is *served*, not what the repository happened to be checked out at.
+#
+# The first version compared HEAD before and after its own fetch, which is
+# only the same question when nothing else has moved the checkout. On 11
+# September 2026 release.sh built and restarted the API from a new commit --
+# which checks the repository out at that commit -- and then called this
+# script, which found HEAD unchanged and the card data unchanged, said
+# "nothing changed", and kept the morning's site. The API was new and the
+# site was not, with a stamp beside it claiming otherwise. Every release that
+# carried both halves would have done the same.
+#
+# So each published release records the commit it was built from, beside its
+# directory rather than inside it (nothing under the web root is invisible to
+# nginx), and this compares against that. A release from before this existed
+# has no record and is rebuilt once.
+WAS_HEAD="$(cat "$(readlink -f "$CURRENT" 2>/dev/null).commit" 2>/dev/null || echo none)"
 WAS_DIGEST="$(data_digest)"
 
 log "fetching $REF"
@@ -103,6 +118,7 @@ TARGET="$RELEASES/$STAMP"
 log "publishing $STAMP"
 mkdir -p "$TARGET"
 cp -a dist/. "$TARGET/"
+printf '%s' "$NOW_HEAD" > "$TARGET.commit"
 
 # Symlink swap: ln -sfn onto a temporary name then mv is atomic on the same
 # filesystem, so no request ever sees a missing root.
@@ -111,5 +127,9 @@ mv -Tf "$CURRENT.new" "$CURRENT"
 
 log "pruning old releases"
 ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n "+$((KEEP + 1))" | xargs -r rm -rf
+# And the commit records of releases that are gone.
+for record in "$RELEASES"/*.commit; do
+    [ -e "$record" ] && [ ! -d "${record%.commit}" ] && rm -f "$record"
+done
 
 log "done"
