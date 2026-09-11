@@ -9,6 +9,7 @@
     sync,
     turnOff,
     turnOn,
+    dismissRejected,
   } from '../lib/sync/sync.svelte';
   import { autoSync, setAutoSync } from '../lib/sync/auto.svelte';
   import { live } from '../lib/sync/live.svelte';
@@ -178,6 +179,15 @@
     </p>
     {#if last?.stoppedBecause === 'push_failed'}
       <p class="warning" role="alert">{t.syncStopped}</p>
+    {/if}
+    {#if sync.rejected.length > 0}
+      <!-- Kept until dismissed, not until the next sync, which is often
+           seconds later. The records are already gone from this browser; this
+           is what happened to them. -->
+      <p class="warning" role="status">
+        {t.ratingRejected(sync.rejected.length)}
+        <button class="btn btn--quiet small" type="button" onclick={dismissRejected}>{t.close}</button>
+      </p>
     {/if}
     <div class="btn-row">
       <button

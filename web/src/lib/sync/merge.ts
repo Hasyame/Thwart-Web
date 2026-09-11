@@ -127,6 +127,19 @@ export function mergeBodies(
       return { kind: 'take', body: { ...base, reportedToBgg: reported } };
     }
 
+    case 'ratings': {
+      /*
+       * The later `ratedAt` wins; on a tie, the incoming.
+       *
+       * The opposite of a favourite. A star is put on once and the earliest
+       * date is the truth; a rating is an opinion, and the newer opinion is
+       * the current one — that is what "rate again after replaying" means.
+       */
+      const localAt = asNumber(local.ratedAt, 0);
+      const incomingAt = asNumber(incoming.ratedAt, 0);
+      return { kind: 'take', body: localAt > incomingAt ? { ...base, ...local } : { ...base, ...incoming } };
+    }
+
     case 'favourite_cards':
     case 'favourite_plays': {
       /*

@@ -208,6 +208,12 @@ const state = (collection, id, revision, body) => ({
     excluded_modular_sets: { setCode: 'bomb_scare' },
     excluded_scenarios: { scenarioCode: 'rhino' },
     favourite_cards: { cardCode: '01001', addedAt: 1700000000000 },
+    favourite_plays: { playId: 'p1', addedAt: 1700000000000 },
+    ratings: {
+      subject: 'modular:bomb_scare@rhino', score: 3, ratedAt: 1700000000000,
+      evidence: { playId: 'p1' },
+      context: { players: 1, heroes: [{ code: 'spiderman', aspect: 'justice' }], mode: 'standard_i', standardSet: '', scenario: 'rhino' },
+    },
     saved_decks: { id: 'd1', name: 'Thor', heroCode: '01001', cards: { '01002': 3 }, updatedAt: 1700000000000 },
     campaign_runs: { id: 'r1', campaignId: 'fne', createdAt: 1700000000000, updatedAt: 1700000000000 },
     campaign_events: { id: 'e1', runId: 'r1', at: 1700000000000, op: 'setCounter' },

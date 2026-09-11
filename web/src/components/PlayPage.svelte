@@ -39,6 +39,20 @@
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
   import { resumeSession, setupNotice } from '../lib/session.svelte';
   import { normalizeForSearch } from '../lib/normalize';
+  import RatingPanel from './RatingPanel.svelte';
+  import RatingBadge from './RatingBadge.svelte';
+  import { RatingsInView } from '../lib/ratingsView.svelte';
+  import { modularSubject, ratingOfPlay, scenarioSubject, subjectsOfPlay } from '../lib/ratings';
+
+  /* What the community thinks of the scenario chosen and the sets chosen
+     with it, beside each, while the game is being set up. */
+  const inView = new RatingsInView();
+  $effect(() => {
+    const scenario = session.current.scenarioCode;
+    const chosen = [...session.current.modularSetCodes];
+    void inView.show(scenario === '' ? null : scenario, chosen, storageOk);
+    return () => inView.dispose();
+  });
 
   interface Props {
     t: Strings;
@@ -302,6 +316,8 @@
    */
   let outcome = $state<boolean | null>(null);
   let recorded = $state(false);
+  /** The game just recorded, which is what the rating row is about. */
+  let lastPlay = $state.raw<Play | null>(null);
   let recording = $state(false);
 
   // --- the clock, corrected by hand ------------------------------------------
@@ -358,6 +374,7 @@
         ),
       });
       await db.plays.put(play);
+      lastPlay = play;
       /*
        * Where you play is remembered rather than asked every time.
        *
@@ -389,6 +406,7 @@
     victoryPoints = 0;
     outcome = null;
     recorded = false;
+    lastPlay = null;
   }
 
   const availableScenarios = $derived(
@@ -462,6 +480,23 @@
       <p class="ok">{t.playRecorded}</p>
       <button type="button" class="btn btn--primary" onclick={newGame}>{t.playAnother}</button>
     </div>
+    {#if lastPlay !== null}
+      {@const rated = lastPlay}
+      <!--
+        Optional, after the result is saved, never before and never as a step:
+        the scenario, then each modular set that was on the table. Closing the
+        page without answering is not a state anyone has to confirm.
+      -->
+      <RatingPanel
+        {t}
+        {storageOk}
+        title={t.ratingTitle}
+        subjects={subjectsOfPlay(rated, sets)}
+        labelOf={(s) => setNames.get(s.code) ?? s.code}
+        subOf={(s) => (s.kind === 'modular' ? undefined : t.scenario)}
+        build={(s, score) => ratingOfPlay(s, score, rated)}
+      />
+    {/if}
   {:else if session.current.phase === 'setup'}
     <p class="muted note">{t.playSetupNote}</p>
 
@@ -514,6 +549,9 @@
             <option value={rule.code}>{setNames.get(rule.code) ?? rule.code}</option>
           {/each}
         </select>
+        {#if session.current.scenarioCode !== ''}
+          <RatingBadge {t} summary={inView.forScenario(session.current.scenarioCode)} own={inView.ownFor(scenarioSubject(session.current.scenarioCode).key)} />
+        {/if}
       </label>
 
       <label class="field-group">
@@ -647,6 +685,7 @@
                 {#if !ownedModularCodes.has(set.code)}
                   <span class="muted tag">{t.modularNotOwned}</span>
                 {/if}
+                <RatingBadge {t} summary={inView.forSet(session.current.scenarioCode, set.code)} own={inView.ownFor(modularSubject(set.code, session.current.scenarioCode).key)} />
                 <button
                   type="button"
                   class="remove"

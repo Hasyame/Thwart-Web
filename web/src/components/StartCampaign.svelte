@@ -1,5 +1,10 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
+  import { liveQuery } from 'dexie';
+  import { db } from '../lib/db';
+  import RatingBadge from './RatingBadge.svelte';
+  import { campaignSubject } from '../lib/ratings';
+  import { summariesFor, type RatingSummary } from '../lib/ratingsApi';
   import type { Locale } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
   import { textOf, type CampaignTemplate } from '../lib/campaign/types';
@@ -19,6 +24,33 @@
   }
 
   const { t, uiLocale, decks, onStarted, onCancel }: Props = $props();
+
+  /* How hard the community found the campaign chosen, and how hard this
+     player did, beside the choice. */
+  let campaignSummary = $state.raw<RatingSummary | undefined>(undefined);
+  let campaignOwn = $state<number | null>(null);
+  $effect(() => {
+    const id = templateId;
+    campaignSummary = undefined;
+    campaignOwn = null;
+    if (id === '') {
+      return;
+    }
+    const key = campaignSubject(id).key;
+    let cancelled = false;
+    void summariesFor([key]).then((found) => {
+      if (!cancelled) {
+        campaignSummary = found.get(key);
+      }
+    });
+    const sub = liveQuery(() => db.ratings.get(key)).subscribe((row) => {
+      campaignOwn = row?.score ?? null;
+    });
+    return () => {
+      cancelled = true;
+      sub.unsubscribe();
+    };
+  });
 
   let summaries = $state.raw<readonly TemplateSummary[]>([]);
   let loadError = $state(false);
@@ -145,6 +177,7 @@
   {/if}
 
   {#if template !== null}
+    <RatingBadge {t} summary={campaignSummary} own={campaignOwn} />
     {#if template.wip === true}
       <!-- Marked incomplete by whoever wrote it. Shown anyway, because a
            half-written campaign is still worth reading, but not silently. -->

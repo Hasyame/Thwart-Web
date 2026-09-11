@@ -3,7 +3,7 @@ import type { Locale } from '../types';
 import { ApiError } from './api';
 import { FALLBACK_LIMITS, version } from './api';
 import { planAdoption, type AdoptionPlan, type AdoptionWrite } from './adoption';
-import { syncOnce, type SyncOutcome } from './engine';
+import { syncOnce, type RejectedRecord, type SyncOutcome } from './engine';
 import { applyAdoption, dexiePorts, stageAccount } from './ports';
 import { SYNC_STATE_KEY } from './state';
 
@@ -35,6 +35,14 @@ interface State {
   /** Set once adoption has happened, so it is never offered twice. */
   adopted: boolean;
   lastSyncedAt: number | null;
+  /**
+   * Records the server refused, kept until somebody has seen them.
+
+   * Not on `phase.last`, which the next sync replaces — and the next sync is
+   * often seconds later, because the live stream answers a push by asking for
+   * a pull. A refusal must outlive that, or it is never seen at all.
+   */
+  rejected: readonly RejectedRecord[];
 }
 
 /** Everything about a staged adoption except the rows it would write. */
@@ -58,7 +66,13 @@ export const sync = $state<State>({
   phase: { kind: 'off' },
   adopted: false,
   lastSyncedAt: null,
+  rejected: [],
 });
+
+/** Once the notice has been read. */
+export function dismissRejected(): void {
+  sync.rejected = [];
+}
 
 const codeOf = (cause: unknown): string =>
   cause instanceof ApiError ? cause.code : 'server_error';
@@ -134,6 +148,9 @@ export async function runSync(token: string, locale: Locale): Promise<void> {
     sync.adopted = true;
     sync.lastSyncedAt = Date.now();
     sync.phase = { kind: 'on', last: outcome };
+    if (outcome.rejected.length > 0) {
+      sync.rejected = [...sync.rejected, ...outcome.rejected];
+    }
   } catch (cause) {
     sync.phase = { kind: 'failed', code: codeOf(cause) };
   }

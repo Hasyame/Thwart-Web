@@ -227,6 +227,14 @@ jobs:
         working-directory: web
         run: npm run test:randomizer
 
+      # A rating cites a subject and a game; the server checks the claim, so
+      # the client must make it honestly: the right keys for what was on the
+      # table, a campaign's scenario resolved through its template, and a
+      # refused rating stepping the cursor rather than stalling it.
+      - name: Ratings cite what was played
+        working-directory: web
+        run: npm run test:ratings
+
       - name: Encounter tracker
         working-directory: web
         run: npm run test:encounter

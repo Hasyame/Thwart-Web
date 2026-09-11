@@ -38,7 +38,8 @@
     "test:safe-area": "vite-node scripts/test-safe-area.mjs",
     "test:nav": "vite-node scripts/test-nav.mjs",
     "test:replay": "vite-node scripts/test-replay.mjs",
-    "test:randomizer": "vite-node scripts/test-randomizer.mjs"
+    "test:randomizer": "vite-node scripts/test-randomizer.mjs",
+    "test:ratings": "vite-node scripts/test-ratings.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

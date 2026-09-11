@@ -65,6 +65,36 @@ export interface FavouritePlay {
 }
 
 /**
+ * One player's current opinion of how hard something was.
+ *
+ * Keyed by its subject — `scenario:rhino`, `modular:bomb_scare@rhino`,
+ * `campaign:gmw` — so one rating per player per subject is the data model
+ * rather than a rule, and rating again is the same record with a newer
+ * `ratedAt`. Checked by the server against the play or run it cites before it
+ * is stored; a rating for something this account never played comes back
+ * `rejected` and is dropped here. docs/spec/ratings-and-modular-sets.md §2.3.
+ */
+export interface Rating {
+  readonly subject: string;
+  /** 0 effortless … 5 impossible. */
+  readonly score: number;
+  readonly ratedAt: number;
+  readonly evidence: { readonly playId?: string; readonly runId?: string };
+  /**
+   * The game it was given after, snapshotted then and never updated. Not
+   * shown yet; kept so it is not lost.
+   */
+  readonly context: {
+    readonly players: number;
+    readonly heroes: readonly { readonly code: string; readonly aspect: string }[];
+    readonly mode: string;
+    readonly standardSet: string;
+    /** For a modular set: the scenario it was paired with. */
+    readonly scenario?: string;
+  };
+}
+
+/**
  * `data/db/entity/SavedDeckEntity.kt`.
  *
  * Not written by this app yet — decks are a later phase — but declared and
@@ -293,6 +323,8 @@ export interface Backup {
    * round trip nothing and keeps a web backup whole.
    */
   readonly favouritePlays: readonly FavouritePlay[];
+  /** As with starred games: absent from a phone's backup, harmless there. */
+  readonly ratings: readonly Rating[];
   readonly photos: readonly string[];
   /**
    * Null, not absent, is meaningful: the app reads it as "this file has no

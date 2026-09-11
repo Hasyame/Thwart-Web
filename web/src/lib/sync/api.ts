@@ -131,7 +131,13 @@ export interface PullPage {
   readonly minCursor: number;
 }
 
-export type PushOutcome = 'applied' | 'applied_over_conflict';
+/**
+ * `rejected` is the one that is not a success. The server did not store the
+ * record and will not on a retry: a rating for something this account never
+ * played, or malformed. The client's only correct move is to drop its copy.
+ * docs/spec/ratings-and-modular-sets.md §2.4.
+ */
+export type PushOutcome = 'applied' | 'applied_over_conflict' | 'already_present' | 'rejected';
 
 export interface PushResult {
   readonly id: string;
@@ -140,6 +146,8 @@ export interface PushResult {
   readonly outcome: PushOutcome;
   /** Named when this write went over one the client had not seen. */
   readonly supersededRevision?: number;
+  /** Why, when the outcome is `rejected`. */
+  readonly reason?: string;
 }
 
 export interface PushResponse {

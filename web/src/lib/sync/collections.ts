@@ -8,6 +8,7 @@ import type {
   ExcludedScenario,
   FavouriteCard,
   FavouritePlay,
+  Rating,
   OwnedPack,
   Play,
   RandomizerHistoryRow,
@@ -43,6 +44,7 @@ export type CollectionName =
   | 'excluded_scenarios'
   | 'favourite_cards'
   | 'favourite_plays'
+  | 'ratings'
   | 'saved_decks'
   | 'campaign_runs'
   | 'campaign_events'
@@ -143,6 +145,21 @@ export const FAVOURITE_PLAYS: Mapping<FavouritePlay> = {
   bodyOf: whole,
   rowOf: (id, body) => ({ playId: id, addedAt: Number(body.addedAt ?? 0) }),
   updatedAt: (row) => iso(row.addedAt),
+};
+
+/**
+ * Difficulty ratings. The id is the subject key, and the server checks each
+ * one against the play or run its body cites before storing it; the ports
+ * drop a record the server answers `rejected` for. `updatedAt` is `ratedAt`,
+ * which is also what the merge compares.
+ */
+export const RATINGS: Mapping<Rating> = {
+  name: 'ratings',
+  table: () => db.ratings,
+  idOf: (row) => row.subject,
+  bodyOf: whole,
+  rowOf: (id, body) => ({ ...(body as unknown as Rating), subject: id }),
+  updatedAt: (row) => iso(row.ratedAt),
 };
 
 export const SAVED_DECKS: Mapping<SavedDeck> = {
@@ -287,6 +304,15 @@ export const COLLECTIONS = [
   CAMPAIGN_EVENTS,
   PLAYS,
   RANDOMIZER_HISTORY,
+  /*
+   * Last, and the order is load-bearing: this list is the order records are
+   * read and pushed in, and the server checks a rating against the play or
+   * run it cites *as the server holds it* — pushed earlier, or earlier in the
+   * same batch. Listed before PLAYS, every rating in a first sync was refused
+   * as not_played and dropped, the two honest ones with the one that was not.
+   * Driving a first sync in a browser is what caught it.
+   */
+  RATINGS,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- one list of
   // differently-typed mappings; each is used only through its own row type.
 ] as unknown as readonly Mapping<any>[];

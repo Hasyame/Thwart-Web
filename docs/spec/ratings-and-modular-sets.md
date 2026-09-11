@@ -216,6 +216,18 @@ The server accepts a `ratings` record only if all of these hold:
      scenario resolves to `S` as above;
    - `campaign:<T>` — the run's `templateId` is `T` and its `finished` is `true`.
 
+   One campaign shape the resolution cannot check: a template scenario whose
+   `baseSetup.encounterSets` is empty, because the campaign *draws* the
+   villain at the table — every scenario of *Fear No Evil* (`fne`) does.
+   The template names no set, so the server takes the client's `scenario:<S>`
+   as claimed for such a play, after the play and run have been found and
+   found live. A player could name any set there; it is a bounded hole (one
+   rating per subject, from a logged-in account that did push a finished
+   campaign play) and the alternative — refusing every rating of a drawn
+   villain — was judged worse. The modular check is not relaxed the same way:
+   `modular:<M>@<S>` still needs `M` in the template's encounter or modular
+   sets, or in the play's own `modularSets`.
+
 A record that fails is **not stored**, and the push result carries it as:
 
 ```
@@ -600,13 +612,16 @@ poisons the collection for every other feature.
 
 ---
 
-## 9. Two things noticed while writing this
+## 9. Things noticed while writing and building this
 
-- **`favourite_plays` is not in the server's export map.** `server/sync.go`'s
-  `collections` lists what `GET /v1/account/export` carries, by name; the
-  collection added in web commit `54ad347` is not in it, so starred games are
-  synced but not yet exported. One line to add, and §3.4 adds `ratings` to the
-  same map — worth doing together.
+- **`favourite_plays` was not in the server's export map** — and, worse than
+  the export, `validateRecords` in `server/sync.go` refuses a whole batch for
+  a collection it does not list, so the first push of a starred game would
+  have failed with every play beside it. Both `favourite_plays` and `ratings`
+  are in the map now (server commit `dbe9201`), which is also why the server
+  must be released before a web build that pushes either. Doc 06's allowlist
+  section was corrected to say the map is an allowlist and not only an export
+  list.
 - **The `rejected` outcome is new to the protocol, and Android will
   mis-handle it as written.** Doc 02 lists three outcomes; this adds a fourth.
   Android's `SyncEngine.push` (`data/sync/SyncEngine.kt`, the loop over
@@ -616,6 +631,15 @@ poisons the collection for every other feature.
   the phone and never sent again, while the server holds nothing — the phone
   showing a rating that does not exist, permanently. **Android must handle
   `rejected` explicitly** — delete the local record, tell the person once —
-  and the web engine needs the same check. Neither client should ship ratings
-  before that branch exists, and the server test in §2.4 should be paired with
-  a client test that a rejected record is gone from the local table afterwards.
+  before it ships ratings. The web engine has the branch: `confirmPushed`
+  deletes the row and its sync record in one transaction, the cursor steps
+  past the refusal (`cursorAfterPush`), and the sync panel keeps the notice
+  until dismissed, because the live stream pulls again seconds later and a
+  notice that lived only in the last sync's result was gone before it was
+  read. `web/scripts/test-ratings.mjs` covers the cursor; the server test in
+  §2.4 covers the refusal.
+- **Push order is a contract.** `COLLECTIONS` in
+  `web/src/lib/sync/collections.ts` is also the push order, and the first
+  end-to-end run had every rating refused as `not_played` because `ratings`
+  sat before `plays`. It is last now, with a comment saying why; a client that
+  reorders it silently breaks §2.4's "earlier in the same batch".

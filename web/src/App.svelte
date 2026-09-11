@@ -35,6 +35,7 @@
   import PlayHub from './components/PlayHub.svelte';
   import { campaignLayoutOf, replayOf, type CampaignLayout } from './lib/replay';
   import type { Draw } from './lib/randomizer';
+  import { subjectsOfPlay, type RatingSubject } from './lib/ratings';
   import { eventsOf } from './lib/campaign/store';
   import { inCampaign, runOf } from './lib/playQuery';
   import { prepareSession, setupNotice } from './lib/session.svelte';
@@ -74,6 +75,8 @@
   let index = $state<readonly IndexRow[]>([]);
   let packs = $state<readonly Pack[]>([]);
   let sets = $state<readonly CardSet[]>([]);
+  /** Set names by code, in the card language, for anything that shows a set. */
+  const setNames = $derived(new Map(sets.map((s) => [s.code, s.name] as const)));
   let meta = $state<DataMeta | null>(null);
   let loading = $state(true);
   let loadError = $state<string | null>(null);
@@ -390,23 +393,18 @@
    * hold. The result lands on the setup screen, not in a running game: the
    * person may want to swap a seat, and the modular sets may need choosing.
    */
-  async function replay(play: Play): Promise<void> {
-    const decks = storageOk ? await db.decks.toArray() : [];
-    /*
-      Both languages' set lists, not just the current one.
-
-      The modular sets are read back out of the notes by *name*, in whatever
-      card language was current when the game was recorded. Somebody who has
-      switched language since would otherwise get none of them back. Cached
-      after the first load, so this costs one fetch, once.
-    */
+  /*
+   * What a game was actually laid out as, for anything that needs to know.
+   *
+   * Both languages' set lists, not just the current one: the modular sets of
+   * an older game are read back out of the notes by *name*, in whatever card
+   * language was current then. And for a campaign's scenario — recorded under
+   * the campaign's own id, not a card set — the run's template says what was
+   * on the table. Null layout when the run is gone; callers fall back to what
+   * the play itself says.
+   */
+  async function laidOut(play: Play): Promise<{ sets: readonly CardSet[]; layout: CampaignLayout | null }> {
     const bothLanguages = (await Promise.all([loadSets('en'), loadSets('fr')])).flat();
-    /*
-      A campaign's scenario is recorded under the campaign's own id for it, not
-      a card set, so the template it came from says what was actually on the
-      table. If the run is gone the replay still lands, with the scenario left
-      for the person to pick.
-    */
     let layout: CampaignLayout | null = null;
     if (inCampaign(play) && storageOk) {
       const runId = runOf(play);
@@ -415,6 +413,18 @@
         layout = campaignLayoutOf(play, run, await eventsOf(run.id), index, bothLanguages);
       }
     }
+    return { sets: bothLanguages, layout };
+  }
+
+  /** What a game can be rated on. The same resolution a replay uses. */
+  async function ratingSubjectsOf(play: Play): Promise<readonly RatingSubject[]> {
+    const { sets: both, layout } = await laidOut(play);
+    return subjectsOfPlay(play, both, layout);
+  }
+
+  async function replay(play: Play): Promise<void> {
+    const decks = storageOk ? await db.decks.toArray() : [];
+    const { sets: bothLanguages, layout } = await laidOut(play);
     const prepared = replayOf(play, decks, bothLanguages, layout);
     prepareSession(prepared.session);
     setupNotice.text = prepared.modularSetsUnknown ? t.playAgainModularNote : null;
@@ -585,6 +595,8 @@
       filter={route.filter ?? {}}
       onFilter={(filter) => navigate({ name: 'history', filter })}
       onReplay={(play) => void replay(play)}
+      subjectsOf={ratingSubjectsOf}
+      setNames={setNames}
     />
   {:else if route.name === 'stats'}
     <StatsPage {t} {index} {storageOk} base={BASE} />

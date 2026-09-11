@@ -563,6 +563,19 @@ export interface Strings {
   readonly modularShowAll: string;
   readonly modularNotOwned: string;
   readonly modularRemove: string;
+
+  /* Difficulty ratings. docs/spec/ratings-and-modular-sets.md section 2. */
+  /** The word for a score, 0 effortless to 5 impossible. */
+  readonly difficultyWord: (score: number) => string;
+  readonly ratingTitle: string;
+  readonly ratingCampaignTitle: string;
+  readonly ratingOptional: string;
+  readonly ratingYours: string;
+  readonly ratingClear: string;
+  readonly ratingCommunity: (mean: number, count: number) => string;
+  readonly ratingCountOnly: (count: number) => string;
+  readonly ratingRejected: (count: number) => string;
+  readonly ratingRefreshing: string;
   readonly playEditSave: string;
   readonly playWhen: string;
   readonly playResult: string;
@@ -1241,6 +1254,7 @@ const STRINGS: Record<Locale, Strings> = {
         excluded_scenarios: 'Excluded scenarios',
         favourite_cards: 'Favourite cards',
         favourite_plays: 'Starred games',
+        ratings: 'Difficulty ratings',
         saved_decks: 'Decks',
         campaign_runs: 'Campaigns',
         campaign_events: 'Campaign log',
@@ -1283,6 +1297,20 @@ const STRINGS: Record<Locale, Strings> = {
     modularShowAll: 'Show sets I do not own',
     modularNotOwned: 'Not in your collection',
     modularRemove: 'Remove',
+    difficultyWord: (score) =>
+      ['Effortless', 'Easy', 'Fair', 'Hard', 'Brutal', 'Impossible'][score] ?? String(score),
+    ratingTitle: 'How hard was it?',
+    ratingCampaignTitle: 'How hard was the campaign, all told?',
+    ratingOptional: 'Optional. Your rating is yours to see; the community average appears once a subject has five.',
+    ratingYours: 'Your rating',
+    ratingClear: 'Clear',
+    ratingCommunity: (mean, count) => `${mean.toFixed(1)} \u00b7 ${count} rating${count === 1 ? '' : 's'}`,
+    ratingCountOnly: (count) => `${count} rating${count === 1 ? '' : 's'} so far`,
+    ratingRejected: (count) =>
+      count === 1
+        ? 'One rating was refused by the server: it was for a game the server does not have. It has been removed.'
+        : `${count} ratings were refused by the server: they were for games the server does not have. They have been removed.`,
+    ratingRefreshing: 'Updating\u2026',
     playEditSave: 'Save the correction',
     playWhen: 'Played on',
     playResult: 'Result',
@@ -1983,6 +2011,7 @@ const STRINGS: Record<Locale, Strings> = {
         excluded_scenarios: 'Sc\u00e9narios exclus',
         favourite_cards: 'Cartes favorites',
         favourite_plays: 'Parties favorites',
+        ratings: 'Notes de difficult\u00e9',
         saved_decks: 'Decks',
         campaign_runs: 'Campagnes',
         campaign_events: 'Journal de campagne',
@@ -2025,6 +2054,20 @@ const STRINGS: Record<Locale, Strings> = {
     modularShowAll: 'Afficher les sets que je ne poss\u00e8de pas',
     modularNotOwned: 'Hors collection',
     modularRemove: 'Retirer',
+    difficultyWord: (score) =>
+      ['Une formalit\u00e9', 'Facile', '\u00c9quilibr\u00e9', 'Difficile', 'Brutal', 'Impossible'][score] ?? String(score),
+    ratingTitle: 'C\u2019\u00e9tait difficile ?',
+    ratingCampaignTitle: 'Et la campagne dans son ensemble, difficile ?',
+    ratingOptional: 'Facultatif. Votre note reste visible pour vous ; la moyenne de la communaut\u00e9 appara\u00eet \u00e0 partir de cinq notes.',
+    ratingYours: 'Votre note',
+    ratingClear: 'Effacer',
+    ratingCommunity: (mean, count) => `${mean.toFixed(1).replace('.', ',')} \u00b7 ${count} note${count === 1 ? '' : 's'}`,
+    ratingCountOnly: (count) => `${count} note${count === 1 ? '' : 's'} pour l\u2019instant`,
+    ratingRejected: (count) =>
+      count === 1
+        ? 'Une note a \u00e9t\u00e9 refus\u00e9e par le serveur : elle portait sur une partie qu\u2019il ne conna\u00eet pas. Elle a \u00e9t\u00e9 retir\u00e9e.'
+        : `${count} notes ont \u00e9t\u00e9 refus\u00e9es par le serveur : elles portaient sur des parties qu\u2019il ne conna\u00eet pas. Elles ont \u00e9t\u00e9 retir\u00e9es.`,
+    ratingRefreshing: 'Mise \u00e0 jour\u2026',
     playEditSave: 'Enregistrer la correction',
     playWhen: 'Jouée le',
     playResult: 'Résultat',

@@ -30,7 +30,7 @@ function check(label, ok, detail = '') {
 
 {
   const names = COLLECTIONS.map((collection) => collection.name).sort();
-  // Ten are the contract with the phone. The eleventh, favourite_plays, is the
+  // Ten are the contract with the phone. favourite_plays and ratings are the
   // web one release ahead: the phone defers a collection it cannot name and
   // holds its cursor short of it, so the rows wait on the server for the build
   // that adds it. If this list ever gains a twelfth without the phone knowing,
@@ -45,6 +45,7 @@ function check(label, ok, detail = '') {
     'owned_packs',
     'plays',
     'randomizer_history',
+    'ratings',
     'saved_decks',
     'settings',
   ];

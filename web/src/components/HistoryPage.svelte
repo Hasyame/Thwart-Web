@@ -5,6 +5,7 @@
   import type { HistoryFilter } from '../lib/router';
   import { liveQuery } from 'dexie';
   import { db } from '../lib/db';
+  import type { RatingSubject } from '../lib/ratings';
   import { count, inCampaign, page, runOf, type PlayFilter } from '../lib/playQuery';
   import { playerBucket } from '../lib/plays';
   import PlayDetail from './PlayDetail.svelte';
@@ -37,9 +38,12 @@
     onFilter: (filter: HistoryFilter) => void;
     /** Lays a game out again on the setup screen. */
     onReplay: (play: Play) => void;
+    /** What a game can be rated on, resolved by App (a campaign's needs its template). */
+    subjectsOf: (play: Play) => Promise<readonly RatingSubject[]>;
+    setNames: ReadonlyMap<string, string>;
   }
 
-  const { t, uiLocale, index, storageOk, filter, onFilter, onReplay }: Props = $props();
+  const { t, uiLocale, index, storageOk, filter, onFilter, onReplay, subjectsOf, setNames }: Props = $props();
 
   const PAGE = 25;
 
@@ -284,6 +288,27 @@
   );
 
   const openPlay = $derived(rows.find((play) => play.id === filter.play) ?? null);
+
+  /* Resolved when a game is opened, because a campaign's scenario needs its
+     run's template read. Cleared with the game, so a stale list never shows
+     under the next one. */
+  let ratingSubjects = $state.raw<readonly RatingSubject[]>([]);
+  $effect(() => {
+    const play = openPlay;
+    ratingSubjects = [];
+    if (play === null) {
+      return;
+    }
+    let cancelled = false;
+    void subjectsOf(play).then((found) => {
+      if (!cancelled) {
+        ratingSubjects = found;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
   const openRun = $derived(filter.run === undefined ? null : (runs.get(filter.run) ?? null));
 
   /** The games of one run, in the order they were played. */
@@ -486,6 +511,9 @@
         onOpenRun={(id) => open('run', id)}
         {onReplay}
         starred={favouriteIds.has(openPlay.id)}
+        {ratingSubjects}
+        {setNames}
+        {storageOk}
       />
     {/if}
 

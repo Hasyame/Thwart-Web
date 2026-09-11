@@ -54,6 +54,17 @@ truth for what every number means, written to be read by both.
   difficulty, heroes and modular sets, a campaign's scenario included, resolved
   through its template — and **starred**, to find in one filter and to see
   listed on the setup screen with a one-tap replay.
+- **Difficulty ratings.** After a game, and from its page in the history, you
+  can say how hard the scenario was and how hard each modular set was *with
+  that scenario*, on a six-word scale from effortless to impossible; a finished
+  campaign can be rated as a whole. Optional, one current opinion per subject,
+  and only for what you actually played: the server checks every rating
+  against the game it cites and refuses one that does not match, which the app
+  then drops and says so. Signed-in players' ratings are pooled; the community
+  average and its spread show beside a scenario, a drawn set, a set in the
+  picker and a campaign once enough people have rated it (five, by default),
+  and never on the rating row itself. Signed out, a rating stays on the
+  device.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
 - **BoardGameGeek.** A game can be handed to BGG's own play form, prefilled.
@@ -163,6 +174,7 @@ the real modules:
 | `npm run test:nav` | That every destination is reachable, in both arrangements |
 | `npm run test:replay` | That a game played again is the game that was played, a campaign's included |
 | `npm run test:randomizer` | The draw with extra modular sets: exact count, no duplicate, the scenario's own pool |
+| `npm run test:ratings` | That a rating cites the right subject and game, a campaign's scenario resolved, and that a refused one does not stall the cursor |
 | `npm run test:safe-area` | Whether the bottom system-bar inset is believed |
 | `npm run test:filters` | Search and history filtering |
 | `npm run test:deckbuilder` | Deck legality against a collection |
@@ -236,12 +248,21 @@ brief and the live-sync design.
   showed a general error and left you guessing. It still does not know
   `/v1/auth/verify` itself, so the link has to be opened somewhere else and
   there is no way to ask for another one from the app.
-- **Starred games on Android.** The web syncs a `favourite_plays` collection
-  — a game somebody starred, to find again and play again — and the phone does
-  not have it yet. Its sync engine defers a collection it cannot name and holds
-  its cursor short of it, so nothing is lost and nothing breaks; the star
-  arrives the moment a build that knows the name pulls. Doc 06 §6 has the
-  contract, and it is the same shape as `favourite_cards`.
+- **Starred games and ratings on Android.** The web syncs two collections the
+  phone does not have yet: `favourite_plays` — a game somebody starred, to find
+  again and play again — and `ratings`. Its sync engine defers a collection it
+  cannot name and holds its cursor short of it, so nothing is lost and nothing
+  breaks; both arrive the moment a build that knows the names pulls. Doc 06 §6
+  has the favourites contract, the same shape as `favourite_cards`, and
+  [`docs/spec/ratings-and-modular-sets.md`](docs/spec/ratings-and-modular-sets.md)
+  has the ratings one. Ratings need one more thing of the phone first: its
+  push loop marks every result synced, and the server answers a rating it
+  refuses with a fourth outcome, `rejected`, which Android must handle by
+  deleting the local record rather than keeping a rating the server never
+  stored.
+- **Extra modular sets on Android.** The randomiser here can add up to five
+  modular sets beyond a scenario's own, and a custom game takes as many as you
+  like; the phone's randomiser draws the scenario's count only.
 - **One correction on Android** that
   [`docs/spec/statistics.md`](docs/spec/statistics.md) records: `plays_by_scenario`
   groups by `scenarioCode` while selecting a bare `scenarioName`, so a scenario

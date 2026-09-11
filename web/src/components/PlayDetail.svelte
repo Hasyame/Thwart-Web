@@ -3,6 +3,8 @@
   import type { Locale } from '../lib/types';
   import type { CampaignRun, Play } from '../lib/records';
   import { db, toggleFavouritePlay } from '../lib/db';
+  import RatingPanel from './RatingPanel.svelte';
+  import { ratingOfPlay, type RatingSubject } from '../lib/ratings';
   import { formatElapsed } from '../lib/session.svelte';
   import { playerBucket } from '../lib/plays';
   import { runOf } from '../lib/playQuery';
@@ -37,9 +39,19 @@
     onReplay: (play: Play) => void;
     /** Whether this game is starred, from the history's own live set. */
     starred: boolean;
+    /**
+     * What this game can be rated on, resolved by App — a campaign's scenario
+     * needs the run's template, which this detail has no other reason to
+     * hold. Empty when nothing can be resolved.
+     */
+    ratingSubjects: readonly RatingSubject[];
+    setNames: ReadonlyMap<string, string>;
+    storageOk: boolean;
   }
 
-  const { t, uiLocale, play, run, onClose, onOpenRun, onReplay, starred }: Props = $props();
+  const {
+    t, uiLocale, play, run, onClose, onOpenRun, onReplay, starred, ratingSubjects, setNames, storageOk,
+  }: Props = $props();
 
   async function toggleStar(): Promise<void> {
     busy = true;
@@ -392,6 +404,18 @@
           {t.playDelete}
         </button>
       </div>
+
+      <!-- The same rows as after the game, so a rating can be given late or
+           changed: the player's current one is shown and replaced in place. -->
+      <RatingPanel
+        {t}
+        {storageOk}
+        title={t.ratingTitle}
+        subjects={ratingSubjects}
+        labelOf={(s) => setNames.get(s.code) ?? s.code}
+        subOf={(s) => (s.kind === 'modular' ? undefined : t.scenario)}
+        build={(s, score) => ratingOfPlay(s, score, play)}
+      />
     {/if}
   {/if}
 </div>

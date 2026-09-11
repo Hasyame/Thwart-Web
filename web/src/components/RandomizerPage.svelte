@@ -2,6 +2,9 @@
   import { liveQuery } from 'dexie';
   import type { CardSet, IndexRow } from '../lib/types';
   import type { Strings } from '../lib/i18n';
+  import RatingBadge from './RatingBadge.svelte';
+  import { RatingsInView } from '../lib/ratingsView.svelte';
+  import { modularSubject, scenarioSubject } from '../lib/ratings';
   import { db } from '../lib/db';
   import { loadScenarioRules } from '../lib/data';
   import {
@@ -40,6 +43,16 @@
   }
 
   const { t, sets, index, storageOk, onPlay }: Props = $props();
+
+  /* The community's opinion of what was drawn, beside the draw. Refetched on
+     every roll for exactly the scenario and sets in view. */
+  const ratings = new RatingsInView();
+  $effect(() => {
+    const scenario = draw.scenarioCode;
+    const drawnSets = [...draw.mandatoryModularCodes, ...draw.modularSetCodes];
+    void ratings.show(scenario, drawnSets, storageOk);
+    return () => ratings.dispose();
+  });
 
   /*
    * Extra modular sets on top of the scenario's own. 0 to 5, default 0, and a
@@ -591,6 +604,9 @@
               <option value={rule.code}>{setNames.get(rule.code) ?? rule.code}</option>
             {/each}
           </select>
+          {#if draw.scenarioCode !== null}
+            <RatingBadge {t} summary={ratings.forScenario(draw.scenarioCode)} own={ratings.ownFor(scenarioSubject(draw.scenarioCode).key)} />
+          {/if}
         </div>
 
         <div class="options surface">
@@ -696,6 +712,9 @@
                       <option value={option.code}>{option.name}</option>
                     {/each}
                   </select>
+                  {#if draw.scenarioCode !== null}
+                    <RatingBadge {t} summary={ratings.forSet(draw.scenarioCode, code)} own={ratings.ownFor(modularSubject(code, draw.scenarioCode).key)} />
+                  {/if}
                 </li>
               {/each}
             </ul>

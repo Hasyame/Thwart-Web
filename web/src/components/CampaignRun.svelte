@@ -46,6 +46,8 @@
     timerRunning,
   } from '../lib/campaign/store';
   import CampaignBriefing from './CampaignBriefing.svelte';
+  import RatingPanel from './RatingPanel.svelte';
+  import { campaignSubject, ratingOfRun } from '../lib/ratings';
   import CampaignMarket from './CampaignMarket.svelte';
   import CampaignPlaying from './CampaignPlaying.svelte';
   import CampaignQuestions from './CampaignQuestions.svelte';
@@ -606,6 +608,16 @@
         <p class="muted note">{t.timePlayed(formatElapsed(campaign.totalPlayTimeMillis))}</p>
         <p class="muted note">{t.campaignFinishedCleanup}</p>
       </section>
+      <!-- The campaign as a whole, unlocked by finishing it and independent of
+           the ratings given scenario by scenario inside it. -->
+      <RatingPanel
+        {t}
+        {storageOk}
+        title={t.ratingCampaignTitle}
+        subjects={[campaignSubject(run.templateId)]}
+        labelOf={() => run.name || run.templateName}
+        build={(_, score) => ratingOfRun(run, score, campaign.heroes.length)}
+      />
     {:else if page === 'questions' && scenario !== null}
       <CampaignQuestions
         {t}

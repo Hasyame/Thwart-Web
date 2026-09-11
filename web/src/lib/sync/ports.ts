@@ -26,6 +26,7 @@ const TABLES = () => [
   db.excludedScenarios,
   db.favouriteCards,
   db.favouritePlays,
+  db.ratings,
   db.decks,
   db.campaignRuns,
   db.campaignEvents,
@@ -142,7 +143,7 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
       results: readonly PushResult[],
     ): Promise<void> {
       const sent = new Map(records.map((record) => [`${record.collection} ${record.id}`, record]));
-      await db.transaction('rw', [db.syncRecords], async () => {
+      await db.transaction('rw', [...TABLES(), db.syncRecords], async () => {
         for (const result of results) {
           const key = `${result.collection} ${result.id}`;
           const record = sent.get(key);
@@ -150,6 +151,18 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             continue;
           }
           if (record.deleted) {
+            await db.syncRecords.delete([result.collection, result.id]);
+            continue;
+          }
+          /*
+            Refused. Not stored on the server and never will be, so the only
+            state that is not a lie is none: the row goes, and its bookkeeping
+            with it, so nothing tries to send it again. Marking it synced here
+            — which is what every other outcome gets — would leave this browser
+            showing a rating that does not exist, permanently.
+          */
+          if (result.outcome === 'rejected') {
+            await collectionByName(result.collection)?.table().delete(result.id);
             await db.syncRecords.delete([result.collection, result.id]);
             continue;
           }

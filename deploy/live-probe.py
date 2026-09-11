@@ -12,7 +12,10 @@ feature was broken for every real client.
 What it asserts, in order: a stream opens and is greeted; a change reaches both
 of one account's clients; the other account hears nothing; a client that missed
 the window catches up in one pull; a client reconnecting behind is told
-immediately; a repeated batch does not write twice.
+immediately; a repeated batch does not write twice; a rating of a game the
+account played is stored and one of a game it did not is refused, by name,
+without holding up the plays beside it; and the public summary stays silent
+below the threshold.
 
 The probe accounts are kept between runs and their records cleared at the end.
 Registration is capped at five an hour per address, and a test that spends that
@@ -182,16 +185,38 @@ class Stream(threading.Thread):
         return False
 
 
+def now_iso():
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+# Batch ids are remembered for a day, and a rerun that reused "b-play-2" would
+# be answered from memory rather than written -- and then fail to catch up on
+# a change that was never made. Unique per run, so the second run is a run.
+RUN = secrets.token_hex(3)
+
+
 def push(token, ident, batch=None):
     return call("POST", "/sync/changes", {
-        "batchId": batch or ("b-" + ident),
+        "batchId": batch or ("b-" + RUN + "-" + ident),
         "records": [{
             "collection": "plays",
             "id": ident,
-            "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "body": {"id": ident, "won": True, "playedAt": 1700000000000},
+            "updatedAt": now_iso(),
+            "body": {"id": ident, "won": True, "playedAt": 1700000000000,
+                     "scenarioCode": "rhino", "modularSets": "bomb_scare"},
         }],
     }, token=token)
+
+
+def rating(subject, play_id, score=3):
+    return {
+        "collection": "ratings",
+        "id": subject,
+        "updatedAt": now_iso(),
+        "body": {"subject": subject, "score": score, "ratedAt": int(time.time() * 1000),
+                 "evidence": {"playId": play_id},
+                 "context": {"players": 1, "heroes": [], "mode": "standard_i", "standardSet": "standard_i"}},
+    }
 
 
 print("--- two accounts ---")
@@ -249,11 +274,56 @@ late.stop.set()
 
 print()
 print("--- a repeated batch does not write twice ---")
-status_one, body_one = push(token_a, "play-5", batch="same-batch")
-status_two, body_two = push(token_a, "play-5", batch="same-batch")
+status_one, body_one = push(token_a, "play-5", batch="same-batch-" + RUN)
+status_two, body_two = push(token_a, "play-5", batch="same-batch-" + RUN)
 check("the retry is idempotent",
       status_one == 200 and status_two == 200 and body_one.get("cursor") == body_two.get("cursor"),
       "cursors %s then %s" % (body_one.get("cursor"), body_two.get("cursor")))
+
+print()
+print("--- a rating is checked against the game it cites ---")
+# Plays first, then ratings, in one batch: the server checks a rating against
+# the play as it holds it, which includes one earlier in the same batch. The
+# second rating cites a play this account never pushed; it must be refused by
+# name while the play and the honest rating beside it still apply.
+status, body = call("POST", "/sync/changes", {
+    "batchId": "ratings-" + secrets.token_hex(4),
+    "records": [
+        {"collection": "plays", "id": "play-6", "updatedAt": now_iso(),
+         "body": {"id": "play-6", "won": False, "playedAt": 1700000000000,
+                  "scenarioCode": "rhino", "modularSets": "bomb_scare"}},
+        rating("scenario:rhino", "play-6"),
+        rating("modular:bomb_scare@rhino", "play-6", 4),
+        rating("scenario:klaw", "play-6"),
+        rating("scenario:rhino-nobody", "play-never"),
+    ],
+}, token=token_a)
+outcomes = {r["id"]: (r.get("outcome"), r.get("reason")) for r in body.get("results", [])}
+check("the batch was accepted as a whole", status == 200, str(status))
+check("the play applied", outcomes.get("play-6", (None,))[0] in ("applied", "applied_over_conflict", "already_present"),
+      str(outcomes.get("play-6")))
+check("a rating of the scenario played is stored",
+      outcomes.get("scenario:rhino", (None,))[0] in ("applied", "applied_over_conflict"),
+      str(outcomes.get("scenario:rhino")))
+check("and of a set drawn with it",
+      outcomes.get("modular:bomb_scare@rhino", (None,))[0] in ("applied", "applied_over_conflict"),
+      str(outcomes.get("modular:bomb_scare@rhino")))
+check("a rating of a scenario this game was not is refused, by name",
+      outcomes.get("scenario:klaw") == ("rejected", "subject_mismatch"), str(outcomes.get("scenario:klaw")))
+check("and one citing a game never pushed",
+      outcomes.get("scenario:rhino-nobody") == ("rejected", "not_played"), str(outcomes.get("scenario:rhino-nobody")))
+
+status, page = call("GET", "/sync/changes?since=0", token=token_a)
+held = sorted(c["id"] for c in page.get("changes", []) if c.get("collection") == "ratings" and not c.get("deleted"))
+check("the server holds exactly the two honest ratings",
+      held == ["modular:bomb_scare@rhino", "scenario:rhino"], ",".join(held))
+
+status, summary = call("GET", "/ratings/summary?subject=scenario:rhino&subject=modular:bomb_scare")
+one = summary if isinstance(summary, dict) else {}
+check("the public summary answers without a token", status == 200, str(status))
+check("and says nothing of a mean below the threshold",
+      "mean" not in one.get("scenario:rhino", {}) and one.get("scenario:rhino", {}).get("count", 0) >= 1,
+      json.dumps(one.get("scenario:rhino")))
 
 print()
 print("--- clean up ---")
@@ -262,15 +332,18 @@ print("--- clean up ---")
 # test you can run. Their records are removed instead.
 for token, _ in ((token_a, None), (token_b, None)):
     status, page = call("GET", "/sync/changes?since=0", token=token)
-    stale = [c["id"] for c in page.get("changes", []) if not c.get("deleted")]
+    stale = [(c["collection"], c["id"]) for c in page.get("changes", []) if not c.get("deleted")]
     if stale:
+        # Ratings before plays: a tombstoned rating is unindexed from the
+        # public summary, and the order keeps every tombstone a plain delete.
+        stale.sort(key=lambda pair: 0 if pair[0] == "ratings" else 1)
         call("POST", "/sync/changes", {
             "batchId": "cleanup-" + secrets.token_hex(4),
             "records": [
-                {"collection": "plays", "id": i,
-                 "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                {"collection": collection, "id": i,
+                 "updatedAt": now_iso(),
                  "deleted": True}
-                for i in stale
+                for collection, i in stale
             ],
         }, token=token)
 check("probe records cleared", True)

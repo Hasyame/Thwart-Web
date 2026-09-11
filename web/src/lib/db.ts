@@ -9,6 +9,7 @@ import type {
   FavouriteCard,
   FavouritePlay,
   OwnedPack,
+  Rating,
   PausedGame,
   Play,
   RandomizerHistoryRow,
@@ -49,6 +50,7 @@ class ThwartDatabase extends Dexie {
   excludedScenarios!: Table<ExcludedScenario, string>;
   favouriteCards!: Table<FavouriteCard, string>;
   favouritePlays!: Table<FavouritePlay, string>;
+  ratings!: Table<Rating, string>;
 
   // Carried, not yet written. See the class comment.
   decks!: Table<SavedDeck, string>;
@@ -182,6 +184,11 @@ class ThwartDatabase extends Dexie {
     this.version(7).stores({
       favouritePlays: 'playId, addedAt',
     });
+
+    // v8: difficulty ratings, keyed by subject.
+    this.version(8).stores({
+      ratings: 'subject, ratedAt',
+    });
   }
 }
 
@@ -274,6 +281,7 @@ export const ALL_TABLES = [
   'excludedScenarios',
   'favouriteCards',
   'favouritePlays',
+  'ratings',
   'decks',
   'plays',
   'campaignRuns',
