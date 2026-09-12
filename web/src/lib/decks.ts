@@ -1,5 +1,6 @@
-import type { IndexRow } from './types';
+import type { Card, IndexRow } from './types';
 import type { SavedDeck } from './records';
+import { heroRules } from './deckRules';
 
 /**
  * Importing and reading MarvelCDB decks.
@@ -252,6 +253,20 @@ export function heroIdentities(index: readonly IndexRow[]): readonly HeroIdentit
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/**
+ * The slots a deck for this hero starts with: the signature cards, at their
+ * printed quantity.
+ *
+ * What the phone does on "new deck" and what a MarvelCDB decklist carries --
+ * a published Phoenix list holds her twelve signature cards among its
+ * forty-two -- so a deck built here starts where one built anywhere else
+ * does, and the validator has nothing to say about it from the first
+ * second. The rule for which cards those are lives in `heroRules`.
+ */
+export function signatureSlots(hero: Card, packCards: readonly Card[]): Record<string, number> {
+  return Object.fromEntries(heroRules(hero, packCards).requiredCards);
 }
 
 /** The card types a player deck can hold. */

@@ -176,6 +176,11 @@ export interface Strings {
   readonly deckContents: string;
   readonly deckAddCards: string;
   readonly deckEmpty: string;
+  /** The group of the hero's own cards in the editor, and why it has no steppers. */
+  readonly deckHeroCards: string;
+  readonly deckHeroCardsFixed: string;
+  /** Puts the hero's cards a deck is missing into it. */
+  readonly deckAddHeroCards: string;
   /** The editor's search is limited to owned packs, and none is ticked. */
   readonly deckOwnedOnlyEmpty: string;
   readonly deckStats: string;
@@ -800,6 +805,9 @@ const STRINGS: Record<Locale, Strings> = {
     deckContents: 'In the deck',
     deckAddCards: 'Add cards',
     deckEmpty: 'Nothing in it yet. Search on the right and press the plus.',
+    deckHeroCards: 'Hero cards',
+    deckHeroCardsFixed: 'In every deck this hero builds, at the printed count.',
+    deckAddHeroCards: 'Add the hero\u2019s cards',
     deckOwnedOnlyEmpty: 'Your collection is empty, so nothing can match. Tick your packs on the Collection page, or untick this to see every card.',
     deckStats: 'What it is made of',
     deckCopy: 'Copy as text',
@@ -1550,6 +1558,9 @@ const STRINGS: Record<Locale, Strings> = {
     deckContents: 'Dans le deck',
     deckAddCards: 'Ajouter des cartes',
     deckEmpty: 'Encore vide. Cherchez \u00e0 droite et appuyez sur le plus.',
+    deckHeroCards: 'Cartes du h\u00e9ros',
+    deckHeroCardsFixed: 'Dans chaque deck de ce h\u00e9ros, au nombre imprim\u00e9.',
+    deckAddHeroCards: 'Ajouter les cartes du h\u00e9ros',
     deckOwnedOnlyEmpty: 'Votre collection est vide, rien ne peut correspondre. Cochez vos paquets sur la page Collection, ou d\u00e9cochez ceci pour voir toutes les cartes.',
     deckStats: 'De quoi il est fait',
     deckCopy: 'Copier en texte',

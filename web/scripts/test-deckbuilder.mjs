@@ -17,7 +17,7 @@ import {
   heroRules,
   validateDeck,
 } from '../src/lib/deckRules.ts';
-import { buildableFor, heroIdentities } from '../src/lib/decks.ts';
+import { buildableFor, heroIdentities, signatureSlots } from '../src/lib/decks.ts';
 
 /*
  * The deck size, which is the one rule not in the card data anywhere. Named
@@ -504,6 +504,37 @@ const rules = heroRules(spiderMan, packOf(spiderMan));
   check('a campaign upgrade is never offered', !offered('04155', '01001a'));
   check("Doctor Strange's invocations are put on the table, not chosen", !offered('09032', '09001a'));
   check('a treachery is never offered', !rows.filter((r) => r.typeCode === 'treachery').some((r) => buildableFor(r, null)));
+}
+
+// --- a published decklist is legal, and a new deck starts as one does ---------------------
+//
+// MarvelCDB decklist 40000, Phoenix, 42 cards, as the site serves it. It names
+// the front of Phoenix Force and not the back; requiring the back called every
+// Phoenix deck ever published illegal.
+{
+  const listed = JSON.parse(readFileSync(join(import.meta.dirname, 'fixtures', 'decklist-40000-phoenix.json'), 'utf8'));
+  const phoenix = pool.get(listed.hero_code);
+  const phoenixRules = heroRules(phoenix, packOf(phoenix));
+  const result = validateDeck(phoenixRules, ['justice'], asMap(listed.slots), infos);
+  check('a published Phoenix decklist is legal', result.problems.length === 0,
+    result.problems.map((p) => `${p.kind}:${p.cardName ?? ''}`).join(', '));
+  check('the back of Phoenix Force is not a required card', !phoenixRules.requiredCards.has('34002b') && phoenixRules.requiredCards.has('34002a'));
+
+  const start = signatureSlots(phoenix, packOf(phoenix));
+  check('a new Phoenix deck starts with her twelve signature cards, sixteen copies',
+    Object.keys(start).length === 12 && Object.values(start).reduce((a, b) => a + b, 0) === 16,
+    `${Object.keys(start).length} cards, ${Object.values(start).reduce((a, b) => a + b, 0)} copies`);
+  check('every one of them is in the published list at the same count',
+    Object.entries(start).every(([code, n]) => listed.slots[code] === n));
+  check('and none of them is the identity, the alter ego or the obligation',
+    !('34001a' in start) && !('34001b' in start) && !('34028' in start));
+
+  // Not every lettered code is a back side: Wakanda Forever! is four printings
+  // (a-d, five copies), none hidden, and all of them belong in the deck.
+  const bp = pool.get('01040a');
+  const bpStart = signatureSlots(bp, packOf(bp));
+  check("Black Panther's four Wakanda Forever! printings are all required",
+    ['01043a', '01043b', '01043c'].every((c) => bpStart[c] === 1) && bpStart['01043d'] === 2);
 }
 
 process.exit(failures === 0 ? 0 : 1);

@@ -168,10 +168,41 @@
     }
   }
 
-  /** The deck's cards, grouped the way a decklist is written. */
+  /*
+   * The hero's own cards, apart from the rest.
+   *
+   * Not optional and not adjustable -- the rule is the printed count -- so
+   * they are listed under their own heading with no steppers, and the person
+   * is never offered a minus that the validator would only complain about.
+   */
+  const heroCards = $derived.by(() => {
+    if (rules === null) {
+      return [];
+    }
+    return [...rules.requiredCards.entries()]
+      .map(([code, quantity]) => ({ code, name: records.get(code)?.name ?? index.find((r) => r.code === code)?.name ?? code, quantity }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  /** Whether any of the hero's cards is missing or miscounted: an older deck, or an edit gone wrong. */
+  const heroCardsMissing = $derived(validation?.problems.some((p) => p.kind === 'missingRequired') ?? false);
+
+  function addHeroCards(): void {
+    if (rules === null) {
+      return;
+    }
+    for (const [code, quantity] of rules.requiredCards) {
+      slots[code] = quantity;
+    }
+  }
+
+  /** The deck's chosen cards, grouped the way a decklist is written. The hero's own are listed apart. */
   const grouped = $derived.by(() => {
     const byType = new Map<string, { code: string; name: string; quantity: number }[]>();
     for (const [code, quantity] of Object.entries(slots)) {
+      if (rules?.requiredCards.has(code) === true) {
+        continue;
+      }
       const row = index.find((entry) => entry.code === code);
       const typeName = row?.typeName ?? '—';
       const entry = { code, name: row?.name ?? code, quantity };
@@ -283,6 +314,21 @@
   <div class="columns">
     <div class="column">
       <h2>{t.deckContents}</h2>
+      {#if heroCards.length > 0}
+        <h3>{t.deckHeroCards} <span class="muted">{heroCards.reduce((n, c) => n + c.quantity, 0)}</span></h3>
+        <p class="muted small">{t.deckHeroCardsFixed}</p>
+        {#if heroCardsMissing}
+          <button type="button" class="btn" onclick={addHeroCards}>{t.deckAddHeroCards}</button>
+        {/if}
+        <ul class="cards">
+          {#each heroCards as card (card.code)}
+            <li class:missing={(slots[card.code] ?? 0) !== card.quantity}>
+              <span class="qty">{card.quantity}×</span>
+              <span class="name">{card.name}</span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
       {#each grouped as group (group.type)}
         <h3>{group.type} <span class="muted">{group.cards.reduce((n, c) => n + c.quantity, 0)}</span></h3>
         <ul class="cards">
@@ -459,6 +505,11 @@
   .qty {
     font-variant-numeric: tabular-nums;
     min-width: 2.2rem;
+  }
+
+  /* A hero card the deck does not hold at the printed count. */
+  .cards li.missing {
+    color: var(--danger);
   }
 
   /* The same mark the deck's own list puts on a card from a pack not owned,

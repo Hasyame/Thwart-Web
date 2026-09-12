@@ -141,6 +141,12 @@ export interface Card {
   readonly deck_options?: readonly unknown[] | null;
   readonly permanent?: boolean;
   readonly double_sided?: boolean;
+  /**
+   * MarvelCDB's flag for a card that is the other face of another: an alter
+   * ego behind its hero, the flipped side of Phoenix Force. Listed as a card
+   * of its own with its own code, but never a card in a deck.
+   */
+  readonly hidden?: boolean;
   readonly url?: string | null;
 }
 

@@ -108,6 +108,12 @@ export function heroRules(hero: Card, packCards: readonly Card[]): HeroDeckRules
    * Faction is deliberately not the filter. Spider-Woman's set holds one event
    * of each aspect, and those are her cards in every deck she builds, whichever
    * two aspects she picks.
+   *
+   * Nor is a back side a card. MarvelCDB lists the flipped face of a
+   * double-sided card under its own code -- Phoenix Force is 34002a and
+   * 34002b, Wakanda Forever! 01043a and 01043b -- flagged `hidden`, and a
+   * decklist names the front only. Requiring the back made every Phoenix deck
+   * ever published illegal by one card that cannot be put in a deck.
    */
   const NOT_DECK_CARDS = new Set(['hero', 'alter_ego', 'obligation']);
   const requiredCards = new Map<string, number>();
@@ -115,7 +121,7 @@ export function heroRules(hero: Card, packCards: readonly Card[]): HeroDeckRules
     if (card.card_set_code !== setCode || card.code === hero.code) {
       continue;
     }
-    if (NOT_DECK_CARDS.has(card.type_code)) {
+    if (NOT_DECK_CARDS.has(card.type_code) || card.hidden === true) {
       continue;
     }
     requiredCards.set(card.code, card.quantity ?? 1);

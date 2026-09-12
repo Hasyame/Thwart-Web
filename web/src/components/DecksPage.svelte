@@ -4,7 +4,7 @@
   import type { SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
-  import { loadCardsByCode } from '../lib/data';
+  import { loadCardsByCode, loadPackCards } from '../lib/data';
   import type { Card } from '../lib/types';
   import DeckContents from './DeckContents.svelte';
   import DeckEditor from './DeckEditor.svelte';
@@ -14,6 +14,7 @@
     importDeck,
     parseDeckReference,
     parseSlots,
+    signatureSlots,
   } from '../lib/decks';
   import { heroRules, validateDeck } from '../lib/deckRules';
   import { syncAfter } from '../lib/sync/auto.svelte';
@@ -86,6 +87,21 @@
   async function createDeck(heroCode: string, aspect: string): Promise<void> {
     const hero = index.find((row) => row.code === heroCode);
     const id = `local-${crypto.randomUUID()}`;
+    /*
+     * The hero's own cards from the first second, as the phone does and as a
+     * MarvelCDB decklist arrives. A deck that starts empty starts with a dozen
+     * complaints about cards the person never chose to leave out.
+     */
+    let slots = '';
+    if (hero !== undefined) {
+      const packCards = await loadPackCards(cardLocale, hero.packCode).catch((): readonly Card[] => []);
+      const heroCard = packCards.find((card) => card.code === heroCode);
+      if (heroCard !== undefined) {
+        slots = Object.entries(signatureSlots(heroCard, packCards))
+          .map(([code, quantity]) => `${code}=${quantity}`)
+          .join(',');
+      }
+    }
     await db.decks.put({
       id,
       marvelCdbId: 0,
@@ -95,7 +111,7 @@
       heroCode,
       heroName: hero?.name ?? heroCode,
       aspects: aspect,
-      slots: '',
+      slots,
       ignoreDeckLimitSlots: '',
       descriptionMd: null,
       version: null,
