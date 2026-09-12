@@ -14,6 +14,7 @@
   import CardWindow from './components/CardWindow.svelte';
   import CardPeek from './components/CardPeek.svelte';
   import AccountPage from './components/AccountPage.svelte';
+  import BggPage from './components/BggPage.svelte';
   import type { FormMode } from './components/SignInForm.svelte';
   import AccountMenu from './components/AccountMenu.svelte';
   import BottomNav from './components/BottomNav.svelte';
@@ -596,7 +597,7 @@
   {:else if route.name === 'versus'}
     <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
   {:else if route.name === 'play'}
-    <PlayPage {t} {sets} {index} {cardLocale} {storageOk} onReplay={(play) => void replay(play)} />
+    <PlayPage {t} {sets} {index} {uiLocale} {cardLocale} {storageOk} onReplay={(play) => void replay(play)} />
   {:else if route.name === 'hub'}
     <PlayHub
       {t}
@@ -623,6 +624,8 @@
     <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
   {:else if route.name === 'account'}
     <AccountPage {t} {uiLocale} {storageOk} initialMode={accountMode} />
+  {:else if route.name === 'bgg'}
+    <BggPage {t} {uiLocale} {storageOk} onBack={() => (sheetOpen = true)} />
   {:else if route.name === 'verify'}
     <VerifyPage
       {t}
@@ -718,6 +721,7 @@
   onNavigate={(name) => navigate({ name })}
   hrefFor={(name) => pathForRoute({ name }, BASE)}
   onAccount={() => navigate({ name: 'account' })}
+  onBgg={() => navigate({ name: 'bgg' })}
   accountHandle={session.account?.handle ?? null}
   hidden={hiddenDestinations}
   {grouped}

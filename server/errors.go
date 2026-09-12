@@ -115,6 +115,22 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"Something went wrong on the server.",
 		"Une erreur est survenue côté serveur.",
 	},
+	"bgg_bad_credentials": {
+		"BoardGameGeek did not accept that username and password.",
+		"BoardGameGeek n'a pas accepté cet identifiant et ce mot de passe.",
+	},
+	"bgg_rejected": {
+		"BoardGameGeek refused the request. Its play form may have changed.",
+		"BoardGameGeek a refusé la requête. Son formulaire de partie a peut-être changé.",
+	},
+	"bgg_unreachable": {
+		"BoardGameGeek could not be reached. Try again later.",
+		"BoardGameGeek n'a pas pu être joint. Réessayez plus tard.",
+	},
+	"bgg_disabled": {
+		"This server does not relay plays to BoardGameGeek.",
+		"Ce serveur ne relaie pas les parties vers BoardGameGeek.",
+	},
 }
 
 /*

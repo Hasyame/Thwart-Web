@@ -8,6 +8,7 @@
  *   npm run test:bgg
  */
 import { bggComment } from '../src/lib/bggComment.ts';
+import { bggPlayOf } from '../src/lib/bggPayload.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -52,6 +53,26 @@ const play = (over = {}) => ({
   check('a play with no scenario name falls back to its code', c.startsWith('Win — klaw'), c.split('\n')[0]);
   check('the other seats are still heroes when the first is blank', c.includes('Heroes: Captain America'));
   check('no hero at all, no Heroes line', !bggComment(play({ heroName: '', otherHeroes: '' }), label).includes('Heroes:'));
+}
+
+// --- the play as the relay posts it: BggPayload.kt, field for field --------------
+
+{
+  const p = bggPlayOf(play({ victoryPoints: 3, location: 'Home' }), 'hasyame', label);
+  check('the day the game finished, as yyyy-MM-dd', p.playedOn === '2026-09-11', p.playedOn);
+  check('the length in whole minutes', p.lengthMinutes === 48, String(p.lengthMinutes));
+  check('the location as recorded', p.location === 'Home');
+  check('the comment is the shared one', p.comment === bggComment(play({ victoryPoints: 3, location: 'Home' }), label));
+  check('one seat: the account holder, and nobody else', p.players.length === 1 && p.players[0].username === 'hasyame' && p.players[0].name === 'hasyame');
+  check('with the victory points as the score, and the result', p.players[0].score === 3 && p.players[0].won === true);
+  check('and the hero and aspects where BGG shows a colour', p.players[0].color === 'Spider-Man / Justice', p.players[0].color);
+
+  const short = bggPlayOf(play({ elapsedMillis: 40_000 }), 'hasyame', label);
+  check('a game under a minute reports zero, not one', short.lengthMinutes === 0, String(short.lengthMinutes));
+  const noAspect = bggPlayOf(play({ aspects: '' }), 'hasyame', label);
+  check('no aspect: the colour is the hero alone', noAspect.players[0].color === 'Spider-Man', noAspect.players[0].color);
+  const lost = bggPlayOf(play({ won: false }), 'hasyame', label);
+  check('a loss is not a win', lost.players[0].won === false);
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

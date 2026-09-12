@@ -45,6 +45,8 @@ export type Route =
   | { readonly name: 'history'; readonly filter?: HistoryFilter }
   /** The account, which exists whether or not anybody is signed in to one. */
   | { readonly name: 'account' }
+  /** The BoardGameGeek connection, a page of its own under Settings. */
+  | { readonly name: 'bgg' }
   /**
    * Where the link in a confirmation message lands.
    *
@@ -67,6 +69,7 @@ const STATS_PATH = /^\/stats\/?$/;
 const CAMPAIGNS_PATH = /^\/campaigns\/?$/;
 const RULES_PATH = /^\/rules\/?$/;
 const ACCOUNT_PATH = /^\/account\/?$/;
+const BGG_PATH = /^\/settings\/bgg\/?$/;
 const VERIFY_PATH = /^\/verify\/?$/;
 const HISTORY_PATH = /^\/history\/?$/;
 
@@ -183,6 +186,9 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (ACCOUNT_PATH.test(normalised)) {
     return { name: 'account' };
   }
+  if (BGG_PATH.test(normalised)) {
+    return { name: 'bgg' };
+  }
   if (VERIFY_PATH.test(normalised)) {
     return { name: 'verify', token: new URLSearchParams(search).get('token') ?? '' };
   }
@@ -232,6 +238,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'account') {
     return `${trimmedBase}/account`;
+  }
+  if (route.name === 'bgg') {
+    return `${trimmedBase}/settings/bgg`;
   }
   if (route.name === 'history') {
     return `${trimmedBase}/history${historyQuery(route.filter ?? {})}`;

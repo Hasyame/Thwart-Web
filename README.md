@@ -86,14 +86,20 @@ template may say and the rulebook readings behind Fear No Evil.
   Signed out, a rating stays on the device.
 - **Statistics.** Win rates by hero, aspect, hero-and-aspect pairing, scenario,
   difficulty and table size, counted per seat.
-- **BoardGameGeek.** A game can be handed to BGG: the app opens the game's
-  page, where the Log Play form is, and puts the play on your clipboard as
-  the comment the phone would post — result and scenario, heroes, aspects,
-  the day and the start–end times, your notes — so filling the form is a
-  paste. Not more than that, honestly: BGG has no write API, the phone logs
-  in with your BGG password to post, and a page on thwart.app neither can
-  nor should. The username is kept in this browser and never synced, so no
-  BGG password is ever held by anything of ours.
+- **BoardGameGeek.** Under Settings, a page of its own, laid out as on the
+  phone: connect with your BGG username and password, choose whether games
+  are sent never, on request or always, and disconnect. A sent play is the
+  phone's, field for field — result and scenario, heroes, aspects, the day
+  and the start–end times, your notes in the comment; your hero beside your
+  name. BGG has no write API and no token: the phone posts with your
+  password, and a page on thwart.app cannot reach BGG at all (no CORS on
+  either endpoint), so the play goes through the thwart.app server, which
+  signs in, posts, and keeps nothing — not the password, not the username,
+  not the session (`server/bgg.go`). The connection lives in this browser
+  only, never synced and never in a backup, and the relay is open only to a
+  signed-in Thwart account. Without one, or on a server run with
+  `-bgg-relay=false`, the page still takes a username and hands you BGG's own
+  Log Play form with the details on your clipboard.
 
 Optionally, the navigation can be arranged the way the phone arranges it: one
 **Play** tab opening a hub that holds the random draw, your own setup, the

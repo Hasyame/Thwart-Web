@@ -75,6 +75,17 @@ func main() {
 		"public address of the web app, used to build the confirmation link")
 	ratingThreshold := flag.Int("rating-threshold", defaultRatingThreshold,
 		"how many ratings a subject needs before its community average is served; a self-hosted instance with one player may set it lower")
+	/*
+		Whether this instance relays plays to BoardGameGeek.
+
+		On by default because the feature is the point of the web app having
+		a BGG connection at all; a self-hoster who would rather their box never
+		carried anybody's BGG password can turn it off, and the web app then
+		offers only the hand-off to BGG's own form. bgg.go says what the relay
+		holds, which is nothing.
+	*/
+	bggRelay := flag.Bool("bgg-relay", true,
+		"relay plays to BoardGameGeek for signed-in accounts; nothing is stored, see bgg.go")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -88,7 +99,7 @@ func main() {
 		return
 	}
 
-	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, *ratingThreshold, log); err != nil {
+	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, *ratingThreshold, *bggRelay, log); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
@@ -119,7 +130,7 @@ func backup(dbPath, to string) error {
 	return store.Backup(context.Background(), to)
 }
 
-func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, ratingThreshold int, log *slog.Logger) error {
+func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, ratingThreshold int, bggRelay bool, log *slog.Logger) error {
 	store, err := OpenStore(dbPath)
 	if err != nil {
 		return err
@@ -134,6 +145,10 @@ func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL
 	if ratingThreshold >= 1 {
 		server.RatingThreshold = ratingThreshold
 	}
+	if bggRelay {
+		server.UseBggRelay(bggBaseURL)
+	}
+	log.Info("bgg relay", "enabled", bggRelay)
 	log.Info("configured", "registration", map[bool]string{true: "open", false: "closed"}[openRegistration])
 
 	if mailFrom != "" {

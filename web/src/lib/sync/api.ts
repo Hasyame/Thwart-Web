@@ -45,6 +45,14 @@ export type ApiErrorCode =
   | 'server_busy'
   | 'not_found'
   | 'server_error'
+  /**
+   * The BoardGameGeek relay, server/bgg.go: the password was refused, BGG
+   * refused or could not be reached, or this instance has the relay off.
+   */
+  | 'bgg_bad_credentials'
+  | 'bgg_rejected'
+  | 'bgg_unreachable'
+  | 'bgg_disabled'
   /** Not the server's: the request never arrived. */
   | 'offline';
 
@@ -176,6 +184,11 @@ export interface ServerVersion {
    * the refusal explains itself.
    */
   readonly registrationOpen?: boolean;
+  /**
+   * Whether this instance relays plays to BoardGameGeek. Absent on an older
+   * server, and then the form is offered and the refusal explains itself.
+   */
+  readonly bggRelay?: boolean;
 }
 
 interface CallOptions {
@@ -392,6 +405,49 @@ export const push = (
   locale?: Locale,
 ): Promise<PushResponse> =>
   call('/sync/changes', { method: 'POST', body: { batchId, records }, token, locale });
+
+// --- BoardGameGeek, relayed -------------------------------------------------------
+
+/** One seat on a BGG play, as `geekplay.php` records it. */
+export interface BggPlayer {
+  readonly username: string;
+  readonly name: string;
+  readonly score: number;
+  readonly won: boolean;
+  /** BGG shows this beside the name; the hero played is what belongs there. */
+  readonly color: string;
+}
+
+/** A finished game, in the shape BoardGameGeek records one. See lib/bggPayload. */
+export interface BggPlay {
+  readonly playedOn: string;
+  readonly lengthMinutes: number;
+  readonly location: string;
+  readonly comment: string;
+  readonly players: readonly BggPlayer[];
+}
+
+/**
+ * Checks a BGG username and password, through the relay, storing nothing on
+ * either side. Only for a signed-in account: the relay is behind the token.
+ */
+export const bggVerify = (
+  token: string,
+  username: string,
+  password: string,
+  locale?: Locale,
+): Promise<void> =>
+  call('/bgg/verify', { method: 'POST', body: { username, password }, token, locale });
+
+/** Posts one play to BGG through the relay. Signs in, posts, forgets. */
+export const bggReportPlay = (
+  token: string,
+  username: string,
+  password: string,
+  play: BggPlay,
+  locale?: Locale,
+): Promise<void> =>
+  call('/bgg/plays', { method: 'POST', body: { username, password, play }, token, locale });
 
 // --- the instance itself --------------------------------------------------------
 

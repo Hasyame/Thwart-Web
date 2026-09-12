@@ -101,6 +101,22 @@ except where noted.
 
 Eleven endpoints. That is the whole API.
 
+### BoardGameGeek relay (added 2026-09-12)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/v1/bgg/verify` | Check a BGG username and password against BGG. Stores nothing. |
+| `POST` | `/v1/bgg/plays` | Sign in to BGG with the credentials in the body, post one play to `geekplay.php`, forget. |
+
+Both behind a device token and limited per account. Not part of sync: the
+server holds no BGG state and the browser keeps the credentials, on the device,
+never in a collection and never in a backup. The play arrives already shaped
+(comment and all) so the server never has to know what a scenario is. Codes:
+`bgg_bad_credentials` (401), `bgg_rejected` and `bgg_unreachable` (502),
+`bgg_disabled` (503, the instance runs `-bgg-relay=false`; `/v1/version`
+publishes `bggRelay` so a client can stop offering the form). See
+`server/bgg.go` for the rules the relay holds to.
+
 ### Registration
 
 ```http

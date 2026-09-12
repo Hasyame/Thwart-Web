@@ -344,6 +344,8 @@ one IPv4 address is normal and a phone that changes networks is normal:
 | `POST /v1/sync/changes` | 60 per minute per account |
 | `GET /v1/sync/changes` | 120 per minute per account |
 | `GET /v1/account/export` | 5 per hour per account |
+| `POST /v1/bgg/verify` | 10 per hour per account |
+| `POST /v1/bgg/plays` | 60 per day per account |
 
 A token-bucket map in memory. No Redis: a restart resetting the buckets is not
 a security event at this scale.
@@ -485,6 +487,8 @@ to prove the backups work.
 It should also state plainly what the server does and does not hold: one email
 address per account, used to sign in and for nothing else, on accounts that
 exist only because somebody asked for synchronisation — and beyond that, no
-card data, no contact with MarvelCDB or BoardGameGeek, and no outbound
-connections at all. For somebody deciding whether to run a stranger’s code on
+card data, no contact with MarvelCDB, and one outbound connection: to
+BoardGameGeek, when a signed-in account asks the relay to post a play, with a
+password the server forwards and forgets (`server/bgg.go`; off with
+`-bgg-relay=false`). For somebody deciding whether to run a stranger’s code on
 their box, that paragraph is the most useful one in the file.

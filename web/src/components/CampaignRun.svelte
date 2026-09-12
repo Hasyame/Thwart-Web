@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale } from '../lib/types';
-  import type { CampaignRun, SavedDeck } from '../lib/records';
+  import type { CampaignRun, Play, SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { loadCardsByCode } from '../lib/data';
   import { setupSteps } from '../lib/schemeSetup';
@@ -11,6 +11,8 @@
   import { choosableScenarios } from '../lib/campaign/rules';
   import { buildCampaignPlay } from '../lib/campaign/play';
   import { syncAfter } from '../lib/sync/auto.svelte';
+  import { bgg, bggCanSend, sendPlayToBgg } from '../lib/bgg.svelte';
+  import { ApiError } from '../lib/sync/api';
   import {
     currentScenario,
     encounterSetsOf,
@@ -449,6 +451,31 @@
     }
   });
 
+  /*
+   * BoardGameGeek, after a scenario, as after any game (PlayPage does the
+   * same): sent on its own when the connection says always, offered when it
+   * says ask. The play is the one just filed, so a failure can be retried
+   * from the result page without leaving it.
+   */
+  let bggPlay = $state.raw<Play | null>(null);
+  let bggState = $state<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  let bggFailure = $state<string | null>(null);
+
+  async function sendToBgg(play: Play): Promise<void> {
+    if (bggState === 'sending' || bggState === 'sent') {
+      return;
+    }
+    bggState = 'sending';
+    bggFailure = null;
+    try {
+      await sendPlayToBgg(play, t.difficulty, uiLocale);
+      bggState = 'sent';
+    } catch (cause) {
+      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+      bggState = 'failed';
+    }
+  }
+
   /**
    * Files the scenario: the campaign event, then the play.
    *
@@ -466,20 +493,26 @@
     const state = campaign;
     try {
       await recordResult(run, scenarioId, victory, answers, played);
+      bggPlay = null;
+      bggState = 'idle';
+      bggFailure = null;
       if (storageOk) {
-        await db.plays.put(
-          buildCampaignPlay({
-            runId: run.id,
-            scenario: current,
-            scenarioId,
-            campaign: state,
-            decks,
-            locale: cardLocale,
-            won: victory,
-            elapsedMillis: played,
-            victoryPoints: answers.numbers?.vp ?? 0,
-          }),
-        );
+        const play = buildCampaignPlay({
+          runId: run.id,
+          scenario: current,
+          scenarioId,
+          campaign: state,
+          decks,
+          locale: cardLocale,
+          won: victory,
+          elapsedMillis: played,
+          victoryPoints: answers.numbers?.vp ?? 0,
+        });
+        await db.plays.put(play);
+        bggPlay = play;
+        if (bggCanSend() && bgg.mode === 'always') {
+          void sendToBgg(play);
+        }
       }
       seatedFor = null;
       endGame();
@@ -744,6 +777,21 @@
                same villain, for whenever the table comes back to it. -->
           <p class="muted note continue-note">{t.campaignContinueLeavesOpen}</p>
         {/if}
+        {#if bggPlay !== null && bggCanSend() && bgg.mode !== 'off'}
+          {@const sending = bggPlay}
+          <div class="bgg-line">
+            {#if bggState === 'sent'}
+              <p class="ok">{t.bggSent}</p>
+            {:else if bggState === 'failed'}
+              <p class="danger-text" role="alert">{t.bggSendFailed(bggFailure ?? '')}</p>
+              <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{t.bggSend}</button>
+            {:else if bggState === 'sending'}
+              <p class="muted">{t.bggSending}</p>
+            {:else if bgg.mode === 'ask'}
+              <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{t.bggSend}</button>
+            {/if}
+          </div>
+        {/if}
       </section>
     {:else if page === 'market'}
       <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
@@ -988,6 +1036,27 @@
   .continue-note {
     margin: var(--space-2) 0 0;
     max-width: var(--prose-max);
+  }
+
+  .bgg-line {
+    margin-top: var(--space-3);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .bgg-line p {
+    margin: 0;
+  }
+
+  .ok {
+    color: var(--accent);
+    font-weight: var(--weight-semibold);
+  }
+
+  .danger-text {
+    color: var(--danger);
   }
 
   /* A text link rather than a button: giving up a campaign is not a thing to

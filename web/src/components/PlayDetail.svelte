@@ -9,6 +9,9 @@
   import { playerBucket } from '../lib/plays';
   import { inCampaign, runOf } from '../lib/playQuery';
   import { campaignFigures } from '../lib/campaignFigures';
+  import { bgg, bggCanSend, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
+  import { bggComment } from '../lib/bggComment';
+  import { ApiError } from '../lib/sync/api';
 
   /**
    * One recorded game, in full, with the two things that can be done to it.
@@ -65,6 +68,53 @@
   let editing = $state(false);
   let confirming = $state(false);
   let busy = $state(false);
+
+  /*
+   * BoardGameGeek, from the history: sent through the relay when this
+   * browser holds a connection that can, otherwise the hand-off — BGG's own
+   * form in another tab, the details on the clipboard, and the reader saying
+   * it is done, since the browser cannot ask BGG whether it was.
+   */
+  const onBgg = $derived(play.reportedToBgg === true);
+  let bggFailure = $state<string | null>(null);
+  let offeringMark = $state(false);
+  let copied = $state(false);
+
+  async function sendToBgg(): Promise<void> {
+    busy = true;
+    bggFailure = null;
+    try {
+      await sendPlayToBgg(play, t.difficulty, uiLocale);
+    } catch (cause) {
+      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+    } finally {
+      busy = false;
+    }
+  }
+
+  function logOnBgg(): void {
+    window.open(bggLogPlayUrl(), '_blank', 'noreferrer,noopener');
+    offeringMark = true;
+  }
+
+  async function copyDetails(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(bggComment(play, t.difficulty));
+      copied = true;
+    } catch {
+      copied = false;
+    }
+  }
+
+  async function markReported(value: boolean): Promise<void> {
+    busy = true;
+    try {
+      await db.plays.update(play.id, { reportedToBgg: value });
+      offeringMark = false;
+    } finally {
+      busy = false;
+    }
+  }
 
   /*
    * The draft, held apart from the record.
@@ -402,10 +452,43 @@
           {starred ? t.favouritePlayRemove : t.favouritePlayAdd}
         </button>
         <button class="btn" type="button" disabled={busy} onclick={openEditor}>{t.playEdit}</button>
+        <!-- BoardGameGeek, offered only once this browser knows who you are
+             there: with a connection that can post, sent from here; with a
+             name alone, BGG's own form. -->
+        {#if bggCanSend() && !onBgg}
+          <button class="btn" type="button" disabled={busy} onclick={() => void sendToBgg()}>
+            {busy ? t.bggSending : t.bggSend}
+          </button>
+        {:else if bgg.username !== '' && !onBgg}
+          <button class="btn" type="button" disabled={busy} onclick={logOnBgg}>{t.bggLogPlay}</button>
+        {:else if bgg.username !== '' && onBgg}
+          <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => void markReported(false)}>
+            {t.bggUnmark}
+          </button>
+        {/if}
         <button class="btn btn--quiet danger" type="button" onclick={() => (confirming = true)}>
           {t.playDelete}
         </button>
       </div>
+
+      {#if onBgg}
+        <p class="muted note bgg-line">✓ {t.bggSent}</p>
+      {/if}
+      {#if bggFailure !== null && !onBgg}
+        <p class="note bgg-line danger" role="alert">{t.bggSendFailed(bggFailure)}</p>
+      {/if}
+      {#if offeringMark && !onBgg}
+        <div class="bgg-line actions">
+          <span class="muted note">{t.bggFollowUp}</span>
+          <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => void copyDetails()}>
+            {copied ? t.bggCopied : t.bggCopy}
+          </button>
+          <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => void markReported(true)}>
+            {t.bggMark}
+          </button>
+          <button class="btn btn--quiet" type="button" onclick={() => (offeringMark = false)}>{t.cancel}</button>
+        </div>
+      {/if}
 
       <!-- The same rows as after the game, so a rating can be given late or
            changed: the player's current one is shown and replaced in place. -->
@@ -541,5 +624,13 @@
 
   .danger {
     color: var(--danger);
+  }
+
+  .bgg-line {
+    margin: var(--space-2) 0 0;
+  }
+
+  .note {
+    font-size: var(--text-sm);
   }
 </style>

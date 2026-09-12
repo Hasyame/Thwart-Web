@@ -102,6 +102,21 @@ type Server struct {
 		late rather than wrong. See stream.go.
 	*/
 	streams *broadcaster
+
+	/*
+		The BoardGameGeek relay, or nil when this instance has it switched off.
+
+		Nil is the only state that matters here: with it, the two /v1/bgg
+		routes answer `bgg_disabled` and the web app offers the hand-off to
+		BGG's own form instead. See bgg.go for what the relay does and does not
+		hold.
+	*/
+	bgg *bggRelay
+}
+
+/** UseBggRelay switches the BoardGameGeek relay on, against this base URL. */
+func (s *Server) UseBggRelay(base string) {
+	s.bgg = newBggRelay(base)
 }
 
 // UseMailer turns address confirmation on, with the link pointing at siteURL.
@@ -152,6 +167,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/account/export", s.authenticated(s.handleExport))
 	// Community averages. No auth: the scenario browser shows them to anyone.
 	mux.HandleFunc("GET /v1/ratings/summary", s.handleRatingSummary)
+	// The BoardGameGeek relay: behind a token, per-account limited, nothing
+	// stored. bgg.go.
+	mux.HandleFunc("POST /v1/bgg/verify", s.authenticated(s.handleBggVerify))
+	mux.HandleFunc("POST /v1/bgg/plays", s.authenticated(s.handleBggPlay))
 	mux.HandleFunc("DELETE /v1/account", s.authenticated(s.handleDeleteAccount))
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
@@ -842,6 +861,9 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 		// than finding out by submitting one. Not a security boundary — the
 		// refusal above is — just honesty about what this instance does.
 		"registrationOpen": s.OpenRegistration,
+		// Whether plays can be relayed to BoardGameGeek from here. Same
+		// honesty: the endpoints refuse on their own with bgg_disabled.
+		"bggRelay": s.bgg != nil,
 		// Published so a client does not have to guess, and enforced on push
 		// so one that guesses wrong is told rather than half-served.
 		"limits": map[string]any{

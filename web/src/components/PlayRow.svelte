@@ -4,8 +4,9 @@
   import type { Play } from '../lib/records';
   import { db } from '../lib/db';
   import { formatElapsed } from '../lib/session.svelte';
-  import { bgg, bggLogPlayUrl } from '../lib/bgg.svelte';
+  import { bgg, bggCanSend, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
   import { bggComment } from '../lib/bggComment';
+  import { ApiError } from '../lib/sync/api';
   import { session } from '../lib/sync/session.svelte';
   import { storedOnServer } from '../lib/sync/stored.svelte';
 
@@ -48,6 +49,8 @@
   let offeringMark = $state(false);
   let copied = $state(false);
   let busy = $state(false);
+  /** The relay's answer, when the play was sent from here and it said no. */
+  let bggFailure = $state<string | null>(null);
 
   /*
    * The draft, held apart from the record.
@@ -164,6 +167,23 @@
   function logOnBgg(): void {
     window.open(bggLogPlayUrl(), '_blank', 'noreferrer,noopener');
     offeringMark = true;
+  }
+
+  /**
+   * Sends the play through the relay, when this browser holds a connection
+   * that can. Marked as reported by the send itself, once BGG has it; a
+   * failure is said on the row rather than swallowed.
+   */
+  async function sendToBgg(): Promise<void> {
+    busy = true;
+    bggFailure = null;
+    try {
+      await sendPlayToBgg(play, t.difficulty, uiLocale);
+    } catch (cause) {
+      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+    } finally {
+      busy = false;
+    }
   }
 
   async function copyDetails(): Promise<void> {
@@ -310,9 +330,14 @@
         BoardGameGeek, offered only once this browser knows who you are there.
 
         Without a name it is a button that leads to somebody else's log-in page,
-        which is not a feature.
+        which is not a feature. With a connection that can post, the play is
+        sent from here; with a name alone, BGG's own form is opened instead.
       -->
-      {#if bgg.username !== '' && !onBgg}
+      {#if bggCanSend() && !onBgg}
+        <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => void sendToBgg()}>
+          {busy ? t.bggSending : t.bggSend}
+        </button>
+      {:else if bgg.username !== '' && !onBgg}
         <button class="btn btn--quiet" type="button" disabled={busy} onclick={logOnBgg}>
           {t.bggLogPlay}
         </button>
@@ -335,6 +360,10 @@
         {t.playDelete}
       </button>
     </div>
+
+    {#if bggFailure !== null && !onBgg}
+      <p class="bgg-failure" role="alert">{t.bggSendFailed(bggFailure)}</p>
+    {/if}
 
     {#if offeringMark && !onBgg}
       <div class="bgg-follow">
@@ -400,6 +429,12 @@
   .chip.is-local {
     background: var(--surface-2);
     color: var(--text-muted);
+  }
+
+  .bgg-failure {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--danger);
   }
 
   .bgg-follow {

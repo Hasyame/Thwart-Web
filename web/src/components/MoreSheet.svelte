@@ -5,7 +5,7 @@
   import { LANGUAGE_NAMES } from '../lib/i18n';
   import { overflowFor, visible, type ActiveTarget, type NavTarget } from '../lib/nav';
   import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
-  import { bgg, bggProfileUrl, setBggUsername } from '../lib/bgg.svelte';
+  import { bgg, bggRelayReady } from '../lib/bgg.svelte';
 
   interface Props {
     t: Strings;
@@ -23,6 +23,8 @@
     hrefFor: (name: NavTarget) => string;
     /** The account is not a tab, so the sheet is how it is reached. */
     onAccount: () => void;
+    /** BoardGameGeek has a page of its own under Settings; this opens it. */
+    onBgg: () => void;
     /** The handle when somebody is signed in, so the row says who. */
     accountHandle: string | null;
     /** Destinations this build has nothing to show for. */
@@ -49,6 +51,7 @@
     grouped,
     onGrouped,
     onAccount,
+    onBgg,
     accountHandle,
     hidden = new Set<NavTarget>(),
     onClose,
@@ -226,32 +229,34 @@
       </label>
 
       <!--
-        BoardGameGeek, connected on this device and nowhere else.
+        BoardGameGeek, a page of its own, as on the phone.
 
-        Deliberately not part of the account: this name is kept in this
-        browser's own storage, is never synced, and is never written to a backup
-        file. Each device is connected to BGG by the person using it, which is
-        also the only arrangement in which no BGG password is ever held by
-        anything of ours.
+        Connected on this device and nowhere else: the connection lives in
+        this browser's own storage, is never synced and never written to a
+        backup. The row says who this browser is there, when it is anyone.
       -->
-      <label class="field-group">
-        <span class="field-label">{t.bggUsername}</span>
-        <input
-          class="field"
-          type="text"
-          autocomplete="off"
-          value={bgg.username}
-          onchange={(event) => setBggUsername(event.currentTarget.value)}
-        />
-        <span class="muted note">{t.bggNote}</span>
-      </label>
-      {#if bgg.username !== ''}
-        <p class="muted note">
-          <a href={bggProfileUrl(bgg.username)} target="_blank" rel="noreferrer noopener">
-            {t.bggOpenProfile}
-          </a>
-        </p>
-      {/if}
+      <button
+        class="account"
+        type="button"
+        onclick={() => {
+          onBgg();
+          onClose();
+        }}
+      >
+        <span class="glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+            <!-- A meeple, which is what BGG puts beside everything. -->
+            <path d="M12 2.5c-1.9 0-3.3 1.5-3.3 3.4 0 1.1.5 2 1.2 2.7-.3.4-.9.8-2.2 1.3C5 10.9 2.5 12.3 2.5 14c0 1.2.9 1.9 2 1.9.9 0 1.9-.4 3-1.2l-1.4 5.6c-.2.7.3 1.2 1 1.2h2.4c.5 0 .8-.3 1-.7L12 17.6l1.5 3.2c.2.4.5.7 1 .7h2.4c.7 0 1.2-.5 1-1.2l-1.4-5.6c1.1.8 2.1 1.2 3 1.2 1.1 0 2-.7 2-1.9 0-1.7-2.5-3.1-5.2-4.1-1.3-.5-1.9-.9-2.2-1.3.7-.7 1.2-1.6 1.2-2.7 0-1.9-1.4-3.4-3.3-3.4z" />
+          </svg>
+        </span>
+        <span class="who">
+          {t.bggTitle}
+          <span class="muted sub">
+            {bggRelayReady() ? t.bggConnectedAs(bgg.username) : t.bggMenuSubtitle}
+          </span>
+        </span>
+        <span class="muted" aria-hidden="true">›</span>
+      </button>
     </section>
   </div>
 </dialog>
@@ -358,6 +363,8 @@
     text-align: center;
     font-size: var(--text-lg);
     line-height: 1;
+    display: inline-grid;
+    place-items: center;
   }
 
   section {

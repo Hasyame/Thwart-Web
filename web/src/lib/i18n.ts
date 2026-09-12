@@ -577,6 +577,36 @@ export interface Strings {
   readonly bggUsername: string;
   readonly bggNote: string;
   readonly bggOpenProfile: string;
+  /** The BoardGameGeek page under Settings, laid out as the phone lays it out. */
+  readonly bggTitle: string;
+  readonly bggMenuSubtitle: string;
+  readonly bggAboutTitle: string;
+  readonly bggAbout: string;
+  readonly bggConnectedAs: (username: string) => string;
+  readonly bggNotConnected: string;
+  readonly bggSignInTitle: string;
+  readonly bggPassword: string;
+  readonly bggPasswordWarning: string;
+  readonly bggNeedsAccount: string;
+  readonly bggRelayOff: string;
+  readonly bggConnect: string;
+  readonly bggVerifying: string;
+  readonly bggLoginOk: string;
+  readonly bggSyncTitle: string;
+  readonly bggModeOff: string;
+  readonly bggModeAsk: string;
+  readonly bggModeAlways: string;
+  readonly bggModeOffDetail: string;
+  readonly bggModeAskDetail: string;
+  readonly bggModeAlwaysDetail: string;
+  readonly bggSynced: (n: number) => string;
+  readonly bggDisconnect: string;
+  readonly bggDisconnectConfirm: string;
+  readonly bggSend: string;
+  readonly bggSending: string;
+  readonly bggSent: string;
+  readonly bggSendFailed: (reason: string) => string;
+  readonly bggError: (code: string) => string;
   readonly bggLogPlay: string;
   readonly bggFollowUp: string;
   readonly bggCopy: string;
@@ -1338,8 +1368,50 @@ const STRINGS: Record<Locale, Strings> = {
     playLost: 'lost',
     bggUsername: 'BoardGameGeek username',
     bggNote:
-      'Kept on this device only. It is never synced, never written to a backup, and no BoardGameGeek password is ever asked for or stored: you sign in to BoardGameGeek yourself, in this browser, and games are logged on their site.',
+      'Kept in this browser only: never synced, never written to a backup. With a username alone, games are logged on BGG’s own site by hand; with the password too, they can be sent from here.',
     bggOpenProfile: 'Open this profile on BoardGameGeek',
+    bggTitle: 'BoardGameGeek',
+    bggMenuSubtitle: 'Sync with BGG',
+    bggAboutTitle: 'About BoardGameGeek',
+    bggAbout:
+      'BoardGameGeek keeps a log of the games you play. Connected, Thwart can send each finished game there: the result and scenario, the heroes and aspects, the day and the times, your notes. BGG has no way to do this without your password, so it goes through the thwart.app server, which signs in, posts the play and keeps nothing — not the password, not the username, not the session. Both stay in this browser only: never synced, never in a backup.',
+    bggConnectedAs: (username) => `Connected to “${username}”`,
+    bggNotConnected: 'Not connected',
+    bggSignInTitle: 'Sign in to BGG',
+    bggPassword: 'BoardGameGeek password',
+    bggPasswordWarning:
+      'This is your BoardGameGeek password, not your Thwart one. It is kept in this browser and sent, through thwart.app, only when a game is posted.',
+    bggNeedsAccount:
+      'Sending games needs a Thwart account signed in on this browser: the relay is only open to one. Without it you can still note your BGG username and log games on their site by hand.',
+    bggRelayOff:
+      'This server does not relay games to BoardGameGeek. You can still note your username and log games on their site by hand.',
+    bggConnect: 'Connect',
+    bggVerifying: 'Checking with BoardGameGeek…',
+    bggLoginOk: 'Login is correct',
+    bggSyncTitle: 'Sync with BGG',
+    bggModeOff: 'Off',
+    bggModeAsk: 'Ask',
+    bggModeAlways: 'Always',
+    bggModeOffDetail: 'Games are not sent. The connection is kept, unused.',
+    bggModeAskDetail: 'After each game, a button offers to send it.',
+    bggModeAlwaysDetail: 'Every finished game is sent as soon as it is recorded.',
+    bggSynced: (n) => (n === 1 ? '1 game synced with BGG' : `${n} games synced with BGG`),
+    bggDisconnect: 'Disconnect',
+    bggDisconnectConfirm: 'Forget the BoardGameGeek connection on this browser?',
+    bggSend: 'Send to BGG',
+    bggSending: 'Sending to BGG…',
+    bggSent: 'Sent to BGG',
+    bggSendFailed: (reason) => `Not sent to BGG: ${reason}`,
+    bggError: (code) =>
+      ({
+        bgg_bad_credentials: 'BoardGameGeek did not accept that username and password.',
+        bgg_rejected: 'BoardGameGeek refused the request. Its play form may have changed.',
+        bgg_unreachable: 'BoardGameGeek could not be reached. Try again later.',
+        bgg_disabled: 'this server does not relay games to BoardGameGeek.',
+        rate_limited: 'too many attempts. Wait a little and try again.',
+        unauthorized: 'you have been signed out of Thwart. Sign in again.',
+        offline: 'the server could not be reached. Check your connection.',
+      })[code] ?? 'something went wrong on the server. Try again.',
     bggLogPlay: 'Log on BGG',
     bggFollowUp: 'The form is open in another tab.',
     bggCopy: 'Copy the details',
@@ -2132,8 +2204,50 @@ const STRINGS: Record<Locale, Strings> = {
     playLost: 'perdue',
     bggUsername: 'Identifiant BoardGameGeek',
     bggNote:
-      "Conservé sur cet appareil uniquement. Il n'est jamais synchronisé, jamais écrit dans une sauvegarde, et aucun mot de passe BoardGameGeek n'est demandé ni conservé : vous vous connectez vous-même à BoardGameGeek, dans ce navigateur, et les parties sont enregistrées sur leur site.",
+      'Conservé dans ce navigateur uniquement : jamais synchronisé, jamais écrit dans une sauvegarde. Avec l’identifiant seul, les parties s’enregistrent à la main sur le site de BGG ; avec le mot de passe aussi, elles peuvent être envoyées d’ici.',
     bggOpenProfile: 'Ouvrir ce profil sur BoardGameGeek',
+    bggTitle: 'BoardGameGeek',
+    bggMenuSubtitle: 'Synchroniser avec BGG',
+    bggAboutTitle: 'À propos de BoardGameGeek',
+    bggAbout:
+      'BoardGameGeek tient le journal des parties que vous jouez. Une fois connecté, Thwart peut y envoyer chaque partie terminée : le résultat et le scénario, les héros et les aspects, le jour et les horaires, vos notes. BGG n’offre aucun moyen de le faire sans votre mot de passe : la partie passe donc par le serveur de thwart.app, qui se connecte, publie la partie et ne garde rien — ni le mot de passe, ni l’identifiant, ni la session. Les deux restent dans ce navigateur uniquement : jamais synchronisés, jamais dans une sauvegarde.',
+    bggConnectedAs: (username) => `Connecté à « ${username} »`,
+    bggNotConnected: 'Non connecté',
+    bggSignInTitle: 'Se connecter à BGG',
+    bggPassword: 'Mot de passe BoardGameGeek',
+    bggPasswordWarning:
+      'C’est votre mot de passe BoardGameGeek, pas celui de Thwart. Il est conservé dans ce navigateur et envoyé, via thwart.app, uniquement au moment de publier une partie.',
+    bggNeedsAccount:
+      'Envoyer des parties demande un compte Thwart connecté dans ce navigateur : le relais ne s’ouvre qu’à lui. Sans cela, vous pouvez toujours noter votre identifiant BGG et enregistrer vos parties sur leur site à la main.',
+    bggRelayOff:
+      'Ce serveur ne relaie pas les parties vers BoardGameGeek. Vous pouvez toujours noter votre identifiant et enregistrer vos parties sur leur site à la main.',
+    bggConnect: 'Se connecter',
+    bggVerifying: 'Vérification auprès de BoardGameGeek…',
+    bggLoginOk: 'Identifiants corrects',
+    bggSyncTitle: 'Synchronisation avec BGG',
+    bggModeOff: 'Jamais',
+    bggModeAsk: 'Demander',
+    bggModeAlways: 'Toujours',
+    bggModeOffDetail: 'Les parties ne sont pas envoyées. La connexion est gardée, sans servir.',
+    bggModeAskDetail: 'Après chaque partie, un bouton propose de l’envoyer.',
+    bggModeAlwaysDetail: 'Chaque partie terminée est envoyée dès qu’elle est enregistrée.',
+    bggSynced: (n) => (n === 1 ? '1 partie synchronisée avec BGG' : `${n} parties synchronisées avec BGG`),
+    bggDisconnect: 'Déconnexion',
+    bggDisconnectConfirm: 'Oublier la connexion BoardGameGeek sur ce navigateur ?',
+    bggSend: 'Envoyer sur BGG',
+    bggSending: 'Envoi sur BGG…',
+    bggSent: 'Envoyée sur BGG',
+    bggSendFailed: (reason) => `Pas envoyée sur BGG : ${reason}`,
+    bggError: (code) =>
+      ({
+        bgg_bad_credentials: 'BoardGameGeek n’a pas accepté cet identifiant et ce mot de passe.',
+        bgg_rejected: 'BoardGameGeek a refusé la requête. Son formulaire de partie a peut-être changé.',
+        bgg_unreachable: 'BoardGameGeek n’a pas pu être joint. Réessayez plus tard.',
+        bgg_disabled: 'ce serveur ne relaie pas les parties vers BoardGameGeek.',
+        rate_limited: 'trop de tentatives. Patientez un instant puis réessayez.',
+        unauthorized: 'vous avez été déconnecté de Thwart. Reconnectez-vous.',
+        offline: 'le serveur n’a pas pu être joint. Vérifiez votre connexion.',
+      })[code] ?? 'une erreur est survenue côté serveur. Réessayez.',
     bggLogPlay: 'Enregistrer sur BGG',
     bggFollowUp: "Le formulaire est ouvert dans un autre onglet.",
     bggCopy: 'Copier les détails',

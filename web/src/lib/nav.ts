@@ -38,7 +38,7 @@ export type NavTarget =
  * reached from a link in somebody's mail. All three are places the app can be
  * without being a tab, and none of them should light one up.
  */
-export type ActiveTarget = NavTarget | 'card' | 'deck' | 'account' | 'verify';
+export type ActiveTarget = NavTarget | 'card' | 'deck' | 'account' | 'bgg' | 'verify';
 
 export interface Destination {
   readonly id: NavTarget;

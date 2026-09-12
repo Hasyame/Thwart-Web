@@ -44,6 +44,8 @@
   import RatingBadge from './RatingBadge.svelte';
   import { RatingsInView } from '../lib/ratingsView.svelte';
   import { modularSubject, ratingOfPlay, scenarioSubject, subjectsOfPlay } from '../lib/ratings';
+  import { bgg, bggCanSend, sendPlayToBgg } from '../lib/bgg.svelte';
+  import { ApiError } from '../lib/sync/api';
 
   /* What the community thinks of the scenario chosen and the sets chosen
      with it, beside each, while the game is being set up. */
@@ -59,6 +61,7 @@
     t: Strings;
     sets: readonly CardSet[];
     index: readonly IndexRow[];
+    uiLocale: Locale;
     /** Which language the tracker reads the scenario's cards in. */
     cardLocale: Locale;
     storageOk: boolean;
@@ -66,7 +69,7 @@
     onReplay: (play: Play) => void;
   }
 
-  const { t, sets, index, cardLocale, storageOk, onReplay }: Props = $props();
+  const { t, sets, index, uiLocale, cardLocale, storageOk, onReplay }: Props = $props();
 
   /*
    * The starred games, joined to their plays.
@@ -323,6 +326,31 @@
   let recorded = $state(false);
   /** The game just recorded, which is what the rating row is about. */
   let lastPlay = $state.raw<Play | null>(null);
+
+  /*
+   * BoardGameGeek, after the game: sent on its own when the connection says
+   * always, offered as a button when it says ask, and nothing when it says
+   * off. Every failure is said here rather than swallowed — a play silently
+   * not appearing on BGG is worse than one that says why.
+   */
+  let bggState = $state<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  let bggFailure = $state<string | null>(null);
+
+  async function sendToBgg(play: Play): Promise<void> {
+    if (bggState === 'sending' || bggState === 'sent') {
+      return;
+    }
+    bggState = 'sending';
+    bggFailure = null;
+    try {
+      await sendPlayToBgg(play, t.difficulty, uiLocale);
+      lastPlay = { ...play, reportedToBgg: true };
+      bggState = 'sent';
+    } catch (cause) {
+      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+      bggState = 'failed';
+    }
+  }
   let recording = $state(false);
 
   // --- the clock, corrected by hand ------------------------------------------
@@ -400,6 +428,11 @@
        */
       syncAfter('scenario-end');
       recorded = true;
+      bggState = 'idle';
+      bggFailure = null;
+      if (bggCanSend() && bgg.mode === 'always') {
+        void sendToBgg(play);
+      }
     } finally {
       recording = false;
     }
@@ -412,6 +445,8 @@
     outcome = null;
     recorded = false;
     lastPlay = null;
+    bggState = 'idle';
+    bggFailure = null;
   }
 
   const availableScenarios = $derived(
@@ -483,6 +518,20 @@
   {:else if recorded}
     <div class="notice surface">
       <p class="ok">{t.playRecorded}</p>
+      {#if lastPlay !== null && bggCanSend() && bgg.mode !== 'off'}
+        {@const sending = lastPlay}
+        <!-- The BGG line: what happened, or the offer. Never a step. -->
+        {#if bggState === 'sent'}
+          <p class="ok">{t.bggSent}</p>
+        {:else if bggState === 'failed'}
+          <p class="danger-text" role="alert">{t.bggSendFailed(bggFailure ?? '')}</p>
+          <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{t.bggSend}</button>
+        {:else if bggState === 'sending'}
+          <p class="muted">{t.bggSending}</p>
+        {:else if bgg.mode === 'ask'}
+          <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{t.bggSend}</button>
+        {/if}
+      {/if}
       <button type="button" class="btn btn--primary" onclick={newGame}>{t.playAnother}</button>
     </div>
     {#if lastPlay !== null}
@@ -1139,5 +1188,9 @@
   .ok {
     color: var(--accent);
     font-weight: 600;
+  }
+
+  .danger-text {
+    color: var(--danger);
   }
 </style>

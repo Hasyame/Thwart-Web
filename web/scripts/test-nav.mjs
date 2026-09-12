@@ -99,6 +99,7 @@ for (const grouped of [false, true]) {
   }
 
   check('the account lights nothing', tabFor('account', true) === 'account');
+  check('nor does the BoardGameGeek page', tabFor('bgg', true) === 'bgg');
 }
 
 // --- a build with no Versus box --------------------------------------------------
@@ -121,6 +122,8 @@ for (const grouped of [false, true]) {
   check('an id with odd characters survives the round trip',
     there(back({ name: 'deck', id: 'decklist-40000' })).id === 'decklist-40000' && back({ name: 'deck', id: 'a b', edit: true }) === '/decks/a%20b/edit');
   check('a deck page lights the Decks tab', tabFor('deck', false) === 'decks' && tabFor('deck', true) === 'decks');
+  check('BoardGameGeek has a page under Settings',
+    there('/settings/bgg').name === 'bgg' && back({ name: 'bgg' }) === '/settings/bgg');
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);
