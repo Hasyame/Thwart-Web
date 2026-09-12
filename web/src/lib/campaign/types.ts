@@ -306,6 +306,11 @@ export interface NextStep {
   readonly goto?: string | null;
   readonly when?: Condition | null;
   readonly end?: boolean;
+  /**
+   * The campaign ends here, as a defeat. Fear No Evil on Expert: reaching
+   * the finale with no job achieved is losing, not playing the Kingpin.
+   */
+  readonly lose?: boolean;
   /** The players pick which scenario comes next. */
   readonly choose?: boolean;
 }

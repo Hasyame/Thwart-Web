@@ -556,6 +556,8 @@ interface Advance {
   readonly scenarioId: string | null;
   readonly finished: boolean;
   readonly awaitingChoice: boolean;
+  /** Over as a defeat, not merely over. */
+  readonly lost?: boolean;
 }
 
 /**
@@ -572,6 +574,9 @@ function resolveNext(
   const step = (outcome?.next ?? []).find((candidate) => evaluate(candidate.when, context));
   if (step === undefined) {
     return { scenarioId, finished: false, awaitingChoice: false };
+  }
+  if (step.lose === true) {
+    return { scenarioId: null, finished: true, awaitingChoice: false, lost: true };
   }
   if (step.end === true) {
     return { scenarioId: null, finished: true, awaitingChoice: false };
@@ -671,6 +676,7 @@ function applyScenario(
     draws: replayedDraws(next.draws, template, event.scenarioId),
     currentScenarioId: advanced.scenarioId,
     finished: advanced.finished,
+    campaignLost: next.campaignLost || advanced.lost === true,
     awaitingChoice: advanced.awaitingChoice,
     // A new rotation: the villains get to pick their next two places.
     environmentPicked: false,

@@ -125,6 +125,27 @@ const started = { id: 'e0', timestamp: 1, type: 'setup', templateId: 't', diffic
     { id: 'e2', timestamp: 3, type: 'scenario_result', scenarioId: 's2', victory: true },
   ]);
   check('end finishes the campaign', state.finished === true && state.currentScenarioId === null);
+  check('and not as a defeat', state.campaignLost === false);
+}
+
+{
+  // Fear No Evil's finale on Expert: a next step that ends the campaign as a
+  // loss. The phone's engine reads `lose` the same way (commit 494c166).
+  const losing = {
+    ...template,
+    scenarios: [
+      ...template.scenarios.filter((s) => s.id !== 's2'),
+      { id: 's2', onVictory: { effects: [], next: [{ lose: true, when: { difficulty: 'standard' } }, { end: true }] } },
+    ],
+  };
+  const state = fold(losing, [
+    started,
+    { id: 'e1', timestamp: 2, type: 'scenario_result', scenarioId: 's1', victory: true },
+    { id: 'e2', timestamp: 3, type: 'scenario_result', scenarioId: 's2', victory: true },
+  ]);
+  check('a lose step ends the campaign as a defeat',
+    state.finished === true && state.campaignLost === true && state.currentScenarioId === null,
+    `finished=${state.finished} lost=${state.campaignLost}`);
 }
 
 {
