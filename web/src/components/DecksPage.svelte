@@ -268,8 +268,19 @@
     }
   }
 
+  /*
+   * Asked once, on the tile, before a deck goes.
+   *
+   * A deck is an hour's work and the button sits next to Edit; the first
+   * version deleted on the click and the only way back was a backup. Inline
+   * rather than a dialog, as a game's deletion is on the history page: the
+   * question replaces the buttons, and Cancel puts them back.
+   */
+  let removing = $state<string | null>(null);
+
   async function remove(id: string): Promise<void> {
     await db.decks.delete(id);
+    removing = null;
     if (openDeckId === id) {
       openDeckId = null;
     }
@@ -403,10 +414,18 @@
                   <span class="verdict muted">…</span>
                 {/if}
               </span>
-              <span class="tile-actions">
-                <button type="button" class="btn btn--quiet" onclick={() => (editingId = deck.id)}>{t.deckEdit}</button>
-                <button type="button" class="btn btn--quiet remove" onclick={() => remove(deck.id)}>{t.removeDeck}</button>
-              </span>
+              {#if removing === deck.id}
+                <span class="confirm">
+                  <span class="muted small">{t.deckDeleteConfirm(deck.name)}</span>
+                  <button type="button" class="btn btn--quiet danger" onclick={() => void remove(deck.id)}>{t.deckDeleteYes}</button>
+                  <button type="button" class="btn btn--quiet" onclick={() => (removing = null)}>{t.cancel}</button>
+                </span>
+              {:else}
+                <span class="tile-actions">
+                  <button type="button" class="btn btn--quiet" onclick={() => (editingId = deck.id)}>{t.deckEdit}</button>
+                  <button type="button" class="btn btn--quiet remove" onclick={() => (removing = deck.id)}>{t.removeDeck}</button>
+                </span>
+              {/if}
             </div>
           </li>
         {/each}
@@ -623,6 +642,18 @@
   .tile-actions {
     display: inline-flex;
     gap: var(--space-1);
+  }
+
+  .confirm {
+    flex: 1 0 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .danger {
+    color: var(--danger);
   }
 
   .remove {

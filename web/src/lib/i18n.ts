@@ -226,6 +226,9 @@ export interface Strings {
   readonly deckImportNetwork: string;
   readonly noDecks: string;
   readonly removeDeck: string;
+  /** Asked once before a deck goes; the same shape as a game's. */
+  readonly deckDeleteConfirm: (name: string) => string;
+  readonly deckDeleteYes: string;
   readonly cardCount: (n: number) => string;
   readonly deckMissing: (cards: number, packs: number) => string;
   readonly deckBuildable: string;
@@ -1345,6 +1348,8 @@ const STRINGS: Record<Locale, Strings> = {
     playResult: 'Result',
     playDelete: 'Delete',
     playDeleteConfirm: 'Delete this game? It does not come back.',
+    deckDeleteConfirm: (name) => `Delete \u201c${name}\u201d? It does not come back.`,
+    deckDeleteYes: 'Delete it',
     playDeleteYes: 'Delete it',
     campaignsInProgress: 'In progress',
     campaignsFinished: 'Finished',
@@ -2114,6 +2119,8 @@ const STRINGS: Record<Locale, Strings> = {
     playResult: 'Résultat',
     playDelete: 'Supprimer',
     playDeleteConfirm: 'Supprimer cette partie ? C\u2019est d\u00e9finitif.',
+    deckDeleteConfirm: (name) => `Supprimer \u00ab\u00a0${name}\u00a0\u00bb ? C\u2019est d\u00e9finitif.`,
+    deckDeleteYes: 'Supprimer',
     playDeleteYes: 'Supprimer',
     campaignsInProgress: 'En cours',
     campaignsFinished: 'Termin\u00e9es',
