@@ -103,7 +103,7 @@
   assistive technology, which has the name it is hovering and the window a
   click away.
 -->
-{#if card !== null && place !== null}
+{#if card !== null && place !== null && peek.docked === 0}
   <div class="peek" style:left={`${place.left}px`} style:top={`${place.top}px`} aria-hidden="true">
     {#if image !== null}
       <img src={image} alt="" />

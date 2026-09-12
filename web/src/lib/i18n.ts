@@ -178,6 +178,10 @@ export interface Strings {
   readonly deckEmpty: string;
   /** The group of the hero's own cards in the editor, and why it has no steppers. */
   readonly deckHeroCards: string;
+  /** The two halves of the editor on a phone, and the folded problem list. */
+  readonly deckTabDeck: string;
+  readonly deckTabPool: string;
+  readonly deckProblems: (n: number) => string;
   /** The pool's filter groups and its sort. */
   readonly factionLabel: string;
   readonly typeLabel: string;
@@ -812,6 +816,9 @@ const STRINGS: Record<Locale, Strings> = {
     deckAddCards: 'Add cards',
     deckEmpty: 'Nothing in it yet. Search on the right and press the plus.',
     deckHeroCards: 'Hero cards',
+    deckTabDeck: 'Deck',
+    deckTabPool: 'Cards',
+    deckProblems: (n) => (n === 1 ? '1 problem' : `${n} problems`),
     factionLabel: 'Aspect',
     typeLabel: 'Type',
     sortLabel: 'Sort',
@@ -1570,6 +1577,9 @@ const STRINGS: Record<Locale, Strings> = {
     deckAddCards: 'Ajouter des cartes',
     deckEmpty: 'Encore vide. Cherchez \u00e0 droite et appuyez sur le plus.',
     deckHeroCards: 'Cartes du h\u00e9ros',
+    deckTabDeck: 'Deck',
+    deckTabPool: 'Cartes',
+    deckProblems: (n) => (n === 1 ? '1 probl\u00e8me' : `${n} probl\u00e8mes`),
     factionLabel: 'Aspect',
     typeLabel: 'Type',
     sortLabel: 'Tri',

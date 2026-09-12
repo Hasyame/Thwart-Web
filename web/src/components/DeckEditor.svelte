@@ -4,12 +4,13 @@
   import type { Strings } from '../lib/i18n';
   import type { SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
-  import { loadCardsByCode } from '../lib/data';
+  import { cardImageUrl, loadCardsByCode } from '../lib/data';
   import { parseSlots } from '../lib/decks';
   import { poolFor } from '../lib/deckPool';
   import { showCard } from '../lib/cardViewer.svelte';
   import DeckPool from './DeckPool.svelte';
   import CardHover from './CardHover.svelte';
+  import CardPanel from './CardPanel.svelte';
   import {
     deckAsText,
     deckStatistics,
@@ -65,6 +66,17 @@
   let copied = $state(false);
 
   /*
+   * Which half a phone shows.
+   *
+   * Two columns do not fit on a phone, and stacking them puts a thousand
+   * cards under the deck, out of reach. So below the two-column width the
+   * editor shows one at a time behind two tabs, with the count in the bar
+   * whichever is open. On a wide screen the tabs are not rendered and both
+   * columns are, whatever this says.
+   */
+  let view = $state<'deck' | 'pool'>('deck');
+
+  /*
    * Full records for everything the deck touches.
    *
    * The index is enough to search with and not enough to judge with: legality
@@ -109,6 +121,8 @@
   });
 
   const hero = $derived(records.get(deck.heroCode) ?? null);
+  /** The hero's picture, for the bar. From MarvelCDB, referenced and never copied. */
+  const heroImage = $derived(hero === null ? null : cardImageUrl(hero.imagesrc));
 
   const aspects = $derived(
     deck.aspects
@@ -173,7 +187,10 @@
       return [];
     }
     return [...rules.requiredCards.entries()]
-      .map(([code, quantity]) => ({ code, name: records.get(code)?.name ?? index.find((r) => r.code === code)?.name ?? code, quantity }))
+      .map(([code, quantity]) => {
+        const row = index.find((r) => r.code === code);
+        return { code, name: records.get(code)?.name ?? row?.name ?? code, quantity, cost: row?.cost ?? null };
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 
@@ -191,14 +208,14 @@
 
   /** The deck's chosen cards, grouped the way a decklist is written. The hero's own are listed apart. */
   const grouped = $derived.by(() => {
-    const byType = new Map<string, { code: string; name: string; quantity: number }[]>();
+    const byType = new Map<string, { code: string; name: string; quantity: number; cost: number | null }[]>();
     for (const [code, quantity] of Object.entries(slots)) {
       if (rules?.requiredCards.has(code) === true) {
         continue;
       }
       const row = index.find((entry) => entry.code === code);
       const typeName = row?.typeName ?? '—';
-      const entry = { code, name: row?.name ?? code, quantity };
+      const entry = { code, name: row?.name ?? code, quantity, cost: row?.cost ?? null };
       const bucket = byType.get(typeName);
       if (bucket === undefined) {
         byType.set(typeName, [entry]);
@@ -272,40 +289,71 @@
   }
 </script>
 
-<section>
-  <div class="head">
-    <label class="field-group grow">
-      <span class="field-label">{t.deckName}</span>
-      <input class="field" type="text" value={name} oninput={(e) => (name = e.currentTarget.value)} />
-    </label>
-    <button class="btn btn--primary" type="button" disabled={saving} onclick={() => void save()}>
-      {t.deckSave}
-    </button>
-    <button class="btn" type="button" onclick={onDone}>{t.cancel}</button>
-  </div>
-
+<section class="editor">
   <!--
-    Legality reported while the deck is being built, not on a button. The
-    useful moment for "that is a fourth copy" is when the fourth copy goes in.
+    Everything that has to be seen while building, in one bar that stays put:
+    who the deck is for, how many cards it holds against the range, whether it
+    is legal, and the way out. The problems themselves fold under it -- a wall
+    of red above the deck was the first thing on the old screen, and most of
+    it said "this deck is not finished yet", which the count already says.
   -->
-  {#if validation !== null && rules !== null}
-    <div class="legality" class:ok={validation.legal}>
-      <p class="count">
-        {t.deckCardCount(total, rules.minimum, rules.maximum)}
-        {#if validation.legal}<span class="ok-mark">{t.deckLegal}</span>{/if}
+  <header class="bar">
+    {#if heroImage !== null}
+      <img class="portrait" src={heroImage} alt="" />
+    {/if}
+    <div class="who">
+      <input
+        class="field name-field"
+        type="text"
+        aria-label={t.deckName}
+        value={name}
+        oninput={(e) => (name = e.currentTarget.value)}
+      />
+      <p class="muted small line">
+        {hero?.name ?? deck.heroName}{#if aspects.length > 0}{' · '}{aspects.map((a) => t.aspect(a)).join(' · ')}{/if}
       </p>
-      {#if !validation.legal}
-        <ul class="problems">
-          {#each validation.problems as problem, i (i)}
-            <li>{describe(problem)}</li>
-          {/each}
-        </ul>
-      {/if}
     </div>
+    {#if validation !== null && rules !== null}
+      <div class="status" class:ok={validation.legal} class:bad={!validation.legal}>
+        <span class="pill">
+          <b>{total}</b>
+          <span class="range">/ {rules.minimum}–{rules.maximum}</span>
+        </span>
+        <span class="verdict">
+          {validation.legal ? t.deckLegalShort : t.deckProblems(validation.problems.length)}
+        </span>
+      </div>
+    {/if}
+    <div class="actions">
+      <button class="btn btn--primary" type="button" disabled={saving} onclick={() => void save()}>
+        {t.deckSave}
+      </button>
+      <button class="btn" type="button" onclick={onDone}>{t.cancel}</button>
+    </div>
+  </header>
+
+  {#if validation !== null && !validation.legal}
+    <details class="problems-box">
+      <summary>{t.deckIllegal(validation.problems.length)}</summary>
+      <ul class="problems">
+        {#each validation.problems as problem, i (i)}
+          <li>{describe(problem)}</li>
+        {/each}
+      </ul>
+    </details>
   {/if}
 
-  <div class="columns">
-    <div class="column">
+  <div class="segments" role="tablist">
+    <button type="button" role="tab" class="segment" aria-selected={view === 'deck'} onclick={() => (view = 'deck')}>
+      {t.deckTabDeck} <span class="muted">{total}</span>
+    </button>
+    <button type="button" role="tab" class="segment" aria-selected={view === 'pool'} onclick={() => (view = 'pool')}>
+      {t.deckTabPool} <span class="muted">{pool.length}</span>
+    </button>
+  </div>
+
+  <div class="columns" data-view={view}>
+    <div class="column column--deck">
       <h2>{t.deckContents}</h2>
       {#if heroCards.length > 0}
         <h3>{t.deckHeroCards} <span class="muted">{heroCards.reduce((n, c) => n + c.quantity, 0)}</span></h3>
@@ -316,10 +364,11 @@
         <ul class="cards">
           {#each heroCards as card (card.code)}
             <li class:missing={(slots[card.code] ?? 0) !== card.quantity}>
-              <span class="qty">{card.quantity}×</span>
+              <span class="qty">{card.quantity}</span>
               <CardHover code={card.code}>
                 <button type="button" class="name link" onclick={() => showCard(card.code)}>{card.name}</button>
               </CardHover>
+              {#if card.cost !== null}<span class="cost">{card.cost}</span>{/if}
             </li>
           {/each}
         </ul>
@@ -329,13 +378,14 @@
         <ul class="cards">
           {#each group.cards as card (card.code)}
             <li>
-              <span class="qty">{card.quantity}×</span>
+              <span class="qty">{card.quantity}</span>
               <CardHover code={card.code}>
                 <button type="button" class="name link" onclick={() => showCard(card.code)}>{card.name}</button>
               </CardHover>
+              {#if card.cost !== null}<span class="cost">{card.cost}</span>{/if}
               <span class="steppers">
-                <button class="btn btn--quiet" type="button" onclick={() => remove(card.code)}>−</button>
-                <button class="btn btn--quiet" type="button" onclick={() => add(card.code)}>+</button>
+                <button class="btn btn--quiet step" type="button" aria-label={`− ${card.name}`} onclick={() => remove(card.code)}>−</button>
+                <button class="btn btn--quiet step" type="button" aria-label={`+ ${card.name}`} onclick={() => add(card.code)}>+</button>
               </span>
             </li>
           {/each}
@@ -345,7 +395,7 @@
       {/each}
     </div>
 
-    <div class="column">
+    <div class="column column--pool">
       <h2>{t.deckAddCards}</h2>
       <DeckPool
         {t}
@@ -359,6 +409,9 @@
         onRemove={remove}
         onOpen={(code) => showCard(code)}
       />
+    </div>
+    <div class="column column--card">
+      <CardPanel {t} initial={deck.heroCode} />
     </div>
   </div>
 
@@ -393,16 +446,102 @@
 </section>
 
 <style>
-  .head {
+  /*
+   * Under the app's own bar, which is 56px and a hairline (TopBar.svelte) plus
+   * whatever the status bar takes on an installed phone app. Not a token
+   * because nothing else sticks under it yet; the day something does, the two
+   * numbers become one.
+   */
+  .bar {
+    position: sticky;
+    top: calc(57px + env(safe-area-inset-top));
+    z-index: 10;
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    gap: var(--space-2);
-    margin: var(--space-4) 0;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: 0 calc(var(--space-4) * -1) var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-1);
+    border-bottom: 1px solid var(--hairline);
   }
 
-  .grow {
-    flex: 1 1 14rem;
+  .portrait {
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    object-fit: cover;
+    /* The picture is a portrait card: the face is in the top third. */
+    object-position: 50% 18%;
+    background: var(--surface-2);
+  }
+
+  .who {
+    flex: 1 1 12rem;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .name-field {
+    min-height: 2.25rem;
+    padding-block: var(--space-1);
+    font-weight: var(--weight-semibold);
+  }
+
+  .line {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3em;
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    font-size: var(--text-lg);
+  }
+
+  .range {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  .verdict {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .status.ok .pill {
+    border-color: var(--ok);
+  }
+  .status.ok .verdict {
+    color: var(--ok);
+  }
+  .status.bad .pill {
+    border-color: var(--danger);
+  }
+  .status.bad .verdict {
+    color: var(--danger);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-inline-start: auto;
   }
 
   h2 {
@@ -418,26 +557,18 @@
     margin: var(--space-3) 0 var(--space-1);
   }
 
-  .legality {
-    padding: var(--space-3) var(--space-4);
+  .problems-box {
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     background: var(--surface-2);
     border-inline-start: 3px solid var(--danger);
-    margin-bottom: var(--space-4);
   }
 
-  .legality.ok {
-    border-inline-start-color: var(--accent);
-  }
-
-  .count {
-    margin: 0;
+  .problems-box summary {
+    cursor: pointer;
     font-weight: var(--weight-semibold);
-  }
-
-  .ok-mark {
-    color: var(--accent);
-    margin-inline-start: var(--space-2);
+    font-size: var(--text-sm);
   }
 
   .problems {
@@ -448,10 +579,69 @@
     font-size: var(--text-sm);
   }
 
+  /* The two tabs, phone only; see `view` in the script. */
+  .segments {
+    display: flex;
+    gap: 2px;
+    margin-bottom: var(--space-3);
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+  }
+
+  .segment {
+    flex: 1 1 0;
+    min-height: var(--tap-min);
+    border: 0;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+
+  .segment[aria-selected='true'] {
+    background: var(--surface-1);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  }
+
+  @media (max-width: 55.99rem) {
+    .columns[data-view='deck'] .column--pool,
+    .columns[data-view='pool'] .column--deck {
+      display: none;
+    }
+  }
+
+  @media (min-width: 56rem) {
+    .segments {
+      display: none;
+    }
+  }
+
   .columns {
     display: grid;
-    gap: var(--space-4);
-    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--space-5);
+  }
+
+  @media (min-width: 56rem) {
+    .columns {
+      grid-template-columns: minmax(18rem, 2fr) minmax(22rem, 3fr);
+      align-items: start;
+    }
+    .column--card {
+      display: none;
+    }
+  }
+
+  /* Room for the card beside the deck: the panel gets a column of its own. */
+  @media (min-width: 78rem) {
+    .columns {
+      grid-template-columns: minmax(18rem, 2fr) minmax(22rem, 3fr) 15rem;
+    }
+    .column--card {
+      display: block;
+    }
   }
 
   .cards {
@@ -464,13 +654,44 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) 0;
+    min-height: 2.25rem;
+    padding: 2px 0;
     border-bottom: 1px solid var(--hairline);
   }
 
+  /* The count as a small square, the way decklists print it. */
   .qty {
+    flex: 0 0 auto;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    display: inline-grid;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
     font-variant-numeric: tabular-nums;
-    min-width: 2.2rem;
+  }
+
+  /* The printed cost, a small circle at the end of the line. */
+  .cost {
+    flex: 0 0 auto;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step {
+    min-width: var(--tap-min);
+    padding-inline: 0;
   }
 
   /* A hero card the deck does not hold at the printed count. */

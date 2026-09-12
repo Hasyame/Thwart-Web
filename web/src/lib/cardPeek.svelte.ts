@@ -23,7 +23,20 @@ export interface PeekAnchor {
   readonly right: number;
 }
 
-export const peek = $state<{ code: string | null; anchor: PeekAnchor | null }>({ code: null, anchor: null });
+/**
+ * `code` is the card under the pointer now, null between names. `last` is the
+ * card most recently pointed at and stays set: a docked panel keeps showing
+ * it after the pointer has moved on, the way a card left face-up on the
+ * table does, so the rules can be read without holding the mouse still.
+ * `docked` counts the panels on screen; while one is, the floating layer
+ * stays away, because the same card twice is once too many.
+ */
+export const peek = $state<{ code: string | null; last: string | null; anchor: PeekAnchor | null; docked: number }>({
+  code: null,
+  last: null,
+  anchor: null,
+  docked: 0,
+});
 
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -42,7 +55,16 @@ export function showPeek(code: string, element: Element): void {
   }
   const box = element.getBoundingClientRect();
   peek.code = code;
+  peek.last = code;
   peek.anchor = { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
+}
+
+/** A docked panel says so while it is on screen, and takes it back when it goes. */
+export function dockPanel(): () => void {
+  peek.docked += 1;
+  return () => {
+    peek.docked -= 1;
+  };
 }
 
 /**

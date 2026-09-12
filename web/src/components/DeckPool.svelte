@@ -151,12 +151,13 @@
               </button>
             </CardHover>
             <span class="meta muted small">
-              {row.typeName}{#if row.cost !== null}{' · '}{t.cost} {row.cost}{/if}
+              {row.typeName}
               {#if !ownedPackCodes.has(row.packCode)}
                 <span class="tag">{t.notOwned}</span>
               {/if}
             </span>
           </span>
+          {#if row.cost !== null}<span class="cost" title={t.cost}>{row.cost}</span>{/if}
           <span class="steppers">
             <button class="btn btn--quiet step" type="button" disabled={n === 0} aria-label={`− ${row.name}`} onclick={() => onRemove(row.code)}>−</button>
             <span class="qty" class:zero={n === 0}>{n}</span>
@@ -251,11 +252,26 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) 0;
+    min-height: 2.5rem;
+    padding: 2px 0;
     border-bottom: 1px solid var(--hairline);
     /* Several hundred rows: let the browser skip laying out the ones off screen. */
     content-visibility: auto;
-    contain-intrinsic-size: auto 3.25rem;
+    contain-intrinsic-size: auto 2.75rem;
+  }
+
+  .cost {
+    flex: 0 0 auto;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
   }
 
   .cards li.held {
@@ -273,11 +289,21 @@
     background: var(--faction-basic);
   }
 
+  /* Name and type on one line, the type trailing in small muted text. */
   .body {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
-    flex-direction: column;
+    align-items: baseline;
+    gap: var(--space-2);
+    overflow: hidden;
+  }
+
+  .meta {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .name {
