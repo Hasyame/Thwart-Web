@@ -1,8 +1,8 @@
 <script lang="ts">
+  import CardHover from './CardHover.svelte';
   import type { Card, Locale } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
-  import { cardImageUrl } from '../lib/data';
   import { deckViewUrl, parseSlots } from '../lib/decks';
   import {
     deckStatistics,
@@ -110,16 +110,6 @@
     ['energy', '⚡'],
     ['wild', '✶'],
   ] as const;
-
-  /** The card being previewed, and where to put the preview. */
-  let preview = $state<{ card: Card; x: number; y: number } | null>(null);
-
-  function showPreview(card: Card, event: MouseEvent): void {
-    if (cardImageUrl(card.imagesrc) === null) {
-      return;
-    }
-    preview = { card, x: event.clientX, y: event.clientY };
-  }
 </script>
 
 <div class="contents surface">
@@ -259,23 +249,21 @@
       {#each entries as entry (entry.code)}
         <li class:missing={!ownedPackCodes.has(entry.card.pack_code)}>
           <span class="qty">{entry.quantity}×</span>
-          <a
-            href={cardHref(entry.code)}
-            data-faction={entry.card.faction_code}
-            onmouseenter={(e) => showPreview(entry.card, e)}
-            onmousemove={(e) => showPreview(entry.card, e)}
-            onmouseleave={() => (preview = null)}
-            onfocus={() => (preview = null)}
-            onclick={(e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-                return;
-              }
-              e.preventDefault();
-              openCard(entry.code);
-            }}
-          >
-            {entry.card.name}
-          </a>
+          <CardHover code={entry.code}>
+            <a
+              href={cardHref(entry.code)}
+              data-faction={entry.card.faction_code}
+              onclick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                  return;
+                }
+                e.preventDefault();
+                openCard(entry.code);
+              }}
+            >
+              {entry.card.name}
+            </a>
+          </CardHover>
           <!-- Which box it came from, so a missing card can be found. -->
           <span class="pack muted" title={packNames.get(entry.card.pack_code) ?? ''}>
             [{entry.card.pack_code.toUpperCase()}]
@@ -293,21 +281,6 @@
 
   <p class="muted note locale-note">{t.deckLocaleNote(cardLocale)}</p>
 </div>
-
-{#if preview !== null}
-  <!--
-    Follows the pointer rather than sitting under the row: a deck list is long,
-    and a preview anchored to the row would fall off the screen as often as not.
-    Flipped to the other side when it would overflow.
-  -->
-  <div
-    class="preview"
-    style:left={`${Math.min(preview.x + 20, window.innerWidth - 260)}px`}
-    style:top={`${Math.min(preview.y + 12, window.innerHeight - 360)}px`}
-  >
-    <img src={cardImageUrl(preview.card.imagesrc)} alt="" loading="eager" />
-  </div>
-{/if}
 
 <style>
   .contents {
@@ -560,29 +533,5 @@
     border-top: 1px solid var(--hairline);
   }
 
-  .preview {
-    position: fixed;
-    z-index: 50;
-    pointer-events: none;
-    width: 240px;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    box-shadow: 0 8px 28px var(--scrim);
-    border: 1px solid var(--border);
-    background: var(--surface-1);
-  }
 
-  .preview img {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  @media (hover: none) {
-    /* No pointer, no preview: on a touch screen it would only ever appear
-       under a finger that has already tapped through to the card. */
-    .preview {
-      display: none;
-    }
-  }
 </style>

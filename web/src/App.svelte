@@ -11,6 +11,7 @@
   import StatsPage from './components/StatsPage.svelte';
   import CampaignsPage from './components/CampaignsPage.svelte';
   import CardWindow from './components/CardWindow.svelte';
+  import CardPeek from './components/CardPeek.svelte';
   import AccountPage from './components/AccountPage.svelte';
   import type { FormMode } from './components/SignInForm.svelte';
   import AccountMenu from './components/AccountMenu.svelte';
@@ -27,7 +28,7 @@
   import { liveQuery } from 'dexie';
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
-  import { configureCardViewer } from './lib/cardViewer.svelte';
+  import { configureCardViewer, showCard } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
   import { watchLive } from './lib/sync/live.svelte';
@@ -504,6 +505,10 @@
   onToggleFavourite={(code) => void toggleFavourite(code)}
 />
 
+<!-- The card under the pointer, on devices that have one. One layer for
+     every list that names a card; see lib/cardPeek. -->
+<CardPeek {t} />
+
 <TopBar
   {t}
   onHome={() => navigate({ name: 'search' })}
@@ -620,7 +625,7 @@
       {packs}
       {cardLocale}
       {storageOk}
-      openCard={(code) => navigate({ name: 'card', code })}
+      openCard={showCard}
       cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
     />
   {:else}

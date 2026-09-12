@@ -3,6 +3,7 @@
   import type { IndexRow } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { COST_CAP, factionOrder, poolRows, startingFactions, type PoolFilter } from '../lib/deckPool';
+  import CardHover from './CardHover.svelte';
 
   interface Props {
     t: Strings;
@@ -143,10 +144,12 @@
         <li data-faction={row.factionCode} class:held={n > 0}>
           <span class="bar" aria-hidden="true"></span>
           <span class="body">
-            <button type="button" class="name" onclick={() => onOpen(row.code)}>
-              {row.name}
-              {#if row.isUnique}<span class="unique" title={t.unique}>◆</span>{/if}
-            </button>
+            <CardHover code={row.code}>
+              <button type="button" class="name" onclick={() => onOpen(row.code)}>
+                {row.name}
+                {#if row.isUnique}<span class="unique" title={t.unique}>◆</span>{/if}
+              </button>
+            </CardHover>
             <span class="meta muted small">
               {row.typeName}{#if row.cost !== null}{' · '}{t.cost} {row.cost}{/if}
               {#if !ownedPackCodes.has(row.packCode)}

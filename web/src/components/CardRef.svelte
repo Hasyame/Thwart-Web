@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { cardImageUrl } from '../lib/data';
-  import { fetchCard, isKnownCard, showCard } from '../lib/cardViewer.svelte';
-  import type { Card } from '../lib/types';
+  import { isKnownCard, showCard } from '../lib/cardViewer.svelte';
+  import CardHover from './CardHover.svelte';
 
   interface Props {
     /** MarvelCDB card code, or a campaign's own id for a card it invented. */
@@ -13,70 +12,12 @@
   const { code, name }: Props = $props();
 
   const known = $derived(isKnownCard(code));
-
-  let card = $state.raw<Card | null>(null);
-  let hovering = $state(false);
-  /** Where to hang the preview, in viewport coordinates. */
-  let anchor = $state.raw<{ top: number; left: number; below: boolean } | null>(null);
-
-  const image = $derived(card === null ? null : cardImageUrl(card.imagesrc));
-
-  /*
-   * Fetched on hover rather than up front.
-   *
-   * A setup step can name a dozen cards and each lives in a pack file of its
-   * own; loading them all to show a picture nobody asked for would cost more
-   * than the page itself.
-   */
-  function peek(event: MouseEvent | FocusEvent): void {
-    if (!known) {
-      return;
-    }
-    const target = event.currentTarget as HTMLElement;
-    const box = target.getBoundingClientRect();
-    // Flipped above when there is no room below, which on a phone in landscape
-    // is most of the time.
-    const below = box.bottom + 340 < window.innerHeight;
-    anchor = {
-      top: below ? box.bottom + 8 : box.top - 8,
-      left: Math.min(box.left, window.innerWidth - 260),
-      below,
-    };
-    hovering = true;
-    void fetchCard(code).then((loaded) => {
-      card = loaded;
-    });
-  }
-
-  const away = (): void => {
-    hovering = false;
-  };
 </script>
 
 {#if known}
-  <button
-    type="button"
-    class="ref"
-    onmouseenter={peek}
-    onmouseleave={away}
-    onfocus={peek}
-    onblur={away}
-    onclick={() => showCard(code)}
-  >"{name}"</button>
-
-  {#if hovering && anchor !== null && image !== null}
-    <!-- Purely a hint, and never in the way: the pointer cannot reach it, so
-         it can sit under the cursor without stealing the hover it came from. -->
-    <div
-      class="peek"
-      class:above={!anchor.below}
-      style:top={`${anchor.top}px`}
-      style:left={`${anchor.left}px`}
-      aria-hidden="true"
-    >
-      <img src={image} alt="" />
-    </div>
-  {/if}
+  <CardHover {code}>
+    <button type="button" class="ref" onclick={() => showCard(code)}>"{name}"</button>
+  </CardHover>
 {:else}
   <!-- A campaign's own card, which no database can show. Named, not linked:
        a reference that opens nothing is worse than plain text. -->
@@ -110,23 +51,4 @@
     font-weight: 600;
   }
 
-  .peek {
-    position: fixed;
-    z-index: 60;
-    width: 15rem;
-    pointer-events: none;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
-    background: var(--surface-2);
-  }
-
-  .peek.above {
-    transform: translateY(-100%);
-  }
-
-  .peek img {
-    display: block;
-    width: 100%;
-  }
 </style>

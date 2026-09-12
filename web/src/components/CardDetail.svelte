@@ -2,6 +2,7 @@
   import type { Card, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { cardImageUrl, marvelCdbCardUrl } from '../lib/data';
+  import { cardHtml } from '../lib/cardText';
 
   interface Props {
     card: Card;
@@ -122,11 +123,11 @@
            every tag outside a small allow-list. This is the only place the
            project renders third-party markup, and it is safe because of that
            step rather than because MarvelCDB is trusted. -->
-      <div class="card-text">{@html card.text}</div>
+      <div class="card-text">{@html cardHtml(card.text)}</div>
     {/if}
 
     {#if card.flavor !== null && card.flavor !== undefined && card.flavor !== ''}
-      <blockquote class="flavor">{@html card.flavor}</blockquote>
+      <blockquote class="flavor">{@html cardHtml(card.flavor)}</blockquote>
     {/if}
 
     {#if card.back_text !== null && card.back_text !== undefined && card.back_text !== ''}
@@ -134,7 +135,7 @@
         {#if card.back_name !== undefined && card.back_name !== null}
           <h2>{card.back_name}</h2>
         {/if}
-        <div class="card-text">{@html card.back_text}</div>
+        <div class="card-text">{@html cardHtml(card.back_text)}</div>
       </div>
     {/if}
 

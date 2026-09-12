@@ -9,6 +9,7 @@
   import { poolFor } from '../lib/deckPool';
   import { showCard } from '../lib/cardViewer.svelte';
   import DeckPool from './DeckPool.svelte';
+  import CardHover from './CardHover.svelte';
   import {
     deckAsText,
     deckStatistics,
@@ -316,7 +317,9 @@
           {#each heroCards as card (card.code)}
             <li class:missing={(slots[card.code] ?? 0) !== card.quantity}>
               <span class="qty">{card.quantity}×</span>
-              <span class="name">{card.name}</span>
+              <CardHover code={card.code}>
+                <button type="button" class="name link" onclick={() => showCard(card.code)}>{card.name}</button>
+              </CardHover>
             </li>
           {/each}
         </ul>
@@ -327,7 +330,9 @@
           {#each group.cards as card (card.code)}
             <li>
               <span class="qty">{card.quantity}×</span>
-              <span class="name">{card.name}</span>
+              <CardHover code={card.code}>
+                <button type="button" class="name link" onclick={() => showCard(card.code)}>{card.name}</button>
+              </CardHover>
               <span class="steppers">
                 <button class="btn btn--quiet" type="button" onclick={() => remove(card.code)}>−</button>
                 <button class="btn btn--quiet" type="button" onclick={() => add(card.code)}>+</button>
@@ -471,6 +476,23 @@
   /* A hero card the deck does not hold at the printed count. */
   .cards li.missing {
     color: var(--danger);
+  }
+
+  /* A name is a button that opens the card, drawn as text. */
+  .link {
+    border: 0;
+    background: none;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .link:hover,
+  .link:focus-visible {
+    color: var(--accent);
   }
 
   .name {
