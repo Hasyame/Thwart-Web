@@ -22,9 +22,15 @@ truth for what every number means, written to be read by both.
   missing.
 - **Decks.** Import a decklist from MarvelCDB by link or number, or build one
   here, and read it against your collection; it tells you whether you can
-  build it. While building, the search can be limited to packs you own, or
-  offer every card and mark the ones you would have to buy — remembered per
-  browser.
+  build it. A new deck starts with the hero's own cards, as the phone's does.
+  The editor shows every card that can go in *this* deck from the first
+  pixel — the deck's aspects and basic on, the others one tap away, type and
+  cost chips, a text box, and *only what I own* to keep to your packs — with
+  a bar that stays put holding the count against its range, the verdict and
+  Save. Rest the pointer on any card, anywhere in the app, to see it with
+  its rules; on a wide screen the deck pages pin that card beside the list;
+  a click opens it in a window without leaving the page. Decks are tiles
+  with the hero's art, and a deck opens under a banner of it.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own. Up to five **extra modular

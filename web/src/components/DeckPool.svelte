@@ -172,7 +172,12 @@
 <style>
   .pool {
     display: grid;
+    /* One track no wider than the column, whatever a row of chips or a long
+       name would prefer: `auto` would grow the track to fit them and push
+       the whole pool off the right edge of a phone. */
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
+    min-width: 0;
   }
 
   .label {
@@ -301,6 +306,7 @@
 
   .meta {
     flex: 0 1 auto;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

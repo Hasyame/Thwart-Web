@@ -77,6 +77,12 @@
    */
   let view = $state<'deck' | 'pool'>('deck');
 
+  // Opened from a list that may be scrolled a long way down; the banner and
+  // the bar are at the top, and that is where an editor opens.
+  $effect(() => {
+    window.scrollTo({ top: 0 });
+  });
+
   /*
    * Whether the bar has stuck: the banner above it holds the name large, and
    * the bar repeats it only once the banner is off the top. A sentinel just
@@ -355,6 +361,16 @@
       </button>
       <button class="btn" type="button" onclick={onDone}>{t.cancel}</button>
     </div>
+    <!-- In the bar so they stay reachable: a tab that scrolls away with the
+         list is a tab somebody has to scroll back up for. -->
+    <div class="segments" role="tablist">
+      <button type="button" role="tab" class="segment" aria-selected={view === 'deck'} onclick={() => (view = 'deck')}>
+        {t.deckTabDeck} <span class="muted">{total}</span>
+      </button>
+      <button type="button" role="tab" class="segment" aria-selected={view === 'pool'} onclick={() => (view = 'pool')}>
+        {t.deckTabPool} <span class="muted">{pool.length}</span>
+      </button>
+    </div>
   </header>
 
   {#if validation !== null && !validation.legal}
@@ -367,15 +383,6 @@
       </ul>
     </details>
   {/if}
-
-  <div class="segments" role="tablist">
-    <button type="button" role="tab" class="segment" aria-selected={view === 'deck'} onclick={() => (view = 'deck')}>
-      {t.deckTabDeck} <span class="muted">{total}</span>
-    </button>
-    <button type="button" role="tab" class="segment" aria-selected={view === 'pool'} onclick={() => (view = 'pool')}>
-      {t.deckTabPool} <span class="muted">{pool.length}</span>
-    </button>
-  </div>
 
   <div class="columns" data-view={view}>
     <div class="column column--deck">
@@ -623,9 +630,9 @@
 
   /* The two tabs, phone only; see `view` in the script. */
   .segments {
+    flex: 1 0 100%;
     display: flex;
     gap: 2px;
-    margin-bottom: var(--space-3);
     padding: 2px;
     border-radius: var(--radius-sm);
     background: var(--surface-2);
@@ -664,6 +671,10 @@
   .columns {
     display: grid;
     gap: var(--space-5);
+  }
+
+  .column {
+    min-width: 0;
   }
 
   @media (min-width: 56rem) {
