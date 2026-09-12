@@ -28,8 +28,9 @@
   import { loadCard, loadIndex, loadMeta, loadPacks, loadSets } from './lib/data';
   import { db, storageAvailable, toggleFavourite as writeFavourite } from './lib/db';
   import { liveQuery } from 'dexie';
-  import { NO_FILTERS, searchCards, type Filters } from './lib/search';
+  import { activeFilterCount, NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
+  import { applyHead, headFor } from './lib/head';
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { loadSyncState } from './lib/sync/sync.svelte';
@@ -382,6 +383,19 @@
     saveUiLocale(locale);
   }
 
+  /*
+   * The document's title, description and canonical, per page and in the
+   * interface language — set on every navigation, since a single page has
+   * one index.html and a search engine files each address under what the
+   * DOM says once rendered. lib/head has the mapping and the reasons.
+   */
+  $effect(() => {
+    applyHead(
+      headFor(route, t, (r) => pathForRoute(r, BASE), route.name === 'card' ? (card?.name ?? null) : null),
+      uiLocale,
+    );
+  });
+
   $effect(() => {
     configureCardViewer(index, cardLocale);
   });
@@ -672,6 +686,25 @@
       onFilters={(next) => (filters = next)}
     />
 
+    {#if query.trim() === '' && activeFilterCount(filters) === 0}
+      <!--
+        The home page's own words, for a first visit and for whoever indexes
+        it: what this is, and where the rest of it is. Gone as soon as a
+        search begins, because then the results are the page.
+      -->
+      <section class="intro">
+        <h1>{t.homeIntroTitle}</h1>
+        <p>{t.homeIntro}</p>
+        <p class="intro-links">
+          <a href={pathForRoute({ name: 'collection' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'collection' }); } }}>{t.homeIntroLinks.collection}</a>
+          <a href={pathForRoute({ name: 'play' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'play' }); } }}>{t.homeIntroLinks.play}</a>
+          <a href={pathForRoute({ name: 'campaigns' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'campaigns' }); } }}>{t.homeIntroLinks.campaigns}</a>
+          <a href={pathForRoute({ name: 'decks' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'decks' }); } }}>{t.homeIntroLinks.decks}</a>
+        </p>
+        <p class="muted intro-note">{t.homeIntroNote}</p>
+      </section>
+    {/if}
+
     <p class="count muted" aria-live="polite">
       {t.resultCount(results.rows.length, results.total)}
     </p>
@@ -772,6 +805,36 @@
   .count {
     font-size: var(--text-sm);
     margin: 0 0 var(--space-3);
+  }
+
+  /* Small and out of the way: a line of welcome, not a landing page. */
+  .intro {
+    max-width: var(--prose-max);
+    margin: 0 0 var(--space-4);
+  }
+
+  .intro h1 {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-1);
+  }
+
+  .intro p {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+  }
+
+  .intro-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .intro-links a {
+    font-weight: var(--weight-semibold);
+  }
+
+  .intro-note {
+    font-size: var(--text-xs);
   }
 
   /*

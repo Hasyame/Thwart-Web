@@ -213,6 +213,13 @@ jobs:
         working-directory: web
         run: npm run test:nav
 
+      # What each page says about itself: a title naming the game on every
+      # public page, private pages kept out of the index, canonicals without
+      # a query string, and both languages carrying every string.
+      - name: Page titles and indexing
+        working-directory: web
+        run: npm run test:head
+
       # That a game played again is the game that was played. The failures are
       # quiet: a wrong aspect, a difficulty dropped to Standard, the wrong
       # modular set — a different game on the table, noticed a scenario later.

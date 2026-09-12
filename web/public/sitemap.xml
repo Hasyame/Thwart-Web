@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The pages worth a visit from a search. Card pages are deliberately
+     absent: see robots.txt. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://thwart.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://thwart.app/collection</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://thwart.app/campaigns</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://thwart.app/play</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://thwart.app/randomizer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://thwart.app/versus</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://thwart.app/rules</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>

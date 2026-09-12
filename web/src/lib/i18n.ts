@@ -17,6 +17,49 @@ import type { Locale } from './types';
 export interface Strings {
   readonly appName: string;
   readonly tagline: string;
+  /**
+   * What the document says about itself, per page: the title and description
+   * a search engine files a page under and a shared link shows. lib/head.
+   */
+  readonly seo: {
+    readonly homeTitle: string;
+    readonly homeDescription: string;
+    readonly cardTitle: string;
+    readonly cardTitleNamed: (name: string) => string;
+    readonly cardDescription: string;
+    readonly collectionTitle: string;
+    readonly collectionDescription: string;
+    readonly randomizerTitle: string;
+    readonly randomizerDescription: string;
+    readonly versusTitle: string;
+    readonly versusDescription: string;
+    readonly playTitle: string;
+    readonly playDescription: string;
+    readonly campaignsTitle: string;
+    readonly campaignsDescription: string;
+    readonly rulesTitle: string;
+    readonly rulesDescription: string;
+    readonly decksTitle: string;
+    readonly decksDescription: string;
+    readonly historyTitle: string;
+    readonly historyDescription: string;
+    readonly statsTitle: string;
+    readonly statsDescription: string;
+    readonly accountTitle: string;
+    readonly accountDescription: string;
+    readonly bggTitle: string;
+    readonly bggDescription: string;
+  };
+  /** The home page's own words, above the card search, for a first visit. */
+  readonly homeIntroTitle: string;
+  readonly homeIntro: string;
+  readonly homeIntroLinks: {
+    readonly collection: string;
+    readonly play: string;
+    readonly campaigns: string;
+    readonly decks: string;
+  };
+  readonly homeIntroNote: string;
   readonly searchPlaceholder: string;
   readonly searchLabel: string;
   readonly interfaceLanguage: string;
@@ -711,6 +754,54 @@ const STRINGS: Record<Locale, Strings> = {
   en: {
     appName: 'Thwart',
     tagline: 'Cards, collection, decks and statistics for Marvel Champions',
+    seo: {
+      homeTitle: 'Thwart — Marvel Champions companion: cards, collection, decks, campaigns',
+      homeDescription:
+        'A free companion for Marvel Champions: The Card Game. Search every card, track your collection, build decks, draw a game, play the campaigns. Offline, no account.',
+      cardTitle: 'Marvel Champions card — Thwart',
+      cardTitleNamed: (name) => `${name} — Marvel Champions card — Thwart`,
+      cardDescription:
+        'Card text, stats, set and pack for Marvel Champions: The Card Game, from MarvelCDB, in English or French.',
+      collectionTitle: 'Marvel Champions collection tracker — Thwart',
+      collectionDescription:
+        'Tick the Marvel Champions packs you own and see which cards, heroes and scenarios you have. Kept on your device, exportable, and synced across devices with an optional account.',
+      randomizerTitle: 'Marvel Champions random game generator — Thwart',
+      randomizerDescription:
+        'Draw a random Marvel Champions game from the packs you own: scenario, modular sets, heroes and aspects, at the difficulty you choose.',
+      versusTitle: 'Marvel Champions versus mode — Thwart',
+      versusDescription:
+        'The two-box versus mode of Marvel Champions, set up from the boxes you own.',
+      playTitle: 'Marvel Champions play tracker — Thwart',
+      playDescription:
+        'Set up a Marvel Champions game, track villain health and main scheme threat, and record the result with your heroes, aspects and modular sets.',
+      campaignsTitle: 'Marvel Champions campaign tracker — Thwart',
+      campaignsDescription:
+        'Play the nine Marvel Champions campaigns — Red Skull, Mad Titan, Galaxy, Mutant Genesis, NeXt Evolution, Age of Apocalypse, Agents of S.H.I.E.L.D., Sinister Motives, Fear No Evil — with every setup step, draw and branch handled for you.',
+      rulesTitle: 'Marvel Champions rules reference — Thwart',
+      rulesDescription: 'The rules reference for Marvel Champions: The Card Game, searchable.',
+      decksTitle: 'Marvel Champions deck builder — Thwart',
+      decksDescription:
+        'Build and check Marvel Champions decks against the cards you own, import from MarvelCDB, and sort them into folders.',
+      historyTitle: 'Game history — Thwart',
+      historyDescription: 'Every Marvel Champions game you recorded, filtered by hero, scenario, result or campaign.',
+      statsTitle: 'Statistics — Thwart',
+      statsDescription: 'Your Marvel Champions win rates by hero, aspect, scenario, difficulty and table size.',
+      accountTitle: 'Account — Thwart',
+      accountDescription: 'An optional account to sync Thwart between your devices and the Android app.',
+      bggTitle: 'BoardGameGeek — Thwart',
+      bggDescription: 'Send your Marvel Champions games to BoardGameGeek from Thwart.',
+    },
+    homeIntroTitle: 'Thwart, a Marvel Champions companion',
+    homeIntro:
+      'Every card of Marvel Champions: The Card Game, in English or French, searchable below. Tick the packs you own, and the site knows which decks you can build, which games you can draw and which campaigns you can play.',
+    homeIntroLinks: {
+      collection: 'Your collection',
+      play: 'Play a game',
+      campaigns: 'Campaigns',
+      decks: 'Decks',
+    },
+    homeIntroNote:
+      'Free, works offline, nothing to install and no account needed. Also on Android. Unofficial: card data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.',
     searchPlaceholder: 'Search cards…',
     searchLabel: 'Search cards',
     interfaceLanguage: 'Interface',
@@ -1538,6 +1629,54 @@ const STRINGS: Record<Locale, Strings> = {
   fr: {
     appName: 'Thwart',
     tagline: 'Cartes, collection, decks et statistiques pour Marvel Champions',
+    seo: {
+      homeTitle: 'Thwart — compagnon Marvel Champions : cartes, collection, decks, campagnes',
+      homeDescription:
+        'Un compagnon gratuit pour Marvel Champions : Le Jeu de Cartes. Cartes, collection, decks, parties au hasard et campagnes. Hors ligne, sans compte.',
+      cardTitle: 'Carte Marvel Champions — Thwart',
+      cardTitleNamed: (name) => `${name} — carte Marvel Champions — Thwart`,
+      cardDescription:
+        'Texte, caractéristiques, set et extension de la carte pour Marvel Champions : Le Jeu de Cartes, d’après MarvelCDB, en français ou en anglais.',
+      collectionTitle: 'Suivi de collection Marvel Champions — Thwart',
+      collectionDescription:
+        'Cochez les extensions Marvel Champions que vous possédez et voyez quelles cartes, héros et scénarios vous avez. Conservé sur votre appareil, exportable, et synchronisé entre appareils avec un compte facultatif.',
+      randomizerTitle: 'Générateur de partie aléatoire Marvel Champions — Thwart',
+      randomizerDescription:
+        'Tirez une partie de Marvel Champions au hasard parmi les extensions que vous possédez : scénario, sets modulaires, héros et aspects, à la difficulté de votre choix.',
+      versusTitle: 'Mode compétitif Marvel Champions — Thwart',
+      versusDescription:
+        'Le mode compétitif à deux boîtes de Marvel Champions, mis en place à partir des boîtes que vous possédez.',
+      playTitle: 'Suivi de partie Marvel Champions — Thwart',
+      playDescription:
+        'Mettez en place une partie de Marvel Champions, suivez les points de vie du vilain et la menace de la manigance, et enregistrez le résultat avec vos héros, aspects et sets modulaires.',
+      campaignsTitle: 'Suivi de campagne Marvel Champions — Thwart',
+      campaignsDescription:
+        'Jouez les neuf campagnes de Marvel Champions — Crâne Rouge, Titan Fou, Convoitise Galactique, Genèse des Mutants, NeXt Evolution, Ère d’Apocalypse, Agents du S.H.I.E.L.D., Sinistres Motivations, Peur de Rien — avec chaque étape de mise en place, tirage et embranchement gérés pour vous.',
+      rulesTitle: 'Référence des règles Marvel Champions — Thwart',
+      rulesDescription: 'La référence des règles de Marvel Champions : Le Jeu de Cartes, avec recherche.',
+      decksTitle: 'Constructeur de decks Marvel Champions — Thwart',
+      decksDescription:
+        'Construisez et vérifiez des decks Marvel Champions avec les cartes que vous possédez, importez depuis MarvelCDB, rangez-les en dossiers.',
+      historyTitle: 'Historique des parties — Thwart',
+      historyDescription: 'Toutes vos parties de Marvel Champions, filtrées par héros, scénario, résultat ou campagne.',
+      statsTitle: 'Statistiques — Thwart',
+      statsDescription: 'Vos taux de victoire à Marvel Champions par héros, aspect, scénario, difficulté et nombre de joueurs.',
+      accountTitle: 'Compte — Thwart',
+      accountDescription: 'Un compte facultatif pour synchroniser Thwart entre vos appareils et l’application Android.',
+      bggTitle: 'BoardGameGeek — Thwart',
+      bggDescription: 'Envoyez vos parties de Marvel Champions sur BoardGameGeek depuis Thwart.',
+    },
+    homeIntroTitle: 'Thwart, un compagnon pour Marvel Champions',
+    homeIntro:
+      'Toutes les cartes de Marvel Champions : Le Jeu de Cartes, en français ou en anglais, à chercher ci-dessous. Cochez les extensions que vous possédez, et le site sait quels decks vous pouvez construire, quelles parties vous pouvez tirer et quelles campagnes vous pouvez jouer.',
+    homeIntroLinks: {
+      collection: 'Votre collection',
+      play: 'Jouer une partie',
+      campaigns: 'Campagnes',
+      decks: 'Decks',
+    },
+    homeIntroNote:
+      'Gratuit, hors ligne, rien à installer et sans compte. Aussi sur Android. Non officiel : données des cartes de MarvelCDB ; Marvel Champions appartient à Fantasy Flight Games et Marvel.',
     searchPlaceholder: 'Rechercher des cartes…',
     searchLabel: 'Rechercher des cartes',
     interfaceLanguage: 'Interface',

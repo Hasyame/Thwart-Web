@@ -40,3 +40,29 @@ for (const { size, name } of SIZES) {
     .toFile(join(PUBLIC, name));
   console.log(`icons: wrote ${name} (${size}x${size})`);
 }
+
+/*
+ * The link preview, 1200 by 630 as Open Graph and Twitter want it.
+ *
+ * The mark on the app's own dark ground with the name beside it, drawn as an
+ * SVG and rasterised the same way as the icons. Unlike them it is **checked
+ * in, not rebuilt**: the text renders in whatever font the machine has, and
+ * a CI runner without Arial drew it in a serif nobody chose. So it is made
+ * here on request — `node scripts/generate-icons.mjs --og` — looked at, and
+ * committed; the build leaves it alone.
+ */
+if (!process.argv.includes('--og')) {
+  process.exit(0);
+}
+const icon = svg.toString('utf8').replace(/<\?xml[^>]*>/, '');
+const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0D0B0C"/>
+  <g transform="translate(120 185) scale(2.4)">${icon.replace(/<svg[^>]*>/, '').replace('</svg>', '')}</g>
+  <text x="440" y="300" fill="#F4F1EF" font-family="Arial, Helvetica, DejaVu Sans, sans-serif" font-weight="700" font-size="112">Thwart</text>
+  <text x="444" y="372" fill="#C9C2BE" font-family="Arial, Helvetica, DejaVu Sans, sans-serif" font-size="40">A Marvel Champions companion</text>
+  <text x="444" y="430" fill="#8E8783" font-family="Arial, Helvetica, DejaVu Sans, sans-serif" font-size="30">Cards · collection · decks · campaigns · statistics</text>
+</svg>`;
+await sharp(Buffer.from(preview))
+  .png({ compressionLevel: 9 })
+  .toFile(join(PUBLIC, 'og-image.png'));
+console.log('icons: wrote og-image.png (1200x630)');

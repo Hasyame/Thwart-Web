@@ -1,0 +1,18 @@
+# Thwart, a Marvel Champions companion. https://thwart.app
+#
+# Everything a visitor can use is open to crawling. What is kept out shows
+# only this browser's own data (the history, the decks, the account) and would
+# index as an empty screen, and the card pages carry MarvelCDB's card text,
+# which is theirs to rank for. The pages themselves also say noindex.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /account
+Disallow: /verify
+Disallow: /settings/
+Disallow: /history
+Disallow: /stats
+Disallow: /decks
+Disallow: /card/
+
+Sitemap: https://thwart.app/sitemap.xml

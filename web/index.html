@@ -12,11 +12,67 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>Thwart, a Marvel Champions companion</title>
+    <!--
+      What the page says about itself before any script runs. lib/head
+      rewrites the title, description, canonical and Open Graph tags on every
+      navigation, in the interface language; these are what a crawler or a
+      link preview sees first, and what they fall back to.
+    -->
+    <title>Thwart — Marvel Champions companion: cards, collection, decks, campaigns</title>
     <meta
       name="description"
-      content="Search cards, track your collection, check decks against what you own, draw a random game and keep your play statistics. Bilingual, works offline, no account needed. An unofficial companion to the Thwart Android app."
+      content="A free companion for Marvel Champions: The Card Game. Search every card, track your collection, build decks, draw a game, play the campaigns. Offline, no account."
     />
+    <link rel="canonical" href="https://thwart.app/" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Thwart" />
+    <meta property="og:title" content="Thwart — Marvel Champions companion" />
+    <meta
+      property="og:description"
+      content="Search every card, track your collection, build decks, draw a random game, play the campaigns and keep your statistics. Free, offline, no account needed."
+    />
+    <meta property="og:url" content="https://thwart.app/" />
+    <meta property="og:image" content="https://thwart.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Thwart — Marvel Champions companion" />
+    <meta
+      name="twitter:description"
+      content="Search every card, track your collection, build decks, draw a random game, play the campaigns and keep your statistics. Free, offline, no account needed."
+    />
+    <meta name="twitter:image" content="https://thwart.app/og-image.png" />
+    <!--
+      Structured data, so a search engine knows this is a free web
+      application and not a shop or an article. A data block, not a script:
+      the content security policy's script-src does not apply to it, since
+      nothing here executes.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Thwart",
+        "alternateName": "Thwart, a Marvel Champions companion",
+        "url": "https://thwart.app/",
+        "description": "A free companion for Marvel Champions: The Card Game. Search every card in English or French, track your collection, build legal decks, draw a random game, play the nine campaigns and keep your statistics. Works offline, no account needed.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": ["en", "fr"],
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "about": {
+          "@type": "Game",
+          "name": "Marvel Champions: The Card Game",
+          "publisher": { "@type": "Organization", "name": "Fantasy Flight Games" }
+        },
+        "sameAs": ["https://github.com/Hasyame/Thwart"]
+      }
+    </script>
     <meta name="color-scheme" content="light dark" />
     <!-- The app's own mark. See web/public/icon.svg. -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />

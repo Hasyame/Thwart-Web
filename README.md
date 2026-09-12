@@ -202,6 +202,7 @@ the real modules:
 | `npm run test:device` | Which rows signing out takes, and which it leaves |
 | `npm run test:engine-sync` | Campaign runs through the sync path |
 | `npm run test:nav` | That every destination is reachable, in both arrangements |
+| `npm run test:head` | What each page says about itself: titles, descriptions, canonicals, what is kept out of the index |
 | `npm run test:replay` | That a game played again is the game that was played |
 | `npm run test:randomizer` | The draw with extra modular sets: exact count, no duplicate, the scenario's own pool |
 | `npm run test:ratings` | That a rating cites the right subject and game, a campaign's scenario resolved, and that a refused one does not stall the cursor |

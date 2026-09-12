@@ -38,6 +38,7 @@
     "test:parity": "vite-node scripts/test-android-parity.mjs",
     "test:safe-area": "vite-node scripts/test-safe-area.mjs",
     "test:nav": "vite-node scripts/test-nav.mjs",
+    "test:head": "vite-node scripts/test-head.mjs",
     "test:replay": "vite-node scripts/test-replay.mjs",
     "test:randomizer": "vite-node scripts/test-randomizer.mjs",
     "test:ratings": "vite-node scripts/test-ratings.mjs",
