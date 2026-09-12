@@ -61,7 +61,11 @@ template may say and the rulebook readings behind Fear No Evil.
   credits in the market, and let the branches decide what comes next. A run is
   an append-only log and everything on screen is folded from it, so undo is an
   appended revocation rather than an unpicked change, and a campaign corrected
-  on the app reads correctly here on the next build.
+  on the app reads correctly here on the next build. Each run is a tile with
+  its final villain's art as the face of the box, a status badge — not
+  started, in progress, won, lost, conceded — the scenarios beaten and every
+  game's result in order. A campaign is lost only when its rules say so; a
+  lost game on the way does not make a lost campaign.
 - **Versus.** The two-box mode, offered only to people who own a box that
   prints two main schemes — as the app does, because a menu entry that leads to
   an apology is worse than no menu entry.
@@ -216,6 +220,7 @@ the real modules:
 | `npm run test:deal` | Campaign dealing |
 | `npm run test:tracker` | The campaign tracker |
 | `npm run test:fne` | Fear No Evil played through against the shipped template: a lost scenario is not failed, the Kingpin defeat on Expert, the lost campaign |
+| `npm run test:tile` | A campaign's tile: the final villain as its face, won or lost as the engine means it |
 | `npm run test:setup` | Scenario setup text, in both languages |
 | `npm run test:encounter` | The ported tracker rules against the real card database |
 | `npm run test:paused` | That a game put away comes back the same |

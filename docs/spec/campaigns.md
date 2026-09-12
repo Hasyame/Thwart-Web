@@ -94,7 +94,18 @@ on Expert a table has at most five Kingpin defeats to give before the sixth
 ends the campaign; a Completed count that Kingpin's own setup reads
 (`compute: { flagSet: "acheve" }`) goes down with each sacrifice.
 
-### 3.4 Not played again from the history
+### 3.4 Won, lost, or neither — what the shelf shows
+
+A run's tile carries a status folded from its log, not read off the last
+game: **lost** only when the engine says so (a `lose` step, a job fallen
+under `losesWhenScenarioFails`, or conceding — shown as its own word), **won**
+when finished and not lost, whatever games were lost on the way, **in
+progress** once a game has been played, **not started** before. Every state
+is a glyph and a word as well as a colour. The face of the box is the last
+villain the template names, from MarvelCDB; Fear No Evil's villains are on no
+database, so its tile is a colour field. `web/src/lib/campaignTile.ts`.
+
+### 3.5 Not played again from the history
 
 A campaign's scenario is logged as a play under the campaign's own scenario
 id (`s1_musee`), not a card set. The history offers no "play again" on it: a
@@ -115,4 +126,5 @@ resolve it through the run's template (`web/src/lib/ratings.ts`
   §3.3 flip by flip to the lost campaign, the defeat's questions while their
   `when` holds, hit points carried over from a defeat and capped.
 - `npm run test:deal` — §3.2 over ten seeded campaigns.
-- `npm run test:replay`, `npm run test:ratings` — §3.4.
+- `npm run test:tile` — §3.4: the faces from the shipped templates, and the status rule.
+- `npm run test:replay`, `npm run test:ratings` — §3.5.

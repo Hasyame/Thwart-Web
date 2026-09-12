@@ -529,6 +529,15 @@ export interface Strings {
   readonly campaignBetween: string;
   readonly campaignContinue: string;
   readonly campaignOpen: string;
+  /** The tile's status badge: a word beside a glyph, never colour alone. */
+  readonly campaignStatusNotStarted: string;
+  readonly campaignStatusInProgress: string;
+  readonly campaignStatusWon: string;
+  readonly campaignStatusLost: string;
+  readonly campaignStatusConceded: string;
+  readonly campaignDetails: string;
+  readonly campaignHideDetails: string;
+  readonly campaignResultsLabel: (won: number, played: number) => string;
   readonly actionTaken: string;
   readonly promptUnsupported: (type: string) => string;
 
@@ -1348,6 +1357,14 @@ const STRINGS: Record<Locale, Strings> = {
     campaignBetween: 'Between scenarios',
     campaignContinue: 'Continue',
     campaignOpen: 'Open this campaign',
+    campaignStatusNotStarted: 'Not started',
+    campaignStatusInProgress: 'In progress',
+    campaignStatusWon: 'Won',
+    campaignStatusLost: 'Lost',
+    campaignStatusConceded: 'Conceded',
+    campaignDetails: 'Details',
+    campaignHideDetails: 'Hide details',
+    campaignResultsLabel: (won, played) => `${played} games played, ${won} won`,
     actionTaken: 'Done.',
     promptUnsupported: (type) =>
       `This build cannot ask this question yet (${type}). Record it by hand on the campaign sheet.`,
@@ -1748,7 +1765,8 @@ const STRINGS: Record<Locale, Strings> = {
     campaignsEmpty: 'Aucune campagne ici.',
     campaignsEmptyHint:
       "Importez une sauvegarde de l'application Android sur la page Collection et vos campagnes apparaîtront.",
-    campaignProgress: (done, total) => `${done} scénarios battus sur ${total}`,
+    campaignProgress: (done, total) =>
+      done === 1 ? `1 scénario battu sur ${total}` : `${done} scénarios battus sur ${total}`,
     campaignConceded: 'abandonnée',
     campaignFinished: 'terminée',
     campaignPlays: (n) =>
@@ -2231,6 +2249,14 @@ const STRINGS: Record<Locale, Strings> = {
     campaignBetween: 'Entre deux scénarios',
     campaignContinue: 'Continuer',
     campaignOpen: 'Ouvrir cette campagne',
+    campaignStatusNotStarted: 'Pas commencée',
+    campaignStatusInProgress: 'En cours',
+    campaignStatusWon: 'Gagnée',
+    campaignStatusLost: 'Perdue',
+    campaignStatusConceded: 'Abandonnée',
+    campaignDetails: 'Détails',
+    campaignHideDetails: 'Masquer les détails',
+    campaignResultsLabel: (won, played) => `${played} parties jouées, ${won} gagnées`,
     actionTaken: 'Fait.',
     promptUnsupported: (type) =>
       `Cette version ne sait pas encore poser cette question (${type}). Notez-la à la main sur la feuille de campagne.`,

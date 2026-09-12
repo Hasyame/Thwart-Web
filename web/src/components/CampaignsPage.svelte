@@ -7,6 +7,10 @@
   import { session } from '../lib/sync/session.svelte';
   import { storedOnServer } from '../lib/sync/stored.svelte';
   import { foldCampaign, type CampaignProgress } from '../lib/campaigns';
+  import { fieldHue, parseEventRows, tileOf, type CampaignStatus, type CampaignTile } from '../lib/campaignTile';
+  import { templateOf } from '../lib/campaign/store';
+  import { fetchCard } from '../lib/cardViewer.svelte';
+  import { cardImageUrl } from '../lib/data';
   import { formatElapsed } from '../lib/session.svelte';
   import type { IndexRow } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
@@ -89,6 +93,56 @@
     ),
   );
 
+  /*
+   * What each tile shows, folded by the real engine: the status the log
+   * says, the score, and the card that stands for the box. lib/campaignTile
+   * has the rule for what "lost" means.
+   */
+  const tiles = $derived.by((): ReadonlyMap<string, CampaignTile> => {
+    const out = new Map<string, CampaignTile>();
+    for (const run of store.runs) {
+      out.set(run.id, tileOf(run, templateOf(run), parseEventRows(eventsByRun.get(run.id) ?? [])));
+    }
+    return out;
+  });
+
+  /*
+   * The faces, fetched once per card and kept: a run that is a second play
+   * of the same box shares its villain. Read through the card viewer's
+   * fetch, the same pipeline as every card view, so nothing is re-hosted.
+   */
+  let faces = $state.raw<ReadonlyMap<string, string>>(new Map());
+  $effect(() => {
+    const codes = [...new Set([...tiles.values()].map((tile) => tile.faceCode).filter((c): c is string => c !== null))];
+    if (codes.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    void Promise.all(
+      codes.map((code) => fetchCard(code).then((card) => [code, cardImageUrl(card?.imagesrc)] as const)),
+    ).then((pairs) => {
+      if (!cancelled) {
+        faces = new Map(pairs.flatMap(([code, url]) => (url === null ? [] : [[code, url] as const])));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const statusLabel = (status: CampaignStatus): string =>
+    ({
+      'not-started': t.campaignStatusNotStarted,
+      'in-progress': t.campaignStatusInProgress,
+      won: t.campaignStatusWon,
+      lost: t.campaignStatusLost,
+      conceded: t.campaignStatusConceded,
+    })[status];
+
+  /* A glyph beside the word, so the state is never colour alone. */
+  const statusGlyph = (status: CampaignStatus): string =>
+    ({ 'not-started': '·', 'in-progress': '▶', won: '✓', lost: '✗', conceded: '✗' })[status];
+
   /** Plays recorded against a run, which is what campaignRunId is for. */
   function playsFor(runId: string): readonly Play[] {
     return store.plays.filter((play) => play.campaignRunId === runId);
@@ -105,12 +159,14 @@
    * Conceded counts as finished. It is over either way, and the run that ended
    * badly is not one somebody is looking for under "in progress".
    */
-  const inProgress = $derived(
-    campaigns.filter((campaign) => !campaign.run.finished && !campaign.conceded),
-  );
-  const finished = $derived(
-    campaigns.filter((campaign) => campaign.run.finished || campaign.conceded),
-  );
+  const isLive = (campaign: CampaignProgress): boolean => {
+    const status = tiles.get(campaign.run.id)?.status;
+    return status === undefined
+      ? !campaign.run.finished && !campaign.conceded
+      : status === 'not-started' || status === 'in-progress';
+  };
+  const inProgress = $derived(campaigns.filter(isLive));
+  const finished = $derived(campaigns.filter((campaign) => !isLive(campaign)));
 
   let openId = $state<string | null>(null);
   /** The run whose delete has been asked for but not yet confirmed. */
@@ -206,137 +262,172 @@
       {#each list as campaign (campaign.run.id)}
         {@const open = openId === campaign.run.id}
         {@const plays = playsFor(campaign.run.id)}
-        <li class="surface run" class:open>
+        {@const tile = tiles.get(campaign.run.id)}
+        {@const art = tile?.faceCode === null || tile?.faceCode === undefined ? undefined : faces.get(tile.faceCode)}
+        {@const status = tile?.status ?? 'not-started'}
+        {@const live = status === 'not-started' || status === 'in-progress'}
+        <!--
+          A tile per campaign, as on the shelf of decks: the final villain's
+          art across the top, and everything written on the opaque band under
+          it. Nothing but the status badge sits on the art: text over a
+          picture is the contrast trap this page is meant to avoid. With no
+          art -- Fear No Evil, or offline -- the top is a colour field with the
+          campaign's initial, and the tile looks finished all the same.
+        -->
+        <li class="tile" class:open>
           <button
             type="button"
-            class="run-head"
-            aria-expanded={open}
-            onclick={() => (openId = open ? null : campaign.run.id)}
+            class="tile-head"
+            style:--field-hue={fieldHue(campaign.run.templateId)}
+            onclick={() => (view = { kind: 'run', id: campaign.run.id })}
           >
+            {#if art !== undefined}
+              <img class="art" src={art} alt="" loading="lazy" />
+            {:else}
+              <span class="field" aria-hidden="true">{(campaign.run.templateName || campaign.title).slice(0, 1)}</span>
+            {/if}
+            <span class="scrim" aria-hidden="true"></span>
+            <span class="badge" data-status={status}>
+              <span class="glyph" aria-hidden="true">{statusGlyph(status)}</span>
+              {statusLabel(status)}
+            </span>
+            <span class="visually-hidden">{t.campaignOpen}</span>
+          </button>
+
+          <div class="band">
             <span class="run-name">{campaign.title}</span>
             <span class="muted run-sub">
-              <!-- A campaign's difficulty is its own word — `standard` or
-                   `expert` — not one of the play page's set names, so it reads
-                   through the campaign's own labels rather than falling back to
-                   printing the raw token. -->
+              <!-- A campaign's difficulty is its own word -- `standard` or
+                   `expert` -- so it reads through the campaign's own labels. -->
               {campaign.run.templateName} · {t.campaignDifficulty(campaign.run.difficulty)}
-              · {t.campaignProgress(campaign.completed, campaign.scenarios.length)}
-              {#if campaign.conceded}· {t.campaignConceded}{/if}
-              {#if campaign.run.finished}· {t.campaignFinished}{/if}
-              <!--
-                Where the campaign is kept. Signing out takes the account's
-                campaigns and leaves the ones this browser made before signing
-                in, and the two are otherwise indistinguishable in this list.
-              -->
               {#if signedIn}
-                · {storedOnServer.campaigns.has(campaign.run.id)
-                  ? t.savedOnServer
-                  : t.savedLocalOnly}
+                · {storedOnServer.campaigns.has(campaign.run.id) ? t.savedOnServer : t.savedLocalOnly}
+              {/if}
+            </span>
+
+            <!--
+              How far: scenarios beaten out of those the box holds, the bar,
+              and every game's result in the order it was played, so a
+              campaign that lost twice on the way reads as one that did.
+            -->
+            <span class="score">
+              <span class="score-text">{t.campaignProgress(tile?.beaten ?? campaign.completed, tile?.total ?? campaign.scenarios.length)}</span>
+              {#if (tile?.results.length ?? 0) > 0}
+                <span class="results" role="img" aria-label={t.campaignResultsLabel(tile?.results.filter(Boolean).length ?? 0, tile?.results.length ?? 0)}>
+                  {#each tile?.results ?? [] as won, i (i)}
+                    <span class="result" class:won class:lost={!won} aria-hidden="true">{won ? '✓' : '✗'}</span>
+                  {/each}
+                </span>
               {/if}
             </span>
             <span class="progress" aria-hidden="true">
               <span
                 class="fill"
-                style:width={`${
-                  campaign.scenarios.length === 0
-                    ? 0
-                    : Math.round((campaign.completed / campaign.scenarios.length) * 100)
-                }%`}
+                data-status={status}
+                style:width={`${(tile?.total ?? 0) === 0 ? 0 : Math.round(((tile?.beaten ?? 0) / (tile?.total ?? 1)) * 100)}%`}
               ></span>
             </span>
-          </button>
 
-          {#if open}
-            <div class="detail">
-              {#if campaign.notice !== ''}
-                <p class="muted note">{campaign.notice}</p>
-              {/if}
-
-              <ol class="scenarios">
-                {#each campaign.scenarios as scenario (scenario.id)}
-                  <li class:won={scenario.won} class:attempted={scenario.attempts > 0}>
-                    <span class="mark" aria-hidden="true">
-                      {scenario.won ? '✓' : scenario.attempts > 0 ? '✗' : '·'}
-                    </span>
-                    <span class="scenario-name">{scenario.name}</span>
-                    {#if scenario.attempts > 1}
-                      <span class="muted attempts">{t.attempts(scenario.attempts)}</span>
-                    {/if}
-                  </li>
-                {/each}
-              </ol>
-
-              {#if campaign.run.timerAccumulatedMillis > 0}
-                <p class="muted">
-                  {t.timePlayed(formatElapsed(campaign.run.timerAccumulatedMillis))}
-                </p>
-              {/if}
-
-              {#if plays.length > 0}
-                <h3 class="games-title">{t.campaignGames}</h3>
-                <ul class="games">
-                  {#each plays as play (play.id)}
-                    <PlayRow {t} {uiLocale} {play} />
-                  {/each}
-                </ul>
-              {/if}
-
-              {#if !campaign.run.finished && !campaign.conceded}
-                <button
-                  class="open-run"
-                  type="button"
-                  onclick={() => (view = { kind: 'run', id: campaign.run.id })}
-                >
-                  {t.campaignOpen}
+            <span class="tile-actions">
+              {#if live}
+                <button class="btn btn--primary small" type="button" onclick={() => (view = { kind: 'run', id: campaign.run.id })}>
+                  {t.campaignContinue}
                 </button>
               {/if}
-
-              {#if deleting === campaign.run.id}
-                <div class="confirm">
-                  <p class="note">
-                    {t.campaignDeleteConfirm(
-                      plays.length,
-                      (eventsByRun.get(campaign.run.id) ?? []).length,
-                    )}
-                  </p>
-                  <div class="confirm-actions">
-                    <button
-                      class="btn btn--quiet danger"
-                      type="button"
-                      disabled={busy}
-                      onclick={() => void removeCampaign(campaign.run.id)}
-                    >
-                      {t.campaignDeleteYes}
-                    </button>
-                    <button
-                      class="btn btn--quiet"
-                      type="button"
-                      disabled={busy}
-                      onclick={() => (deleting = null)}
-                    >
-                      {t.cancel}
-                    </button>
-                  </div>
-                </div>
-              {:else}
-                <button
-                  class="btn btn--quiet danger delete-run"
-                  type="button"
-                  onclick={() => (deleting = campaign.run.id)}
-                >
-                  {t.campaignDelete}
-                </button>
-              {/if}
-
-              {#if campaign.unreadEvents > 0}
-                <!-- Counted rather than hidden: the log holds more than this
-                     page folds, and pretending otherwise would be a lie about
-                     how complete the view is. -->
-                <p class="muted note">{t.campaignUnread(campaign.unreadEvents)}</p>
-              {/if}
-            </div>
-          {/if}
+              <button
+                class="btn btn--quiet small"
+                type="button"
+                aria-expanded={open}
+                onclick={() => (openId = open ? null : campaign.run.id)}
+              >
+                {open ? t.campaignHideDetails : t.campaignDetails}
+              </button>
+            </span>
+          </div>
         </li>
+
+        {#if open}
+          <!-- The detail spans the row under its tile: the scenarios, the
+               games, the clock, and the way to delete the lot. -->
+          <li class="detail surface">
+            {#if campaign.notice !== ''}
+              <p class="muted note">{campaign.notice}</p>
+            {/if}
+
+            <ol class="scenarios">
+              {#each campaign.scenarios as scenario (scenario.id)}
+                <li class:won={scenario.won} class:attempted={scenario.attempts > 0}>
+                  <span class="mark" aria-hidden="true">
+                    {scenario.won ? '✓' : scenario.attempts > 0 ? '✗' : '·'}
+                  </span>
+                  <span class="scenario-name">{scenario.name}</span>
+                  {#if scenario.attempts > 1}
+                    <span class="muted attempts">{t.attempts(scenario.attempts)}</span>
+                  {/if}
+                </li>
+              {/each}
+            </ol>
+
+            {#if campaign.run.timerAccumulatedMillis > 0}
+              <p class="muted">
+                {t.timePlayed(formatElapsed(campaign.run.timerAccumulatedMillis))}
+              </p>
+            {/if}
+
+            {#if plays.length > 0}
+              <h3 class="games-title">{t.campaignGames}</h3>
+              <ul class="games">
+                {#each plays as play (play.id)}
+                  <PlayRow {t} {uiLocale} {play} />
+                {/each}
+              </ul>
+            {/if}
+
+            {#if deleting === campaign.run.id}
+              <div class="confirm">
+                <p class="note">
+                  {t.campaignDeleteConfirm(
+                    plays.length,
+                    (eventsByRun.get(campaign.run.id) ?? []).length,
+                  )}
+                </p>
+                <div class="confirm-actions">
+                  <button
+                    class="btn btn--quiet danger"
+                    type="button"
+                    disabled={busy}
+                    onclick={() => void removeCampaign(campaign.run.id)}
+                  >
+                    {t.campaignDeleteYes}
+                  </button>
+                  <button
+                    class="btn btn--quiet"
+                    type="button"
+                    disabled={busy}
+                    onclick={() => (deleting = null)}
+                  >
+                    {t.cancel}
+                  </button>
+                </div>
+              </div>
+            {:else}
+              <button
+                class="btn btn--quiet danger delete-run"
+                type="button"
+                onclick={() => (deleting = campaign.run.id)}
+              >
+                {t.campaignDelete}
+              </button>
+            {/if}
+
+            {#if campaign.unreadEvents > 0}
+              <!-- Counted rather than hidden: the log holds more than this
+                   page folds, and pretending otherwise would be a lie about
+                   how complete the view is. -->
+              <p class="muted note">{t.campaignUnread(campaign.unreadEvents)}</p>
+            {/if}
+          </li>
+        {/if}
       {/each}
     </ul>
 {/snippet}
@@ -420,47 +511,180 @@
   .runs {
     list-style: none;
     padding: 0;
-    margin: var(--space-4) 0 0;
+    margin: var(--space-3) 0 0;
     display: grid;
-    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+    gap: var(--space-3);
   }
 
-  .run {
-    padding: var(--space-3) var(--space-4);
+  /*
+   * The tile, held apart from the page by a hairline and a step of surface
+   * rather than a shadow, as the reference does it; it lifts a little under
+   * the pointer and nothing else moves.
+   */
+  .tile {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    transition: border-color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
   }
 
-  .run.open {
+  .tile:hover,
+  .tile.open {
     border-color: var(--accent);
   }
 
-  .run-head {
+  .tile-head {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    border: 0;
+    background: var(--surface-2);
+    text-align: start;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  /*
+   * A villain card is a portrait frame with the art in its upper half and the
+   * scheme and attack boxes down its left edge. Drawn wider than the tile and
+   * pushed left so those boxes fall outside it, and placed so the face sits
+   * where the eye lands.
+   */
+  .art {
+    position: absolute;
+    left: -26%;
+    top: -12%;
+    width: 152%;
+    height: 124%;
+    object-fit: cover;
+    object-position: 50% 18%;
+    transition: transform var(--motion-base) var(--ease-out);
+  }
+
+  .tile-head:hover .art {
+    transform: scale(1.03);
+  }
+
+  /* No art: the campaign's own colour, and its initial, large and quiet. */
+  .field {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: hsl(var(--field-hue) 32% 24%);
+    color: hsl(var(--field-hue) 40% 60% / 55%);
+    font-size: 4.5rem;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.04em;
+  }
+
+  /* Darkens the art's foot so the badge and the band's edge sit on something
+     even, whatever the picture does there. */
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 55%) 0%, rgb(0 0 0 / 0%) 45%);
+  }
+
+  /*
+   * The status, on the art's corner: a glyph and a word, then a colour --
+   * never the colour alone. Opaque, so it reads over any picture.
+   */
+  .badge {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2) 2px var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--surface-1);
+    color: var(--text);
+    border: 1px solid var(--hairline);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    line-height: 1.5;
+  }
+
+  .badge .glyph {
+    display: inline-grid;
+    place-items: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    color: #fff;
+    background: var(--text-muted);
+  }
+
+  .badge[data-status='won'] .glyph { background: var(--ok); }
+  .badge[data-status='lost'] .glyph,
+  .badge[data-status='conceded'] .glyph { background: var(--danger); }
+  .badge[data-status='in-progress'] .glyph { background: var(--accent); }
+
+  .band {
     display: grid;
     gap: var(--space-1);
-    width: 100%;
-    border: 0;
-    background: none;
-    color: inherit;
-    text-align: start;
-    padding: var(--space-1) 0;
-    cursor: pointer;
+    padding: var(--space-3);
   }
 
   .run-name {
-    font-weight: 600;
+    font-weight: var(--weight-bold);
     font-size: var(--text-lg);
+    line-height: var(--leading-snug);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .run-sub {
     font-size: var(--text-sm);
   }
 
+  .score {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-2);
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+  }
+
+  /* Every game in order, a tick or a cross each; a defeat on the way to a
+     won campaign stays visible, because it happened. */
+  .results {
+    display: inline-flex;
+    gap: 2px;
+  }
+
+  .result {
+    display: inline-grid;
+    place-items: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: var(--radius-xs);
+    font-size: 0.7rem;
+    font-weight: var(--weight-bold);
+    color: #fff;
+  }
+
+  .result.won { background: var(--ok); }
+  .result.lost { background: var(--danger); }
+
   .progress {
     display: block;
-    height: 0.5rem;
-    border-radius: var(--radius-sm);
+    height: 0.375rem;
+    border-radius: var(--radius-pill);
     background: var(--surface-2);
     overflow: hidden;
-    margin-top: var(--space-1);
   }
 
   .fill {
@@ -469,10 +693,27 @@
     background: var(--accent);
   }
 
+  .fill[data-status='won'] { background: var(--ok); }
+  .fill[data-status='lost'],
+  .fill[data-status='conceded'] { background: var(--danger); }
+
+  .tile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+
+  .small {
+    min-height: 2.25rem;
+    padding-block: var(--space-1);
+    font-size: var(--text-sm);
+  }
+
+  /* The opened tile's detail, across the whole row beneath it. */
   .detail {
-    margin-top: var(--space-3);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--hairline);
+    grid-column: 1 / -1;
+    padding: var(--space-3) var(--space-4);
   }
 
   .scenarios {
@@ -508,17 +749,5 @@
 
   .attempts {
     font-size: var(--text-sm);
-  }
-
-  .open-run {
-    display: block;
-    margin: var(--space-3) 0 var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--accent);
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-weight: 700;
-    cursor: pointer;
   }
 </style>
