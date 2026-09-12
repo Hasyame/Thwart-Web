@@ -178,6 +178,12 @@ export interface Strings {
   readonly deckEmpty: string;
   /** The group of the hero's own cards in the editor, and why it has no steppers. */
   readonly deckHeroCards: string;
+  /** The pool's filter groups and its sort. */
+  readonly factionLabel: string;
+  readonly typeLabel: string;
+  readonly sortLabel: string;
+  readonly sortByName: string;
+  readonly sortByCost: string;
   readonly deckHeroCardsFixed: string;
   /** Puts the hero's cards a deck is missing into it. */
   readonly deckAddHeroCards: string;
@@ -806,6 +812,11 @@ const STRINGS: Record<Locale, Strings> = {
     deckAddCards: 'Add cards',
     deckEmpty: 'Nothing in it yet. Search on the right and press the plus.',
     deckHeroCards: 'Hero cards',
+    factionLabel: 'Aspect',
+    typeLabel: 'Type',
+    sortLabel: 'Sort',
+    sortByName: 'by name',
+    sortByCost: 'by cost',
     deckHeroCardsFixed: 'In every deck this hero builds, at the printed count.',
     deckAddHeroCards: 'Add the hero\u2019s cards',
     deckOwnedOnlyEmpty: 'Your collection is empty, so nothing can match. Tick your packs on the Collection page, or untick this to see every card.',
@@ -1559,6 +1570,11 @@ const STRINGS: Record<Locale, Strings> = {
     deckAddCards: 'Ajouter des cartes',
     deckEmpty: 'Encore vide. Cherchez \u00e0 droite et appuyez sur le plus.',
     deckHeroCards: 'Cartes du h\u00e9ros',
+    factionLabel: 'Aspect',
+    typeLabel: 'Type',
+    sortLabel: 'Tri',
+    sortByName: 'par nom',
+    sortByCost: 'par co\u00fbt',
     deckHeroCardsFixed: 'Dans chaque deck de ce h\u00e9ros, au nombre imprim\u00e9.',
     deckAddHeroCards: 'Ajouter les cartes du h\u00e9ros',
     deckOwnedOnlyEmpty: 'Votre collection est vide, rien ne peut correspondre. Cochez vos paquets sur la page Collection, ou d\u00e9cochez ceci pour voir toutes les cartes.',

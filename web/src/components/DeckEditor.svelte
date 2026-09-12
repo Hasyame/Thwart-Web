@@ -5,7 +5,10 @@
   import type { SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { loadCardsByCode } from '../lib/data';
-  import { buildableFor, parseSlots } from '../lib/decks';
+  import { parseSlots } from '../lib/decks';
+  import { poolFor } from '../lib/deckPool';
+  import { showCard } from '../lib/cardViewer.svelte';
+  import DeckPool from './DeckPool.svelte';
   import {
     deckAsText,
     deckStatistics,
@@ -13,7 +16,6 @@
     validateDeck,
     type DeckProblem,
   } from '../lib/deckRules';
-  import { searchCards, NO_FILTERS } from '../lib/search';
   import { loadDeckOwnedOnly, saveDeckOwnedOnly } from '../lib/preferences';
 
   /**
@@ -50,7 +52,6 @@
     untrack(() => Object.fromEntries(parseSlots(deck.slots).entries())),
   );
   let name = $state(untrack(() => deck.name));
-  let query = $state('');
   /*
    * Whether the search offers the whole pool or only what is owned.
    *
@@ -135,20 +136,11 @@
   const total = $derived(Object.values(slots).reduce((sum, quantity) => sum + quantity, 0));
 
   /* The hero's own set, from the index: what decides which set-bound cards
-     the search may offer. See `buildableFor`. */
+     the pool may hold. See `buildableFor`. */
   const heroSetCode = $derived(index.find((row) => row.code === deck.heroCode)?.setCode ?? null);
 
-  /** What the search offers to add: player cards that can go in *this* deck. */
-  const results = $derived(
-    query.trim() === ''
-      ? []
-      : searchCards(index, {
-          query,
-          filters: { ...NO_FILTERS, ownedOnly },
-          collection: { ownedPacks: ownedPackCodes, favourites: new Set() },
-          limit: 40,
-        }).rows.filter((row) => buildableFor(row, heroSetCode)),
-  );
+  /** Every card that can go in *this* deck. The pool narrows it; nothing widens it. */
+  const pool = $derived(poolFor(index, heroSetCode));
 
   function setOwnedOnly(next: boolean): void {
     ownedOnly = next;
@@ -350,49 +342,18 @@
 
     <div class="column">
       <h2>{t.deckAddCards}</h2>
-      <label class="field-group">
-        <span class="visually-hidden">{t.searchLabel}</span>
-        <input
-          class="field"
-          type="search"
-          placeholder={t.searchPlaceholder}
-          value={query}
-          oninput={(e) => (query = e.currentTarget.value)}
-        />
-      </label>
-      <label class="tick">
-        <input
-          type="checkbox"
-          checked={ownedOnly}
-          onchange={(e) => setOwnedOnly(e.currentTarget.checked)}
-        />
-        <span>{t.ownedOnly}</span>
-      </label>
-      {#if ownedOnly && ownedPackCodes.size === 0}
-        <p class="muted small">{t.deckOwnedOnlyEmpty}</p>
-      {/if}
-      <ul class="cards">
-        {#each results as row (row.code)}
-          <li>
-            <span class="qty muted">{slots[row.code] ?? 0}×</span>
-            <span class="name">
-              {row.name}
-              <span class="muted small">
-                {row.typeName} · {row.factionName}
-                {#if !ownedPackCodes.has(row.packCode)}
-                  <span class="tag">{t.notOwned}</span>
-                {/if}
-              </span>
-            </span>
-            <span class="steppers">
-              {#if (slots[row.code] ?? 0) > 0}
-                <button class="btn btn--quiet" type="button" onclick={() => remove(row.code)}>−</button>
-              {/if}
-              <button class="btn btn--quiet" type="button" onclick={() => add(row.code)}>+</button>
-            </span>
-          </li>
-        {/each}
-      </ul>
+      <DeckPool
+        {t}
+        {pool}
+        deckAspects={aspects}
+        {slots}
+        {ownedPackCodes}
+        {ownedOnly}
+        onOwnedOnly={setOwnedOnly}
+        onAdd={add}
+        onRemove={remove}
+        onOpen={(code) => showCard(code)}
+      />
     </div>
   </div>
 
@@ -510,19 +471,6 @@
   /* A hero card the deck does not hold at the printed count. */
   .cards li.missing {
     color: var(--danger);
-  }
-
-  /* The same mark the deck's own list puts on a card from a pack not owned,
-     so the search and the list say it the same way. */
-  .tag {
-    font-size: var(--text-2xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--danger);
-    border: 1px solid currentColor;
-    border-radius: var(--radius-sm);
-    padding: 0 var(--space-1);
-    margin-inline-start: var(--space-1);
   }
 
   .name {

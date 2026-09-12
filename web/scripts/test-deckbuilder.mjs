@@ -18,6 +18,7 @@ import {
   validateDeck,
 } from '../src/lib/deckRules.ts';
 import { buildableFor, heroIdentities, signatureSlots } from '../src/lib/decks.ts';
+import { COST_CAP, factionOrder, poolFor, poolRows, startingFactions } from '../src/lib/deckPool.ts';
 
 /*
  * The deck size, which is the one rule not in the card data anywhere. Named
@@ -535,6 +536,36 @@ const rules = heroRules(spiderMan, packOf(spiderMan));
   const bpStart = signatureSlots(bp, packOf(bp));
   check("Black Panther's four Wakanda Forever! printings are all required",
     ['01043a', '01043b', '01043c'].every((c) => bpStart[c] === 1) && bpStart['01043d'] === 2);
+}
+
+// --- the pool, narrowed --------------------------------------------------------------------
+{
+  const index = JSON.parse(readFileSync(join(DATA, '..', '..', 'index.en.json'), 'utf8'));
+  const rows = Array.isArray(index) ? index : (index.cards ?? index.rows);
+  const spidey = rows.find((r) => r.code === '01001a');
+  const all = poolFor(rows, spidey.setCode);
+  const none = { ownedPacks: new Set(), favourites: new Set() };
+  const base = { factions: startingFactions(['justice']), types: new Set(), query: '', cost: null, ownedOnly: false, sort: 'name' };
+
+  check('a fresh pool starts on the deck aspect and basic', [...startingFactions(['justice'])].sort().join() === 'basic,justice');
+  const order = factionOrder(all, ['justice']).map((f) => f.code);
+  check('chips lead with the deck aspect, then basic, then the rest', order[0] === 'justice' && order[1] === 'basic' && order.length >= 6, order.join(','));
+
+  const start = poolRows(all, base, none);
+  check('and shows only justice and basic', start.every((r) => ['justice', 'basic'].includes(r.factionCode)),
+    [...new Set(start.map((r) => r.factionCode))].join(','));
+  check("the hero's own cards are not in the pool: they are fixed, not chosen", !all.some((r) => r.setCode === spidey.setCode));
+  check('in name order', start.every((r, i) => i === 0 || start[i - 1].name.localeCompare(r.name) <= 0));
+  check('a type chip narrows to that type', poolRows(all, { ...base, types: new Set(['ally']) }, none).every((r) => r.typeCode === 'ally'));
+  check('a cost chip is exact below the cap', poolRows(all, { ...base, cost: 2 }, none).every((r) => r.cost === 2));
+  check('and "or more" at it', poolRows(all, { ...base, cost: COST_CAP }, none).every((r) => r.cost >= COST_CAP));
+  check('sorting by cost keeps name order inside a cost', (() => {
+    const byCost = poolRows(all, { ...base, sort: 'cost' }, none);
+    return byCost.every((r, i) => i === 0 || (byCost[i - 1].cost ?? 99) < (r.cost ?? 99) || ((byCost[i - 1].cost ?? 99) === (r.cost ?? 99) && byCost[i - 1].name.localeCompare(r.name) <= 0));
+  })());
+  check('typing finds by name', poolRows(all, { ...base, query: 'helicarrier' }, none).some((r) => r.name === 'Helicarrier'));
+  check('the collection tick keeps only owned packs', poolRows(all, { ...base, ownedOnly: true }, { ownedPacks: new Set(['core']), favourites: new Set() }).every((r) => r.packCode === 'core'));
+  check('no faction on means nothing shown', poolRows(all, { ...base, factions: new Set() }, none).length === 0);
 }
 
 process.exit(failures === 0 ? 0 : 1);
