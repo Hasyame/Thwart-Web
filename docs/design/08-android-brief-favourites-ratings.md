@@ -277,6 +277,21 @@ Confirm what the phone does when the link is tapped on the device, and report
 whether the README paragraph is still true; do not add an in-app verify
 endpoint unless something is actually broken.
 
+### 7. Signature cards: do not require a back side
+
+Found while building the web editor on 12 September 2026, and the phone's
+rule is the same one. `DeckBuilderRepository` builds `requiredCards` from
+the hero's set minus encounter, hero and alter-ego cards. MarvelCDB also
+lists the *flipped face* of a double-sided card under its own code, flagged
+`hidden: true` — Phoenix Force is `34002a` and `34002b` — and a decklist
+names the front only. Requiring the back calls every published Phoenix deck
+illegal by one card that cannot be put in a deck (also Jubilee's and Nick
+Fury's flip cards). Exclude `hidden` cards from `requiredCards` and from the
+candidate list. Not every lettered code is a back side: Black Panther's
+Wakanda Forever! is `01043a`–`01043d`, four printings, none hidden, all
+required. The web asserts both with MarvelCDB decklist 40000 as a fixture
+(`web/scripts/fixtures/decklist-40000-phoenix.json`); reuse it.
+
 ## Definition of done
 
 - Unit tests for: the `rejected` branch (task 1); both merge rules
