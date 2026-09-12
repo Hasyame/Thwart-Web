@@ -30,7 +30,6 @@
 
   const { t, index, cardLocale, storageOk, onOpen, onEdit }: Props = $props();
 
-
   // Not named `state`: Svelte reads `$name` as a store subscription, so a
   // variable called `state` turns the `$state` rune into a reference to it.
   const saved = $state<{ decks: readonly SavedDeck[]; owned: Set<string> }>({
@@ -57,7 +56,7 @@
   let busy = $state(false);
   let error = $state<string | null>(null);
   /** The hero and aspect chosen for a deck that does not exist yet. */
-  let building = $state<{ heroCode: string; aspect: string } | null>(null);
+  let building = $state<{ heroCode: string } | null>(null);
 
   /*
    * Every hero in the pool, for the build form.
@@ -69,8 +68,6 @@
    */
   const heroes = $derived(heroIdentities(index));
 
-  const ASPECTS = ['aggression', 'justice', 'leadership', 'protection'] as const;
-
   /**
    * Creates an empty deck and opens the editor on it.
    *
@@ -78,7 +75,13 @@
    * on a device rather than imported, so two devices that both build one never
    * collide and neither is mistaken for a MarvelCDB import.
    */
-  async function createDeck(heroCode: string, aspect: string): Promise<void> {
+  /*
+   * A hero, and nothing else. The aspect is not asked for: it is whatever
+   * the cards say once they are chosen, which is how a deck is built at a
+   * table and what lets the editor say "these two cards disagree" instead
+   * of "this card is off-aspect" for a choice made before any card was.
+   */
+  async function createDeck(heroCode: string): Promise<void> {
     const hero = index.find((row) => row.code === heroCode);
     const id = `local-${crypto.randomUUID()}`;
     /*
@@ -104,7 +107,7 @@
       name: hero?.name ?? heroCode,
       heroCode,
       heroName: hero?.name ?? heroCode,
-      aspects: aspect,
+      aspects: '',
       slots,
       ignoreDeckLimitSlots: '',
       descriptionMd: null,
@@ -280,7 +283,7 @@
     <div class="import surface">
       <h2>{t.deckNew}</h2>
       {#if building === null}
-        <button class="btn" type="button" onclick={() => (building = { heroCode: '', aspect: 'justice' })}>
+        <button class="btn" type="button" onclick={() => (building = { heroCode: '' })}>
           {t.deckNew}
         </button>
       {:else}
@@ -298,23 +301,11 @@
               {/each}
             </select>
           </label>
-          <label class="field-group">
-            <span class="field-label">{t.deckPickAspect}</span>
-            <select
-              class="field"
-              value={building.aspect}
-              onchange={(e) => building !== null && (building.aspect = e.currentTarget.value)}
-            >
-              {#each ASPECTS as aspect (aspect)}
-                <option value={aspect}>{aspect}</option>
-              {/each}
-            </select>
-          </label>
           <button
             class="btn btn--primary"
             type="button"
             disabled={building.heroCode === ''}
-            onclick={() => building !== null && void createDeck(building.heroCode, building.aspect)}
+            onclick={() => building !== null && void createDeck(building.heroCode)}
           >
             {t.deckCreate}
           </button>
@@ -403,7 +394,6 @@
         {/each}
       </ul>
     {/if}
-
 
   {/if}
 </section>
@@ -624,7 +614,6 @@
     font-weight: 600;
     margin-bottom: 0;
   }
-
 
   .verdict {
     align-self: flex-start;

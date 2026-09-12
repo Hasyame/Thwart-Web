@@ -24,9 +24,14 @@ export interface PoolFilter {
 /** The last cost chip means "this or more". */
 export const COST_CAP = 5;
 
-/** The factions a fresh deck's pool starts on: its aspects, and basic. */
-export function startingFactions(deckAspects: readonly string[]): Set<string> {
-  return new Set([...deckAspects.filter((a) => a !== ''), 'basic']);
+/**
+ * The factions a deck's pool starts on: its aspects and basic -- or, for a
+ * deck that has no aspect yet, every aspect there is, since the first card
+ * chosen is what decides.
+ */
+export function startingFactions(deckAspects: readonly string[], all: readonly string[] = []): Set<string> {
+  const chosen = deckAspects.filter((a) => a !== '');
+  return new Set([...(chosen.length > 0 ? chosen : all), 'basic']);
 }
 
 /**

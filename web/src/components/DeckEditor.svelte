@@ -5,7 +5,7 @@
   import type { SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { cardImageUrl, loadCardsByCode } from '../lib/data';
-  import { parseSlots } from '../lib/decks';
+  import { inferAspects, parseSlots } from '../lib/decks';
   import { poolFor } from '../lib/deckPool';
   import { showCard } from '../lib/cardViewer.svelte';
   import DeckPool from './DeckPool.svelte';
@@ -150,12 +150,22 @@
   /** The hero's picture, for the bar. From MarvelCDB, referenced and never copied. */
   const heroImage = $derived(hero === null ? null : cardImageUrl(hero.imagesrc));
 
-  const aspects = $derived(
+  /*
+   * Read off the cards, not off the deck: see `inferAspects`. A deck opened
+   * with an `aspects` field but no aspect card yet -- an import, a deck from
+   * the phone -- keeps what it said until a card says otherwise.
+   */
+  const rowByCode = $derived(new Map(index.map((row) => [row.code, row] as const)));
+  const declared = $derived(
     deck.aspects
       .split(',')
       .map((entry) => entry.trim())
       .filter((entry) => entry !== ''),
   );
+  const aspects = $derived.by(() => {
+    const inferred = inferAspects(slotMap, (code) => rowByCode.get(code), heroSetCode);
+    return inferred.length > 0 ? inferred : declared;
+  });
 
   /*
    * The hero's rules, derived from its own pack.
@@ -168,9 +178,19 @@
 
   const slotMap = $derived(new Map(Object.entries(slots)));
 
-  const validation = $derived(
-    rules === null ? null : validateDeck(rules, aspects, slotMap, records),
-  );
+  const validation = $derived.by(() => {
+    if (rules === null) {
+      return null;
+    }
+    const raw = validateDeck(rules, aspects, slotMap, records);
+    // Fewer aspects than the hero takes is not a fault while the deck is
+    // still short: nothing has been chosen yet, and "too few cards" already
+    // says so. Too many is a fault from the first card that mixes them.
+    const problems = raw.problems.filter(
+      (p) => !(p.kind === 'wrongAspectCount' && p.chosen < p.expected && total < rules.minimum),
+    );
+    return { ...raw, problems, legal: problems.length === 0 };
+  });
 
   const stats = $derived(deckStatistics(slotMap, records));
 
@@ -288,6 +308,8 @@
       await db.decks.put({
         ...deck,
         name,
+        // What the cards say, so the shelf, the phone and MarvelCDB agree.
+        aspects: aspects.join(','),
         slots: Object.entries(slots)
           .map(([code, quantity]) => `${code}=${quantity}`)
           .join(','),

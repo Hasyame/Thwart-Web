@@ -269,6 +269,41 @@ export function signatureSlots(hero: Card, packCards: readonly Card[]): Record<s
   return Object.fromEntries(heroRules(hero, packCards).requiredCards);
 }
 
+/**
+ * The aspects a deck plays, read off its cards.
+ *
+ * Nobody declares an aspect at a card table: the deck is built and the
+ * aspect is whatever the cards say. So the editor asks for a hero only, and
+ * the aspects are the distinct aspect factions among the cards chosen --
+ * basic cards belong to nobody, and the hero's own cards carry factions of
+ * their own (Spider-Woman's four events are one of each) that say nothing
+ * about the deck. In the order first met, so a deck's first aspect stays
+ * first; MarvelCDB's `aspects` field is a comma list in the same shape.
+ */
+export function inferAspects(
+  slots: ReadonlyMap<string, number>,
+  rowOf: (code: string) => IndexRow | undefined,
+  heroSetCode: string | null,
+): string[] {
+  const seen: string[] = [];
+  for (const [code, quantity] of slots) {
+    if (quantity < 1) {
+      continue;
+    }
+    const row = rowOf(code);
+    if (row === undefined || row.factionCode === 'basic' || row.factionCode === 'hero' || row.factionCode === 'encounter') {
+      continue;
+    }
+    if (row.setCode !== null && row.setCode === heroSetCode) {
+      continue;
+    }
+    if (!seen.includes(row.factionCode)) {
+      seen.push(row.factionCode);
+    }
+  }
+  return seen;
+}
+
 /** The card types a player deck can hold. */
 const PLAYER_TYPES: ReadonlySet<string> = new Set(['ally', 'event', 'upgrade', 'support', 'resource']);
 

@@ -17,7 +17,7 @@ import {
   heroRules,
   validateDeck,
 } from '../src/lib/deckRules.ts';
-import { buildableFor, heroIdentities, signatureSlots } from '../src/lib/decks.ts';
+import { buildableFor, heroIdentities, inferAspects, signatureSlots } from '../src/lib/decks.ts';
 import { COST_CAP, factionOrder, poolFor, poolRows, startingFactions } from '../src/lib/deckPool.ts';
 
 /*
@@ -566,6 +566,26 @@ const rules = heroRules(spiderMan, packOf(spiderMan));
   check('typing finds by name', poolRows(all, { ...base, query: 'helicarrier' }, none).some((r) => r.name === 'Helicarrier'));
   check('the collection tick keeps only owned packs', poolRows(all, { ...base, ownedOnly: true }, { ownedPacks: new Set(['core']), favourites: new Set() }).every((r) => r.packCode === 'core'));
   check('no faction on means nothing shown', poolRows(all, { ...base, factions: new Set() }, none).length === 0);
+}
+
+// --- the aspects, read off the cards ---------------------------------------------------------
+{
+  const index = JSON.parse(readFileSync(join(DATA, '..', '..', 'index.en.json'), 'utf8'));
+  const rows = Array.isArray(index) ? index : (index.cards ?? index.rows);
+  const byCode = new Map(rows.map((r) => [r.code, r]));
+  const rowOf = (code) => byCode.get(code);
+  const spidey = byCode.get('01001a');
+  const justiceCard = rows.find((r) => r.factionCode === 'justice' && r.setCode === null && r.typeCode === 'event');
+  const aggressionCard = rows.find((r) => r.factionCode === 'aggression' && r.setCode === null && r.typeCode === 'event');
+  const basicCard = rows.find((r) => r.factionCode === 'basic' && r.setCode === null && r.typeCode === 'ally');
+
+  check('no aspect card, no aspect', inferAspects(new Map([['01008', 1], [basicCard.code, 2]]), rowOf, spidey.setCode).length === 0);
+  check('one justice card makes a justice deck', inferAspects(new Map([[justiceCard.code, 1]]), rowOf, spidey.setCode).join() === 'justice');
+  check('a second aspect is a second entry, in the order met',
+    inferAspects(new Map([[justiceCard.code, 1], [aggressionCard.code, 1]]), rowOf, spidey.setCode).join() === 'justice,aggression');
+  check("Spider-Woman's own aspect events say nothing about her deck",
+    inferAspects(new Map([['04035', 1], ['04036', 1]]), rowOf, byCode.get('04031a').setCode).length === 0);
+  check('a card at zero copies does not count', inferAspects(new Map([[justiceCard.code, 0]]), rowOf, spidey.setCode).length === 0);
 }
 
 process.exit(failures === 0 ? 0 : 1);

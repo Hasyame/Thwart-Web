@@ -35,7 +35,9 @@
    */
   // Read once, deliberately: the chips are this screen's state from here on,
   // and the editor is keyed on the deck, so a new deck mounts a new pool.
-  let factions = $state<Set<string>>(untrack(() => startingFactions(deckAspects)));
+  let factions = $state<Set<string>>(
+    untrack(() => startingFactions(deckAspects, [...new Set(pool.map((row) => row.factionCode))])),
+  );
   let types = $state<Set<string>>(new Set());
   let query = $state('');
   let cost = $state<number | null>(null);
