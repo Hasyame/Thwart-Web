@@ -4,7 +4,8 @@
   import type { SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
-  import { loadCardsByCode, loadPackCards } from '../lib/data';
+  import { cardImageUrl, loadCardsByCode, loadPackCards } from '../lib/data';
+  import { fetchCard } from '../lib/cardViewer.svelte';
   import type { Card } from '../lib/types';
   import DeckContents from './DeckContents.svelte';
   import DeckEditor from './DeckEditor.svelte';
@@ -131,6 +132,28 @@
      */
     syncAfter('deck-added');
   }
+
+  /*
+   * Each deck's hero, pictured. The shelf reads by face rather than by name,
+   * which is how a shelf of real decks reads. Fetched through the card cache,
+   * so ten decks of one hero cost one pack file; referenced from MarvelCDB,
+   * never copied.
+   */
+  let heroImages = $state.raw<ReadonlyMap<string, string>>(new Map());
+  $effect(() => {
+    const codes = [...new Set(saved.decks.map((deck) => deck.heroCode))];
+    let cancelled = false;
+    void Promise.all(codes.map((code) => fetchCard(code).then((card) => [code, cardImageUrl(card?.imagesrc)] as const))).then((pairs) => {
+      if (!cancelled) {
+        heroImages = new Map(pairs.flatMap(([code, url]) => (url === null ? [] : [[code, url] as const])));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const sizeOf = (deck: SavedDeck): number => [...parseSlots(deck.slots).values()].reduce((a, b) => a + b, 0);
 
   const editing = $derived(saved.decks.find((deck) => deck.id === editingId) ?? null);
 
@@ -346,41 +369,45 @@
         {#each saved.decks as deck (deck.id)}
           {@const verdict = verdicts.get(deck.id) ?? null}
           {@const aspects = aspectsOf(deck)}
-          <li
-            class="surface deck"
-            class:open={deck.id === openDeckId}
-            style:--deck-aspect-1={`var(--faction-${aspects[0] ?? 'basic'})`}
-            style:--deck-aspect-2={aspects.length > 1
-              ? `var(--faction-${aspects[1]})`
-              : `var(--faction-${aspects[0] ?? 'basic'})`}
-            class:two-aspects={aspects.length > 1}
-          >
+          {@const art = heroImages.get(deck.heroCode)}
+          <!--
+            A tile per deck, the hero's art across the top and the name over
+            it. Two clicks matter here -- open, and edit -- so the whole tile
+            opens and the edit and remove buttons sit apart at the foot.
+          -->
+          <li class="tile" class:open={deck.id === openDeckId}>
             <button
               type="button"
-              class="btn deck-head"
+              class="tile-head"
               aria-expanded={deck.id === openDeckId}
               onclick={() => (openDeckId = openDeckId === deck.id ? null : deck.id)}
             >
-              <span class="deck-name">{deck.name}</span>
-              <span class="muted deck-sub">
-                {deck.heroName}{aspects.length === 0
-                  ? ''
-                  : ` · ${aspects.map((a) => t.aspect(a)).join(' / ')}`}
-              </span>
-              {#if verdict !== null}
-                <span class="verdict" class:illegal={!verdict}>
-                  {verdict ? t.deckLegalShort : t.deckIllegalShort}
-                </span>
-              {:else if cardsLoading}
-                <span class="verdict muted">…</span>
+              {#if art !== undefined}
+                <img class="art" src={art} alt="" loading="lazy" />
               {/if}
+              <span class="shade" aria-hidden="true"></span>
+              <span class="title">
+                <span class="deck-name">{deck.name}</span>
+                <span class="deck-sub">{deck.heroName}</span>
+              </span>
             </button>
-            <button type="button" class="btn" onclick={() => (editingId = deck.id)}>
-              {t.deckEdit}
-            </button>
-            <button type="button" class="btn remove" onclick={() => remove(deck.id)}>
-              {t.removeDeck}
-            </button>
+            <div class="foot">
+              <span class="chips">
+                {#each aspects as aspect (aspect)}
+                  <span class="chip chip--aspect" data-faction={aspect}><span class="dot" aria-hidden="true"></span>{t.aspect(aspect)}</span>
+                {/each}
+                <span class="muted small">{t.cardCount(sizeOf(deck))}</span>
+                {#if verdict !== null}
+                  <span class="verdict" class:illegal={!verdict}>{verdict ? t.deckLegalShort : t.deckIllegalShort}</span>
+                {:else if cardsLoading}
+                  <span class="verdict muted">…</span>
+                {/if}
+              </span>
+              <span class="tile-actions">
+                <button type="button" class="btn btn--quiet" onclick={() => (editingId = deck.id)}>{t.deckEdit}</button>
+                <button type="button" class="btn btn--quiet remove" onclick={() => remove(deck.id)}>{t.removeDeck}</button>
+              </span>
+            </div>
           </li>
         {/each}
       </ul>
@@ -470,45 +497,136 @@
     padding: 0;
     margin: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
-    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+    gap: var(--space-3);
   }
 
-  .deck {
+  .tile {
     display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+    transition: box-shadow 120ms ease, transform 120ms ease;
   }
 
-  .deck.open {
+  .tile:hover {
+    box-shadow: 0 8px 20px rgb(0 0 0 / 14%);
+  }
+
+  .tile.open {
     border-color: var(--accent);
   }
 
-  .deck-head {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-0-5);
+  /* The art as a banner, the name written over its darker foot. */
+  .tile-head {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    padding: 0;
     border: 0;
-    background: none;
+    background: var(--surface-2);
+    color: #fff;
     text-align: start;
-    padding: var(--space-2) 0;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  /*
+   * A portrait card, not a banner: the art is its upper half, framed by a
+   * border and, on a hero, stat boxes down the left. Drawn larger than the
+   * tile and placed so the frame falls outside it and the face sits in the
+   * upper third, which is where the eye lands.
+   */
+  .art {
+    position: absolute;
+    left: -14%;
+    top: -16%;
+    width: 128%;
+    height: 132%;
+    object-fit: cover;
+    object-position: 50% 16%;
+    transition: transform 300ms ease;
+  }
+
+  .tile-head:hover .art {
+    transform: scale(1.03);
+  }
+
+  .shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 78%) 0%, rgb(0 0 0 / 30%) 55%, rgb(0 0 0 / 0%) 100%);
+  }
+
+  .title {
+    position: absolute;
+    inset-inline: var(--space-3);
+    bottom: var(--space-3);
+    display: grid;
+    gap: 2px;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 60%);
   }
 
   .deck-name {
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-snug);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .deck-sub {
     font-size: var(--text-sm);
+    opacity: 0.9;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .chip--aspect {
+    min-height: 1.6rem;
+    padding-block: 0;
+    font-size: var(--text-xs);
+  }
+
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--faction-basic);
+  }
+
+  [data-faction='leadership'] .dot { background: var(--faction-leadership); }
+  [data-faction='justice'] .dot { background: var(--faction-justice); }
+  [data-faction='aggression'] .dot { background: var(--faction-aggression); }
+  [data-faction='protection'] .dot { background: var(--faction-protection); }
+  [data-faction='pool'] .dot { background: var(--faction-pool); }
+
+  .tile-actions {
+    display: inline-flex;
+    gap: var(--space-1);
   }
 
   .remove {
-    flex: 0 0 auto;
     font-size: var(--text-xs);
-    padding: var(--space-1) var(--space-2);
   }
 
   .empty {
@@ -521,25 +639,6 @@
     margin-bottom: 0;
   }
 
-  /*
-   * The aspect down the edge of the box, so a shelf of decks reads at a
-   * glance. Two-aspect heroes get both, split down the same strip rather than
-   * blended: Spider-Woman plays two aspects, she does not play an average of
-   * them.
-   */
-  .deck {
-    border-inline-start: 5px solid var(--deck-aspect-1, var(--faction-basic));
-  }
-
-  .deck.two-aspects {
-    border-inline-start-color: transparent;
-    border-image: linear-gradient(
-        to bottom,
-        var(--deck-aspect-1) 0 50%,
-        var(--deck-aspect-2) 50% 100%
-      )
-      1;
-  }
 
   .verdict {
     align-self: flex-start;

@@ -146,7 +146,7 @@
     pointer-events: none;
     border-radius: var(--radius-md);
     border: 1px solid var(--hairline);
-    background: var(--surface);
+    background: var(--surface-1);
     color: var(--text);
     box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
     overflow: hidden;

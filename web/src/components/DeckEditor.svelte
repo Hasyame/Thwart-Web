@@ -11,6 +11,7 @@
   import DeckPool from './DeckPool.svelte';
   import CardHover from './CardHover.svelte';
   import CardPanel from './CardPanel.svelte';
+  import DeckBanner from './DeckBanner.svelte';
   import {
     deckAsText,
     deckStatistics,
@@ -75,6 +76,25 @@
    * columns are, whatever this says.
    */
   let view = $state<'deck' | 'pool'>('deck');
+
+  /*
+   * Whether the bar has stuck: the banner above it holds the name large, and
+   * the bar repeats it only once the banner is off the top. A sentinel just
+   * above the bar tells which, with no scroll listener.
+   */
+  let stuck = $state(false);
+  let sentinel = $state.raw<HTMLElement | null>(null);
+  $effect(() => {
+    const el = sentinel;
+    if (el === null) {
+      return;
+    }
+    const watch = new IntersectionObserver(([entry]) => {
+      stuck = entry !== undefined && !entry.isIntersecting;
+    });
+    watch.observe(el);
+    return () => watch.disconnect();
+  });
 
   /*
    * Full records for everything the deck touches.
@@ -290,6 +310,16 @@
 </script>
 
 <section class="editor">
+  <DeckBanner
+    {t}
+    art={heroImage}
+    {name}
+    onName={(next) => (name = next)}
+    heroName={hero?.name ?? deck.heroName}
+    {aspects}
+    cards={total}
+  />
+
   <!--
     Everything that has to be seen while building, in one bar that stays put:
     who the deck is for, how many cards it holds against the range, whether it
@@ -297,18 +327,13 @@
     of red above the deck was the first thing on the old screen, and most of
     it said "this deck is not finished yet", which the count already says.
   -->
-  <header class="bar">
+  <div class="sentinel" bind:this={sentinel} aria-hidden="true"></div>
+  <header class="bar" class:stuck>
     {#if heroImage !== null}
       <img class="portrait" src={heroImage} alt="" />
     {/if}
     <div class="who">
-      <input
-        class="field name-field"
-        type="text"
-        aria-label={t.deckName}
-        value={name}
-        oninput={(e) => (name = e.currentTarget.value)}
-      />
+      <p class="bar-name">{name}</p>
       <p class="muted small line">
         {hero?.name ?? deck.heroName}{#if aspects.length > 0}{' · '}{aspects.map((a) => t.aspect(a)).join(' · ')}{/if}
       </p>
@@ -466,6 +491,21 @@
     border-bottom: 1px solid var(--hairline);
   }
 
+  /* Hidden until the banner has scrolled away, so the name is not written
+     twice on one screen: the bar's copy is for the reader who has scrolled. */
+  .bar .who {
+    visibility: hidden;
+  }
+
+  .bar.stuck .who {
+    visibility: visible;
+  }
+
+  .sentinel {
+    height: 1px;
+    margin-top: -1px;
+  }
+
   .portrait {
     flex: 0 0 auto;
     width: 2.75rem;
@@ -484,10 +524,12 @@
     gap: 2px;
   }
 
-  .name-field {
-    min-height: 2.25rem;
-    padding-block: var(--space-1);
+  .bar-name {
+    margin: 0;
     font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .line {

@@ -1,5 +1,7 @@
 <script lang="ts">
   import CardHover from './CardHover.svelte';
+  import DeckBanner from './DeckBanner.svelte';
+  import { cardImageUrl } from '../lib/data';
   import type { Card, Locale } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
@@ -113,25 +115,25 @@
 </script>
 
 <div class="contents surface">
-  <header class="head">
-    <div>
-      <h2>{deck.name}</h2>
-      <p class="muted">
-        {deck.heroName} · {t.cardCount(validation?.totalCards ?? 0)}{aspects.length === 0
-          ? ''
-          : ` · ${aspects.map((a) => t.aspect(a)).join(' / ')}`}
-      </p>
-    </div>
-    <!--
-      Only an imported deck has a page to link to. A deck built here has no
-      MarvelCDB id, so the link would go nowhere.
-    -->
-    {#if deck.kind !== 'LOCAL'}
+  <DeckBanner
+    {t}
+    art={cardImageUrl(cards.get(deck.heroCode)?.imagesrc)}
+    name={deck.name}
+    heroName={deck.heroName}
+    {aspects}
+    cards={validation?.totalCards ?? 0}
+  />
+  <!--
+    Only an imported deck has a page to link to. A deck built here has no
+    MarvelCDB id, so the link would go nowhere.
+  -->
+  {#if deck.kind !== 'LOCAL'}
+    <p class="head">
       <a href={deckViewUrl(deck)} target="_blank" rel="noopener">
         {t.viewOnMarvelCdb} ↗
       </a>
-    {/if}
-  </header>
+    </p>
+  {/if}
 
   {#if validation !== null}
     {#if validation.legal}
@@ -284,21 +286,14 @@
 
 <style>
   .contents {
-    padding: var(--space-4);
+    padding: 0 var(--space-4) var(--space-4);
     margin: var(--space-4) 0;
+    overflow: hidden;
   }
 
   .head {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--space-3);
-  }
-
-  h2 {
-    font-size: var(--text-lg);
-    margin: 0 0 var(--space-1);
+    margin: var(--space-3) 0 0;
+    text-align: end;
   }
 
   h3 {
