@@ -60,7 +60,8 @@
         <a
           href={hrefFor(destination.id)}
           class:current={active === destination.id ||
-            (destination.id === 'search' && active === 'card')}
+            (destination.id === 'search' && active === 'card') ||
+            (destination.id === 'decks' && active === 'deck')}
           aria-current={active === destination.id ? 'page' : undefined}
           onclick={(event) => go(event, destination.id)}
         >

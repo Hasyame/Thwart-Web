@@ -9,6 +9,7 @@
  *
  *   npm run test:nav
  */
+import { pathForRoute, routeFromPath } from '../src/lib/router.ts';
 import {
   DESTINATIONS,
   PLAY_TARGETS,
@@ -108,6 +109,18 @@ for (const grouped of [false, true]) {
     !ids(visible(overflowFor(false), hidden)).includes('versus'));
   check('and from the wide header',
     !ids(visible(TOP_BAR, hidden)).includes('versus'));
+}
+
+// --- a deck's own page, and its editor, as URLs ----------------------------------------------
+{
+  const there = (path) => routeFromPath(path, '');
+  const back = (route) => pathForRoute(route, '');
+  check('a deck has a page', JSON.stringify(there('/decks/local-abc')) === JSON.stringify({ name: 'deck', id: 'local-abc' }));
+  check('and an editor', JSON.stringify(there('/decks/local-abc/edit')) === JSON.stringify({ name: 'deck', id: 'local-abc', edit: true }));
+  check('the shelf is still the shelf', there('/decks').name === 'decks' && there('/decks/').name === 'decks');
+  check('an id with odd characters survives the round trip',
+    there(back({ name: 'deck', id: 'decklist-40000' })).id === 'decklist-40000' && back({ name: 'deck', id: 'a b', edit: true }) === '/decks/a%20b/edit');
+  check('a deck page lights the Decks tab', tabFor('deck', false) === 'decks' && tabFor('deck', true) === 'decks');
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

@@ -31,7 +31,11 @@ truth for what every number means, written to be read by both.
   Save. Rest the pointer on any card, anywhere in the app, to see it with
   its rules; on a wide screen the deck pages pin that card beside the list;
   a click opens it in a window without leaving the page. Decks are tiles
-  with the hero's art, and a deck opens under a banner of it.
+  with the hero's art, and each deck has a page of its own at
+  `/decks/<id>` — the banner, a search box and a list-or-grid switch, the
+  hero set apart, the deck in type columns, the card panel with the actions
+  beside it, the hero's nemesis set, and the cost curve and composition
+  under it all. The editor is that page's `/edit`.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own. Up to five **extra modular

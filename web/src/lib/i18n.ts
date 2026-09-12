@@ -226,6 +226,15 @@ export interface Strings {
   readonly deckImportNetwork: string;
   readonly noDecks: string;
   readonly removeDeck: string;
+  /** A deck's own page: not found, the way back, the toolbar, the sections. */
+  readonly deckNotFound: string;
+  readonly deckBackToShelf: string;
+  readonly deckSearchIn: string;
+  readonly viewList: string;
+  readonly viewGrid: string;
+  readonly deckHeroLabel: string;
+  readonly deckNemesis: string;
+  readonly deckNemesisNote: string;
   /** Asked once before a deck goes; the same shape as a game's. */
   readonly deckDeleteConfirm: (name: string) => string;
   readonly deckDeleteYes: string;
@@ -1350,6 +1359,14 @@ const STRINGS: Record<Locale, Strings> = {
     playDeleteConfirm: 'Delete this game? It does not come back.',
     deckDeleteConfirm: (name) => `Delete \u201c${name}\u201d? It does not come back.`,
     deckDeleteYes: 'Delete it',
+    deckNotFound: 'No deck here. It may have been deleted, or it lives in another browser or account.',
+    deckBackToShelf: 'Back to the decks',
+    deckSearchIn: 'Search this deck\u2026',
+    viewList: 'List',
+    viewGrid: 'Grid',
+    deckHeroLabel: 'Hero',
+    deckNemesis: 'Nemesis set',
+    deckNemesisNote: 'Shuffled into the encounter deck when the hero\u2019s obligation is drawn. Not part of the deck, and not chosen.',
     playDeleteYes: 'Delete it',
     campaignsInProgress: 'In progress',
     campaignsFinished: 'Finished',
@@ -2121,6 +2138,14 @@ const STRINGS: Record<Locale, Strings> = {
     playDeleteConfirm: 'Supprimer cette partie ? C\u2019est d\u00e9finitif.',
     deckDeleteConfirm: (name) => `Supprimer \u00ab\u00a0${name}\u00a0\u00bb ? C\u2019est d\u00e9finitif.`,
     deckDeleteYes: 'Supprimer',
+    deckNotFound: 'Aucun deck ici. Il a peut-\u00eatre \u00e9t\u00e9 supprim\u00e9, ou il est dans un autre navigateur ou un autre compte.',
+    deckBackToShelf: 'Retour aux decks',
+    deckSearchIn: 'Chercher dans ce deck\u2026',
+    viewList: 'Liste',
+    viewGrid: 'Grille',
+    deckHeroLabel: 'H\u00e9ros',
+    deckNemesis: 'Set n\u00e9m\u00e9sis',
+    deckNemesisNote: 'M\u00e9lang\u00e9 dans le deck de rencontre quand l\u2019obligation du h\u00e9ros est pioch\u00e9e. Ni dans le deck, ni choisi.',
     playDeleteYes: 'Supprimer',
     campaignsInProgress: 'En cours',
     campaignsFinished: 'Termin\u00e9es',

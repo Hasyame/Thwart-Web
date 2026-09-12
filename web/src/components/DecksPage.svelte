@@ -1,14 +1,12 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
-  import type { IndexRow, Locale, Pack } from '../lib/types';
+  import type { IndexRow, Locale } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { cardImageUrl, loadCardsByCode, loadPackCards } from '../lib/data';
   import { fetchCard } from '../lib/cardViewer.svelte';
   import type { Card } from '../lib/types';
-  import DeckContents from './DeckContents.svelte';
-  import DeckEditor from './DeckEditor.svelte';
   import {
     DeckImportError,
     heroIdentities,
@@ -23,17 +21,15 @@
   interface Props {
     t: Strings;
     index: readonly IndexRow[];
-    packs: readonly Pack[];
     cardLocale: Locale;
     storageOk: boolean;
-    openCard: (code: string) => void;
-    cardHref: (code: string) => string;
+    /** Opens a deck's page, and its editor. */
+    onOpen: (id: string) => void;
+    onEdit: (id: string) => void;
   }
 
-  const { t, index, packs, cardLocale, storageOk, openCard, cardHref }: Props =
-    $props();
+  const { t, index, cardLocale, storageOk, onOpen, onEdit }: Props = $props();
 
-  const packNames = $derived(new Map(packs.map((p) => [p.code, p.name] as const)));
 
   // Not named `state`: Svelte reads `$name` as a store subscription, so a
   // variable called `state` turns the `$state` rune into a reference to it.
@@ -60,9 +56,6 @@
   let input = $state('');
   let busy = $state(false);
   let error = $state<string | null>(null);
-  let openDeckId = $state<string | null>(null);
-  /** The deck being edited, if any. Editing replaces the list rather than sitting under it. */
-  let editingId = $state<string | null>(null);
   /** The hero and aspect chosen for a deck that does not exist yet. */
   let building = $state<{ heroCode: string; aspect: string } | null>(null);
 
@@ -122,7 +115,7 @@
       locallyEdited: true,
     });
     building = null;
-    editingId = id;
+    onEdit(id);
     /*
      * A new deck, however it arrived.
      *
@@ -155,13 +148,7 @@
 
   const sizeOf = (deck: SavedDeck): number => [...parseSlots(deck.slots).values()].reduce((a, b) => a + b, 0);
 
-  const editing = $derived(saved.decks.find((deck) => deck.id === editingId) ?? null);
-
   const reference = $derived(parseDeckReference(input));
-
-  const openDeck = $derived(
-    saved.decks.find((deck) => deck.id === openDeckId) ?? null,
-  );
 
   /**
    * Full records for every pack any saved deck draws on.
@@ -256,7 +243,7 @@
       // rather than making a second copy.
       await db.decks.put(deck);
       input = '';
-      openDeckId = deck.id;
+      onOpen(deck.id);
       syncAfter('deck-added');
     } catch (caught) {
       error =
@@ -281,20 +268,10 @@
   async function remove(id: string): Promise<void> {
     await db.decks.delete(id);
     removing = null;
-    if (openDeckId === id) {
-      openDeckId = null;
-    }
   }
 </script>
 
 <section>
-{#if editing !== null}
-  <!-- Keyed on the deck, so opening another one mounts a fresh editor with its
-       own working copy rather than reusing the previous deck's. -->
-  {#key editing.id}
-    <DeckEditor {t} {cardLocale} {index} deck={editing} ownedPackCodes={saved.owned} onDone={() => (editingId = null)} />
-  {/key}
-{:else}
   <h1>{t.decksTitle}</h1>
 
   {#if !storageOk}
@@ -386,13 +363,8 @@
             it. Two clicks matter here -- open, and edit -- so the whole tile
             opens and the edit and remove buttons sit apart at the foot.
           -->
-          <li class="tile" class:open={deck.id === openDeckId}>
-            <button
-              type="button"
-              class="tile-head"
-              aria-expanded={deck.id === openDeckId}
-              onclick={() => (openDeckId = openDeckId === deck.id ? null : deck.id)}
-            >
+          <li class="tile">
+            <button type="button" class="tile-head" onclick={() => onOpen(deck.id)}>
               {#if art !== undefined}
                 <img class="art" src={art} alt="" loading="lazy" />
               {/if}
@@ -422,7 +394,7 @@
                 </span>
               {:else}
                 <span class="tile-actions">
-                  <button type="button" class="btn btn--quiet" onclick={() => (editingId = deck.id)}>{t.deckEdit}</button>
+                  <button type="button" class="btn btn--quiet" onclick={() => onEdit(deck.id)}>{t.deckEdit}</button>
                   <button type="button" class="btn btn--quiet remove" onclick={() => (removing = deck.id)}>{t.removeDeck}</button>
                 </span>
               {/if}
@@ -432,21 +404,8 @@
       </ul>
     {/if}
 
-    {#if openDeck !== null}
-      <DeckContents
-        {t}
-        deck={openDeck}
-        {cardLocale}
-        cards={deckCards}
-        ownedPackCodes={saved.owned}
-        {packNames}
-        {openCard}
-        {cardHref}
-      />
-    {/if}
 
   {/if}
-{/if}
 </section>
 
 <style>
@@ -533,10 +492,6 @@
 
   .tile:hover {
     box-shadow: 0 8px 20px rgb(0 0 0 / 14%);
-  }
-
-  .tile.open {
-    border-color: var(--accent);
   }
 
   /* The art as a banner, the name written over its darker foot. */

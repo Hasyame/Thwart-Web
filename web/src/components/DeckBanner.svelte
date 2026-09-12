@@ -11,9 +11,11 @@
     heroName: string;
     aspects: readonly string[];
     cards: number;
+    /** A page's banner rather than an editor's: more room for the art. */
+    tall?: boolean;
   }
 
-  const { t, art, name, onName, heroName, aspects, cards }: Props = $props();
+  const { t, art, name, onName, heroName, aspects, cards, tall = false }: Props = $props();
 </script>
 
 <!--
@@ -21,7 +23,7 @@
   as chips under the name. What the deck sites open with, and what makes
   two decks for two heroes look like two things rather than two rows.
 -->
-<div class="banner">
+<div class="banner" class:tall>
   {#if art !== null}
     <img class="art" src={art} alt="" />
   {/if}
@@ -63,6 +65,20 @@
 
   /* The art, blown up so its frame falls outside and softened so the name
      stays legible over it wherever the face happens to be. */
+  .banner.tall {
+    min-height: 14rem;
+  }
+
+  /* Wider still on a page: the frame and the stat boxes must fall further
+     outside, and the face sits a little lower in the band. */
+  .banner.tall .art {
+    left: -20%;
+    top: -34%;
+    width: 140%;
+    height: 175%;
+    object-position: 50% 20%;
+  }
+
   .art {
     position: absolute;
     left: -6%;

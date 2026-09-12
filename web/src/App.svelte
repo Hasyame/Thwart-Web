@@ -7,6 +7,7 @@
   import RandomizerPage from './components/RandomizerPage.svelte';
   import VersusPage from './components/VersusPage.svelte';
   import DecksPage from './components/DecksPage.svelte';
+  import DeckPage from './components/DeckPage.svelte';
   import PlayPage from './components/PlayPage.svelte';
   import StatsPage from './components/StatsPage.svelte';
   import CampaignsPage from './components/CampaignsPage.svelte';
@@ -28,7 +29,7 @@
   import { liveQuery } from 'dexie';
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
-  import { configureCardViewer, showCard } from './lib/cardViewer.svelte';
+  import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
   import { watchLive } from './lib/sync/live.svelte';
@@ -622,12 +623,28 @@
     <DecksPage
       {t}
       {index}
-      {packs}
       {cardLocale}
       {storageOk}
-      openCard={showCard}
-      cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
+      onOpen={(id) => navigate({ name: 'deck', id })}
+      onEdit={(id) => navigate({ name: 'deck', id, edit: true })}
     />
+  {:else if route.name === 'deck'}
+    {@const deckId = route.id}
+    {#key deckId}
+      <DeckPage
+        {t}
+        {index}
+        {packs}
+        {cardLocale}
+        {storageOk}
+        id={deckId}
+        edit={route.edit === true}
+        onView={() => navigate({ name: 'deck', id: deckId })}
+        onEdit={() => navigate({ name: 'deck', id: deckId, edit: true })}
+        onShelf={() => navigate({ name: 'decks' })}
+        cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
+      />
+    {/key}
   {:else}
     <SearchControls
       {t}

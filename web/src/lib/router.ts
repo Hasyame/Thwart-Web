@@ -14,6 +14,14 @@ export type Route =
   | { readonly name: 'randomizer' }
   | { readonly name: 'versus' }
   | { readonly name: 'decks' }
+  /**
+   * One deck on a page of its own, to read or, with `edit`, to build.
+   *
+   * A URL because a deck is a thing people send each other and come back
+   * to, and because the back button should leave the editor for the deck
+   * and the deck for the shelf, not the site.
+   */
+  | { readonly name: 'deck'; readonly id: string; readonly edit?: boolean }
   | { readonly name: 'play' }
   /**
    * The Play hub: the four ways of playing on one screen, as the phone has it.
@@ -52,6 +60,7 @@ const COLLECTION_PATH = /^\/collection\/?$/;
 const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 const VERSUS_PATH = /^\/versus\/?$/;
 const DECKS_PATH = /^\/decks\/?$/;
+const DECK_PATH = /^\/decks\/([^/]+)(\/edit)?\/?$/;
 const PLAY_PATH = /^\/play\/?$/;
 const HUB_PATH = /^\/hub\/?$/;
 const STATS_PATH = /^\/stats\/?$/;
@@ -153,6 +162,12 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (DECKS_PATH.test(normalised)) {
     return { name: 'decks' };
   }
+  const deck = DECK_PATH.exec(normalised);
+  if (deck !== null && deck[1] !== undefined) {
+    return deck[2] === undefined
+      ? { name: 'deck', id: decodeURIComponent(deck[1]) }
+      : { name: 'deck', id: decodeURIComponent(deck[1]), edit: true };
+  }
   if (PLAY_PATH.test(normalised)) {
     return { name: 'play' };
   }
@@ -196,6 +211,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'decks') {
     return `${trimmedBase}/decks`;
+  }
+  if (route.name === 'deck') {
+    return `${trimmedBase}/decks/${encodeURIComponent(route.id)}${route.edit === true ? '/edit' : ''}`;
   }
   if (route.name === 'play') {
     return `${trimmedBase}/play`;

@@ -38,7 +38,7 @@ export type NavTarget =
  * reached from a link in somebody's mail. All three are places the app can be
  * without being a tab, and none of them should light one up.
  */
-export type ActiveTarget = NavTarget | 'card' | 'account' | 'verify';
+export type ActiveTarget = NavTarget | 'card' | 'deck' | 'account' | 'verify';
 
 export interface Destination {
   readonly id: NavTarget;
@@ -152,6 +152,9 @@ export const TOP_BAR: readonly Destination[] = DESTINATIONS.filter((d) => d.id !
 export const tabFor = (active: ActiveTarget, grouped: boolean): ActiveTarget => {
   if (active === 'card') {
     return 'search';
+  }
+  if (active === 'deck') {
+    return 'decks';
   }
   if (grouped && PLAY_TARGETS.includes(active as NavTarget)) {
     return 'hub';

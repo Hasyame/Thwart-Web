@@ -8,6 +8,7 @@
   import type { Strings } from '../lib/i18n';
   import { deckViewUrl, parseSlots } from '../lib/decks';
   import {
+    deckAsText,
     deckStatistics,
     heroRules,
     validateDeck,
@@ -24,10 +25,53 @@
     packNames: ReadonlyMap<string, string>;
     openCard: (code: string) => void;
     cardHref: (code: string) => string;
+    /** The page's own actions, beside the card. */
+    onEdit: () => void;
+    onDelete: () => void;
+    onBack: () => void;
   }
 
-  const { t, deck, cardLocale, cards, ownedPackCodes, packNames, openCard, cardHref }:
+  const { t, deck, cardLocale, cards, ownedPackCodes, packNames, openCard, cardHref, onEdit, onDelete, onBack }:
     Props = $props();
+
+  /*
+   * The toolbar: a word to find a card in this deck, an order, and whether
+   * the list is names or pictures. Page state, not remembered: a question
+   * about this deck, not a preference.
+   */
+  let search = $state('');
+  let sort = $state<'name' | 'cost'>('name');
+  let view = $state<'list' | 'grid'>('list');
+  let confirming = $state(false);
+  let copied = $state(false);
+
+  const heroImage = $derived(cardImageUrl(cards.get(deck.heroCode)?.imagesrc));
+
+  /*
+   * The hero's nemesis set: the cards shuffled into the encounter deck when
+   * the obligation comes up. In the hero's own pack, named after its set.
+   * Shown for what it is -- part of playing this hero, not part of the deck.
+   */
+  const nemesis = $derived.by(() => {
+    const setCode = hero?.card_set_code;
+    if (setCode === null || setCode === undefined) {
+      return [];
+    }
+    return [...cards.values()]
+      .filter((card) => card.card_set_code === `${setCode}_nemesis`)
+      .sort((a, b) => a.code.localeCompare(b.code));
+  });
+
+  async function copyText(): Promise<void> {
+    const byTypeText = new Map(
+      byType.map(([type, entries]) => [type, entries.map((e) => ({ quantity: e.quantity, name: e.card.name }))]),
+    );
+    await navigator.clipboard?.writeText(
+      deckAsText(deck.name, deck.heroName, aspects.map((a) => t.aspect(a)), byTypeText, deck.kind === 'LOCAL' ? null : deckViewUrl(deck)),
+    );
+    copied = true;
+    setTimeout(() => (copied = false), 2000);
+  }
 
   const slots = $derived(parseSlots(deck.slots));
   const hero = $derived(cards.get(deck.heroCode) ?? null);
@@ -56,6 +100,21 @@
       groups.set(entry.card.type_name, bucket);
     }
     return [...groups.entries()];
+  });
+
+  /** The groups as the toolbar narrows and orders them. */
+  const shown = $derived.by(() => {
+    const needle = search.trim().toLocaleLowerCase();
+    return byType
+      .map(([type, entries]) => {
+        const kept = needle === '' ? entries : entries.filter((e) => e.card.name.toLocaleLowerCase().includes(needle));
+        const ordered =
+          sort === 'cost'
+            ? [...kept].sort((a, b) => (a.card.cost ?? 99) - (b.card.cost ?? 99) || a.card.name.localeCompare(b.card.name))
+            : kept;
+        return [type, ordered] as const;
+      })
+      .filter(([, entries]) => entries.length > 0);
   });
 
   const missing = $derived(
@@ -103,9 +162,27 @@
     }
   }
 
-  const costColumns = $derived(
-    [...stats.costCurve.entries()].sort((a, b) => a[0] - b[0]),
-  );
+  /*
+   * Every cost from 0 up to at least 6, the empty ones included: a curve
+   * with holes in it is not a curve, and the shape is what the chart is
+   * for. Anything above 6 is rare enough to share one column.
+   */
+  const costColumns = $derived.by((): readonly [string, number][] => {
+    const top = Math.max(6, ...stats.costCurve.keys());
+    const cap = Math.min(top, 6);
+    const columns: [string, number][] = [];
+    for (let cost = 0; cost <= cap; cost += 1) {
+      columns.push([cost === 6 ? '6+' : String(cost), 0]);
+    }
+    for (const [cost, count] of stats.costCurve) {
+      const i = Math.min(cost, 6);
+      const column = columns[i];
+      if (column !== undefined) {
+        column[1] += count;
+      }
+    }
+    return columns;
+  });
 
   const RESOURCES = [
     ['physical', '✊'],
@@ -115,25 +192,51 @@
   ] as const;
 </script>
 
-<div class="contents surface">
+<div class="contents">
   <DeckBanner
     {t}
-    art={cardImageUrl(cards.get(deck.heroCode)?.imagesrc)}
+    art={heroImage}
     name={deck.name}
     heroName={deck.heroName}
     {aspects}
     cards={validation?.totalCards ?? 0}
+    tall
   />
-  <!--
-    Only an imported deck has a page to link to. A deck built here has no
-    MarvelCDB id, so the link would go nowhere.
-  -->
-  {#if deck.kind !== 'LOCAL'}
-    <p class="head">
-      <a href={deckViewUrl(deck)} target="_blank" rel="noopener">
-        {t.viewOnMarvelCdb} ↗
-      </a>
-    </p>
+
+  <!-- A word, an order, names or pictures. -->
+  <div class="toolbar">
+    <label class="find">
+      <span class="visually-hidden">{t.searchLabel}</span>
+      <input class="field" type="search" placeholder={t.deckSearchIn} value={search} oninput={(e) => (search = e.currentTarget.value)} />
+    </label>
+    <label class="sort">
+      <span class="muted small">{t.sortLabel}</span>
+      <select class="field field--inline" value={sort} onchange={(e) => (sort = e.currentTarget.value === 'cost' ? 'cost' : 'name')}>
+        <option value="name">{t.sortByName}</option>
+        <option value="cost">{t.sortByCost}</option>
+      </select>
+    </label>
+    <div class="segments" role="group">
+      <button type="button" class="segment" aria-pressed={view === 'list'} onclick={() => (view = 'list')}>{t.viewList}</button>
+      <button type="button" class="segment" aria-pressed={view === 'grid'} onclick={() => (view = 'grid')}>{t.viewGrid}</button>
+    </div>
+  </div>
+
+  <!-- The identity, set apart from the deck as the deck sites set the commander apart. -->
+  {#if hero !== null}
+    <CardHover code={hero.code}>
+      <button type="button" class="hero-strip" onclick={() => openCard(hero.code)}>
+        {#if heroImage !== null}<img class="hero-art" src={heroImage} alt="" />{/if}
+        <span class="hero-text">
+          <span class="muted small hero-label">{t.deckHeroLabel}</span>
+          <span class="hero-name">{hero.name}</span>
+        </span>
+        <span class="hero-stats muted small">
+          {#if hero.hand_size != null}<span><b>{t.statHandSize}</b> {hero.hand_size}</span>{/if}
+          {#if hero.health != null}<span><b>{t.statHealth}</b> {hero.health}</span>{/if}
+        </span>
+      </button>
+    </CardHover>
   {/if}
 
   {#if validation !== null}
@@ -177,9 +280,27 @@
       enough. The statistics come after: what is in the deck first, then what
       it adds up to.
     -->
-    <div class="groups">
-  {#each byType as [type, entries] (type)}
-    <h3>{type}</h3>
+    <div class="groups" class:grid={view === 'grid'}>
+  {#each shown as [type, entries] (type)}
+    <h3>{type} <span class="muted count">{entries.reduce((n, e) => n + e.quantity, 0)}</span></h3>
+    {#if view === 'grid'}
+      <ul class="pictures">
+        {#each entries as entry (entry.code)}
+          <li>
+            <CardHover code={entry.code}>
+              <button type="button" class="picture" onclick={() => openCard(entry.code)} aria-label={entry.card.name}>
+                {#if cardImageUrl(entry.card.imagesrc) !== null}
+                  <img src={cardImageUrl(entry.card.imagesrc)} alt="" loading="lazy" />
+                {:else}
+                  <span class="no-art">{entry.card.name}</span>
+                {/if}
+                {#if entry.quantity > 1}<span class="badge">×{entry.quantity}</span>{/if}
+              </button>
+            </CardHover>
+          </li>
+        {/each}
+      </ul>
+    {:else}
     <ul class="cards">
       {#each entries as entry (entry.code)}
         {@const owned = ownedPackCodes.has(entry.card.pack_code)}
@@ -214,12 +335,51 @@
         </li>
       {/each}
     </ul>
+    {/if}
   {/each}
     </div>
     <div class="side">
       <CardPanel {t} initial={deck.heroCode} from="(min-width: 64rem)" />
+      <div class="actions">
+        <button type="button" class="btn btn--primary" onclick={onEdit}>{t.deckEdit}</button>
+        <button type="button" class="btn" onclick={() => void copyText()}>{copied ? t.deckCopied : t.deckCopy}</button>
+        {#if deck.kind !== 'LOCAL'}
+          <a class="btn" href={deckViewUrl(deck)} target="_blank" rel="noopener">{t.viewOnMarvelCdb} ↗</a>
+        {/if}
+        {#if confirming}
+          <p class="muted small">{t.deckDeleteConfirm(deck.name)}</p>
+          <button type="button" class="btn danger" onclick={onDelete}>{t.deckDeleteYes}</button>
+          <button type="button" class="btn btn--quiet" onclick={() => (confirming = false)}>{t.cancel}</button>
+        {:else}
+          <button type="button" class="btn btn--quiet danger" onclick={() => (confirming = true)}>{t.removeDeck}</button>
+        {/if}
+        <button type="button" class="btn btn--quiet" onclick={onBack}>← {t.deckBackToShelf}</button>
+      </div>
     </div>
   </div>
+
+  {#if nemesis.length > 0}
+    <section class="nemesis">
+      <h3>{t.deckNemesis} <span class="muted count">{nemesis.length}</span></h3>
+      <p class="muted small">{t.deckNemesisNote}</p>
+      <ul class="pictures">
+        {#each nemesis as card (card.code)}
+          <li>
+            <CardHover code={card.code}>
+              <button type="button" class="picture" onclick={() => openCard(card.code)} aria-label={card.name}>
+                {#if cardImageUrl(card.imagesrc) !== null}
+                  <img src={cardImageUrl(card.imagesrc)} alt="" loading="lazy" />
+                {:else}
+                  <span class="no-art">{card.name}</span>
+                {/if}
+              </button>
+            </CardHover>
+            <span class="caption muted small">{card.name}</span>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   <section class="composition">
     <h3>{t.deckComposition}</h3>
@@ -302,14 +462,202 @@
 
 <style>
   .contents {
-    padding: 0 var(--space-4) var(--space-4);
-    margin: var(--space-4) 0;
+    margin: 0 0 var(--space-4);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: var(--space-3) 0;
+  }
+
+  .find {
+    flex: 1 1 14rem;
+  }
+
+  .sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .field--inline {
+    width: auto;
+    display: inline-block;
+  }
+
+  .segments {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+  }
+
+  .segment {
+    min-height: 2.25rem;
+    padding-inline: var(--space-3);
+    border: 0;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+
+  .segment[aria-pressed='true'] {
+    background: var(--surface-1);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  }
+
+  /* The identity as a strip: its art behind, its name, the two numbers that matter. */
+  .hero-strip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 30rem;
+    min-height: 3.5rem;
+    margin: 0 auto var(--space-4);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    background: var(--surface-1);
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
     overflow: hidden;
   }
 
-  .head {
-    margin: var(--space-3) 0 0;
-    text-align: end;
+  .hero-art {
+    flex: 0 0 auto;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: 50% 18%;
+  }
+
+  .hero-text {
+    display: grid;
+    min-width: 0;
+  }
+
+  .hero-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: var(--text-2xs);
+  }
+
+  .hero-name {
+    font-weight: var(--weight-bold);
+  }
+
+  .hero-stats {
+    margin-inline-start: auto;
+    display: inline-flex;
+    gap: var(--space-3);
+    white-space: nowrap;
+  }
+
+  .count {
+    font-weight: normal;
+    font-size: var(--text-xs);
+    margin-inline-start: 0.3em;
+  }
+
+  .actions {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .actions .btn {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .danger {
+    color: var(--danger);
+  }
+
+  /* Pictures, for the grid view and the nemesis set: card-shaped, a
+     picture each, the count on the corner when there is more than one. */
+  .pictures {
+    list-style: none;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: var(--space-2);
+  }
+
+  .pictures li {
+    display: grid;
+    gap: 2px;
+  }
+
+  .picture {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    padding: 0;
+    border: 0;
+    border-radius: 4.5% / 3.2%;
+    background: var(--surface-2);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 18%);
+  }
+
+  .picture img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .no-art {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: var(--space-2);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+
+  .badge {
+    position: absolute;
+    right: 4%;
+    bottom: 4%;
+    padding: 0.1em 0.5em;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 75%);
+    color: #fff;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+  }
+
+  .caption {
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .groups.grid {
+    column-width: auto;
+    columns: auto;
+  }
+
+  .nemesis {
+    margin: var(--space-4) 0;
   }
 
   h3 {
@@ -382,7 +730,8 @@
     display: flex;
     align-items: flex-end;
     gap: var(--space-2);
-    height: 6rem;
+    height: 9rem;
+    max-width: 30rem;
   }
 
   .column {
@@ -391,7 +740,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: var(--space-0-5);
-    flex: 0 0 2rem;
+    flex: 1 1 0;
     height: 100%;
   }
 
