@@ -124,6 +124,11 @@ for (const grouped of [false, true]) {
   check('a deck page lights the Decks tab', tabFor('deck', false) === 'decks' && tabFor('deck', true) === 'decks');
   check('BoardGameGeek has a page under Settings',
     there('/settings/bgg').name === 'bgg' && back({ name: 'bgg' }) === '/settings/bgg');
+  check('an address nothing answers to is not the home page',
+    there('/no-such-page').name === 'notFound' && there('/card').name === 'notFound', there('/no-such-page').name);
+  check('and keeps its own path', back(there('/no/such')) === '/no/such');
+  check('the root and index.html are the home page',
+    there('/').name === 'search' && there('/index.html').name === 'search');
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

@@ -48,6 +48,13 @@ export type Route =
   /** The BoardGameGeek connection, a page of its own under Settings. */
   | { readonly name: 'bgg' }
   /**
+   * An address nothing answers to. Its own page rather than the home page,
+   * so a mistyped link says so, and so a crawler sees `noindex` rather than
+   * a second copy of the home page under a made-up address; nginx answers
+   * such paths with a real 404 status and this document.
+   */
+  | { readonly name: 'notFound'; readonly path: string }
+  /**
    * Where the link in a confirmation message lands.
    *
    * The token rides in the query string rather than the path, because that is
@@ -198,7 +205,12 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (RULES_PATH.test(normalised)) {
     return { name: 'rules' };
   }
-  return { name: 'search' };
+  // The home page, by its root and by the name the file has on disk: a
+  // request for /index.html is the same document, not a missing one.
+  if (normalised === '/' || normalised === '/index.html') {
+    return { name: 'search' };
+  }
+  return { name: 'notFound', path: normalised };
 }
 
 export function pathForRoute(route: Route, base: string): string {
@@ -241,6 +253,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'bgg') {
     return `${trimmedBase}/settings/bgg`;
+  }
+  if (route.name === 'notFound') {
+    return `${trimmedBase}${route.path}`;
   }
   if (route.name === 'history') {
     return `${trimmedBase}/history${historyQuery(route.filter ?? {})}`;

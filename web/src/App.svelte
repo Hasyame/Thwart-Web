@@ -640,6 +640,27 @@
     <AccountPage {t} {uiLocale} {storageOk} initialMode={accountMode} />
   {:else if route.name === 'bgg'}
     <BggPage {t} {uiLocale} {storageOk} onBack={() => (sheetOpen = true)} />
+  {:else if route.name === 'notFound'}
+    <!-- nginx already answered this address with a 404; this is what the
+         status looks like. -->
+    <section class="notice surface not-found">
+      <h1>{t.notFoundTitle}</h1>
+      <p class="muted">{t.notFoundBody}</p>
+      <p>
+        <a
+          href={pathForRoute({ name: 'search' }, BASE)}
+          onclick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+              return;
+            }
+            event.preventDefault();
+            navigate({ name: 'search' });
+          }}
+        >
+          {t.notFoundHome}
+        </a>
+      </p>
+    </section>
   {:else if route.name === 'verify'}
     <VerifyPage
       {t}

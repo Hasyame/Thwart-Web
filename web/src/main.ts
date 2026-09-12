@@ -56,4 +56,9 @@ if (target === null) {
   throw new Error('index.html is missing the #app element');
 }
 
+// The document carries the home page's words for whoever reads it without
+// running this (see index.html). `mount` appends rather than replaces, so
+// they are taken out first; the app writes its own.
+target.replaceChildren();
+
 export default mount(App, { target });

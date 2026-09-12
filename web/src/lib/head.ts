@@ -46,6 +46,7 @@ const PRIVATE: ReadonlySet<Route['name']> = new Set([
   'account',
   'bgg',
   'verify',
+  'notFound',
 ]);
 
 /** Where a route lives, for the canonical. The router's own reverse mapping. */
@@ -90,6 +91,8 @@ export function headFor(
         return { title: seo.accountTitle, description: seo.accountDescription };
       case 'bgg':
         return { title: seo.bggTitle, description: seo.bggDescription };
+      case 'notFound':
+        return { title: seo.notFoundTitle, description: seo.notFoundDescription };
     }
   })();
 

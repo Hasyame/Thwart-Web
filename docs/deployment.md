@@ -100,6 +100,13 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 ```
 
+The site config is not carried by the release timer: when
+`deploy/nginx-thwart.app.conf` changes in the repository, copy it again and
+reload, as above. The routing block at its foot lists the app's routes, so a
+route added to the web app is added there too; a path outside the list is
+answered 404 with the document, which is what lets a search engine tell a
+missing page from the home page.
+
 ## 6. TLS
 
 ```bash

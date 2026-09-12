@@ -54,6 +54,8 @@ const head = (route, t = en, name = null) => headFor(route, t, pathOf, name);
   ]) {
     check(`${route.name}: noindex`, head(route).noindex === true);
   }
+  const missing = head({ name: 'notFound', path: '/no-such-page' });
+  check('a missing page is noindex, and says it is missing', missing.noindex === true && /not found/i.test(missing.title), missing.title);
   const filtered = head({ name: 'history', filter: { hero: 'spiderman' } });
   check('a filtered history has the history page as canonical, no query',
     filtered.canonical === `${SITE_ORIGIN}/history`, filtered.canonical);

@@ -115,7 +115,45 @@
     <link rel="preconnect" href="https://marvelcdb.com" crossorigin />
   </head>
   <body>
-    <div id="app"></div>
+    <!--
+      The home page's words, in the document itself.
+
+      A crawler's first pass reads this file and nothing the script produces;
+      Google runs the script days later, Bing less reliably, and the crawlers
+      behind AI assistants and link previews not at all. So what the page is
+      about is written here once, in English, with real links into the app.
+      The script replaces it the moment it mounts (main.ts) with the same
+      words in the reader's language and the search under them; if the script
+      never runs, this is what is read, which is the point.
+
+      The words are the `homeIntro*` strings in lib/i18n, kept in step by
+      hand: a build step to inject them would be more machinery than three
+      sentences deserve.
+    -->
+    <div id="app">
+      <main class="page prerender">
+        <h1>Thwart, a Marvel Champions companion</h1>
+        <p>
+          Every card of Marvel Champions: The Card Game, in English or French,
+          searchable. Tick the packs you own, and the site knows which decks you
+          can build, which games you can draw and which campaigns you can play.
+        </p>
+        <p>
+          <a href="/collection">Your collection</a> ·
+          <a href="/play">Play a game</a> ·
+          <a href="/randomizer">Draw a random game</a> ·
+          <a href="/campaigns">Campaigns</a> ·
+          <a href="/decks">Decks</a> ·
+          <a href="/rules">Rules reference</a>
+        </p>
+        <p>
+          Free, works offline, nothing to install and no account needed. Also
+          on <a href="https://github.com/Hasyame/Thwart/releases/latest">Android</a>.
+          Unofficial: card data from <a href="https://marvelcdb.com">MarvelCDB</a>;
+          Marvel Champions belongs to Fantasy Flight Games and Marvel.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

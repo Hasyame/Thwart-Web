@@ -49,7 +49,13 @@ export interface Strings {
     readonly accountDescription: string;
     readonly bggTitle: string;
     readonly bggDescription: string;
+    readonly notFoundTitle: string;
+    readonly notFoundDescription: string;
   };
+  /** The page for an address nothing answers to. */
+  readonly notFoundTitle: string;
+  readonly notFoundBody: string;
+  readonly notFoundHome: string;
   /** The home page's own words, above the card search, for a first visit. */
   readonly homeIntroTitle: string;
   readonly homeIntro: string;
@@ -803,7 +809,12 @@ const STRINGS: Record<Locale, Strings> = {
       accountDescription: 'An optional account to sync Thwart between your devices and the Android app.',
       bggTitle: 'BoardGameGeek — Thwart',
       bggDescription: 'Send your Marvel Champions games to BoardGameGeek from Thwart.',
+      notFoundTitle: 'Page not found — Thwart',
+      notFoundDescription: 'There is nothing at this address.',
     },
+    notFoundTitle: 'There is nothing here',
+    notFoundBody: 'That address does not match any page of Thwart. The link may be old, or mistyped.',
+    notFoundHome: 'Go to the card search',
     homeIntroTitle: 'Thwart, a Marvel Champions companion',
     homeIntro:
       'Every card of Marvel Champions: The Card Game, in English or French, searchable below. Tick the packs you own, and the site knows which decks you can build, which games you can draw and which campaigns you can play.',
@@ -1689,7 +1700,12 @@ const STRINGS: Record<Locale, Strings> = {
       accountDescription: 'Un compte facultatif pour synchroniser Thwart entre vos appareils et l’application Android.',
       bggTitle: 'BoardGameGeek — Thwart',
       bggDescription: 'Envoyez vos parties de Marvel Champions sur BoardGameGeek depuis Thwart.',
+      notFoundTitle: 'Page introuvable — Thwart',
+      notFoundDescription: 'Il n’y a rien à cette adresse.',
     },
+    notFoundTitle: 'Il n’y a rien ici',
+    notFoundBody: 'Cette adresse ne correspond à aucune page de Thwart. Le lien est peut-être ancien, ou mal tapé.',
+    notFoundHome: 'Aller à la recherche de cartes',
     homeIntroTitle: 'Thwart, un compagnon pour Marvel Champions',
     homeIntro:
       'Toutes les cartes de Marvel Champions : Le Jeu de Cartes, en français ou en anglais, à chercher ci-dessous. Cochez les extensions que vous possédez, et le site sait quels decks vous pouvez construire, quelles parties vous pouvez tirer et quelles campagnes vous pouvez jouer.',
