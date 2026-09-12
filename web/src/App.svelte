@@ -774,6 +774,31 @@
     {/if}
   </p>
   <p class="muted legal">{t.legal}</p>
+  <!--
+    Where the project lives: the community funding it, the phone it started
+    on, and its source. Each link carries its word beside the mark, so the
+    marks are decorative and nothing depends on recognising one.
+  -->
+  <ul class="links">
+    <li>
+      <a href="https://www.patreon.com/cw/thwart" target="_blank" rel="noopener">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="15" cy="9" r="6.5" fill="currentColor" /><rect x="2" y="2.5" width="3.6" height="19" fill="currentColor" /></svg>
+        {t.footerPatreon}
+      </a>
+    </li>
+    <li>
+      <a href="https://github.com/Hasyame/Thwart/releases/latest" target="_blank" rel="noopener">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 9.5h11.2v7.3a1.6 1.6 0 0 1-1.6 1.6h-.9v3.1a1.3 1.3 0 0 1-2.6 0v-3.1h-1v3.1a1.3 1.3 0 0 1-2.6 0v-3.1H8a1.6 1.6 0 0 1-1.6-1.6zM3.9 9.5a1.3 1.3 0 0 1 1.3 1.3v5.1a1.3 1.3 0 0 1-2.6 0v-5.1a1.3 1.3 0 0 1 1.3-1.3zm16.2 0a1.3 1.3 0 0 1 1.3 1.3v5.1a1.3 1.3 0 0 1-2.6 0v-5.1a1.3 1.3 0 0 1 1.3-1.3zM6.4 8.6a5.6 5.6 0 0 1 3-4.5L8.5 2.6a.4.4 0 0 1 .7-.4l.9 1.6a5.9 5.9 0 0 1 3.8 0l.9-1.6a.4.4 0 0 1 .7.4l-.9 1.5a5.6 5.6 0 0 1 3 4.5zm3.1-2.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6zm5 0a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6z" /></svg>
+        {t.footerAndroid}
+      </a>
+    </li>
+    <li>
+      <a href="https://github.com/Hasyame/Thwart-Web" target="_blank" rel="noopener">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z" /></svg>
+        {t.footerSource}
+      </a>
+    </li>
+  </ul>
 </footer>
 
 <style>
@@ -863,5 +888,34 @@
 
   .legal {
     max-width: var(--prose-max);
+  }
+
+  .links {
+    list-style: none;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .links a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .links a:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
+
+  .mark {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: none;
   }
 </style>

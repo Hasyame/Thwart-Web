@@ -99,6 +99,10 @@ export interface Strings {
   readonly dataFrom: string;
   readonly dataUpdated: string;
   readonly legal: string;
+  /** The three links in the footer: funding, the phone, the source. */
+  readonly footerPatreon: string;
+  readonly footerAndroid: string;
+  readonly footerSource: string;
   readonly statHealth: string;
   readonly statHandSize: string;
   readonly statAttack: string;
@@ -854,6 +858,9 @@ const STRINGS: Record<Locale, Strings> = {
     dataUpdated: 'Updated',
     legal:
       'Marvel Champions card text and images are the property of Fantasy Flight Games and Marvel. This is an unofficial fan project.',
+    footerPatreon: 'Support Thwart on Patreon',
+    footerAndroid: 'Thwart for Android',
+    footerSource: 'Source on GitHub',
     statHealth: 'Health',
     statHandSize: 'Hand size',
     statAttack: 'Attack',
@@ -1737,6 +1744,9 @@ const STRINGS: Record<Locale, Strings> = {
     dataUpdated: 'Mise à jour',
     legal:
       'Le texte et les images des cartes Marvel Champions appartiennent à Fantasy Flight Games et à Marvel. Projet de fan non officiel.',
+    footerPatreon: 'Soutenir Thwart sur Patreon',
+    footerAndroid: 'Thwart pour Android',
+    footerSource: 'Code source sur GitHub',
     statHealth: 'Points de vie',
     statHandSize: 'Taille de main',
     statAttack: 'Attaque',
