@@ -4,15 +4,16 @@ import type {
   BackupSettings,
   CampaignEvent,
   CampaignRun,
+  DeckFolder,
   ExcludedModularSet,
   ExcludedScenario,
   FavouriteCard,
   FavouritePlay,
   OwnedPack,
-  Rating,
   PausedGame,
   Play,
   RandomizerHistoryRow,
+  Rating,
   SavedDeck,
 } from './records';
 import type { StoredSyncState, SyncRecordState } from './sync/state';
@@ -50,6 +51,7 @@ class ThwartDatabase extends Dexie {
   excludedScenarios!: Table<ExcludedScenario, string>;
   favouriteCards!: Table<FavouriteCard, string>;
   favouritePlays!: Table<FavouritePlay, string>;
+  deckFolders!: Table<DeckFolder, string>;
   ratings!: Table<Rating, string>;
 
   // Carried, not yet written. See the class comment.
@@ -189,6 +191,11 @@ class ThwartDatabase extends Dexie {
     this.version(8).stores({
       ratings: 'subject, ratedAt',
     });
+
+    // v9: folders on the shelf of decks.
+    this.version(9).stores({
+      deckFolders: 'id, updatedAt',
+    });
   }
 }
 
@@ -282,6 +289,7 @@ export const ALL_TABLES = [
   'favouriteCards',
   'favouritePlays',
   'ratings',
+  'deckFolders',
   'decks',
   'plays',
   'campaignRuns',

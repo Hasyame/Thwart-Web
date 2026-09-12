@@ -10,6 +10,7 @@ import {
   type ExcludedScenario,
   type FavouriteCard,
   type FavouritePlay,
+  type DeckFolder,
   type Rating,
   type OwnedPack,
   type Play,
@@ -104,6 +105,7 @@ export function parseBackup(text: string): Backup {
     // Absent from a phone's backup, so an empty list rather than a failure.
     favouritePlays: asArray<FavouritePlay>(record['favouritePlays']),
     ratings: asArray<Rating>(record['ratings']),
+    deckFolders: asArray<DeckFolder>(record['deckFolders']),
     photos: asArray<string>(record['photos']),
     settings: asSettings(record['settings']),
   };
@@ -179,6 +181,7 @@ export async function importBackup(
     await db.favouriteCards.bulkPut([...backup.favouriteCards]);
     await db.favouritePlays.bulkPut([...(backup.favouritePlays ?? [])]);
     await db.ratings.bulkPut([...(backup.ratings ?? [])]);
+    await db.deckFolders.bulkPut([...(backup.deckFolders ?? [])]);
     await db.decks.bulkPut([...backup.decks]);
     // Completed the same way a synced body is: a backup written by the phone
     // has the same fields missing, for the same reason.
@@ -218,6 +221,7 @@ export async function exportBackup(): Promise<Backup> {
     favouriteCards,
     favouritePlays,
     ratings,
+    deckFolders,
     decks,
     plays,
     campaignRuns,
@@ -231,6 +235,7 @@ export async function exportBackup(): Promise<Backup> {
     db.favouriteCards.toArray(),
     db.favouritePlays.toArray(),
     db.ratings.toArray(),
+    db.deckFolders.toArray(),
     db.decks.toArray(),
     db.plays.toArray(),
     db.campaignRuns.toArray(),
@@ -254,6 +259,7 @@ export async function exportBackup(): Promise<Backup> {
     favouriteCards,
     favouritePlays,
     ratings,
+    deckFolders,
     // Null when this browser has never been handed any, which the app reads as
     // "leave the device's own settings alone". Emitting an empty object instead
     // would tell it to reset them to the defaults.

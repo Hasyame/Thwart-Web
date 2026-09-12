@@ -18,6 +18,8 @@
   import { heroRules, validateDeck } from '../lib/deckRules';
   import { syncAfter } from '../lib/sync/auto.svelte';
   import { session } from '../lib/sync/session.svelte';
+  import type { DeckFolder } from '../lib/records';
+  import { createFolder, deleteFolder, folderOf, inShelfOrder, moveDeck, renameFolder } from '../lib/folders';
 
   interface Props {
     t: Strings;
@@ -151,6 +153,50 @@
   });
 
   const sizeOf = (deck: SavedDeck): number => [...parseSlots(deck.slots).values()].reduce((a, b) => a + b, 0);
+
+  /*
+   * The folders, live, and the shelf sorted into them: each folder's decks
+   * under its name, then everything else under no name at all.
+   */
+  let folders = $state.raw<readonly DeckFolder[]>([]);
+  $effect(() => {
+    if (!storageOk) {
+      return;
+    }
+    const sub = liveQuery(() => db.deckFolders.toArray()).subscribe((rows) => {
+      folders = rows;
+    });
+    return () => sub.unsubscribe();
+  });
+  const shelves = $derived.by(() => {
+    const byId = new Map(saved.decks.map((deck) => [deck.id, deck] as const));
+    const placed = new Set<string>();
+    const named = inShelfOrder(folders).map((folder) => {
+      const decks = folder.deckIds.flatMap((id) => {
+        const deck = byId.get(id);
+        if (deck === undefined || placed.has(id)) {
+          return [];
+        }
+        placed.add(id);
+        return [deck];
+      });
+      return { folder, decks };
+    });
+    const loose = saved.decks.filter((deck) => !placed.has(deck.id));
+    return { named, loose };
+  });
+
+  let newFolderName = $state('');
+  let renaming = $state<{ id: string; name: string } | null>(null);
+  let removingFolder = $state<string | null>(null);
+
+  async function addFolder(): Promise<void> {
+    if (newFolderName.trim() === '') {
+      return;
+    }
+    await createFolder(newFolderName);
+    newFolderName = '';
+  }
 
   /* The shelf's head: whose it is, and how much is on it. */
   const handle = $derived(session.account?.handle ?? null);
@@ -292,7 +338,7 @@
       <h1>{handle === null ? t.decksOfThisBrowser : t.decksOf(handle)}</h1>
       <p class="muted small stats">
         <span>{t.decksCount(saved.decks.length)}</span>
-        <span>{t.foldersCount(0)}</span>
+        <span>{t.foldersCount(folders.length)}</span>
         <span>{t.cardsInDecks(cardsHeld)}</span>
       </p>
     </div>
@@ -362,11 +408,15 @@
       {/if}
     </div>
 
-    {#if saved.decks.length === 0}
+    <form class="new-folder" onsubmit={(e) => { e.preventDefault(); void addFolder(); }}>
+      <input class="field" type="text" placeholder={t.folderNamePlaceholder} aria-label={t.folderNew} value={newFolderName} oninput={(e) => (newFolderName = e.currentTarget.value)} />
+      <button type="submit" class="btn" disabled={newFolderName.trim() === ''}>{t.folderNew}</button>
+    </form>
+
+    {#if saved.decks.length === 0 && folders.length === 0}
       <p class="muted empty">{t.noDecks}</p>
     {:else}
-      <ul class="decks">
-        {#each saved.decks as deck (deck.id)}
+      {#snippet tile(deck: SavedDeck)}
           {@const verdict = verdicts.get(deck.id) ?? null}
           {@const aspects = aspectsOf(deck)}
           {@const art = heroImages.get(deck.heroCode)}
@@ -398,6 +448,19 @@
                   <span class="verdict muted">…</span>
                 {/if}
               </span>
+              <label class="folder-pick">
+                <span class="visually-hidden">{t.folderLabel}</span>
+                <select
+                  class="field field--inline small"
+                  value={folderOf(folders, deck.id)?.id ?? ''}
+                  onchange={(e) => void moveDeck(deck.id, e.currentTarget.value === '' ? null : e.currentTarget.value)}
+                >
+                  <option value="">{t.folderNone}</option>
+                  {#each inShelfOrder(folders) as folder (folder.id)}
+                    <option value={folder.id}>{folder.name}</option>
+                  {/each}
+                </select>
+              </label>
               {#if removing === deck.id}
                 <span class="confirm">
                   <span class="muted small">{t.deckDeleteConfirm(deck.name)}</span>
@@ -412,8 +475,58 @@
               {/if}
             </div>
           </li>
-        {/each}
-      </ul>
+      {/snippet}
+
+      <!--
+        Folders first, each a heading with its decks under it, then the decks
+        in none under no heading. A folder is renamed in place and deleted
+        behind a question; its decks stay on the shelf either way.
+      -->
+      {#each shelves.named as { folder, decks } (folder.id)}
+        <section class="folder">
+          <header class="folder-head">
+            {#if renaming?.id === folder.id}
+              <form class="rename" onsubmit={(e) => { e.preventDefault(); if (renaming !== null) { void renameFolder(renaming.id, renaming.name); renaming = null; } }}>
+                <input class="field" type="text" value={renaming.name} oninput={(e) => renaming !== null && (renaming.name = e.currentTarget.value)} aria-label={t.folderNamePlaceholder} />
+                <button type="submit" class="btn btn--primary">{t.folderRename}</button>
+                <button type="button" class="btn btn--quiet" onclick={() => (renaming = null)}>{t.cancel}</button>
+              </form>
+            {:else}
+              <h2>{folder.name} <span class="muted count">{decks.length}</span></h2>
+              <span class="folder-actions">
+                <button type="button" class="btn btn--quiet small" onclick={() => (renaming = { id: folder.id, name: folder.name })}>{t.folderRename}</button>
+                {#if removingFolder === folder.id}
+                  <span class="muted small">{t.folderDeleteConfirm(folder.name)}</span>
+                  <button type="button" class="btn btn--quiet danger small" onclick={() => { void deleteFolder(folder.id); removingFolder = null; }}>{t.deckDeleteYes}</button>
+                  <button type="button" class="btn btn--quiet small" onclick={() => (removingFolder = null)}>{t.cancel}</button>
+                {:else}
+                  <button type="button" class="btn btn--quiet danger small" onclick={() => (removingFolder = folder.id)}>{t.folderDelete}</button>
+                {/if}
+              </span>
+            {/if}
+          </header>
+          {#if decks.length === 0}
+            <p class="muted small empty">{t.noDecks}</p>
+          {:else}
+            <ul class="decks">
+              {#each decks as deck (deck.id)}
+                {@render tile(deck)}
+              {/each}
+            </ul>
+          {/if}
+        </section>
+      {/each}
+
+      {#if shelves.loose.length > 0}
+        {#if shelves.named.length > 0}
+          <h2 class="loose-head muted">{t.folderNone}</h2>
+        {/if}
+        <ul class="decks">
+          {#each shelves.loose as deck (deck.id)}
+            {@render tile(deck)}
+          {/each}
+        </ul>
+      {/if}
     {/if}
 
   {/if}
@@ -525,6 +638,72 @@
   .stats span + span::before {
     content: '·';
     margin-inline-end: var(--space-3);
+  }
+
+  .new-folder {
+    display: flex;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+    max-width: 28rem;
+  }
+
+  .folder {
+    margin: var(--space-4) 0;
+  }
+
+  .folder-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .folder-head h2,
+  .loose-head {
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+
+  .loose-head {
+    margin: var(--space-4) 0 var(--space-2);
+    font-weight: var(--weight-semibold);
+  }
+
+  .count {
+    font-size: var(--text-sm);
+    font-weight: normal;
+  }
+
+  .folder-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .rename {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .rename .field {
+    width: auto;
+    flex: 1 1 12rem;
+  }
+
+  .folder-pick .field--inline {
+    width: auto;
+    display: inline-block;
+    min-height: 2rem;
+    padding-block: 0;
+    font-size: var(--text-sm);
+  }
+
+  .danger {
+    color: var(--danger);
   }
 
   .decks {

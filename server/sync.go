@@ -82,6 +82,9 @@ var collections = map[string]collectionSpec{
 	// whole batch it arrives in — this map is the push's allowlist as well as
 	// the export's table of contents.
 	"favourite_plays": {backupField: "favouritePlays", optIn: true},
+	// Folders a shelf of decks is sorted into: a name and the deck ids in it.
+	// Web since 2026-09-12; opt-in like the two above, for the same reason.
+	"deck_folders": {backupField: "deckFolders", optIn: true},
 	// Difficulty ratings. Validated and indexed on the way in; see ratings.go.
 	"ratings": {backupField: "ratings", optIn: true},
 

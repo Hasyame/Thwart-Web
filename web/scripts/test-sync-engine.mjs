@@ -209,6 +209,7 @@ const state = (collection, id, revision, body) => ({
     excluded_scenarios: { scenarioCode: 'rhino' },
     favourite_cards: { cardCode: '01001', addedAt: 1700000000000 },
     favourite_plays: { playId: 'p1', addedAt: 1700000000000 },
+    deck_folders: { id: 'f1', name: 'Solo', deckIds: ['d1', 'd2'], createdAt: 1700000000000, updatedAt: 1700000000000 },
     ratings: {
       subject: 'modular:bomb_scare@rhino', score: 3, ratedAt: 1700000000000,
       evidence: { playId: 'p1' },

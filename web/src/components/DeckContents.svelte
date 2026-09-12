@@ -4,7 +4,8 @@
   import CardPanel from './CardPanel.svelte';
   import { cardImageUrl } from '../lib/data';
   import type { Card, Locale } from '../lib/types';
-  import type { SavedDeck } from '../lib/records';
+  import type { DeckFolder, SavedDeck } from '../lib/records';
+  import { folderOf, inShelfOrder, moveDeck } from '../lib/folders';
   import type { Strings } from '../lib/i18n';
   import { deckViewUrl, parseSlots } from '../lib/decks';
   import {
@@ -29,9 +30,11 @@
     onEdit: () => void;
     onDelete: () => void;
     onBack: () => void;
+    /** The shelf's folders, for the one this deck is in. Absent where there is no shelf. */
+    folders?: readonly DeckFolder[];
   }
 
-  const { t, deck, cardLocale, cards, ownedPackCodes, packNames, openCard, cardHref, onEdit, onDelete, onBack }:
+  const { t, deck, cardLocale, cards, ownedPackCodes, packNames, openCard, cardHref, onEdit, onDelete, onBack, folders = [] }:
     Props = $props();
 
   /*
@@ -216,6 +219,21 @@
     <button type="button" class="btn" onclick={() => void copyText()}>{copied ? t.deckCopied : t.deckCopy}</button>
     {#if deck.kind !== 'LOCAL'}
       <a class="btn" href={deckViewUrl(deck)} target="_blank" rel="noopener">{t.viewOnMarvelCdb} ↗</a>
+    {/if}
+    {#if folders.length > 0}
+      <label class="folder-pick">
+        <span class="muted small">{t.folderLabel}</span>
+        <select
+          class="field field--inline"
+          value={folderOf(folders, deck.id)?.id ?? ''}
+          onchange={(e) => void moveDeck(deck.id, e.currentTarget.value === '' ? null : e.currentTarget.value)}
+        >
+          <option value="">{t.folderNone}</option>
+          {#each inShelfOrder(folders) as folder (folder.id)}
+            <option value={folder.id}>{folder.name}</option>
+          {/each}
+        </select>
+      </label>
     {/if}
     {#if confirming}
       <span class="confirm">
@@ -591,6 +609,12 @@
 
   .grow {
     flex: 1 1 auto;
+  }
+
+  .folder-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
   }
 
   .confirm {

@@ -4,14 +4,15 @@ import { completePlay } from '../playShape';
 import type {
   CampaignEvent,
   CampaignRun,
+  DeckFolder,
   ExcludedModularSet,
   ExcludedScenario,
   FavouriteCard,
   FavouritePlay,
-  Rating,
   OwnedPack,
   Play,
   RandomizerHistoryRow,
+  Rating,
   SavedDeck,
 } from '../records';
 
@@ -44,6 +45,7 @@ export type CollectionName =
   | 'excluded_scenarios'
   | 'favourite_cards'
   | 'favourite_plays'
+  | 'deck_folders'
   | 'ratings'
   | 'saved_decks'
   | 'campaign_runs'
@@ -153,6 +155,16 @@ export const FAVOURITE_PLAYS: Mapping<FavouritePlay> = {
  * drop a record the server answers `rejected` for. `updatedAt` is `ratedAt`,
  * which is also what the merge compares.
  */
+/** Folders on the shelf of decks. Whole records; the later `updatedAt` wins. */
+export const DECK_FOLDERS: Mapping<DeckFolder> = {
+  name: 'deck_folders',
+  table: () => db.deckFolders,
+  idOf: (row) => row.id,
+  bodyOf: whole,
+  rowOf: (id, body) => ({ ...(body as unknown as DeckFolder), id }),
+  updatedAt: (row) => iso(row.updatedAt),
+};
+
 export const RATINGS: Mapping<Rating> = {
   name: 'ratings',
   table: () => db.ratings,
@@ -300,6 +312,7 @@ export const COLLECTIONS = [
   FAVOURITE_CARDS,
   FAVOURITE_PLAYS,
   SAVED_DECKS,
+  DECK_FOLDERS,
   CAMPAIGN_RUNS,
   CAMPAIGN_EVENTS,
   PLAYS,

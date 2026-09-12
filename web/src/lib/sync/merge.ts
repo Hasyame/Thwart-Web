@@ -127,6 +127,13 @@ export function mergeBodies(
       return { kind: 'take', body: { ...base, reportedToBgg: reported } };
     }
 
+    case 'deck_folders': {
+      // One thing a person edits, whole: the later edit is the folder.
+      const localAt = asNumber(local.updatedAt, 0);
+      const incomingAt = asNumber(incoming.updatedAt, 0);
+      return { kind: 'take', body: localAt > incomingAt ? { ...base, ...local } : { ...base, ...incoming } };
+    }
+
     case 'ratings': {
       /*
        * The later `ratedAt` wins; on a tie, the incoming.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
   import type { Card, IndexRow, Locale, Pack } from '../lib/types';
-  import type { SavedDeck } from '../lib/records';
+  import type { DeckFolder, SavedDeck } from '../lib/records';
   import type { Strings } from '../lib/i18n';
   import { db } from '../lib/db';
   import { loadCardsByCode } from '../lib/data';
@@ -37,6 +37,7 @@
    */
   let deck = $state.raw<SavedDeck | null | undefined>(undefined);
   let owned = $state.raw<ReadonlySet<string>>(new Set());
+  let folders = $state.raw<readonly DeckFolder[]>([]);
   $effect(() => {
     if (!storageOk) {
       deck = null;
@@ -48,9 +49,13 @@
     const packs = liveQuery(() => db.ownedPacks.toArray()).subscribe((rows) => {
       owned = new Set(rows.map((r) => r.packCode));
     });
+    const shelf = liveQuery(() => db.deckFolders.toArray()).subscribe((rows) => {
+      folders = rows;
+    });
     return () => {
       decks.unsubscribe();
       packs.unsubscribe();
+      shelf.unsubscribe();
     };
   });
 
@@ -116,6 +121,7 @@
     {onEdit}
     onDelete={() => void remove()}
     onBack={onShelf}
+    {folders}
   />
 {/if}
 

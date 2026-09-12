@@ -311,6 +311,25 @@ its auto-sync was silent after every reload until the account page was
 opened. Check the phone has no equivalent gap: that `adopted`/cursor state
 is read before the first trigger can fire after a cold start.
 
+### 9. `deck_folders` — folders on the shelf
+
+Web since 12 September 2026, opt-in on the server like the two above.
+Record, keyed by its own id:
+
+```json
+{ "id": "folder-<uuid>", "name": "Solo", "deckIds": ["<deck id>", "..."],
+  "createdAt": 1757600000000, "updatedAt": 1757600000000 }
+```
+
+The folder holds the deck ids; a deck's record does not name its folder,
+because `saved_decks` is MarvelCDB's shape and gains no field. A deck is in
+at most one folder; in none is simply absent from all. Merge: the later
+`updatedAt` wins whole. Deleting a folder is a tombstone; its decks stay.
+`updatedAt` on the wire is the field, as ISO-8601. Add it to the pull's
+`collections=` list and to the push order anywhere after `saved_decks`.
+UI: folders as headings on the deck list, a way to make, rename and delete
+one, and a folder picker on a deck.
+
 ## Definition of done
 
 - Unit tests for: the `rejected` branch (task 1); both merge rules

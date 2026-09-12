@@ -35,7 +35,10 @@ truth for what every number means, written to be read by both.
   `/decks/<id>` — the banner, a search box and a list-or-grid switch, the
   hero set apart, the deck in type columns, the card panel with the actions
   beside it, the hero's nemesis set, and the cost curve and composition
-  under it all. The editor is that page's `/edit`.
+  under it all. The editor is that page's `/edit`. Decks sort into
+  **folders** you name, which sync like everything else. Building starts
+  from a hero alone: the aspect is whatever the cards you add say, and the
+  editor flags the first card that mixes more than the hero allows.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own. Up to five **extra modular
@@ -273,9 +276,9 @@ brief and the live-sync design.
   showed a general error and left you guessing. It still does not know
   `/v1/auth/verify` itself, so the link has to be opened somewhere else and
   there is no way to ask for another one from the app.
-- **Starred games and ratings on Android.** The web syncs two collections the
-  phone does not have yet: `favourite_plays` — a game somebody starred, to find
-  again and play again — and `ratings`. Its sync engine defers a collection it
+- **Starred games, ratings and folders on Android.** The web syncs three
+  collections the phone does not have yet: `favourite_plays` — a game somebody
+  starred, to find again and play again — `ratings`, and `deck_folders`. Its sync engine defers a collection it
   cannot name and holds its cursor short of it, so nothing is lost and nothing
   breaks; both arrive the moment a build that knows the names pulls. Doc 06 §6
   has the favourites contract, the same shape as `favourite_cards`, and

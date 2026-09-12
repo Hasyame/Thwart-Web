@@ -30,14 +30,16 @@ function check(label, ok, detail = '') {
 
 {
   const names = COLLECTIONS.map((collection) => collection.name).sort();
-  // Ten are the contract with the phone. favourite_plays and ratings are the
-  // web one release ahead: the phone defers a collection it cannot name and
-  // holds its cursor short of it, so the rows wait on the server for the build
-  // that adds it. If this list ever gains a twelfth without the phone knowing,
-  // this is the line that should make somebody stop and check.
+  // Ten are the contract with the phone. favourite_plays, ratings and
+  // deck_folders are the web one release ahead: the server serves them only
+  // to a client that names them (opt-in), so the phone's cursor is never
+  // held by a record it cannot read. If this list ever gains a name without
+  // the server's map and doc 08 knowing, this is the line that should make
+  // somebody stop and check.
   const expected = [
     'campaign_events',
     'campaign_runs',
+    'deck_folders',
     'excluded_modular_sets',
     'excluded_scenarios',
     'favourite_cards',

@@ -65,6 +65,24 @@ export interface FavouritePlay {
 }
 
 /**
+ * A folder on the shelf of decks: a name, and the decks in it by id.
+ *
+ * The folder holds the list rather than each deck naming its folder, because
+ * a deck's record is the phone's and MarvelCDB's shape and gains no field
+ * lightly, and because a folder is one thing a person edits -- rename it,
+ * drag a deck in, drag one out -- so one record changing is the honest
+ * picture. A deck in no folder is simply in none. Synced as `deck_folders`;
+ * the later `updatedAt` wins whole.
+ */
+export interface DeckFolder {
+  readonly id: string;
+  readonly name: string;
+  readonly deckIds: readonly string[];
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
+/**
  * One player's current opinion of how hard something was.
  *
  * Keyed by its subject — `scenario:rhino`, `modular:bomb_scare@rhino`,
@@ -325,6 +343,7 @@ export interface Backup {
   readonly favouritePlays: readonly FavouritePlay[];
   /** As with starred games: absent from a phone's backup, harmless there. */
   readonly ratings: readonly Rating[];
+  readonly deckFolders: readonly DeckFolder[];
   readonly photos: readonly string[];
   /**
    * Null, not absent, is meaningful: the app reads it as "this file has no

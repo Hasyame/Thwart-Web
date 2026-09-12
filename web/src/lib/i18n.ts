@@ -224,6 +224,15 @@ export interface Strings {
   readonly decksCount: (n: number) => string;
   readonly foldersCount: (n: number) => string;
   readonly cardsInDecks: (n: number) => string;
+  /** Folders on the shelf. */
+  readonly folderLabel: string;
+  readonly folderNone: string;
+  readonly folderNew: string;
+  readonly folderNamePlaceholder: string;
+  readonly folderCreate: string;
+  readonly folderRename: string;
+  readonly folderDelete: string;
+  readonly folderDeleteConfirm: (name: string) => string;
   readonly importDeck: string;
   readonly importDeckNote: string;
   readonly importAction: string;
@@ -874,6 +883,14 @@ const STRINGS: Record<Locale, Strings> = {
     decksCount: (n) => (n === 1 ? '1 deck' : `${n} decks`),
     foldersCount: (n) => (n === 1 ? '1 folder' : `${n} folders`),
     cardsInDecks: (n) => (n === 1 ? '1 card in decks' : `${n} cards in decks`),
+    folderLabel: 'Folder',
+    folderNone: 'No folder',
+    folderNew: 'New folder',
+    folderNamePlaceholder: 'Folder name',
+    folderCreate: 'Create',
+    folderRename: 'Rename',
+    folderDelete: 'Delete folder',
+    folderDeleteConfirm: (name) => `Delete the folder \u201c${name}\u201d? Its decks stay.`,
     deckLegal: 'This deck is legal.',
     deckLegalShort: 'legal',
     deckIllegalShort: 'not legal',
@@ -1652,6 +1669,14 @@ const STRINGS: Record<Locale, Strings> = {
     decksCount: (n) => (n === 1 ? '1 deck' : `${n} decks`),
     foldersCount: (n) => (n === 1 ? '1 dossier' : `${n} dossiers`),
     cardsInDecks: (n) => (n === 1 ? '1 carte en deck' : `${n} cartes en deck`),
+    folderLabel: 'Dossier',
+    folderNone: 'Sans dossier',
+    folderNew: 'Nouveau dossier',
+    folderNamePlaceholder: 'Nom du dossier',
+    folderCreate: 'Cr\u00e9er',
+    folderRename: 'Renommer',
+    folderDelete: 'Supprimer le dossier',
+    folderDeleteConfirm: (name) => `Supprimer le dossier \u00ab\u00a0${name}\u00a0\u00bb ? Ses decks restent.`,
     deckLegal: 'Ce deck est légal.',
     deckLegalShort: 'légal',
     deckIllegalShort: 'non légal',
