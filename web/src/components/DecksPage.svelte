@@ -17,6 +17,7 @@
   } from '../lib/decks';
   import { heroRules, validateDeck } from '../lib/deckRules';
   import { syncAfter } from '../lib/sync/auto.svelte';
+  import { session } from '../lib/sync/session.svelte';
 
   interface Props {
     t: Strings;
@@ -151,6 +152,10 @@
 
   const sizeOf = (deck: SavedDeck): number => [...parseSlots(deck.slots).values()].reduce((a, b) => a + b, 0);
 
+  /* The shelf's head: whose it is, and how much is on it. */
+  const handle = $derived(session.account?.handle ?? null);
+  const cardsHeld = $derived(saved.decks.reduce((n, deck) => n + sizeOf(deck), 0));
+
   const reference = $derived(parseDeckReference(input));
 
   /**
@@ -275,7 +280,23 @@
 </script>
 
 <section>
-  <h1>{t.decksTitle}</h1>
+  <!--
+    Whose shelf this is, the way the deck sites open theirs: a letter for a
+    face, the handle, and the numbers. Signed out the shelf is the browser's
+    own, and says so instead of pretending to a name.
+  -->
+  <header class="shelf-head">
+    <span class="avatar" aria-hidden="true">{(handle ?? '?').slice(0, 1).toUpperCase()}</span>
+    <div class="who">
+      {#if handle !== null}<p class="muted small handle">@{handle}</p>{/if}
+      <h1>{handle === null ? t.decksOfThisBrowser : t.decksOf(handle)}</h1>
+      <p class="muted small stats">
+        <span>{t.decksCount(saved.decks.length)}</span>
+        <span>{t.foldersCount(0)}</span>
+        <span>{t.cardsInDecks(cardsHeld)}</span>
+      </p>
+    </div>
+  </header>
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
@@ -458,6 +479,52 @@
     border: 1px solid var(--border);
     background: var(--surface-1);
     color: var(--text);
+  }
+
+  .shelf-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin: var(--space-2) 0 var(--space-5);
+  }
+
+  .avatar {
+    flex: 0 0 auto;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+  }
+
+  .who {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .who h1 {
+    margin: 0;
+  }
+
+  .handle,
+  .stats {
+    margin: 0;
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .stats span + span::before {
+    content: '·';
+    margin-inline-end: var(--space-3);
   }
 
   .decks {

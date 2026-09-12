@@ -218,6 +218,12 @@ export interface Strings {
   readonly deckMissingRequired: (card: string, required: number, actual: number) => string;
   readonly deckUnbalanced: (counts: string) => string;
   readonly decksTitle: string;
+  /** The shelf's head: whose decks, and how many of what. */
+  readonly decksOf: (handle: string) => string;
+  readonly decksOfThisBrowser: string;
+  readonly decksCount: (n: number) => string;
+  readonly foldersCount: (n: number) => string;
+  readonly cardsInDecks: (n: number) => string;
   readonly importDeck: string;
   readonly importDeckNote: string;
   readonly importAction: string;
@@ -863,6 +869,11 @@ const STRINGS: Record<Locale, Strings> = {
       `${card} is one of the hero's own cards: ${required} needed, ${actual} in the deck.`,
     deckUnbalanced: (counts) => `The chosen aspects must contribute equally (${counts}).`,
     decksTitle: 'Decks',
+    decksOf: (handle) => `${handle}’s decks`,
+    decksOfThisBrowser: 'Decks on this browser',
+    decksCount: (n) => (n === 1 ? '1 deck' : `${n} decks`),
+    foldersCount: (n) => (n === 1 ? '1 folder' : `${n} folders`),
+    cardsInDecks: (n) => (n === 1 ? '1 card in decks' : `${n} cards in decks`),
     deckLegal: 'This deck is legal.',
     deckLegalShort: 'legal',
     deckIllegalShort: 'not legal',
@@ -1636,6 +1647,11 @@ const STRINGS: Record<Locale, Strings> = {
     deckUnbalanced: (counts) =>
       `Les aspects choisis doivent contribuer \u00e9galement (${counts}).`,
     decksTitle: 'Decks',
+    decksOf: (handle) => `Decks de ${handle}`,
+    decksOfThisBrowser: 'Decks de ce navigateur',
+    decksCount: (n) => (n === 1 ? '1 deck' : `${n} decks`),
+    foldersCount: (n) => (n === 1 ? '1 dossier' : `${n} dossiers`),
+    cardsInDecks: (n) => (n === 1 ? '1 carte en deck' : `${n} cartes en deck`),
     deckLegal: 'Ce deck est légal.',
     deckLegalShort: 'légal',
     deckIllegalShort: 'non légal',
