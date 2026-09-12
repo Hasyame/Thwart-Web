@@ -1,5 +1,6 @@
 import type { Locale } from '../types';
 import { db } from '../db';
+import { asRemote } from './auto.svelte';
 import * as api from './api';
 import type { Limits, OutgoingRecord, PullPage, PushResponse, PushResult, ServerRecord } from './api';
 import { COLLECTIONS, collectionByName, type CollectionName } from './collections';
@@ -22,6 +23,22 @@ const DECLARED_COLLECTIONS = [...KNOWN_COLLECTIONS].sort().join(',');
  */
 
 /** Rows and their states, written together or not at all. */
+/** The tables whose rows travel: what a write to counts as an edit worth syncing. */
+export const SYNCED_TABLES = () => [
+  db.appSettings,
+  db.ownedPacks,
+  db.excludedModularSets,
+  db.excludedScenarios,
+  db.favouriteCards,
+  db.favouritePlays,
+  db.ratings,
+  db.decks,
+  db.campaignRuns,
+  db.campaignEvents,
+  db.plays,
+  db.randomizerHistory,
+];
+
 const TABLES = () => [
   db.appSettings,
   db.ownedPacks,
@@ -98,7 +115,7 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
       if (usable.length === 0) {
         return;
       }
-      await db.transaction('rw', TABLES(), async () => {
+      await asRemote(() => db.transaction('rw', TABLES(), async () => {
         for (const record of usable) {
           const mapping = collectionByName(record.collection);
           if (mapping === undefined) {
@@ -145,7 +162,7 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             digest: digestForPulled(record),
           });
         }
-      });
+      }));
     },
 
     /**
@@ -160,7 +177,7 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
       results: readonly PushResult[],
     ): Promise<void> {
       const sent = new Map(records.map((record) => [`${record.collection} ${record.id}`, record]));
-      await db.transaction('rw', [...TABLES(), db.syncRecords], async () => {
+      await asRemote(() => db.transaction('rw', [...TABLES(), db.syncRecords], async () => {
         for (const result of results) {
           const key = `${result.collection} ${result.id}`;
           const record = sent.get(key);
@@ -190,7 +207,7 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             digest: digestOf(record.body),
           });
         }
-      });
+      }));
     },
 
     async readCursor(): Promise<number> {
@@ -276,7 +293,7 @@ export async function stageAccount(
  * above failed.
  */
 export async function applyAdoption(plan: AdoptionPlan, cursor: number): Promise<void> {
-  await db.transaction('rw', TABLES(), async () => {
+  await asRemote(() => db.transaction('rw', TABLES(), async () => {
     for (const write of plan.writes) {
       const mapping = collectionByName(write.collection);
       if (mapping === undefined) {
@@ -306,5 +323,5 @@ export async function applyAdoption(plan: AdoptionPlan, cursor: number): Promise
         lastSyncedAt: Date.now(),
       });
     }
-  });
+  }));
 }

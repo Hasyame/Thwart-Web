@@ -292,6 +292,25 @@ Wakanda Forever! is `01043a`–`01043d`, four printings, none hidden, all
 required. The web asserts both with MarvelCDB decklist 40000 as a fixture
 (`web/scripts/fixtures/decklist-40000-phoenix.json`); reuse it.
 
+### 8. Sync on every write, on by default
+
+On 12 September 2026 the web stopped syncing at named moments only and
+hooks every write to a synced table (`web/src/lib/sync/auto.svelte.ts`,
+`watchWrites`): a deck edited, a card starred, a pack ticked, all push after
+a two-second settle, and the switch is on unless turned off. The phone's
+`AutoSync` still fires on its named triggers (`SyncTrigger` enum), which do
+not include a deck *edited* or a rating changed from a play's page, and its
+switch defaults are its own. Bring it level: a trigger on every Room write
+to a synced table (a `RoomDatabase.Callback`/`InvalidationTracker` on the
+synced tables is the phone's equivalent of the Dexie hooks), writes made by
+the sync engine itself excluded, and on by default once signed in. The
+stream and `RETURNED_TO_APP` already cover the other direction.
+
+Also found: the web never restored "this browser has adopted" at startup, so
+its auto-sync was silent after every reload until the account page was
+opened. Check the phone has no equivalent gap: that `adopted`/cursor state
+is read before the first trigger can fire after a cold start.
+
 ## Definition of done
 
 - Unit tests for: the `rejected` branch (task 1); both merge rules

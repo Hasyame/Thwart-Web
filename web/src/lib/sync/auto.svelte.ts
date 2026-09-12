@@ -1,16 +1,25 @@
+import type Dexie from 'dexie';
 import { loadUiLocale } from '../preferences';
 import { session } from './session.svelte';
 import { runSync, sync } from './sync.svelte';
 
 /**
- * Syncing without being asked, at the moments where it matters.
+ * Syncing without being asked.
  *
- * The point is not to sync often. It is to sync at the handful of moments
- * where somebody is about to pick the other device up: a scenario has just
- * ended, a campaign is finished, a game has been put away for the evening, a
- * deck has just been built. Syncing on a timer would move the same data and
- * still miss those moments, because the one that counts is always the last one
- * before the screen goes dark.
+ * The first version synced at a handful of named moments -- a scenario
+ * ended, a deck built -- on the reasoning that those are when somebody picks
+ * up the other device. They are, and they were not enough: a deck *edited*
+ * was not one of them, and the phone showed yesterday's list until somebody
+ * pressed a button. So now every write to a synced table is a trigger, and
+ * the named moments remain only as names for the settings screen. A settle
+ * of two seconds turns a burst of writes into one request; the engine sends
+ * only what changed, so a trigger with nothing behind it costs one small
+ * round trip.
+ *
+ * The other direction is the live stream: the server tells every open
+ * client about a change the moment it lands, so a deck built here is on the
+ * phone before the hand leaves the mouse, provided the phone is open -- and
+ * on its next foreground otherwise.
  *
  * **The preference is device-local and is never synced.** Two reasons, and
  * either alone would be enough:
@@ -33,6 +42,8 @@ import { runSync, sync } from './sync.svelte';
  * the two have to be comparable by reading them.
  */
 export type SyncTrigger =
+  /** Any write to a synced table. The one that does the work; see `watchWrites`. */
+  | 'edit'
   /** A scenario ended, campaign or not, so the game can be picked up elsewhere. */
   | 'scenario-end'
   /** A campaign reached its last scenario. */
@@ -101,12 +112,18 @@ const SETTLE_MS = 2_000;
  */
 const RETRY_MS = 30_000;
 
+/*
+ * On unless switched off. It was off unless switched on, which meant every
+ * new browser started by not syncing and nobody knew until a deck failed to
+ * appear on the phone; the point of an account is that the devices agree
+ * without being asked. Signing in is the consent.
+ */
 function stored(): boolean {
   try {
-    return localStorage.getItem(KEY) === 'on';
+    return localStorage.getItem(KEY) !== 'off';
   } catch {
-    // A browser that refuses storage cannot remember an answer, so it has none.
-    return false;
+    // A browser that refuses storage cannot remember an answer; the default stands.
+    return true;
   }
 }
 
@@ -218,6 +235,50 @@ export function syncAfter(trigger: SyncTrigger): void {
   rememberOwed(true);
   retried = false;
   schedule(SETTLE_MS);
+}
+
+/*
+ * Writes made by the sync itself -- a pull applied, an adoption, a refused
+ * record dropped -- must not count as edits, or every pull would schedule a
+ * push of nothing. The ports raise this around their own transactions.
+ */
+let remoteDepth = 0;
+
+export async function asRemote<T>(work: () => Promise<T>): Promise<T> {
+  remoteDepth += 1;
+  try {
+    return await work();
+  } finally {
+    remoteDepth -= 1;
+  }
+}
+
+/**
+ * Hooks every synced table so that any write is a trigger. Returns the
+ * teardown. Dexie's hooks fire inside the transaction, synchronously; all
+ * this does there is start a timer.
+ */
+export function watchWrites(tables: readonly Dexie.Table[]): () => void {
+  const onWrite = (): void => {
+    if (remoteDepth === 0) {
+      syncAfter('edit');
+    }
+  };
+  const offs = tables.flatMap((table) => {
+    table.hook('creating', onWrite);
+    table.hook('updating', onWrite);
+    table.hook('deleting', onWrite);
+    return [
+      () => table.hook('creating').unsubscribe(onWrite),
+      () => table.hook('updating').unsubscribe(onWrite),
+      () => table.hook('deleting').unsubscribe(onWrite),
+    ];
+  });
+  return () => {
+    for (const off of offs) {
+      off();
+    }
+  };
 }
 
 /**

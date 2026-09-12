@@ -31,7 +31,9 @@
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
-  import { syncAfter, watchAutoSync } from './lib/sync/auto.svelte';
+  import { loadSyncState } from './lib/sync/sync.svelte';
+  import { syncAfter, watchAutoSync, watchWrites } from './lib/sync/auto.svelte';
+  import { SYNCED_TABLES } from './lib/sync/ports';
   import { watchLive } from './lib/sync/live.svelte';
   import { watchSafeArea } from './lib/safeArea';
   import PlayHub from './components/PlayHub.svelte';
@@ -213,10 +215,14 @@
     return () => query.removeEventListener('change', sync);
   });
 
-  // Who is signed in, read once. Nothing syncs yet; this only decides what the
-  // account screen and the settings sheet show.
+  // Who is signed in, and whether this browser has adopted the account, read
+  // once. The second was not read at all until 12 September 2026: auto-sync
+  // asks it before every push, so after any reload the browser believed it
+  // had never adopted and stayed silent until somebody opened the account
+  // page. Every "the sync only works when I press the button" was this.
   $effect(() => {
     void loadSession();
+    void loadSyncState();
   });
 
   /*
@@ -227,6 +233,8 @@
    * the moment it belongs to.
    */
   $effect(() => watchAutoSync());
+  // Every write to a synced table asks for a sync; see auto.svelte.ts.
+  $effect(() => watchWrites(SYNCED_TABLES()));
 
   /*
    * How much room the system bar at the bottom really needs.

@@ -1269,7 +1269,7 @@ const STRINGS: Record<Locale, Strings> = {
       'Signing in only said who you are. This is what moves your collection, decks, games and campaigns between your devices.',
     autoSyncSwitch: 'Sync on its own',
     autoSyncNote:
-      'Syncs at the moments where you are most likely to pick up the other device. This choice stays on this browser and is never carried to your other devices, so each one decides for itself.',
+      'Every change made here goes to the account within a couple of seconds, and changes made elsewhere arrive here as they happen. This choice stays on this browser and is never carried to your other devices, so each one decides for itself.',
     autoSyncScenario: 'When a scenario ends, in a campaign or not',
     autoSyncCampaign: 'When a campaign ends',
     autoSyncBreak: 'When you put a game away for a long break',
@@ -2052,7 +2052,7 @@ const STRINGS: Record<Locale, Strings> = {
       'Se connecter n\u2019a fait que dire qui vous \u00eates. Ceci d\u00e9place votre collection, vos decks, vos parties et vos campagnes entre vos appareils.',
     autoSyncSwitch: 'Synchroniser tout seul',
     autoSyncNote:
-      "Synchronise aux moments où vous êtes le plus susceptible de prendre l'autre appareil. Ce choix reste sur ce navigateur et n'est jamais transmis à vos autres appareils : chacun décide pour lui-même.",
+      "Chaque changement fait ici part vers le compte en quelques secondes, et ceux faits ailleurs arrivent ici au fur et à mesure. Ce choix reste sur ce navigateur et n'est jamais transmis à vos autres appareils : chacun décide pour lui-même.",
     autoSyncScenario: "À la fin d'un scénario, en campagne ou non",
     autoSyncCampaign: "À la fin d'une campagne",
     autoSyncBreak: 'Quand vous rangez une partie pour une longue pause',

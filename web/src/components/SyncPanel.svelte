@@ -97,14 +97,6 @@
     <span>{t.autoSyncSwitch}</span>
   </label>
   <p class="muted note">{t.autoSyncNote}</p>
-  <ul class="muted triggers">
-    <li>{t.autoSyncScenario}</li>
-    <li>{t.autoSyncCampaign}</li>
-    <li>{t.autoSyncBreak}</li>
-    <li>{t.autoSyncDeck}</li>
-    <li>{t.autoSyncCollection}</li>
-    <li>{t.autoSyncFavourite}</li>
-  </ul>
 
   {#if sync.phase.kind === 'staging'}
     <p class="notice">{t.syncStaging}</p>
@@ -221,13 +213,6 @@
     font-weight: var(--weight-semibold);
   }
 
-  .triggers {
-    font-size: var(--text-sm);
-    margin: 0;
-    padding-inline-start: var(--space-5);
-    display: grid;
-    gap: var(--space-0-5);
-  }
 
   .unavailable {
     opacity: 0.6;
