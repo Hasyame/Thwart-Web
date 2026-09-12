@@ -247,6 +247,12 @@ brief and the live-sync design.
 
 ## What's coming
 
+- **A design pass over the whole site.** The deck pages were redrawn in
+  September 2026 against the deck-building sites people already use — tiles
+  with the hero's art, a banner, a card panel pinned beside the list, dense
+  rows — and the rest of the app now looks a generation older beside them.
+  [`docs/design/04-roadmap.md`](docs/design/04-roadmap.md) (W6) says what to
+  take from the reference and in what order.
 - **Making this repository public.** It was kept private until the server ran
   somewhere other than a laptop, which it now does. The history was written to
   be read, so it goes public in place rather than being squashed.

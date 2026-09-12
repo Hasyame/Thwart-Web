@@ -343,3 +343,35 @@ anything now, and all of it is expensive to retrofit.
 - **W5** is optional, and can be abandoned without stranding anything.
 - **Sync**, whenever it comes, arrives to find two clients that already agree
   about what a play is.
+
+---
+
+## W6 — A design pass over the whole site
+
+Added 12 September 2026, after the deck pages were redrawn against the deck
+sites people already use. The reference the owner named is
+[grimdeck.com](https://grimdeck.com/), and what is worth taking from it is
+specific rather than "make it look like that":
+
+- **One dark, low-chroma ground** (theirs is a navy `#1e1e2e`) with surfaces a
+  step lighter and hairline borders, so card art and faction colour are the
+  only saturated things on the page. Thwart's dark theme is close; its light
+  theme is the one with more to gain.
+- **A display face for titles** — Recoleta there, a warm serif at 72px on the
+  landing page — against Inter for everything else. Thwart sets everything in
+  one system stack. One serif for page and deck titles would give the app a
+  voice without touching the body text.
+- **A single accent used sparingly**: one lavender for the primary action and
+  links, nothing else coloured by decoration.
+- **The card as the hero of every screen**: a picture panel pinned beside any
+  list of cards, which the deck pages now have and the card list, the
+  collection and the campaign setup do not.
+- **A landing page** that says what the thing is in one line with the art
+  behind it, rather than opening on the card search.
+
+What it is not: a change of information architecture. The tabs, the URLs and
+the offline-first shape stay. The pass goes screen by screen — cards,
+collection, play, history, statistics, campaigns, settings — each against the
+deck pages as the new baseline, with a screenshot before and after in the
+commit. Tokens first (`web/src/tokens.css`), so a decision about a colour or a
+face is made once.
