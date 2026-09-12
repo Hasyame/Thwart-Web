@@ -202,7 +202,20 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request, sess sessi
 	w.WriteHeader(http.StatusOK)
 
 	/*
-		A greeting, before anything else.
+		Subscribed first, then greeted, in that order.
+
+		The greeting is what tells a client it is connected, so it must not
+		arrive before the client is actually listening: a change that landed
+		between the greeting and the subscription was told to nobody, and a
+		client that had just read "connected" would sit believing it was
+		current. The window was a few microseconds and a test on a two-core
+		box fell into it.
+	*/
+	sub := s.streams.subscribe(sess.account.ID)
+	defer s.streams.unsubscribe(sub)
+
+	/*
+		A greeting, before anything else the client hears.
 
 		`EventSource` fires `onopen` on the headers alone, so without a first
 		byte a client cannot tell an open stream from a proxy holding one. This
@@ -212,9 +225,6 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request, sess sessi
 	*/
 	fmt.Fprintf(w, "retry: %d\n: connected\n\n", 3000)
 	flusher.Flush()
-
-	sub := s.streams.subscribe(sess.account.ID)
-	defer s.streams.unsubscribe(sub)
 
 	/*
 		Catch up a client that was away.

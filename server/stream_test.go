@@ -140,6 +140,16 @@ func (l *listener) expect(within time.Duration) int64 {
 	}
 }
 
+/** Waits for the greeting, which is the server saying the subscription is in place. */
+func (l *listener) greeted(within time.Duration) {
+	l.t.Helper()
+	select {
+	case <-l.comments:
+	case <-time.After(within):
+		l.t.Fatal("no greeting")
+	}
+}
+
 /** Asserts nothing arrives. The whole point of the isolation test. */
 func (l *listener) expectSilence(for_ time.Duration) {
 	l.t.Helper()
@@ -397,6 +407,11 @@ func TestManyListenersOnOneAccountAllHear(t *testing.T) {
 	defer first.close()
 	second := listen(t, srv, mine, 0)
 	defer second.close()
+
+	// Both greeted, and so both subscribed, before anything is pushed: the
+	// server greets after it subscribes precisely so this holds.
+	first.greeted(2 * time.Second)
+	second.greeted(2 * time.Second)
 
 	pushOverHTTP(t, srv, mine, "play-1")
 
