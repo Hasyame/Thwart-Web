@@ -121,13 +121,12 @@
     top: calc(57px + env(safe-area-inset-top) + 4.5rem);
     display: grid;
     gap: var(--space-3);
-    max-height: calc(100vh - 57px - 4.5rem - var(--space-4));
-    overflow: auto;
   }
 
   .picture {
     display: block;
-    width: 100%;
+    width: min(100%, 13rem);
+    margin: 0 auto;
     padding: 0;
     border: 0;
     background: none;

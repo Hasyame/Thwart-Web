@@ -203,6 +203,31 @@
     tall
   />
 
+  <!--
+    What can be done with the deck, in a band of its own under the banner:
+    always where the eye goes first, never under the card panel, which is
+    where a column of buttons at the foot of a sticky panel ended up once
+    the page had scrolled.
+  -->
+  <div class="actions">
+    <button type="button" class="btn btn--quiet" onclick={onBack}>← {t.deckBackToShelf}</button>
+    <span class="grow"></span>
+    <button type="button" class="btn btn--primary" onclick={onEdit}>{t.deckEdit}</button>
+    <button type="button" class="btn" onclick={() => void copyText()}>{copied ? t.deckCopied : t.deckCopy}</button>
+    {#if deck.kind !== 'LOCAL'}
+      <a class="btn" href={deckViewUrl(deck)} target="_blank" rel="noopener">{t.viewOnMarvelCdb} ↗</a>
+    {/if}
+    {#if confirming}
+      <span class="confirm">
+        <span class="muted small">{t.deckDeleteConfirm(deck.name)}</span>
+        <button type="button" class="btn danger" onclick={onDelete}>{t.deckDeleteYes}</button>
+        <button type="button" class="btn btn--quiet" onclick={() => (confirming = false)}>{t.cancel}</button>
+      </span>
+    {:else}
+      <button type="button" class="btn btn--quiet danger" onclick={() => (confirming = true)}>{t.removeDeck}</button>
+    {/if}
+  </div>
+
   <!-- A word, an order, names or pictures. -->
   <div class="toolbar">
     <label class="find">
@@ -340,21 +365,6 @@
     </div>
     <div class="side">
       <CardPanel {t} initial={deck.heroCode} from="(min-width: 64rem)" />
-      <div class="actions">
-        <button type="button" class="btn btn--primary" onclick={onEdit}>{t.deckEdit}</button>
-        <button type="button" class="btn" onclick={() => void copyText()}>{copied ? t.deckCopied : t.deckCopy}</button>
-        {#if deck.kind !== 'LOCAL'}
-          <a class="btn" href={deckViewUrl(deck)} target="_blank" rel="noopener">{t.viewOnMarvelCdb} ↗</a>
-        {/if}
-        {#if confirming}
-          <p class="muted small">{t.deckDeleteConfirm(deck.name)}</p>
-          <button type="button" class="btn danger" onclick={onDelete}>{t.deckDeleteYes}</button>
-          <button type="button" class="btn btn--quiet" onclick={() => (confirming = false)}>{t.cancel}</button>
-        {:else}
-          <button type="button" class="btn btn--quiet danger" onclick={() => (confirming = true)}>{t.removeDeck}</button>
-        {/if}
-        <button type="button" class="btn btn--quiet" onclick={onBack}>← {t.deckBackToShelf}</button>
-      </div>
     </div>
   </div>
 
@@ -572,14 +582,23 @@
   }
 
   .actions {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
-    margin-top: var(--space-3);
+    margin: var(--space-3) 0 0;
   }
 
-  .actions .btn {
-    justify-content: center;
-    text-align: center;
+  .grow {
+    flex: 1 1 auto;
+  }
+
+  .confirm {
+    flex: 1 0 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
   }
 
   .danger {
@@ -824,11 +843,22 @@
 
   @media (min-width: 64rem) {
     .body {
-      grid-template-columns: minmax(0, 1fr) 14rem;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) 17rem;
+      /* Tall enough that a short deck still leaves the panel somewhere to be. */
+      min-height: 40rem;
     }
+    /*
+     * The panel's height must not be the page's. Its text is a different
+     * length for every card, and when the side column set the row's height
+     * every hover pushed everything below the list up or down -- the nemesis
+     * pictures moved out from under the pointer that was reading them. Size
+     * containment makes the column as tall as the row the list decides and
+     * no taller, whatever the panel holds; the panel sticks inside it.
+     */
     .side {
       display: block;
+      contain: size;
+      align-self: stretch;
     }
   }
 
