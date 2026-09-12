@@ -103,15 +103,16 @@ export function saveGroupedPlay(grouped: boolean): void {
 }
 
 /**
- * Whether the deck editor's search offers only cards from packs you own.
+ * Whether the deck editor's pool holds only cards from packs you own.
  *
- * Off by default: the editor has always offered the whole pool and marked what
- * is not owned, and a deck built for a friend's table needs their cards, not
- * yours. Remembered per browser once switched, because somebody who builds
- * from their own boxes does so every time.
+ * On by default: a deck is built from one's own boxes far more often than
+ * for a friend's table, and a pool that opens on a thousand cards you cannot
+ * play is a list of things to buy. The tick is one tap away for the other
+ * case, and the choice is remembered per browser. With no pack ticked on the
+ * Collection page the editor says why the pool is empty and where to fix it.
  */
 export function loadDeckOwnedOnly(): boolean {
-  return read(KEY_DECK_OWNED_ONLY) === 'on';
+  return read(KEY_DECK_OWNED_ONLY) !== 'off';
 }
 
 export function saveDeckOwnedOnly(ownedOnly: boolean): void {

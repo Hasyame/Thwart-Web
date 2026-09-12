@@ -135,7 +135,11 @@
 
   <p class="muted small count">{t.resultCount(rows.length, pool.length)}</p>
 
-  {#if rows.length === 0}
+  {#if ownedOnly && ownedPackCodes.size === 0}
+    <!-- The tick is on by default, so a first visit with no pack ticked
+         would otherwise open on an empty list with no reason given. -->
+    <p class="muted">{t.deckOwnedOnlyEmpty}</p>
+  {:else if rows.length === 0}
     <p class="muted">{t.noResults} {t.noResultsHint}</p>
   {:else}
     <ul class="cards">

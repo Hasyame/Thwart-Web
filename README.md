@@ -25,7 +25,8 @@ truth for what every number means, written to be read by both.
   build it. A new deck starts with the hero's own cards, as the phone's does.
   The editor shows every card that can go in *this* deck from the first
   pixel — the deck's aspects and basic on, the others one tap away, type and
-  cost chips, a text box, and *only what I own* to keep to your packs — with
+  cost chips, a text box, and *only what I own*, on by default, to keep to
+  your packs — with
   a bar that stays put holding the count against its range, the verdict and
   Save. Rest the pointer on any card, anywhere in the app, to see it with
   its rules; on a wide screen the deck pages pin that card beside the list;
