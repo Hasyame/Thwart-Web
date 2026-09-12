@@ -1,6 +1,7 @@
 <script lang="ts">
   import CardHover from './CardHover.svelte';
   import DeckBanner from './DeckBanner.svelte';
+  import CardPanel from './CardPanel.svelte';
   import { cardImageUrl } from '../lib/data';
   import type { Card, Locale } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
@@ -169,6 +170,57 @@
 
   <!-- What the deck is made of: can I afford my cards early, can I pay for
        them at all, and is it the shape I meant it to be. -->
+  <div class="body">
+    <!--
+      The list in columns, as a printed decklist is laid out, with the card
+      the pointer last rested on pinned beside it where the screen is wide
+      enough. The statistics come after: what is in the deck first, then what
+      it adds up to.
+    -->
+    <div class="groups">
+  {#each byType as [type, entries] (type)}
+    <h3>{type}</h3>
+    <ul class="cards">
+      {#each entries as entry (entry.code)}
+        {@const owned = ownedPackCodes.has(entry.card.pack_code)}
+        <li class:missing={!owned}>
+          <span class="qty">{entry.quantity}</span>
+          <CardHover code={entry.code}>
+            <a
+              href={cardHref(entry.code)}
+              data-faction={entry.card.faction_code}
+              onclick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                  return;
+                }
+                e.preventDefault();
+                openCard(entry.code);
+              }}
+            >
+              {entry.card.name}
+            </a>
+          </CardHover>
+          <!--
+            A card from a pack not owned wears one mark, and says which box on
+            hover: the line above the list already counts them and names the
+            packs, so the row needs a flag, not a sentence.
+          -->
+          {#if !owned}
+            <span class="mark" title={`${t.notOwned} · ${packNames.get(entry.card.pack_code) ?? entry.card.pack_code}`} aria-label={t.notOwned}>✕</span>
+          {/if}
+          {#if entry.card.cost !== null && entry.card.cost !== undefined}
+            <span class="cost">{entry.card.cost}</span>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/each}
+    </div>
+    <div class="side">
+      <CardPanel {t} initial={deck.heroCode} from="(min-width: 64rem)" />
+    </div>
+  </div>
+
   <section class="composition">
     <h3>{t.deckComposition}</h3>
 
@@ -244,42 +296,6 @@
       {/if}
     </div>
   </section>
-
-  {#each byType as [type, entries] (type)}
-    <h3>{type}</h3>
-    <ul class="cards">
-      {#each entries as entry (entry.code)}
-        <li class:missing={!ownedPackCodes.has(entry.card.pack_code)}>
-          <span class="qty">{entry.quantity}×</span>
-          <CardHover code={entry.code}>
-            <a
-              href={cardHref(entry.code)}
-              data-faction={entry.card.faction_code}
-              onclick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-                  return;
-                }
-                e.preventDefault();
-                openCard(entry.code);
-              }}
-            >
-              {entry.card.name}
-            </a>
-          </CardHover>
-          <!-- Which box it came from, so a missing card can be found. -->
-          <span class="pack muted" title={packNames.get(entry.card.pack_code) ?? ''}>
-            [{entry.card.pack_code.toUpperCase()}]
-          </span>
-          {#if entry.card.cost !== null && entry.card.cost !== undefined}
-            <span class="muted small">{entry.card.cost}</span>
-          {/if}
-          {#if !ownedPackCodes.has(entry.card.pack_code)}
-            <span class="tag">{t.notOwned}</span>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  {/each}
 
   <p class="muted note locale-note">{t.deckLocaleNote(cardLocale)}</p>
 </div>
@@ -447,6 +463,41 @@
     background: var(--text);
   }
 
+  .body {
+    display: grid;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+  }
+
+  .side {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .body {
+      grid-template-columns: minmax(0, 1fr) 14rem;
+      align-items: start;
+    }
+    .side {
+      display: block;
+    }
+  }
+
+  /* Columns that fill top to bottom then across, a group never split. */
+  .groups {
+    column-width: 16rem;
+    column-gap: var(--space-5);
+  }
+
+  .groups h3,
+  .groups ul {
+    break-inside: avoid;
+  }
+
+  .groups h3 {
+    break-after: avoid;
+  }
+
   .cards {
     list-style: none;
     padding: 0;
@@ -458,19 +509,52 @@
 
   .cards li {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--space-2);
-    padding: 2px 0;
+    min-height: 1.9rem;
+    padding: 1px 0;
   }
 
   .cards li.missing a {
     opacity: 0.65;
   }
 
+  /* The count as a small square, the way decklists print it. */
   .qty {
-    min-width: 1.8rem;
+    flex: 0 0 auto;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    display: inline-grid;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
     font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
+  }
+
+  /* The printed cost, a small circle at the end of the line. */
+  .cost {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    width: 1.3rem;
+    height: 1.3rem;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mark {
+    flex: 0 0 auto;
+    color: var(--danger);
+    font-size: var(--text-xs);
+    cursor: help;
   }
 
   .cards a {
@@ -506,21 +590,6 @@
     border-inline-start-color: var(--faction-hero);
   }
 
-  .pack {
-    font-size: var(--text-2xs);
-    letter-spacing: 0.03em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .tag {
-    font-size: var(--text-2xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--danger);
-    border: 1px solid currentColor;
-    border-radius: var(--radius-sm);
-    padding: 0 var(--space-1);
-  }
 
   .locale-note {
     margin-top: var(--space-5);
