@@ -7,7 +7,7 @@
   import { ratingOfPlay, type RatingSubject } from '../lib/ratings';
   import { formatElapsed } from '../lib/session.svelte';
   import { playerBucket } from '../lib/plays';
-  import { runOf } from '../lib/playQuery';
+  import { inCampaign, runOf } from '../lib/playQuery';
   import { campaignFigures } from '../lib/campaignFigures';
 
   /**
@@ -376,16 +376,18 @@
           First and filled, because it is the reason most people open a game
           they have already played: the same table, again.
 
-          Every game, a campaign's scenario included. Those are logged under
-          the campaign's own scenario id rather than a card set, which is why
-          this was briefly hidden for them; the replay now resolves the set
-          through the campaign's template instead — see lib/replay. What comes
-          back is the scenario as it was laid out, played on its own, not the
-          campaign, which the link above continues.
+          Not on a campaign's scenario. Only a game played from the setup page
+          or from a draw is played again from the history; a campaign's
+          scenario is played again from its own campaign, which the link above
+          leads to. `inCampaign` rather than a null test: the phone omits the
+          field on a standalone game, and `undefined !== null` would hide
+          this on every game it ever synced.
         -->
-        <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
-          {t.playAgain}
-        </button>
+        {#if !inCampaign(play)}
+          <button class="btn btn--primary" type="button" disabled={busy} onclick={() => onReplay(play)}>
+            {t.playAgain}
+          </button>
+        {/if}
         <!-- Pressed state on the button itself, so a screen reader hears
              "starred" rather than two labels that differ by one word. -->
         <button

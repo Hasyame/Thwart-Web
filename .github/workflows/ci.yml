@@ -294,6 +294,14 @@ jobs:
         working-directory: web
         run: npm run test:tracker
 
+      # Fear No Evil played through against the shipped template, as the
+      # phone's own test does: a lost scenario is not failed, Expert defeats
+      # add pressure and the Kingpin defeat sacrifices a Completed environment
+      # or loses the campaign. The rules the English rulebook settled.
+      - name: Fear No Evil
+        working-directory: web
+        run: npm run test:fne
+
 
   server:
     name: Server

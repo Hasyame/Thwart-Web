@@ -228,6 +228,50 @@ if (fne === undefined) {
     villainAssignmentFor(fne, recommended, seeded(5))?.cardCodes[0] === fne.villainPool[0],
   );
 
+  /*
+   * The book's fourth entry is "Purple Man or Typhoid Mary": one line for two
+   * villains. So the first three come in order, the fourth is drawn between
+   * the last two, and the fifth is whoever was not.
+   */
+  const pool = fne.villainPool;
+  const tail = new Set(pool.slice(-2));
+  const walk = (seed) => {
+    const random = seeded(seed);
+    let state = recommended;
+    const order = [];
+    for (const job of jobs.slice(0, pool.length)) {
+      state = { ...state, currentScenarioId: job };
+      const draw = villainAssignmentFor(fne, state, random);
+      order.push(draw.cardCodes[0]);
+      state = withDraws(state, [draw]);
+    }
+    return order;
+  };
+  const orders = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(walk);
+  check(
+    'the first three come in the book’s order',
+    orders.every((order) => order.slice(0, 3).join(',') === pool.slice(0, 3).join(',')),
+    orders.find((order) => order.slice(0, 3).join(',') !== pool.slice(0, 3).join(','))?.join(',') ?? '',
+  );
+  check(
+    'the fourth is one of the last two',
+    orders.every((order) => tail.has(order[3])),
+    orders.map((order) => order[3]).join(', '),
+  );
+  check(
+    'and the fifth is the other',
+    orders.every((order) => tail.has(order[4]) && order[4] !== order[3]),
+  );
+  check(
+    'drawn, not taken first: both come fourth over enough campaigns',
+    new Set(orders.map((order) => order[3])).size === 2,
+    [...new Set(orders.map((order) => order[3]))].join(', '),
+  );
+  check(
+    'and every villain is dealt exactly once',
+    orders.every((order) => new Set(order).size === pool.length),
+  );
+
   // --- the rotation ---------------------------------------------------------
 
   const waiting = { ...EMPTY_STATE, templateId: 'fne', heroes, awaitingChoice: true };

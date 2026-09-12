@@ -12,6 +12,7 @@
 import { readFileSync } from 'node:fs';
 import {
   campaignSubject,
+  campaignLayoutOf,
   modularOverallKey,
   modularSubject,
   ratingOfPlay,
@@ -19,7 +20,6 @@ import {
   scenarioSubject,
   subjectsOfPlay,
 } from '../src/lib/ratings.ts';
-import { campaignLayoutOf } from '../src/lib/replay.ts';
 import { mergeBodies } from '../src/lib/sync/merge.ts';
 import { cursorAfterPush } from '../src/lib/sync/engine.ts';
 
@@ -71,7 +71,11 @@ const play = (over = {}) => ({
 
 {
   // A campaign scenario: recorded under the template's id, rated by its set,
-  // with the template's modular sets — resolved the same way a replay is.
+  // with the template's modular sets — resolved through the run's template.
+  // Real data, not a mock: the Galaxy's Most Wanted template as shipped and
+  // the English card index, because the resolution walks villain card -> set
+  // code and a hand-written index would only prove the test agrees with
+  // itself.
   const raw = JSON.parse(readFileSync(new URL('../public/data/campaigns/gmw.json', import.meta.url), 'utf8'));
   const indexFile = JSON.parse(readFileSync(new URL('../public/data/index.en.json', import.meta.url), 'utf8'));
   const index = Array.isArray(indexFile) ? indexFile : (indexFile.cards ?? indexFile.rows);
@@ -86,6 +90,17 @@ const play = (over = {}) => ({
   check('with the template\'s modular sets paired to it',
     subjects.slice(1).map((s) => s.key).sort().join(' ') === 'modular:band_of_badoon@brotherhood_of_badoon modular:ship_command@brotherhood_of_badoon',
     subjects.slice(1).map((s) => s.key).join(' '));
+  check('and not the villain\'s own set or the standard set among them',
+    layout !== null && !layout.modularSetCodes.includes('brotherhood_of_badoon') && !layout.modularSetCodes.includes('standard'));
+
+  const unknownScenario = { ...campaignPlay, scenarioCode: 'no_such_scenario' };
+  check('a scenario the template does not have resolves to nothing, not to a guess',
+    campaignLayoutOf(unknownScenario, run, [], index, realSets) === null);
+  const brokenRun = { id: 'run-x', templateJson: '{not json' };
+  check('an unreadable template resolves to nothing', campaignLayoutOf(campaignPlay, brokenRun, [], index, realSets) === null);
+  const fallback = subjectsOfPlay(campaignPlay, realSets, null);
+  check('and the rating then falls back to what the play says',
+    fallback.length === 1 && fallback[0].key === `scenario:${raw.scenarios[0].id}`, fallback.map((s) => s.key).join(' '));
 }
 
 // --- the record ------------------------------------------------------------------

@@ -146,6 +146,50 @@ const started = { id: 'e0', timestamp: 1, type: 'setup', templateId: 't', diffic
   check('a lose step ends the campaign as a defeat',
     state.finished === true && state.campaignLost === true && state.currentScenarioId === null,
     `finished=${state.finished} lost=${state.campaignLost}`);
+  check('and it waits on no choice', state.awaitingChoice === false);
+
+  // The same step behind a guard that does not hold falls through to the next.
+  const survived = fold(losing, [
+    { ...started, difficulty: 'expert' },
+    { id: 'e1', timestamp: 2, type: 'scenario_result', scenarioId: 's1', victory: true },
+    { id: 'e2', timestamp: 3, type: 'scenario_result', scenarioId: 's2', victory: true },
+  ]);
+  check('a guarded lose step that does not hold is skipped',
+    survived.finished === true && survived.campaignLost === false);
+}
+
+{
+  // A defeat that settles nothing and hands the table the choice — Fear No
+  // Evil's five scenarios. The scenario is not failed: no flag, no counter,
+  // and it is choosable again; moving on applies nothing because there is no
+  // `onContinue` to apply.
+  const open = {
+    ...template,
+    scenarios: [
+      ...template.scenarios.filter((s) => s.id !== 's1'),
+      {
+        id: 's1',
+        onVictory: { effects: [{ op: 'setflag', flag: 'beaten' }], next: [{ choose: true }] },
+        onDefeat: { effects: [], next: [{ choose: true }] },
+      },
+    ],
+  };
+  const lost = fold(open, [
+    started,
+    { id: 'e1', timestamp: 2, type: 'scenario_result', scenarioId: 's1', victory: false },
+  ]);
+  check('a defeat leading to a choice leaves the table choosing',
+    lost.awaitingChoice === true && lost.currentScenarioId === null && lost.finished === false);
+  check('with the scenario still choosable', choosableScenarios(open, lost).some((s) => s.id === 's1'));
+  check('and nothing marked against it', lost.flags.beaten?.s1 !== true && lost.counters.credits === 2);
+
+  const movedOn = fold(open, [
+    started,
+    { id: 'e1', timestamp: 2, type: 'scenario_result', scenarioId: 's1', victory: false },
+    { id: 'e2', timestamp: 3, type: 'continued', scenarioId: 's1', victory: false },
+  ]);
+  check('moving on from it changes nothing',
+    JSON.stringify(movedOn) === JSON.stringify(lost));
 }
 
 {

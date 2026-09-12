@@ -6,6 +6,7 @@
   import Briefing from './Briefing.svelte';
   import LongBreak from './LongBreak.svelte';
   import type { PausedGame, Play } from '../lib/records';
+  import { inCampaign } from '../lib/playQuery';
   import {
     discardPausedGame,
     loadPausedGame,
@@ -82,7 +83,11 @@
     const sub = liveQuery(async () => {
       const stars = await db.favouritePlays.orderBy('addedAt').reverse().toArray();
       const plays = await db.plays.bulkGet(stars.map((s) => s.playId));
-      return plays.filter((p): p is Play => p !== undefined && (p.deletedAt ?? null) === null);
+      // A campaign's scenario may be starred, but it is played again from
+      // its own campaign, and this list exists for the one-tap replay.
+      return plays.filter(
+        (p): p is Play => p !== undefined && (p.deletedAt ?? null) === null && !inCampaign(p),
+      );
     }).subscribe((rows) => {
       starred = rows;
     });

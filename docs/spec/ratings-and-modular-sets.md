@@ -152,9 +152,9 @@ see §8.3.*
 A campaign scenario is rated by its **card set**, not by the campaign's own
 scenario id, so a scenario played inside a campaign and the same scenario
 played on its own are one subject. The set follows from the villain by the
-same resolution `web/src/lib/replay.ts` `campaignLayoutOf` uses. Modular sets
-mandated by a campaign scenario are rated by the same pairing key as anywhere
-else.
+same resolution the campaign tracker uses (`web/src/lib/ratings.ts`
+`campaignLayoutOf`). Modular sets mandated by a campaign scenario are rated by
+the same pairing key as anywhere else.
 
 ### 2.3 The rating record — *Rule*
 

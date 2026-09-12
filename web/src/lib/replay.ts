@@ -1,12 +1,8 @@
-import type { CampaignRun, Play, SavedDeck } from './records';
-import type { CampaignEvent } from './campaign/types';
-import type { CardSet, IndexRow } from './types';
+import type { Play, SavedDeck } from './records';
+import type { CardSet } from './types';
 import type { Seat, Session } from './session.svelte';
 import { DIFFICULTIES, type DifficultyId } from './randomizer';
 import { seatsOf } from './plays';
-import { templateOf } from './campaign/store';
-import { fold } from './campaign/engine';
-import { encounterSetsOf, trackedSetCode } from './campaign/encounter';
 
 /**
  * Turning a game that was played into a game that is about to be.
@@ -30,11 +26,12 @@ import { encounterSetsOf, trackedSetCode } from './campaign/encounter';
  *   name that matches nothing is dropped rather than guessed at. A play that
  *   comes back with none says so on the setup screen.
  *
- * Only a play recorded from the setup page or from a draw comes back this
- * way. A campaign's scenario is logged under the campaign's own scenario id
- * (`s1_unus`, not a card set code) and the campaign's own difficulty word,
- * and neither is something the one-off setup can put on a table; a campaign
- * is played again from its own box.
+ * Only a play recorded from the setup page or from a draw is played again.
+ * A campaign's scenario is played again from its own campaign: it is logged
+ * under the campaign's own scenario id (`s1_musee`, not a card set code) and
+ * the campaign's own difficulty word, and the button is not offered on it.
+ * The ratings, which do need to know which card set such a play was, resolve
+ * that through the campaign's template in lib/ratings.
  */
 
 /** The line `buildPlay` writes, and the only thing this reads out of the notes. */
@@ -130,54 +127,6 @@ function modularCodesFrom(notes: string, sets: readonly CardSet[]): string[] {
   return codes;
 }
 
-/**
- * What a campaign's scenario looks like laid out on its own.
- *
- * A play from a campaign records the template's own scenario id — `s1_musee`
- * — which is not a card set and which the setup screen cannot offer. So the
- * button was hidden for those, which made every campaign scenario the one
- * kind of game that could not be played again, and the reason people would
- * most want to: the one they just lost.
- *
- * The template knows what was on the table. The villain follows from
- * `baseSetup` — or from the folded state, for a scenario that draws one from
- * a pool as the campaign goes — and the set follows from the villain, by the
- * same `trackedSetCode` the campaign tracker itself uses. The modular sets
- * are whatever the template shuffles in that the card database calls a
- * modular set: a template lists the villain's own set and the standard set in
- * the same breath, and neither belongs in the modular picker.
- *
- * Null when the run is gone or its template unreadable, in which case the
- * replay falls back to what the play says and the person picks the scenario.
- */
-export interface CampaignLayout {
-  readonly scenarioCode: string;
-  readonly modularSetCodes: readonly string[];
-}
-
-export function campaignLayoutOf(
-  play: Play,
-  run: CampaignRun,
-  events: readonly CampaignEvent[],
-  index: readonly IndexRow[],
-  sets: readonly CardSet[],
-): CampaignLayout | null {
-  const template = templateOf(run);
-  const scenario = template?.scenarios?.find((s) => s.id === play.scenarioCode) ?? null;
-  if (template === null || scenario === null) {
-    return null;
-  }
-  const setCode = trackedSetCode(scenario, fold(template, events), index);
-  if (setCode === null) {
-    return null;
-  }
-  const modular = new Set(sets.filter((s) => s.type === 'modular').map((s) => s.code));
-  return {
-    scenarioCode: setCode,
-    modularSetCodes: [...new Set(encounterSetsOf(scenario).filter((code) => modular.has(code)))],
-  };
-}
-
 export interface Replay {
   readonly session: Partial<Session>;
   /**
@@ -190,31 +139,19 @@ export interface Replay {
   readonly modularSetsUnknown: boolean;
 }
 
-export function replayOf(
-  play: Play,
-  decks: readonly SavedDeck[],
-  sets: readonly CardSet[],
-  /** For a campaign's scenario: what its template says was on the table. */
-  layout: CampaignLayout | null = null,
-): Replay {
+export function replayOf(play: Play, decks: readonly SavedDeck[], sets: readonly CardSet[]): Replay {
   const difficulty = difficultyOf(play.difficulty);
   const standard = isExpert(difficulty) && play.standardSet !== ''
     ? difficultyOf(play.standardSet)
     : null;
 
-  // The template first, then the field when the play has one, then the notes
-  // line for a play older than the field.
+  // The field when the play has one, the notes line for a play older than it.
   const recorded = (play.modularSets ?? '').split(',').map((c) => c.trim()).filter((c) => c !== '');
-  const modularSetCodes =
-    layout !== null
-      ? [...layout.modularSetCodes]
-      : recorded.length > 0
-        ? recorded
-        : modularCodesFrom(play.notes, sets);
+  const modularSetCodes = recorded.length > 0 ? recorded : modularCodesFrom(play.notes, sets);
 
-  const scenarioCode = layout?.scenarioCode ?? play.scenarioCode;
+  const scenarioCode = play.scenarioCode;
   // Named as the set is named where the set is known, so the setup screen and
-  // the game it will record agree; a campaign's own title belongs to it.
+  // the game it will record agree.
   const setName = sets.find((s) => s.code === scenarioCode)?.name;
 
   return {
@@ -226,8 +163,6 @@ export function replayOf(
       seats: seatsOf(play).map((hero) => seatFor(hero, decks)),
       modularSetCodes,
     },
-    // A template that lists none is a scenario that has none: known, not
-    // unknown.
-    modularSetsUnknown: layout === null && modularSetCodes.length === 0,
+    modularSetsUnknown: modularSetCodes.length === 0,
   };
 }

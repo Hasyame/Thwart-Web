@@ -137,11 +137,20 @@ export function villainAssignmentFor(
   const left = pool.filter((code) => !spent.has(code));
   const candidates = left.length > 0 ? left : pool;
 
-  // The recommended order is the pool's own — the list the book prints for a
-  // table meeting these five for the first time. Any other answer means at
-  // random.
+  /*
+   * The recommended order is the pool's own — the list the book prints for a
+   * table meeting these five for the first time. Its last entry is "Purple
+   * Man or Typhoid Mary", one line for two villains, so while both are left
+   * the order says nothing between them and the app draws; the one not drawn
+   * is the last. Any other answer means at random throughout. The phone's
+   * `ensureVillainAssignment` reads the book the same way.
+   */
   const recommended = state.choices[VILLAIN_ORDER_CHOICE] === VILLAIN_ORDER_RECOMMENDED;
-  const villain = recommended ? candidates[0] : deal(candidates, 1, random)[0];
+  const tail = pool.slice(-2);
+  const bothOfTheTailLeft =
+    candidates.length === tail.length && tail.every((code) => candidates.includes(code));
+  const villain =
+    recommended && !bothOfTheTailLeft ? candidates[0] : deal(candidates, 1, random)[0];
   if (villain === undefined) {
     return null;
   }

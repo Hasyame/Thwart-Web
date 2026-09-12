@@ -10,7 +10,9 @@ Live at **<https://thwart.app>**.
 The Android app is the reference implementation and this is brought to it,
 except in the few places where an audit found Android wrong and recorded it.
 [`docs/spec/statistics.md`](docs/spec/statistics.md) is the shared source of
-truth for what every number means, written to be read by both.
+truth for what every number means, written to be read by both;
+[`docs/spec/campaigns.md`](docs/spec/campaigns.md) records what a campaign
+template may say and the rulebook readings behind Fear No Evil.
 
 ## What it does
 
@@ -65,11 +67,12 @@ truth for what every number means, written to be read by both.
   an apology is worse than no menu entry.
 - **History.** Every game and campaign run, filtered by hero, aspect, scenario,
   result, campaign or date. The filters live in the URL, so a filtered view can
-  be bookmarked and shared and comes back the same after a reload. Any game can
-  be **played again** — laid out on the setup screen with the same scenario,
-  difficulty, heroes and modular sets, a campaign's scenario included, resolved
-  through its template — and **starred**, to find in one filter and to see
-  listed on the setup screen with a one-tap replay.
+  be bookmarked and shared and comes back the same after a reload. A game
+  played from the setup page or from a draw can be **played again** — laid
+  out on the setup screen with the same scenario, difficulty, heroes and
+  modular sets — and **starred**, to find in one filter and to see listed on
+  the setup screen with a one-tap replay. A campaign's scenario is played
+  again from its own campaign.
 - **Difficulty ratings.** After a game, and from its page in the history, you
   can say how hard the scenario was and how hard each modular set was *with
   that scenario*, on a six-word scale from effortless to impossible; a finished
@@ -193,7 +196,7 @@ the real modules:
 | `npm run test:device` | Which rows signing out takes, and which it leaves |
 | `npm run test:engine-sync` | Campaign runs through the sync path |
 | `npm run test:nav` | That every destination is reachable, in both arrangements |
-| `npm run test:replay` | That a game played again is the game that was played, a campaign's included |
+| `npm run test:replay` | That a game played again is the game that was played |
 | `npm run test:randomizer` | The draw with extra modular sets: exact count, no duplicate, the scenario's own pool |
 | `npm run test:ratings` | That a rating cites the right subject and game, a campaign's scenario resolved, and that a refused one does not stall the cursor |
 | `npm run test:bgg` | That the BGG comment is the phone's, line for line |
@@ -205,6 +208,7 @@ the real modules:
 | `npm run test:text` | Campaign text substitution |
 | `npm run test:deal` | Campaign dealing |
 | `npm run test:tracker` | The campaign tracker |
+| `npm run test:fne` | Fear No Evil played through against the shipped template: a lost scenario is not failed, the Kingpin defeat on Expert, the lost campaign |
 | `npm run test:setup` | Scenario setup text, in both languages |
 | `npm run test:encounter` | The ported tracker rules against the real card database |
 | `npm run test:paused` | That a game put away comes back the same |

@@ -7,7 +7,7 @@
   import { setupSteps } from '../lib/schemeSetup';
   import { endGame, formatElapsed, resumeSession, session } from '../lib/session.svelte';
   import { evaluate } from '../lib/campaign/conditions';
-  import { fold } from '../lib/campaign/engine';
+  import { fold, type HeroCardStats } from '../lib/campaign/engine';
   import { choosableScenarios } from '../lib/campaign/rules';
   import { buildCampaignPlay } from '../lib/campaign/play';
   import { syncAfter } from '../lib/sync/auto.svelte';
@@ -27,6 +27,7 @@
     type CampaignEvent,
     type CampaignState,
     type LocalizedText,
+    type Outcome,
   } from '../lib/campaign/types';
   import {
     acknowledgeEnvironments,
@@ -103,8 +104,55 @@
     reloadToken += 1;
   };
 
+  /*
+   * Each hero's printed health, from the card database, so a counter capped at
+   * `heroCard.health` is capped here and not only in the tests. Fear No Evil
+   * on Expert carries hit points from one scenario to the next, on a victory
+   * and on a defeat alike, and a table that types 13 for a hero printed 12
+   * gets 12.
+   *
+   * The index carries no health, so the hero cards are loaded, by pack. Read
+   * from the setup event rather than the folded state, since the fold is what
+   * these feed; until they arrive the fold runs uncapped, and re-runs once
+   * they do.
+   */
+  let heroStats = $state.raw<Readonly<Record<string, HeroCardStats>>>({});
+
+  $effect(() => {
+    const setup = events.find((event) => event.type === 'setup');
+    if (setup === undefined) {
+      return;
+    }
+    const heroes = setup.heroes;
+    const packs = heroes
+      .map((hero) => index.find((row) => row.code === hero.heroCardCode)?.packCode)
+      .filter((pack): pack is string => pack !== undefined);
+    if (packs.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    void loadCardsByCode(cardLocale, packs)
+      .then((byCode) => {
+        if (!cancelled) {
+          heroStats = Object.fromEntries(
+            heroes.map((hero) => [
+              hero.id,
+              { heroId: hero.id, printedHealth: byCode.get(hero.heroCardCode)?.health ?? null },
+            ]),
+          );
+        }
+      })
+      .catch(() => {
+        // Left uncapped: a card file that failed to load is not a reason to
+        // refuse the campaign.
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
   const campaign = $derived<CampaignState | null>(
-    template === null ? null : fold(template, events),
+    template === null ? null : fold(template, events, heroStats),
   );
 
   const scenario = $derived(currentScenario(template, campaign));
@@ -131,12 +179,18 @@
 
   const setName = (code: string): string => setNames.get(code) ?? code;
 
+  /*
+   * The text is about the current scenario — or, on a result page, the one
+   * just played: a Fear No Evil defeat hands the table the choice, so nothing
+   * is current while its outcome is on screen, and the message's `{villain}`
+   * came up empty ("vous a échappé" with nobody named).
+   */
   const text = $derived<TextContext>({
     cardName,
-    drawnFor: (drawId) =>
-      scenario === null || campaign === null
-        ? []
-        : (campaign.draws[scenario.id]?.[drawId] ?? []),
+    drawnFor: (drawId) => {
+      const about = scenario?.id ?? campaign?.completedScenarios.at(-1)?.scenarioId ?? null;
+      return about === null || campaign === null ? [] : (campaign.draws[about]?.[drawId] ?? []);
+    },
   });
 
   // --- the app's own draws --------------------------------------------------
@@ -444,14 +498,42 @@
     }
   }
 
-  /** Whether the campaign says what continuing past this defeat costs. */
+  /** The outcome the last result was resolved by, on the template as it stands. */
+  const lastOutcome = $derived.by((): Outcome | null => {
+    if (lastResult === null) {
+      return null;
+    }
+    const played = (template?.scenarios ?? []).find((s) => s.id === lastResult.scenarioId);
+    return (lastResult.victory ? played?.onVictory : played?.onDefeat) ?? null;
+  });
+
+  /**
+   * Whether the campaign lets the table move on from this defeat.
+   *
+   * Either it says what moving on costs (`onContinue`), or moving on costs
+   * nothing and the next step is the players' choice. Fear No Evil is the
+   * second kind: losing a scenario does not fail it (rulebook p.8), the
+   * scenario stays open against the same villain, and the table picks what to
+   * play next — so a defeat with nothing to settle still has to offer a way
+   * to the choice.
+   */
   const canContinue = $derived(
     lastResult === null ||
       lastResult.victory ||
-      (
-        (template?.scenarios ?? []).find((s) => s.id === lastResult.scenarioId)?.onDefeat
-          ?.onContinue ?? []
-      ).length > 0,
+      (lastOutcome?.onContinue ?? []).length > 0 ||
+      (lastOutcome?.next ?? []).some((step) => step.choose === true),
+  );
+
+  /**
+   * True when moving on from this defeat settles nothing: the scenario is
+   * left as it was, to be come back to. Said under the button, because the
+   * word "continue" on a defeat page otherwise reads as giving up on it.
+   */
+  const continueLeavesOpen = $derived(
+    lastResult !== null &&
+      !lastResult.victory &&
+      (lastOutcome?.onContinue ?? []).length === 0 &&
+      (lastOutcome?.next ?? []).some((step) => step.choose === true),
   );
 
   async function moveOn(): Promise<void> {
@@ -480,13 +562,7 @@
   );
 
   /** The message the outcome closes on, resolved against the run as it stands. */
-  const outcomeMessage = $derived.by((): LocalizedText | null => {
-    if (lastResult === null || template === null) {
-      return null;
-    }
-    const played = (template.scenarios ?? []).find((s) => s.id === lastResult.scenarioId);
-    return (lastResult.victory ? played?.onVictory?.message : played?.onDefeat?.message) ?? null;
-  });
+  const outcomeMessage = $derived(lastOutcome?.message ?? null);
 
   /**
    * A readable name for a counter the template never labelled.
@@ -663,6 +739,11 @@
           {/if}
           <button class="btn" type="button" onclick={onBack}>{t.campaignTakeABreak}</button>
         </div>
+        {#if canContinue && continueLeavesOpen}
+          <!-- Not a failure. The scenario is left as it stands, against the
+               same villain, for whenever the table comes back to it. -->
+          <p class="muted note continue-note">{t.campaignContinueLeavesOpen}</p>
+        {/if}
       </section>
     {:else if page === 'market'}
       <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
@@ -902,6 +983,11 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-4);
+  }
+
+  .continue-note {
+    margin: var(--space-2) 0 0;
+    max-width: var(--prose-max);
   }
 
   /* A text link rather than a button: giving up a campaign is not a thing to

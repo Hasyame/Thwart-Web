@@ -1,8 +1,12 @@
 import type { CampaignRun, Play, Rating } from './records';
-import type { CardSet } from './types';
+import type { CampaignEvent } from './campaign/types';
+import type { CardSet, IndexRow } from './types';
 import { db } from './db';
-import { replayOf, type CampaignLayout } from './replay';
+import { replayOf } from './replay';
 import { seatsOf } from './plays';
+import { templateOf } from './campaign/store';
+import { fold } from './campaign/engine';
+import { encounterSetsOf, trackedSetCode } from './campaign/encounter';
 
 /**
  * Difficulty ratings, on the client.
@@ -54,27 +58,73 @@ export const campaignSubject = (templateId: string): RatingSubject => ({
 export const modularOverallKey = (setCode: string): string => `modular:${setCode}`;
 
 /**
+ * What a campaign's scenario was laid out as, by card set.
+ *
+ * A play from a campaign records the template's own scenario id — `s1_musee`
+ * — which is not a card set, and a rating is of a card set (spec §2.3). The
+ * template knows what was on the table. The villain follows from `baseSetup`
+ * — or from the folded state, for a scenario that draws one from a pool as
+ * the campaign goes — and the set follows from the villain, by the same
+ * `trackedSetCode` the campaign tracker itself uses. The modular sets are
+ * whatever the template shuffles in that the card database calls a modular
+ * set: a template lists the villain's own set and the standard set in the
+ * same breath, and neither is rated as a pairing.
+ *
+ * Null when the run is gone, its template unreadable, or the scenario's set
+ * unresolvable, in which case the play is rated by what it says itself.
+ */
+export interface CampaignLayout {
+  readonly scenarioCode: string;
+  readonly modularSetCodes: readonly string[];
+}
+
+export function campaignLayoutOf(
+  play: Play,
+  run: CampaignRun,
+  events: readonly CampaignEvent[],
+  index: readonly IndexRow[],
+  sets: readonly CardSet[],
+): CampaignLayout | null {
+  const template = templateOf(run);
+  const scenario = template?.scenarios?.find((s) => s.id === play.scenarioCode) ?? null;
+  if (template === null || scenario === null) {
+    return null;
+  }
+  const setCode = trackedSetCode(scenario, fold(template, events), index);
+  if (setCode === null) {
+    return null;
+  }
+  const modular = new Set(sets.filter((s) => s.type === 'modular').map((s) => s.code));
+  return {
+    scenarioCode: setCode,
+    modularSetCodes: [...new Set(encounterSetsOf(scenario).filter((code) => modular.has(code)))],
+  };
+}
+
+/**
  * What a completed game can be rated on: its scenario, then each modular set
  * that was on the table, paired with that scenario.
  *
- * Resolved through `replayOf`, which already knows how to turn a play back
- * into what was laid out — a campaign's scenario id into its card set, the
- * modular sets out of the field, the notes line or the template. So a rating
- * and a replay always agree about what the game was.
+ * A one-off game is read back through `replayOf`, which already knows how to
+ * turn a play into what was laid out — the modular sets out of the field or
+ * the notes line — so a rating and a replay agree about what the game was. A
+ * campaign's scenario comes with its `layout`, resolved above, since the
+ * replay has no reason to know a campaign's ids.
  */
 export function subjectsOfPlay(
   play: Play,
   sets: readonly CardSet[],
   layout: CampaignLayout | null = null,
 ): readonly RatingSubject[] {
-  const laid = replayOf(play, [], sets, layout).session;
-  const scenario = laid.scenarioCode ?? play.scenarioCode;
+  const laid = replayOf(play, [], sets).session;
+  const scenario = layout?.scenarioCode ?? laid.scenarioCode ?? play.scenarioCode;
   if (scenario === '') {
     return [];
   }
+  const modularSetCodes = layout === null ? (laid.modularSetCodes ?? []) : layout.modularSetCodes;
   return [
     scenarioSubject(scenario),
-    ...(laid.modularSetCodes ?? []).map((code) => modularSubject(code, scenario)),
+    ...modularSetCodes.map((code) => modularSubject(code, scenario)),
   ];
 }
 

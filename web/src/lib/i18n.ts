@@ -513,6 +513,8 @@ export interface Strings {
   readonly campaignDefeatRecorded: string;
   readonly campaignGoToNext: (name: string) => string;
   readonly campaignRetry: string;
+  /** Under "continue" on a defeat that settles nothing: the scenario is not failed. */
+  readonly campaignContinueLeavesOpen: string;
   readonly campaignTakeABreak: string;
   readonly campaignStopCampaign: string;
   readonly campaignChooseScenario: string;
@@ -1252,6 +1254,8 @@ const STRINGS: Record<Locale, Strings> = {
     campaignDefeatRecorded: 'Defeat recorded',
     campaignGoToNext: (name) => `Go to ${name}`,
     campaignRetry: 'I can beat you! (retry)',
+    campaignContinueLeavesOpen:
+      'Moving on does not fail this scenario. It stays open, against the same villain, for whenever you come back to it.',
     campaignTakeABreak: 'Take a break',
     campaignStopCampaign: 'Stop the campaign',
     campaignChooseScenario: 'Which scenario next?',
@@ -2043,6 +2047,8 @@ const STRINGS: Record<Locale, Strings> = {
     campaignDefeatRecorded: 'Défaite enregistrée',
     campaignGoToNext: (name) => `Aller à ${name}`,
     campaignRetry: 'Je peux le battre ! (rejouer)',
+    campaignContinueLeavesOpen:
+      'Continuer ne fait pas échouer ce scénario. Il reste ouvert, contre le même méchant, pour quand vous y reviendrez.',
     campaignTakeABreak: 'Faire une pause',
     campaignStopCampaign: 'Arrêter la campagne',
     campaignChooseScenario: 'Quel scénario ensuite ?',
