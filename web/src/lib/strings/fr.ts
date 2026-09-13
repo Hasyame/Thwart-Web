@@ -92,6 +92,7 @@ export const fr: Strings = {
   noResultsHint: 'Essayez moins de mots, ou effacez les filtres.',
   resultCount: (shown: number, total: number) =>
     shown === total ? `${total} cartes` : `${shown} cartes sur ${total}`,
+  showMore: (n) => `Afficher ${n} de plus`,
   back: 'Retour à la recherche',
   cardNotFound: "Cette carte n'est pas dans la base.",
   traits: 'Traits',

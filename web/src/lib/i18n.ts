@@ -95,6 +95,8 @@ export interface Strings {
   readonly noResults: string;
   readonly noResultsHint: string;
   readonly resultCount: (shown: number, total: number) => string;
+  /** The button under a capped list, naming how many more it will show. */
+  readonly showMore: (n: number) => string;
   readonly back: string;
   readonly cardNotFound: string;
   readonly traits: string;

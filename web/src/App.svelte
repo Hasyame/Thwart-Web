@@ -71,7 +71,14 @@
   } from './lib/preferences';
 
   /** How many results to draw. Four thousand rows in the DOM helps nobody. */
-  const RESULT_LIMIT = 200;
+  /*
+   * Rows shown at once. Sixty, then sixty more on request: two hundred rows
+   * of cards was the largest single piece of work between a phone and its
+   * first paint, and nobody reads two hundred rows before typing. The count
+   * goes back to the first page whenever the search changes.
+   */
+  const RESULT_PAGE = 60;
+  let resultLimit = $state(RESULT_PAGE);
 
   const BASE = import.meta.env.BASE_URL;
 
@@ -193,7 +200,7 @@
     searchCards(index, {
       query,
       filters,
-      limit: RESULT_LIMIT,
+      limit: resultLimit,
       collection: { ownedPacks: ownedPacks.value, favourites: favourites.value },
     }),
   );
@@ -899,8 +906,14 @@
       {filters}
       {index}
       {packs}
-      onQuery={(next) => (query = next)}
-      onFilters={(next) => (filters = next)}
+      onQuery={(next) => {
+        query = next;
+        resultLimit = RESULT_PAGE;
+      }}
+      onFilters={(next) => {
+        filters = next;
+        resultLimit = RESULT_PAGE;
+      }}
     />
 
     {#if query.trim() === '' && activeFilterCount(filters) === 0}
@@ -943,6 +956,17 @@
           />
         {/each}
       </ul>
+      {#if results.total > results.rows.length}
+        <p class="more">
+          <button
+            type="button"
+            class="btn"
+            onclick={() => (resultLimit += RESULT_PAGE)}
+          >
+            {t.showMore(Math.min(RESULT_PAGE, results.total - results.rows.length))}
+          </button>
+        </p>
+      {/if}
     {/if}
   {/if}
 </main>
@@ -1019,8 +1043,15 @@
 </footer>
 
 <style>
+  /*
+   * A whole viewport, so the footer is never in the first screen. It was:
+   * while the card index loaded, the page was a short notice with the footer
+   * under it, and the footer then jumped a screen down when the cards came
+   * -- a layout shift of 0.26 that Lighthouse scored as the page's worst
+   * fault. Off-screen, nothing it does is a shift.
+   */
   main {
-    min-height: 60vh;
+    min-height: 100dvh;
   }
 
   .notice {
@@ -1047,6 +1078,12 @@
   .count {
     font-size: var(--text-sm);
     margin: 0 0 var(--space-3);
+  }
+
+  .more {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-4) 0 0;
   }
 
   /* Small and out of the way: a line of welcome, not a landing page. */

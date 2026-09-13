@@ -92,6 +92,7 @@ export const en: Strings = {
   noResultsHint: 'Try fewer words, or clear the filters.',
   resultCount: (shown: number, total: number) =>
     shown === total ? `${total} cards` : `${shown} of ${total} cards`,
+  showMore: (n) => `Show ${n} more`,
   back: 'Back to search',
   cardNotFound: 'That card is not in the database.',
   traits: 'Traits',

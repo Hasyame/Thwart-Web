@@ -155,6 +155,8 @@ export interface SearchResult {
   readonly total: number;
 }
 
+const byName = new Intl.Collator();
+
 export function searchCards(
   index: readonly IndexRow[],
   options: SearchOptions,
@@ -167,12 +169,15 @@ export function searchCards(
     (row) => matchesFilters(row, options.filters, collection) && matchesTokens(row, tokens),
   );
 
+  // A collator, not localeCompare: the same order, and an order of magnitude
+  // cheaper over the fifty thousand comparisons a sort of the whole index
+  // makes, which was a visible part of the first paint on a phone.
   const sorted = [...matched].sort((a, b) => {
     const byRank = rank(a, joined) - rank(b, joined);
     if (byRank !== 0) {
       return byRank;
     }
-    return a.name.localeCompare(b.name);
+    return byName.compare(a.name, b.name);
   });
 
   return { rows: sorted.slice(0, options.limit), total: sorted.length };
