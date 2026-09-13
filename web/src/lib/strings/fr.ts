@@ -86,6 +86,7 @@ export const fr: Strings = {
   clearFilters: (active) => `Effacer ${active} filtre${active === 1 ? '' : 's'}`,
   loading: 'Chargement de la base de cartes…',
   loadError: 'Impossible de charger la base de cartes.',
+  pageLoadError: 'Impossible de charger cette page. Rechargez pour obtenir la version actuelle du site.',
   retry: 'Réessayer',
   noResults: 'Aucune carte ne correspond.',
   noResultsHint: 'Essayez moins de mots, ou effacez les filtres.',

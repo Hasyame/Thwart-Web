@@ -89,6 +89,8 @@ export interface Strings {
   readonly clearFilters: (active: number) => string;
   readonly loading: string;
   readonly loadError: string;
+  /** A page's own chunk did not arrive. Reloading fetches the current build. */
+  readonly pageLoadError: string;
   readonly retry: string;
   readonly noResults: string;
   readonly noResultsHint: string;

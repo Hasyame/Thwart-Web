@@ -649,24 +649,56 @@
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {packs} {sets} {storageOk} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'randomizer'}
     {#await RandomizerPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {sets} {index} {storageOk} onPlay={playDraw} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'versus'}
     {#await VersusPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'play'}
     {#await PlayPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {sets} {index} {uiLocale} {cardLocale} {storageOk} onReplay={(play) => void replay(play)} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'hub'}
     <PlayHub
@@ -691,30 +723,70 @@
         subjectsOf={ratingSubjectsOf}
         setNames={setNames}
       />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'stats'}
     {#await StatsPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {index} {storageOk} base={BASE} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'campaigns'}
     {#await CampaignsPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'account'}
     {#await AccountPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {uiLocale} {storageOk} initialMode={accountMode} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'bgg'}
     {#await BggPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {uiLocale} {storageOk} onBack={() => (sheetOpen = true)} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'notFound'}
     <!-- nginx already answered this address with a 404; this is what the
@@ -747,12 +819,28 @@
         token={route.token}
         onDone={() => navigate({ name: 'account' })}
       />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'rules'}
     {#await RulesPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
       <Page {t} {cardLocale} />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'decks'}
     {#await DecksPage()}
@@ -766,6 +854,14 @@
         onOpen={(id) => navigate({ name: 'deck', id })}
         onEdit={(id) => navigate({ name: 'deck', id, edit: true })}
       />
+    {:catch}
+      <!-- The chunk did not arrive: a connection that dropped, or a tab
+           open across a release whose files it was built against are
+           gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
     {/await}
   {:else if route.name === 'deck'}
     {@const deckId = route.id}
@@ -786,6 +882,14 @@
           onShelf={() => navigate({ name: 'decks' })}
           cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
         />
+      {:catch}
+        <!-- The chunk did not arrive: a connection that dropped, or a tab
+             open across a release whose files it was built against are
+             gone. A reload fetches the current build. -->
+        <div class="notice surface">
+          <p>{t.loadError}</p>
+          <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+        </div>
       {/await}
     {/key}
   {:else}

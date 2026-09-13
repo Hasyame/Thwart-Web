@@ -86,6 +86,7 @@ export const en: Strings = {
   clearFilters: (active) => `Clear ${active} filter${active === 1 ? '' : 's'}`,
   loading: 'Loading the card database…',
   loadError: 'The card database could not be loaded.',
+  pageLoadError: 'This page could not be loaded. Reload to get the current version of the site.',
   retry: 'Retry',
   noResults: 'No cards match.',
   noResultsHint: 'Try fewer words, or clear the filters.',
