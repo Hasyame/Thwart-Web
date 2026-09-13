@@ -887,7 +887,7 @@
              open across a release whose files it was built against are
              gone. A reload fetches the current build. -->
         <div class="notice surface">
-          <p>{t.loadError}</p>
+          <p>{t.pageLoadError}</p>
           <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
         </div>
       {/await}
