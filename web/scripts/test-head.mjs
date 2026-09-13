@@ -10,7 +10,8 @@
  */
 import { headFor, SITE_ORIGIN } from '../src/lib/head.ts';
 import { pathForRoute } from '../src/lib/router.ts';
-import { strings } from '../src/lib/i18n.ts';
+import { en } from '../src/lib/strings/en.ts';
+import { fr } from '../src/lib/strings/fr.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -20,8 +21,6 @@ function check(label, ok, detail = '') {
   }
 }
 
-const en = strings('en');
-const fr = strings('fr');
 const pathOf = (route) => pathForRoute(route, '');
 const head = (route, t = en, name = null) => headFor(route, t, pathOf, name);
 

@@ -3,28 +3,36 @@
   import SearchControls from './components/SearchControls.svelte';
   import CardRow from './components/CardRow.svelte';
   import CardDetail from './components/CardDetail.svelte';
-  import CollectionPage from './components/CollectionPage.svelte';
-  import RandomizerPage from './components/RandomizerPage.svelte';
-  import VersusPage from './components/VersusPage.svelte';
-  import DecksPage from './components/DecksPage.svelte';
-  import DeckPage from './components/DeckPage.svelte';
-  import PlayPage from './components/PlayPage.svelte';
-  import StatsPage from './components/StatsPage.svelte';
-  import CampaignsPage from './components/CampaignsPage.svelte';
   import CardWindow from './components/CardWindow.svelte';
   import CardPeek from './components/CardPeek.svelte';
-  import AccountPage from './components/AccountPage.svelte';
-  import BggPage from './components/BggPage.svelte';
   import type { FormMode } from './components/SignInForm.svelte';
   import AccountMenu from './components/AccountMenu.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import MoreSheet from './components/MoreSheet.svelte';
-  import VerifyPage from './components/VerifyPage.svelte';
-  import HistoryPage from './components/HistoryPage.svelte';
-  import RulesPage from './components/RulesPage.svelte';
+  import { lazy, warm } from './lib/lazy';
+
+  /*
+   * Every page but the card search is its own chunk, fetched when first
+   * opened: the shell and the search are what a first visit needs, and the
+   * campaign engine or the deck editor should not stand between a visitor
+   * and the first card. lib/lazy has the reasons and the offline story.
+   */
+  const CollectionPage = lazy(() => import('./components/CollectionPage.svelte'));
+  const RandomizerPage = lazy(() => import('./components/RandomizerPage.svelte'));
+  const VersusPage = lazy(() => import('./components/VersusPage.svelte'));
+  const DecksPage = lazy(() => import('./components/DecksPage.svelte'));
+  const DeckPage = lazy(() => import('./components/DeckPage.svelte'));
+  const PlayPage = lazy(() => import('./components/PlayPage.svelte'));
+  const StatsPage = lazy(() => import('./components/StatsPage.svelte'));
+  const CampaignsPage = lazy(() => import('./components/CampaignsPage.svelte'));
+  const AccountPage = lazy(() => import('./components/AccountPage.svelte'));
+  const BggPage = lazy(() => import('./components/BggPage.svelte'));
+  const VerifyPage = lazy(() => import('./components/VerifyPage.svelte'));
+  const HistoryPage = lazy(() => import('./components/HistoryPage.svelte'));
+  const RulesPage = lazy(() => import('./components/RulesPage.svelte'));
 
   import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './lib/types';
-  import { strings } from './lib/i18n';
+  import { loadStrings, warmStrings, type Strings } from './lib/i18n';
   import { loadCard, loadIndex, loadMeta, loadPacks, loadSets } from './lib/data';
   import { db, storageAvailable, toggleFavourite as writeFavourite } from './lib/db';
   import { liveQuery } from 'dexie';
@@ -67,7 +75,22 @@
 
   const BASE = import.meta.env.BASE_URL;
 
+  /**
+   * The strings for the interface language, handed in by main.ts, which
+   * fetched them before mounting so the first frame is already in the right
+   * language. Switching fetches the other language's chunk and swaps.
+   */
+  interface Props {
+    initialStrings: Strings;
+  }
+
+  const { initialStrings }: Props = $props();
+
   let uiLocale = $state<Locale>(loadUiLocale());
+  // Deliberately the initial value: the prop is the words at mount, and from
+  // then on `t` is swapped by setUiLocale rather than re-read from the prop.
+  // svelte-ignore state_referenced_locally
+  let t = $state.raw<Strings>(initialStrings);
   let cardLocale = $state<Locale>(loadCardLocale(loadUiLocale()));
   let theme = $state<ThemeChoice>(loadTheme());
   let grouped = $state<boolean>(loadGroupedPlay());
@@ -161,8 +184,6 @@
     });
     return () => subscription.unsubscribe();
   });
-
-  const t = $derived(strings(uiLocale));
 
   const packNames = $derived(
     new Map(packs.map((pack) => [pack.code, pack.name] as const)),
@@ -379,9 +400,18 @@
   }
 
   function setUiLocale(locale: Locale): void {
-    uiLocale = locale;
     saveUiLocale(locale);
+    // The words first, then the language: a frame in the new language with
+    // the old words would read as a mistake.
+    void loadStrings(locale).then((next) => {
+      t = next;
+      uiLocale = locale;
+    });
   }
+
+  $effect(() => {
+    warmStrings(uiLocale);
+  });
 
   /*
    * The document's title, description and canonical, per page and in the
@@ -398,6 +428,16 @@
 
   $effect(() => {
     configureCardViewer(index, cardLocale);
+  });
+
+  // Once the shell is up, the rest in idle time, so a tap a few seconds in
+  // finds its page already here.
+  $effect(() => {
+    if (loading) {
+      return;
+    }
+    warm([PlayPage, CampaignsPage, DecksPage, DeckPage, CollectionPage, RandomizerPage,
+      HistoryPage, StatsPage, VersusPage, RulesPage, AccountPage, BggPage, VerifyPage]);
   });
 
   function setCardLocale(locale: Locale): void {
@@ -605,13 +645,29 @@
       />
     {/if}
   {:else if route.name === 'collection'}
-    <CollectionPage {t} {packs} {sets} {storageOk} />
+    {#await CollectionPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {packs} {sets} {storageOk} />
+    {/await}
   {:else if route.name === 'randomizer'}
-    <RandomizerPage {t} {sets} {index} {storageOk} onPlay={playDraw} />
+    {#await RandomizerPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {sets} {index} {storageOk} onPlay={playDraw} />
+    {/await}
   {:else if route.name === 'versus'}
-    <VersusPage {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
+    {#await VersusPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {cardLocale} {sets} {packs} {index} ownedPacks={ownedPacks.value} />
+    {/await}
   {:else if route.name === 'play'}
-    <PlayPage {t} {sets} {index} {uiLocale} {cardLocale} {storageOk} onReplay={(play) => void replay(play)} />
+    {#await PlayPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {sets} {index} {uiLocale} {cardLocale} {storageOk} onReplay={(play) => void replay(play)} />
+    {/await}
   {:else if route.name === 'hub'}
     <PlayHub
       {t}
@@ -621,25 +677,45 @@
       hidden={hiddenDestinations}
     />
   {:else if route.name === 'history'}
-    <HistoryPage
-      {t}
-      {uiLocale}
-      {index}
-      {storageOk}
-      filter={route.filter ?? {}}
-      onFilter={(filter) => navigate({ name: 'history', filter })}
-      onReplay={(play) => void replay(play)}
-      subjectsOf={ratingSubjectsOf}
-      setNames={setNames}
-    />
+    {#await HistoryPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page
+        {t}
+        {uiLocale}
+        {index}
+        {storageOk}
+        filter={route.filter ?? {}}
+        onFilter={(filter) => navigate({ name: 'history', filter })}
+        onReplay={(play) => void replay(play)}
+        subjectsOf={ratingSubjectsOf}
+        setNames={setNames}
+      />
+    {/await}
   {:else if route.name === 'stats'}
-    <StatsPage {t} {index} {storageOk} base={BASE} />
+    {#await StatsPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {index} {storageOk} base={BASE} />
+    {/await}
   {:else if route.name === 'campaigns'}
-    <CampaignsPage {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
+    {#await CampaignsPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
+    {/await}
   {:else if route.name === 'account'}
-    <AccountPage {t} {uiLocale} {storageOk} initialMode={accountMode} />
+    {#await AccountPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {uiLocale} {storageOk} initialMode={accountMode} />
+    {/await}
   {:else if route.name === 'bgg'}
-    <BggPage {t} {uiLocale} {storageOk} onBack={() => (sheetOpen = true)} />
+    {#await BggPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {uiLocale} {storageOk} onBack={() => (sheetOpen = true)} />
+    {/await}
   {:else if route.name === 'notFound'}
     <!-- nginx already answered this address with a 404; this is what the
          status looks like. -->
@@ -662,39 +738,55 @@
       </p>
     </section>
   {:else if route.name === 'verify'}
-    <VerifyPage
-      {t}
-      {uiLocale}
-      token={route.token}
-      onDone={() => navigate({ name: 'account' })}
-    />
+    {#await VerifyPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page
+        {t}
+        {uiLocale}
+        token={route.token}
+        onDone={() => navigate({ name: 'account' })}
+      />
+    {/await}
   {:else if route.name === 'rules'}
-    <RulesPage {t} {cardLocale} />
+    {#await RulesPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {cardLocale} />
+    {/await}
   {:else if route.name === 'decks'}
-    <DecksPage
-      {t}
-      {index}
-      {cardLocale}
-      {storageOk}
-      onOpen={(id) => navigate({ name: 'deck', id })}
-      onEdit={(id) => navigate({ name: 'deck', id, edit: true })}
-    />
+    {#await DecksPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page
+        {t}
+        {index}
+        {cardLocale}
+        {storageOk}
+        onOpen={(id) => navigate({ name: 'deck', id })}
+        onEdit={(id) => navigate({ name: 'deck', id, edit: true })}
+      />
+    {/await}
   {:else if route.name === 'deck'}
     {@const deckId = route.id}
     {#key deckId}
-      <DeckPage
-        {t}
-        {index}
-        {packs}
-        {cardLocale}
-        {storageOk}
-        id={deckId}
-        edit={route.edit === true}
-        onView={() => navigate({ name: 'deck', id: deckId })}
-        onEdit={() => navigate({ name: 'deck', id: deckId, edit: true })}
-        onShelf={() => navigate({ name: 'decks' })}
-        cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
-      />
+      {#await DeckPage()}
+        <p class="notice muted">{t.loading}</p>
+      {:then { default: Page }}
+        <Page
+          {t}
+          {index}
+          {packs}
+          {cardLocale}
+          {storageOk}
+          id={deckId}
+          edit={route.edit === true}
+          onView={() => navigate({ name: 'deck', id: deckId })}
+          onEdit={() => navigate({ name: 'deck', id: deckId, edit: true })}
+          onShelf={() => navigate({ name: 'decks' })}
+          cardHref={(code) => pathForRoute({ name: 'card', code }, BASE)}
+        />
+      {/await}
     {/key}
   {:else}
     <SearchControls

@@ -1,6 +1,8 @@
 import { mount } from 'svelte';
 import './app.css';
 import App from './App.svelte';
+import { loadStrings } from './lib/i18n';
+import { loadUiLocale } from './lib/preferences';
 
 /**
  * Ask the browser to keep what we store.
@@ -56,9 +58,16 @@ if (target === null) {
   throw new Error('index.html is missing the #app element');
 }
 
-// The document carries the home page's words for whoever reads it without
-// running this (see index.html). `mount` appends rather than replaces, so
-// they are taken out first; the app writes its own.
-target.replaceChildren();
-
-export default mount(App, { target });
+/*
+ * The interface language's strings come first, as their own chunk, so the
+ * first frame is already in the right language and the other language is
+ * never downloaded by somebody who does not switch.
+ *
+ * The document carries the home page's words for whoever reads it without
+ * running this (see index.html). `mount` appends rather than replaces, so
+ * they are taken out first; the app writes its own.
+ */
+void loadStrings(loadUiLocale()).then((initialStrings) => {
+  target.replaceChildren();
+  mount(App, { target, props: { initialStrings } });
+});
