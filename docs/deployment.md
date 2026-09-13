@@ -100,12 +100,26 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 ```
 
-The site config is not carried by the release timer: when
-`deploy/nginx-thwart.app.conf` changes in the repository, copy it again and
-reload, as above. The routing block at its foot lists the app's routes, so a
-route added to the web app is added there too; a path outside the list is
-answered 404 with the document, which is what lets a search engine tell a
-missing page from the home page.
+**Once certbot has run (section 6), never copy this file over the live one
+again.** Certbot rewrites `/etc/nginx/sites-available/thwart.app` in place —
+it adds the `listen 443 ssl` lines, the certificate paths and the port-80
+redirect — and the repository's copy has none of them. Copying it back took
+HTTPS down on 2026-09-13; the way back was `certbot --nginx -d thwart.app -d
+www.thwart.app --reinstall --redirect`, which re-adds what it had added.
+
+So when `deploy/nginx-thwart.app.conf` changes in the repository, carry the
+change into the live file by hand:
+
+```bash
+diff /srv/thwart/repo/deploy/nginx-thwart.app.conf /etc/nginx/sites-available/thwart.app
+# edit the live file, keeping every line certbot wrote
+nginx -t && systemctl reload nginx
+```
+
+The routing block at the foot of the file lists the app's routes, so a route
+added to the web app is added there too; a path outside the list is answered
+404 with the document, which is what lets a search engine tell a missing page
+from the home page.
 
 ## 6. TLS
 
