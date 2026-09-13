@@ -109,6 +109,7 @@ export const en: Strings = {
   footerPatreon: 'Support Thwart on Patreon',
   footerAndroid: 'Thwart for Android',
   footerSource: 'Source on GitHub',
+  footerReport: 'Report a bug or write to me',
   statHealth: 'Health',
   statHandSize: 'Hand size',
   statAttack: 'Attack',

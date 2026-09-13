@@ -113,6 +113,7 @@ export interface Strings {
   readonly footerPatreon: string;
   readonly footerAndroid: string;
   readonly footerSource: string;
+  readonly footerReport: string;
   readonly statHealth: string;
   readonly statHandSize: string;
   readonly statAttack: string;

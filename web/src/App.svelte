@@ -1039,6 +1039,12 @@
         {t.footerSource}
       </a>
     </li>
+    <li>
+      <a href="mailto:marvelchampcompanion@proton.me?subject=Thwart">
+        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 6h18v12H3z M3 7l9 6 9-6" /></svg>
+        {t.footerReport}
+      </a>
+    </li>
   </ul>
 </footer>
 
