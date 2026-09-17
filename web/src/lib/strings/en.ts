@@ -467,6 +467,7 @@ export const en: Strings = {
   hubRandomDetail: 'Let the app pick a scenario, heroes and aspects from what you own.',
   hubOwnDetail: 'Choose everything yourself. The app times the game.',
   hubCampaignDetail: 'Start a campaign, or open one you have finished.',
+  hubDraftDetail: 'Build a deck one pick at a time from cards drawn out of your collection.',
   hubPaused: 'A game is waiting',
   settingsGroupedPlay: 'One Play tab',
   settingsGroupedPlayHint:

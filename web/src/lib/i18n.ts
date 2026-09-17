@@ -443,6 +443,7 @@ export interface Strings {
   readonly hubRandomDetail: string;
   readonly hubOwnDetail: string;
   readonly hubCampaignDetail: string;
+  readonly hubDraftDetail: string;
   readonly hubPaused: string;
   readonly settingsGroupedPlay: string;
   readonly settingsGroupedPlayHint: string;

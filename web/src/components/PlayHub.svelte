@@ -48,11 +48,11 @@
   }
 
   /*
-    The same four, in the same order, with the same words as the phone.
+    The same five, in the same order, with the same words as the phone.
 
     Order is the phone's and not alphabetical: the random draw first because it
-    is the one that needs no decisions, then your own setup, then the longer
-    commitments.
+    is the one that needs no decisions, then your own setup, then the draft,
+    which builds the deck you will play with, then the longer commitments.
   */
   const entries = $derived(
     [
@@ -67,6 +67,12 @@
         title: t.navPlay,
         detail: t.hubOwnDetail,
         glyph: '▶',
+      },
+      {
+        id: 'draft' as const,
+        title: t.navDraft,
+        detail: t.hubDraftDetail,
+        glyph: '⇶',
       },
       {
         id: 'campaigns' as const,
@@ -95,7 +101,7 @@
 <!--
   One screen holding every way of starting a game, as the phone has it.
 
-  Reached only when somebody has asked for the grouped navigation; the four
+  Reached only when somebody has asked for the grouped navigation; the five
   screens it gathers keep their own URLs and their own pages either way, so
   this adds a way in rather than a layer to get through.
 -->

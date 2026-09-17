@@ -36,7 +36,7 @@ for (const grouped of [false, true]) {
   const name = grouped ? 'grouped' : 'separate';
   const reachable = new Set([...ids(tabsFor(grouped)), ...ids(overflowFor(grouped))]);
 
-  // The hub is a door to these four, so with it on a tab they count as reached.
+  // The hub is a door to these five, so with it on a tab they count as reached.
   if (grouped) {
     for (const id of PLAY_TARGETS) {
       reachable.add(id);
@@ -61,7 +61,7 @@ for (const grouped of [false, true]) {
   check('grouped puts the hub on a tab', ids(tabsFor(true)).includes('hub'));
   check('separate does not', !ids(tabsFor(false)).includes('hub'));
 
-  // The whole point: the four are behind the hub and not loose in the sheet.
+  // The whole point: the five are behind the hub and not loose in the sheet.
   const overflow = ids(overflowFor(true));
   const loose = PLAY_TARGETS.filter((id) => overflow.includes(id));
   check('grouped keeps the play screens out of the More sheet',

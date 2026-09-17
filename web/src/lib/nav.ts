@@ -92,19 +92,24 @@ export const DESTINATIONS: readonly Destination[] = [
  *   separate  what the browser has always had. Campaigns and your own setup
  *             are tabs; the random draw and versus are in the More sheet.
  *
- *   grouped   what the phone does. One Play tab opens a hub holding all four
+ *   grouped   what the phone does. One Play tab opens a hub holding all five
  *             ways of playing, which frees a slot, and the statistics take it
  *             -- the phone has a Stats tab too, and a bar that dropped to
  *             three tabs would read as something having gone missing.
  *
- * Everything stays reachable in both: the four play screens keep their URLs
+ * Everything stays reachable in both: the five play screens keep their URLs
  * and are one tap from the hub, so grouping moves things without hiding any.
  */
 const SEPARATE_TABS: readonly NavTarget[] = ['search', 'decks', 'campaigns', 'play'];
 const GROUPED_TABS: readonly NavTarget[] = ['search', 'decks', 'hub', 'stats'];
 
-/** What the hub gathers, and therefore what the More sheet must not repeat. */
-export const PLAY_TARGETS: readonly NavTarget[] = ['play', 'randomizer', 'campaigns', 'versus'];
+/**
+ * What the hub gathers, and therefore what the More sheet must not repeat.
+ *
+ * The draft is a way of getting to a game as much as a way of building a
+ * deck, and the phone files it under Play; so does the hub.
+ */
+export const PLAY_TARGETS: readonly NavTarget[] = ['play', 'randomizer', 'draft', 'campaigns', 'versus'];
 
 const byId = (id: NavTarget): Destination =>
   DESTINATIONS.find((d) => d.id === id) as Destination;

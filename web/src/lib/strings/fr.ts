@@ -475,6 +475,7 @@ export const fr: Strings = {
     'Laissez l’application choisir un scénario, des héros et des affinités parmi ce que vous possédez.',
   hubOwnDetail: 'Choisissez tout vous-même. L’application chronomètre la partie.',
   hubCampaignDetail: 'Démarrez une campagne, ou ouvrez-en une terminée.',
+  hubDraftDetail: 'Construisez un deck un choix à la fois, à partir de cartes tirées de votre collection.',
   hubPaused: 'Une partie vous attend',
   settingsGroupedPlay: 'Un seul onglet Jouer',
   settingsGroupedPlayHint:
