@@ -210,6 +210,9 @@ export interface Strings {
   readonly playerBucket: (bucket: string) => string;
   readonly deckLegal: string;
   readonly deckLegalShort: string;
+  /** Synergy: cards the identity cannot play. A warning, never a rule. */
+  readonly synergyIssue: (names: readonly string[]) => string;
+  readonly synergyHideIncompatible: string;
   readonly deckIllegalShort: string;
   readonly deckIllegal: (n: number) => string;
   readonly deckLegalityUnknown: string;

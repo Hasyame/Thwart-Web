@@ -282,6 +282,11 @@ export const en: Strings = {
   deckLegal: 'This deck is legal.',
   deckLegalShort: 'legal',
   deckIllegalShort: 'not legal',
+  synergyIssue: (names) =>
+    names.length === 1
+      ? `Synergy issue: ${names[0]} has no synergy with this identity`
+      : `Synergy issue: ${names[0]} (and ${names.slice(1).join(', ')}) has no synergy with this identity`,
+  synergyHideIncompatible: 'Hide cards without synergy with this identity',
   deckIllegal: (n) =>
     n === 1 ? '1 problem with this deck:' : `${n} problems with this deck:`,
   deckLegalityUnknown:

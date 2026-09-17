@@ -112,6 +112,7 @@
   <DeckContents
     {t}
     {deck}
+    {index}
     {cardLocale}
     {cards}
     ownedPackCodes={owned}

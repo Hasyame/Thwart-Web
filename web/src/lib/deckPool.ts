@@ -1,6 +1,7 @@
 import type { IndexRow } from './types';
 import { buildableFor } from './decks';
 import { NO_FILTERS, searchCards, type Collection } from './search';
+import { rowCompatible } from './synergy';
 
 /**
  * How the pool a deck is built from is narrowed.
@@ -18,6 +19,12 @@ export interface PoolFilter {
   /** Printed cost to show: null for any, 0..4 exact, `COST_CAP` for that and above. */
   readonly cost: number | null;
   readonly ownedOnly: boolean;
+  /**
+   * Only cards the identity can play (lib/synergy). Off by default and not
+   * remembered: a browsing aid, and one that silently hides cards if it
+   * outlives the deck it was switched on for.
+   */
+  readonly synergyOnly: boolean;
   readonly sort: 'name' | 'cost';
 }
 
@@ -79,6 +86,8 @@ export function poolRows(
   pool: readonly IndexRow[],
   filter: PoolFilter,
   collection: Collection,
+  /** The identity's trait keys, for `synergyOnly`. Empty means the filter shows all. */
+  identityTraits: ReadonlySet<string> = new Set(),
 ): IndexRow[] {
   const searched = searchCards(pool, {
     query: filter.query,
@@ -88,6 +97,9 @@ export function poolRows(
   }).rows;
   const rows = searched.filter((row) => {
     if (!filter.factions.has(row.factionCode)) {
+      return false;
+    }
+    if (filter.synergyOnly && !rowCompatible(row, identityTraits)) {
       return false;
     }
     if (filter.types.size > 0 && !filter.types.has(row.typeCode)) {

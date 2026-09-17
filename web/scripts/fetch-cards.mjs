@@ -35,6 +35,7 @@ import {
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { synergyOf, traitKeys, unrecognised } from './lib/synergy.mjs';
 import { normalizeForSearch } from '../src/lib/normalize.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -188,9 +189,16 @@ function toIndexRow(card) {
     // list of the traits that exist. MarvelCDB writes them as one string,
     // "Avenger. Spy.", so this is the one place that shape is understood.
     traits: String(card.traits ?? '')
-      .split('.')
+      .split(/\.\s+|\.$/)
       .map((trait) => trait.trim())
       .filter((trait) => trait !== ''),
+    // The same traits as language-independent keys, read off the English
+    // traits both languages carry, so an identity's faces can be matched
+    // against a card's condition without loading the full card.
+    traitKeys: traitKeys(card.real_traits ?? card.traits),
+    // "Play only if your identity has the [[X]] trait", read once here. See
+    // scripts/lib/synergy.mjs; null on every card without such a condition.
+    synergy: synergyOf(card),
     // Folded exactly as SearchNormalizer folds it, so the browser compares
     // like with like and never has to normalise 4000 cards at startup.
     s: normalizeForSearch(
@@ -230,8 +238,18 @@ async function buildLocale(locale) {
   const rawPacks = await getJson(packsUrl);
   process.stdout.write(`${rawPacks.length} packs\n`);
 
-  const cards = rawCards.map(sanitizeCard);
+  const cards = rawCards.map((card) => ({ ...sanitizeCard(card), synergy: synergyOf(card) }));
   const index = rawCards.map(toIndexRow);
+
+  // Every "Play only if" the derivation did not read, so a new wording is
+  // noticed the day it appears rather than silently never warning anybody.
+  if (locale.code === LOCALES[0].code) {
+    const missed = unrecognised(rawCards);
+    console.log(`  synergy: ${index.filter((row) => row.synergy !== null).length} cards carry a trait condition; ${missed.length} "Play only if" not read:`);
+    for (const miss of missed) {
+      console.log(`    ${miss.code} ${miss.name}: ${miss.condition}`);
+    }
+  }
   const metaByCode = new Map(PACK_METADATA.packs.map((entry) => [entry.code, entry]));
   const packs = rawPacks.map((pack) => {
     const meta = metaByCode.get(pack.code);

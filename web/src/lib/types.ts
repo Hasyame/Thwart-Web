@@ -39,8 +39,25 @@ export interface IndexRow {
    * this is what makes them selectable.
    */
   readonly traits?: readonly string[];
+  /**
+   * The same traits as language-independent keys (`guardian`, `x-men`,
+   * `shield`), read off the English traits at build time. Absent on an index
+   * built before this existed, and then no synergy is known, which reads as
+   * "compatible" rather than as an error.
+   */
+  readonly traitKeys?: readonly string[];
+  /**
+   * "Play only if your identity has the [[X]] trait", derived once at build
+   * time (scripts/lib/synergy.mjs). Null on a card without such a condition.
+   */
+  readonly synergy?: Synergy | null;
   /** Pre-folded search text. See lib/normalize.js. */
   readonly s: string;
+}
+
+/** A card's play condition on the identity's traits. lib/synergy. */
+export interface Synergy {
+  readonly anyOfTraits: readonly string[];
 }
 
 /**
@@ -128,6 +145,9 @@ export interface Card {
   readonly cost_star?: boolean;
   readonly cost_per_hero?: boolean;
   readonly deck_limit?: number | null;
+  readonly real_traits?: string | null;
+  /** Derived at build time; see IndexRow.synergy. */
+  readonly synergy?: Synergy | null;
   readonly is_unique?: boolean;
   /**
    * The deck-building rules an identity carries, kept uninterpreted.

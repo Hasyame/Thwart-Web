@@ -40,7 +40,12 @@ template may say and the rulebook readings behind Fear No Evil.
   under it all. The editor is that page's `/edit`. Decks sort into
   **folders** you name, which sync like everything else. Building starts
   from a hero alone: the aspect is whatever the cards you add say, and the
-  editor flags the first card that mixes more than the hero allows.
+  editor flags the first card that mixes more than the hero allows. A card that
+  says "play only if your identity has the Guardian trait" stays legal in any
+  deck, but the editor and the deck page say which cards the identity cannot
+  play, live, and the pool can hide them. The rule is derived once from the
+  card text at build time and shared with the Android app through one fixture
+  ([`docs/spec/synergie-et-draft.md`](docs/spec/synergie-et-draft.md)).
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own. Up to five **extra modular
@@ -221,6 +226,7 @@ the real modules:
 | `npm run test:tracker` | The campaign tracker |
 | `npm run test:fne` | Fear No Evil played through against the shipped template: a lost scenario is not failed, the Kingpin defeat on Expert, the lost campaign |
 | `npm run test:tile` | A campaign's tile: the final villain as its face, won or lost as the engine means it |
+| `npm run test:synergy` | Which cards an identity can play: the shared fixture, the real cards, and the conditions not read |
 | `npm run test:setup` | Scenario setup text, in both languages |
 | `npm run test:encounter` | The ported tracker rules against the real card database |
 | `npm run test:paused` | That a game put away comes back the same |

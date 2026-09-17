@@ -20,6 +20,7 @@
     type DeckProblem,
   } from '../lib/deckRules';
   import { loadDeckOwnedOnly, saveDeckOwnedOnly } from '../lib/preferences';
+  import { identityTraitKeys, synergyProblems } from '../lib/synergy';
 
   /**
    * Building a deck, rather than looking at one.
@@ -193,6 +194,16 @@
   });
 
   const stats = $derived(deckStatistics(slotMap, records));
+
+  /*
+   * Cards the identity cannot play, live, never stored: the deck stays legal
+   * with them, so this is a line under the legality box rather than a
+   * problem in it. docs/spec/synergie-et-draft.md, phase 1.
+   */
+  const identityTraits = $derived(identityTraitKeys(index, deck.heroCode));
+  const synergyIssues = $derived(
+    synergyProblems(slotMap, (code) => rowByCode.get(code), identityTraits).map((row) => row.name),
+  );
 
   const total = $derived(Object.values(slots).reduce((sum, quantity) => sum + quantity, 0));
 
@@ -405,6 +416,9 @@
       </ul>
     </details>
   {/if}
+  {#if synergyIssues.length > 0}
+    <p class="synergy" role="status">{t.synergyIssue(synergyIssues)}</p>
+  {/if}
 
   <div class="columns" data-view={view}>
     <div class="column column--deck">
@@ -459,6 +473,7 @@
         {ownedPackCodes}
         {ownedOnly}
         onOwnedOnly={setOwnedOnly}
+        {identityTraits}
         onAdd={add}
         onRemove={remove}
         onOpen={(code) => showCard(code)}
@@ -626,6 +641,17 @@
     font-weight: var(--weight-semibold);
     color: var(--text-muted);
     margin: var(--space-3) 0 var(--space-1);
+  }
+
+  /* Amber, not red: the deck is legal, the card just will not be played. */
+  .synergy {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border-inline-start: 3px solid var(--gold);
+    font-size: var(--text-sm);
+    max-width: var(--prose-max);
   }
 
   .problems-box {

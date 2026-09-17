@@ -157,7 +157,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: web/public/data
-          key: data-${{ hashFiles('web/scripts/fetch-cards.mjs', 'web/scripts/fetch-campaigns.mjs') }}
+          key: data-${{ hashFiles('web/scripts/fetch-cards.mjs', 'web/scripts/lib/synergy.mjs', 'web/scripts/fetch-campaigns.mjs') }}
 
       - name: Fetch card data
         if: steps.cards.outputs.cache-hit != 'true' || inputs.fetchCardData
@@ -314,6 +314,13 @@ jobs:
       - name: Campaign tiles
         working-directory: web
         run: npm run test:tile
+
+      # The synergy rule against the fixture Android tests too, against the
+      # real cards, and the exact list of "Play only if" the derivation does
+      # not read, so a new wording fails here rather than never warning.
+      - name: Synergy
+        working-directory: web
+        run: npm run test:synergy
 
 
   server:

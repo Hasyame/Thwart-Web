@@ -16,13 +16,15 @@
     ownedPackCodes: ReadonlySet<string>;
     ownedOnly: boolean;
     onOwnedOnly: (next: boolean) => void;
+    /** Every trait on every face of the deck's identity, for the synergy filter. */
+    identityTraits: ReadonlySet<string>;
     onAdd: (code: string) => void;
     onRemove: (code: string) => void;
     /** Opens the card, for reading it before deciding. */
     onOpen: (code: string) => void;
   }
 
-  const { t, pool, deckAspects, slots, ownedPackCodes, ownedOnly, onOwnedOnly, onAdd, onRemove, onOpen }: Props = $props();
+  const { t, pool, deckAspects, slots, ownedPackCodes, ownedOnly, onOwnedOnly, identityTraits, onAdd, onRemove, onOpen }: Props = $props();
 
   /*
    * The filters, as state of this screen only.
@@ -42,9 +44,11 @@
   let query = $state('');
   let cost = $state<number | null>(null);
   let sort = $state<'name' | 'cost'>('name');
+  // Off on every open, on purpose: see PoolFilter.synergyOnly.
+  let synergyOnly = $state(false);
 
-  const filter = $derived<PoolFilter>({ factions, types, query, cost, ownedOnly, sort });
-  const rows = $derived(poolRows(pool, filter, { ownedPacks: ownedPackCodes, favourites: new Set() }));
+  const filter = $derived<PoolFilter>({ factions, types, query, cost, ownedOnly, synergyOnly, sort });
+  const rows = $derived(poolRows(pool, filter, { ownedPacks: ownedPackCodes, favourites: new Set() }, identityTraits));
 
   const factionChips = $derived(factionOrder(pool, deckAspects));
   const typeChips = $derived.by(() => {
@@ -125,6 +129,10 @@
     <label class="tick">
       <input type="checkbox" checked={ownedOnly} onchange={(e) => onOwnedOnly(e.currentTarget.checked)} />
       <span>{t.ownedOnly}</span>
+    </label>
+    <label class="tick">
+      <input type="checkbox" checked={synergyOnly} onchange={(e) => (synergyOnly = e.currentTarget.checked)} />
+      <span>{t.synergyHideIncompatible}</span>
     </label>
     <label class="sort">
       <span class="muted small">{t.sortLabel}</span>
