@@ -119,7 +119,14 @@ nginx -t && systemctl reload nginx
 The routing block at the foot of the file lists the app's routes, so a route
 added to the web app is added there too; a path outside the list is answered
 404 with the document, which is what lets a search engine tell a missing page
-from the home page.
+from the home page. **A new route is a 404 in production until this list is
+carried to the host** (the draft's `/draft` was, for an afternoon). Adding
+one is a one-line edit of the live file:
+
+```bash
+sed -i 's#|history)(/|\$)#|history|NEWROUTE)(/|$)#' /etc/nginx/sites-available/thwart.app
+nginx -t && systemctl reload nginx
+```
 
 ## 6. TLS
 

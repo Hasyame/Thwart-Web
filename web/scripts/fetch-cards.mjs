@@ -35,6 +35,7 @@ import {
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { readdirSync } from 'node:fs';
 import { synergyOf, traitKeys, unrecognised } from './lib/synergy.mjs';
 import { normalizeForSearch } from '../src/lib/normalize.js';
 
@@ -385,6 +386,17 @@ async function buildLocale(locale) {
   };
 }
 
+/** A digest of this script and its helpers, for meta.json. */
+function scriptDigest() {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const hash = createHash('sha256').update(readFileSync(fileURLToPath(import.meta.url)));
+  const lib = join(here, 'lib');
+  for (const name of readdirSync(lib).sort()) {
+    hash.update(readFileSync(join(lib, name)));
+  }
+  return hash.digest('hex');
+}
+
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
 
@@ -427,6 +439,11 @@ async function main() {
     source: 'https://marvelcdb.com',
     locales,
     digest,
+    // What wrote this. The host keeps data under a day old rather than
+    // refetching for every release; a release that changes what the fetch
+    // derives (a new index field) must not be served old data, so the
+    // deploy compares this against the scripts it is about to run.
+    scriptDigest: scriptDigest(),
   };
   writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf8');
 

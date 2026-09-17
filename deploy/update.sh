@@ -35,6 +35,17 @@ REF="${REF:-main}"
 # land in one afternoon, and MarvelCDB is run by volunteers.
 MAX_DATA_AGE_HOURS="${MAX_DATA_AGE_HOURS:-20}"
 
+# Which fetch script wrote the data on disk, and which one this checkout
+# carries. When they differ the data is stale whatever its age: a release that
+# adds a derived field to the index would otherwise ship without it until the
+# nightly fetch, which is what happened with the draft's fields.
+data_script_digest() {
+    sed -n 's/.*"scriptDigest": "\([0-9a-f]*\)".*/\1/p' "$REPO/web/public/data/meta.json" 2>/dev/null | tail -1
+}
+script_digest() {
+    cat "$REPO/web/scripts/fetch-cards.mjs" "$REPO/web/scripts/lib/"* 2>/dev/null | sha256sum | cut -d' ' -f1
+}
+
 FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
 
@@ -92,8 +103,9 @@ npm ci --include=dev --no-audit --no-fund --silent
 # Skipped when what is already on disk is recent. The card database moves in
 # weeks and this is somebody else's volunteer-run server; three deploys in an
 # afternoon should not mean three full downloads of it.
-if [ -n "$(find "$REPO/web/public/data/meta.json" -mmin "-$((MAX_DATA_AGE_HOURS * 60))" 2>/dev/null)" ]; then
-    log "card data is under ${MAX_DATA_AGE_HOURS}h old; keeping it"
+if [ -n "$(find "$REPO/web/public/data/meta.json" -mmin "-$((MAX_DATA_AGE_HOURS * 60))" 2>/dev/null)" ] &&
+   [ "$(data_script_digest)" = "$(script_digest)" ]; then
+    log "card data is under ${MAX_DATA_AGE_HOURS}h old and from this fetch script; keeping it"
 else
     log "fetching card data"
     npm run --silent data
