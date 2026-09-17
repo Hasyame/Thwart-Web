@@ -7,15 +7,18 @@ import { fold } from './campaign/engine';
  *
  * ## The face
  *
- * No box art: the boxes are Fantasy Flight's product photography and nothing
- * here bundles or re-hosts it. What stands for a campaign is its **final
- * villain**, the card the whole box builds towards — Red Skull, Thanos's
- * Loki, Magneto, Apocalypse — read from the last scenario in the template
- * that names a villain deck, and drawn from MarvelCDB through the same image
- * pipeline every card view uses. Fear No Evil's villains are on no database,
- * so it has no face and gets a colour field instead; every tile has to look
- * finished with no image at all anyway, since offline means the art will
- * sometimes not arrive.
+ * What stands for a campaign is its **final villain**, the card the whole
+ * box builds towards — Red Skull, Thanos's Loki, Magneto, Apocalypse — read
+ * from the last scenario in the template that names a villain deck, and
+ * drawn from MarvelCDB through the same image pipeline every card view uses.
+ * Nothing of the boxes themselves is re-hosted.
+ *
+ * Fear No Evil is the exception: its villains are on no database, so it
+ * carries the box's key art instead, the one picture this site bundles
+ * (`public/art/campaigns/fne.jpg`, © 2025 Marvel, Fantasy Flight's
+ * announcement art). A campaign with neither gets a colour field; every tile
+ * has to look finished with no image at all anyway, since offline means the
+ * art will sometimes not arrive.
  *
  * ## The status, and what "lost" means
  *
@@ -43,9 +46,16 @@ export interface CampaignTile {
   readonly results: readonly boolean[];
   /** The card standing for the campaign, or null when it has none. */
   readonly faceCode: string | null;
+  /** Bundled key art, for the one campaign whose villains are on no database. */
+  readonly boxArt: string | null;
   /** The folded state, for anything else a caller wants to read. */
   readonly state: CampaignState | null;
 }
+
+/** The key art bundled for a campaign, by template id. Fear No Evil only. */
+const BOX_ART: Readonly<Record<string, string>> = { fne: '/art/campaigns/fne.jpg' };
+
+export const boxArtOf = (templateId: string): string | null => BOX_ART[templateId] ?? null;
 
 /** The last villain the template names, read the way the tracker reads decks. */
 export function faceCardOf(template: CampaignTemplate | null): string | null {
@@ -102,7 +112,7 @@ export function tileOf(
     status = 'in-progress';
   }
 
-  return { status, beaten, total, results, faceCode: faceCardOf(template), state };
+  return { status, beaten, total, results, faceCode: faceCardOf(template), boxArt: boxArtOf(run.templateId), state };
 }
 
 /**

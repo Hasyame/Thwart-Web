@@ -263,16 +263,19 @@
         {@const open = openId === campaign.run.id}
         {@const plays = playsFor(campaign.run.id)}
         {@const tile = tiles.get(campaign.run.id)}
-        {@const art = tile?.faceCode === null || tile?.faceCode === undefined ? undefined : faces.get(tile.faceCode)}
+        {@const face = tile?.faceCode === null || tile?.faceCode === undefined ? undefined : faces.get(tile.faceCode)}
+        {@const art = tile?.boxArt ?? face}
         {@const status = tile?.status ?? 'not-started'}
         {@const live = status === 'not-started' || status === 'in-progress'}
         <!--
           A tile per campaign, as on the shelf of decks: the final villain's
           art across the top, and everything written on the opaque band under
           it. Nothing but the status badge sits on the art: text over a
-          picture is the contrast trap this page is meant to avoid. With no
-          art -- Fear No Evil, or offline -- the top is a colour field with the
-          campaign's initial, and the tile looks finished all the same.
+          picture is the contrast trap this page is meant to avoid. Fear No
+          Evil shows its bundled key art, already landscape, so it is not
+          cropped the way a card is. With no art -- offline -- the top is a
+          colour field with the campaign's initial, and the tile looks
+          finished all the same.
         -->
         <li class="tile" class:open>
           <button
@@ -282,7 +285,7 @@
             onclick={() => (view = { kind: 'run', id: campaign.run.id })}
           >
             {#if art !== undefined}
-              <img class="art" src={art} alt="" loading="lazy" />
+              <img class="art" class:box={tile?.boxArt !== null && tile?.boxArt !== undefined} src={art} alt="" loading="lazy" />
             {:else}
               <span class="field" aria-hidden="true">{(campaign.run.templateName || campaign.title).slice(0, 1)}</span>
             {/if}
@@ -565,6 +568,15 @@
     object-fit: cover;
     object-position: 50% 18%;
     transition: transform var(--motion-base) var(--ease-out);
+  }
+
+  /* Key art is drawn for a wide frame; show it whole, the villain and the
+     heroes both, rather than the crop that lifts a face out of a card. */
+  .art.box {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-position: 50% 50%;
   }
 
   .tile-head:hover .art {

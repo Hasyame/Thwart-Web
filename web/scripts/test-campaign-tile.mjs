@@ -11,7 +11,7 @@
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { faceCardOf, fieldHue, parseEventRows, tileOf } from '../src/lib/campaignTile.ts';
+import { boxArtOf, faceCardOf, fieldHue, parseEventRows, tileOf } from '../src/lib/campaignTile.ts';
 import { expandTemplate } from '../src/lib/campaign/engine.ts';
 
 let failures = 0;
@@ -44,6 +44,8 @@ for (const file of readdirSync(TEMPLATES)) {
     check(`${id}: the face is the final villain`, faceCardOf(templates.get(id)) === code, faceCardOf(templates.get(id)));
   }
   check('Fear No Evil has no face: its villains are on no database', faceCardOf(templates.get('fne')) === null);
+  check('so it carries the bundled key art instead', boxArtOf('fne') === '/art/campaigns/fne.jpg');
+  check('and no other campaign does', ['aoa', 'aos', 'gmw', 'mg', 'mts', 'next', 'sm', 'trors'].every((id) => boxArtOf(id) === null));
   check('no template, no face', faceCardOf(null) === null);
 }
 
