@@ -258,8 +258,11 @@
       : draft.offer.map((code) => context.pool.get(code)).filter((r): r is IndexRow => r !== undefined),
   );
 
-  /* The offer's pictures, fetched as they come; the picks show names only. */
-  let images = $state.raw<ReadonlyMap<string, string>>(new Map());
+  /* The offer's pictures, fetched as they come; the picks show names only.
+     A card MarvelCDB has no picture for is remembered as null, otherwise the
+     effect would fetch it again every time the map changed and never settle:
+     the first Luke Cage pack offered froze the page that way. */
+  let images = $state.raw<ReadonlyMap<string, string | null>>(new Map());
   $effect(() => {
     const codes = [...offerRows.map((r) => r.code), ...(current?.heroCode === null || current === null ? [] : [current.heroCode])];
     const missing = codes.filter((code) => !images.has(code));
@@ -271,9 +274,7 @@
       if (!cancelled) {
         const next = new Map(images);
         for (const [code, url] of pairs) {
-          if (url !== null) {
-            next.set(code, url);
-          }
+          next.set(code, url);
         }
         images = next;
       }
@@ -636,7 +637,7 @@
                 <li>
                   <CardHover code={row.code}>
                     <button type="button" class="card" aria-label={row.name} onclick={() => takeCard(row.code)}>
-                      {#if images.get(row.code) !== undefined}
+                      {#if typeof images.get(row.code) === 'string'}
                         <img src={images.get(row.code)} alt="" loading="lazy" />
                       {:else}
                         <span class="card-blank">{row.name}</span>
@@ -1057,6 +1058,13 @@
     display: grid;
     justify-items: center;
     gap: 2px;
+  }
+
+  /* The hover wrapper is inline; the button must still fill the cell so a
+     card without a picture keeps a card's shape. */
+  .offer li > :global(.hover) {
+    display: block;
+    width: 100%;
   }
 
   .offer p {
