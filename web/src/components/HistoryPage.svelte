@@ -10,6 +10,8 @@
   import { playerBucket } from '../lib/plays';
   import { cardImageUrl } from '../lib/data';
   import { scenarioFaceOf } from '../lib/scenarioFace';
+  import { boxArtOf } from '../lib/campaignTile';
+  import { FNE_TEMPLATE_ID, isFne } from '../lib/fearNoEvil';
   import PlayDetail from './PlayDetail.svelte';
 
   /**
@@ -352,7 +354,10 @@
     if (cached !== undefined) {
       return cached;
     }
-    const url = cardImageUrl(scenarioFaceOf(index, scenarioCode)?.img);
+    // Fear No Evil played on its own: the box's own art, as in its campaign.
+    const url = isFne(scenarioCode)
+      ? boxArtOf(FNE_TEMPLATE_ID)
+      : cardImageUrl(scenarioFaceOf(index, scenarioCode)?.img);
     faceCache.set(scenarioCode, url);
     return url;
   }

@@ -416,6 +416,8 @@ export interface Strings {
   readonly reroll: string;
   readonly lockField: string;
   readonly scenario: string;
+  /** The subordinate a Fear No Evil job is played against. */
+  readonly villain: string;
   readonly difficultyLabel: string;
   readonly difficulty: (id: string) => string;
   readonly heroes: string;

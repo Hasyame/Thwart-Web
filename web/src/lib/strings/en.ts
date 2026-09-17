@@ -435,6 +435,7 @@ export const en: Strings = {
   reroll: 'Roll again',
   lockField: 'Keep this when rolling again',
   scenario: 'Scenario',
+  villain: 'Villain',
   difficultyLabel: 'Difficulty',
   difficulty: (id) =>
     ({

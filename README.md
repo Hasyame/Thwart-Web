@@ -229,6 +229,7 @@ the real modules:
 | `npm run test:deal` | Campaign dealing |
 | `npm run test:tracker` | The campaign tracker |
 | `npm run test:fne` | Fear No Evil played through against the shipped template: a lost scenario is not failed, the Kingpin defeat on Expert, the lost campaign |
+| `npm run test:fne-solo` | Fear No Evil outside its campaign: the codes, the jobs and subordinates, the tracker, the briefing, the draw |
 | `npm run test:tile` | A campaign's tile: the final villain as its face, won or lost as the engine means it |
 | `npm run test:synergy` | Which cards an identity can play: the shared fixture, the real cards, and the conditions not read |
 | `npm run test:draft` | The draft: offers, limits, the shared shelf, whole drafts ending legal, the names |

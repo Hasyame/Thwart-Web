@@ -1,7 +1,8 @@
 <script lang="ts">
   import { liveQuery } from 'dexie';
-  import type { CardSet, IndexRow } from '../lib/types';
+  import type { CardSet, IndexRow, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
+  import { composeFne, isFne, loadFneBox, splitFne, type FearNoEvilBox } from '../lib/fearNoEvil';
   import RatingBadge from './RatingBadge.svelte';
   import { RatingsInView } from '../lib/ratingsView.svelte';
   import { modularSubject, scenarioSubject } from '../lib/ratings';
@@ -16,8 +17,10 @@
     modularCandidatesFor,
     modularShortfall,
     roll,
+    ruleFor,
     scenariosShortOfExtras,
     standardSetFor,
+    withVillain,
     type Aspect,
     type DifficultyId,
     type Draw,
@@ -31,18 +34,40 @@
     t: Strings;
     sets: readonly CardSet[];
     index: readonly IndexRow[];
+    /** The language the scenarios are named in, which is the cards'. */
+    cardLocale: Locale;
     storageOk: boolean;
     /**
      * Lays the draw out on the setup screen, as the phone's "play this game".
+     * The name goes with it: Fear No Evil's pairings are named by no card
+     * set, so the page that knows the name says it.
      *
      * Owned by App: it is the same door a replayed game goes through. Until
      * this existed a drawn game was never recorded as played, which is what
      * the history, the statistics and the ratings all need it to be.
      */
-    onPlay: (draw: Draw) => void;
+    onPlay: (draw: Draw, scenarioName: string) => void;
   }
 
-  const { t, sets, index, storageOk, onPlay }: Props = $props();
+  const { t, sets, index, cardLocale, storageOk, onPlay }: Props = $props();
+
+  /*
+   * Fear No Evil's box, from its campaign template: on no card database, so
+   * its scenarios cannot come through the rules file like the others. Null
+   * until read, and then the box is simply not offered yet.
+   */
+  let fne = $state.raw<FearNoEvilBox | null>(null);
+  $effect(() => {
+    let cancelled = false;
+    void loadFneBox().then((box) => {
+      if (!cancelled) {
+        fne = box;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
 
   /* The community's opinion of what was drawn, beside the draw. Refetched on
      every roll for exactly the scenario and sets in view. */
@@ -174,6 +199,14 @@
       ownedPackCodes: collection.owned,
       excludedModularSets: collection.excludedSets,
       excludedScenarios: collection.excludedScenarios,
+      fne:
+        fne === null || fne.packCode === null
+          ? null
+          : {
+              packCode: fne.packCode,
+              scenarios: fne.scenarios(cardLocale),
+              villains: fne.villains(cardLocale).map((v) => v.id),
+            },
     });
   });
 
@@ -206,8 +239,16 @@
     return applyFilters(ownedPools, effective);
   });
 
-  /** Names come from the card database, already in the reader's language. */
-  const setNames = $derived(new Map(sets.map((s) => [s.code, s.name] as const)));
+  /** Names come from the card database, already in the reader's language;
+      Fear No Evil's from its template, every job with every subordinate. */
+  const setNames = $derived(
+    new Map([...sets.map((s) => [s.code, s.name] as const), ...(fne === null ? [] : fne.names(cardLocale))]),
+  );
+  const villainNames = $derived(new Map((fne?.villains(cardLocale) ?? []).map((v) => [v.id, v.name] as const)));
+  /** The job half of the drawn scenario, which is what the scenario picker shows. */
+  const drawnJob = $derived(draw.scenarioCode === null ? null : splitFne(draw.scenarioCode).job);
+  /** The subordinates the drawn job can be played against; empty for every other scenario. */
+  const villainOptions = $derived(drawnJob === null ? [] : (pools?.villainChoices[drawnJob] ?? []));
 
   /*
    * What the collection cannot supply, said before the roll.
@@ -221,9 +262,7 @@
    */
   const short = $derived(pools === null ? [] : scenariosShortOfExtras(pools, playerCount, extras));
   const lockedRule = $derived(
-    pools === null || !locked.has('scenario')
-      ? null
-      : (pools.scenarios.find((r) => r.code === draw.scenarioCode) ?? null),
+    pools === null || !locked.has('scenario') ? null : ruleFor(pools, draw.scenarioCode),
   );
   const lockedShortBy = $derived(
     lockedRule === null || pools === null ? 0 : modularShortfall(pools, lockedRule, playerCount, extras),
@@ -340,11 +379,23 @@
     const rule = pools.scenarios.find((s) => s.code === code);
     draw = {
       ...draw,
-      scenarioCode: code,
+      // A job of Fear No Evil chosen by hand still draws its villain: this
+      // is the randomiser, and the villain is the part it is for.
+      scenarioCode: withVillain(code, pools),
       // The scenario decides these, so they follow it rather than surviving
       // from whatever was drawn before.
       mandatoryModularCodes: rule?.mandatoryModulars ?? [],
+      modularSetCodes: rule?.noModulars === true ? [] : draw.modularSetCodes,
     };
+    chose('scenario');
+  }
+
+  /** The other half of a Fear No Evil job, changed by hand. */
+  function chooseVillain(villainId: string): void {
+    if (drawnJob === null) {
+      return;
+    }
+    draw = { ...draw, scenarioCode: composeFne(drawnJob, villainId) };
     chose('scenario');
   }
 
@@ -597,14 +648,31 @@
           </div>
           <select
             class="value-select"
-            value={draw.scenarioCode}
+            value={drawnJob}
             onchange={(e) => chooseScenario(e.currentTarget.value)}
           >
             {#each pools?.scenarios ?? [] as rule (rule.code)}
               <option value={rule.code}>{setNames.get(rule.code) ?? rule.code}</option>
             {/each}
           </select>
-          {#if draw.scenarioCode !== null}
+          {#if villainOptions.length > 0}
+            <!-- A Fear No Evil job is played against one of the box's
+                 subordinates, drawn with it; this is where the villain half
+                 is changed. -->
+            <label class="villain">
+              <span class="muted">{t.villain}</span>
+              <select
+                class="value-select"
+                value={splitFne(draw.scenarioCode ?? '').villain}
+                onchange={(e) => chooseVillain(e.currentTarget.value)}
+              >
+                {#each [...villainOptions].sort((a, b) => (villainNames.get(a) ?? a).localeCompare(villainNames.get(b) ?? b)) as id (id)}
+                  <option value={id}>{villainNames.get(id) ?? id}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+          {#if draw.scenarioCode !== null && !isFne(draw.scenarioCode)}
             <RatingBadge {t} summary={ratings.forScenario(draw.scenarioCode)} own={ratings.ownFor(scenarioSubject(draw.scenarioCode).key)} />
           {/if}
         </div>
@@ -726,7 +794,7 @@
         <!-- First, because it is what a draw is for. The phone has had this
              since its randomiser existed; the web recorded the draw and then
              left the person to rebuild it by hand on the setup screen. -->
-        <button class="btn btn--primary" type="button" onclick={() => onPlay(draw)}>
+        <button class="btn btn--primary" type="button" onclick={() => onPlay(draw, setNames.get(draw.scenarioCode ?? '') ?? draw.scenarioCode ?? '')}>
           {t.playThisDraw}
         </button>
         {#if storageOk}
@@ -857,6 +925,13 @@
     font-size: var(--text-lg);
     font-weight: 600;
     width: 100%;
+  }
+
+  /* The villain half of a Fear No Evil job, under the job. */
+  .villain {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
   }
 
   .picker {

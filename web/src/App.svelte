@@ -518,14 +518,13 @@
    * there. Seats carry the hero alone, as a paused game's do, since a draw
    * names heroes and not decks.
    */
-  function playDraw(draw: Draw): void {
+  function playDraw(draw: Draw, scenarioName: string): void {
     if (draw.scenarioCode === null) {
       return;
     }
-    const setName = sets.find((s) => s.code === draw.scenarioCode)?.name;
     prepareSession({
       scenarioCode: draw.scenarioCode,
-      scenarioName: setName ?? draw.scenarioCode,
+      scenarioName: scenarioName === '' ? draw.scenarioCode : scenarioName,
       difficulty: draw.difficulty ?? 'STANDARD_I',
       standardSet: draw.standardSet,
       seats: draw.heroes.map((hero) => ({
@@ -670,7 +669,7 @@
     {#await RandomizerPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {sets} {index} {storageOk} onPlay={playDraw} />
+      <Page {t} {sets} {index} {cardLocale} {storageOk} onPlay={playDraw} />
     {:catch}
       <!-- The chunk did not arrive: a connection that dropped, or a tab
            open across a release whose files it was built against are

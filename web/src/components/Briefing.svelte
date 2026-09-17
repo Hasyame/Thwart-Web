@@ -3,6 +3,8 @@
   import type { IndexRow, Locale } from '../lib/types';
   import { loadPackCards } from '../lib/data';
   import { briefingFor, type SchemeBriefing } from '../lib/schemeSetup';
+  import { isFne, loadFneBox } from '../lib/fearNoEvil';
+  import { DIFFICULTIES } from '../lib/randomizer';
   import { session } from '../lib/session.svelte';
 
   interface Props {
@@ -36,10 +38,45 @@
    * rest of the card data means it arrives in the player's own language and no
    * copy of it is ever committed here.
    */
+  const expert = $derived(
+    DIFFICULTIES.find((d) => d.id === session.current.difficulty)?.expert === true,
+  );
+
+  /*
+   * Fear No Evil's setup is the campaign's text, not a card's: the box is on
+   * no database, and its template briefs each job for the villain drawn and
+   * the difficulty played.
+   */
+  $effect(() => {
+    const code = scenarioCode;
+    if (!isFne(code)) {
+      return;
+    }
+    const isExpert = expert;
+    let cancelled = false;
+    loading = true;
+    void loadFneBox()
+      .then((box) => {
+        if (!cancelled) {
+          briefing = box === null ? null : { schemeName: null, steps: box.briefing(code, isExpert, cardLocale) };
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          loading = false;
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
   $effect(() => {
     const pack = packOf;
-    if (pack === null) {
-      briefing = null;
+    if (pack === null || isFne(scenarioCode)) {
+      if (!isFne(scenarioCode)) {
+        briefing = null;
+      }
       return;
     }
     let cancelled = false;

@@ -16,6 +16,7 @@
   import { db, SETTINGS_KEY } from '../lib/db';
   import { syncAfter } from '../lib/sync/auto.svelte';
   import { loadScenarioRules } from '../lib/data';
+  import { composeFne, isFne, loadFneBox, needsVillain, splitFne, type FearNoEvilBox } from '../lib/fearNoEvil';
   import {
     buildPools,
     DIFFICULTIES,
@@ -153,6 +154,24 @@
     };
   });
 
+  /*
+   * Fear No Evil's box, from its campaign template: on no card database, so
+   * its scenarios cannot come through the rules file like the others. Null
+   * until read, and then the box is simply not offered yet.
+   */
+  let fne = $state.raw<FearNoEvilBox | null>(null);
+  $effect(() => {
+    let cancelled = false;
+    void loadFneBox().then((box) => {
+      if (!cancelled) {
+        fne = box;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
   const pools = $derived.by((): Pools | null =>
     rules === null
       ? null
@@ -163,10 +182,27 @@
           ownedPackCodes: owned.packs,
           excludedModularSets: owned.excludedSets,
           excludedScenarios: owned.excludedScenarios,
+          fne:
+            fne === null || fne.packCode === null
+              ? null
+              : {
+                  packCode: fne.packCode,
+                  scenarios: fne.scenarios(cardLocale),
+                  villains: fne.villains(cardLocale).map((v) => v.id),
+                },
         }),
   );
 
-  const setNames = $derived(new Map(sets.map((s) => [s.code, s.name] as const)));
+  /** Set names from the card database; Fear No Evil's pairings from its template. */
+  const setNames = $derived(
+    new Map([...sets.map((s) => [s.code, s.name] as const), ...(fne === null ? [] : fne.names(cardLocale))]),
+  );
+  const villainNames = $derived(new Map((fne?.villains(cardLocale) ?? []).map((v) => [v.id, v.name] as const)));
+  /** The job half of the chosen scenario, which is what the scenario picker shows. */
+  const chosenJob = $derived(splitFne(session.current.scenarioCode).job);
+  /** The subordinates the chosen job can be played against; empty for every other scenario. */
+  const villainOptions = $derived(pools?.villainChoices[chosenJob] ?? []);
+
 
   /** Ticks the clock. One second is plenty for a game measured in hours. */
   let now = $state(Date.now());
@@ -225,12 +261,25 @@
     DIFFICULTIES.find((d) => d.id === session.current.difficulty)?.expert === true,
   );
 
+  /*
+   * Fear No Evil's numbers, for the tracker: the template's, since the box is
+   * on no card database. Null for every other scenario, and the tracker then
+   * reads the cards as it always did.
+   */
+  const fneSetup = $derived(
+    fne === null || !isFne(session.current.scenarioCode)
+      ? null
+      : fne.encounterSetup(session.current.scenarioCode, session.current.seats.length, isExpert, cardLocale),
+  );
+
   // Setup is complete when there is a scenario, at least one seat, and — if
   // Expert was chosen — the Standard set it is played with.
   const canStart = $derived(
     session.current.scenarioCode !== '' &&
       session.current.seats.length > 0 &&
-      (!isExpert || session.current.standardSet !== null),
+      (!isExpert || session.current.standardSet !== null) &&
+      // A Fear No Evil job needs its villain before there is a game to start.
+      !needsVillain(session.current.scenarioCode, pools?.villainChoices ?? {}),
   );
 
   function setScenario(code: string): void {
@@ -246,7 +295,12 @@
   }
 
   const mandatedFor = (code: string): readonly string[] =>
-    pools?.scenarios.find((rule) => rule.code === code)?.mandatoryModulars ?? [];
+    pools?.scenarios.find((rule) => rule.code === splitFne(code).job)?.mandatoryModulars ?? [];
+
+  /** The other half of a Fear No Evil job: the scenario is the pair. */
+  function setVillain(villainId: string): void {
+    setScenario(composeFne(chosenJob, villainId));
+  }
 
   function setDifficulty(id: DifficultyId): void {
     session.current.difficulty = id;
@@ -595,7 +649,7 @@
       <label class="field-group">
         <span class="field-label">{t.scenario}</span>
         <select class="field"
-          value={session.current.scenarioCode}
+          value={chosenJob}
           onchange={(e) => setScenario(e.currentTarget.value)}
         >
           <option value="">{t.choose}</option>
@@ -603,10 +657,28 @@
             <option value={rule.code}>{setNames.get(rule.code) ?? rule.code}</option>
           {/each}
         </select>
-        {#if session.current.scenarioCode !== ''}
+        {#if session.current.scenarioCode !== '' && !isFne(session.current.scenarioCode)}
           <RatingBadge {t} summary={inView.forScenario(session.current.scenarioCode)} own={inView.ownFor(scenarioSubject(session.current.scenarioCode).key)} />
         {/if}
       </label>
+
+      {#if villainOptions.length > 0}
+        <!-- A Fear No Evil job is played against one of the box's
+             subordinates, chosen here: the job is not a scenario until it
+             has one, so the question follows the job at once. -->
+        <label class="field-group">
+          <span class="field-label">{t.villain}</span>
+          <select class="field"
+            value={splitFne(session.current.scenarioCode).villain ?? ''}
+            onchange={(e) => setVillain(e.currentTarget.value)}
+          >
+            <option value="">{t.choose}</option>
+            {#each [...villainOptions].sort((a, b) => (villainNames.get(a) ?? a).localeCompare(villainNames.get(b) ?? b)) as id (id)}
+              <option value={id}>{villainNames.get(id) ?? id}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
 
       <label class="field-group">
         <span class="field-label">{t.difficultyLabel}</span>
@@ -843,7 +915,7 @@
     </div>
 
     {#if trackEncounter}
-      <Tracker {t} {cardLocale} {index} expert={isExpert} />
+      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} />
     {/if}
 
     <label class="awake surface">

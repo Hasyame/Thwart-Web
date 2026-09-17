@@ -1,3 +1,4 @@
+import { isFne } from './fearNoEvil';
 import type { CampaignRun, Play, Rating } from './records';
 import type { CampaignEvent } from './campaign/types';
 import type { CardSet, IndexRow } from './types';
@@ -118,7 +119,8 @@ export function subjectsOfPlay(
 ): readonly RatingSubject[] {
   const laid = replayOf(play, [], sets).session;
   const scenario = layout?.scenarioCode ?? laid.scenarioCode ?? play.scenarioCode;
-  if (scenario === '') {
+  // Fear No Evil played on its own names no set either: nothing to rate.
+  if (scenario === '' || isFne(scenario)) {
     return [];
   }
   const modularSetCodes = layout === null ? (laid.modularSetCodes ?? []) : layout.modularSetCodes;

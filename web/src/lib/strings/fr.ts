@@ -442,6 +442,7 @@ export const fr: Strings = {
   reroll: 'Relancer',
   lockField: 'Conserver au prochain lancer',
   scenario: 'Scénario',
+  villain: 'Méchant',
   difficultyLabel: 'Difficulté',
   difficulty: (id) =>
     ({

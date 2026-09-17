@@ -27,6 +27,7 @@
     "test:deal": "vite-node scripts/test-campaign-deal.mjs",
     "test:tracker": "vite-node scripts/test-campaign-tracker.mjs",
     "test:fne": "vite-node scripts/test-campaign-fne.mjs",
+    "test:fne-solo": "vite-node scripts/test-fne-solo.mjs",
     "test:tile": "vite-node scripts/test-campaign-tile.mjs",
     "test:synergy": "vite-node scripts/test-synergy.mjs",
     "test:draft": "vite-node scripts/test-draft.mjs",

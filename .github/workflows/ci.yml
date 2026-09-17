@@ -309,6 +309,14 @@ jobs:
         working-directory: web
         run: npm run test:fne
 
+      # The same box played outside its campaign: the codes a one-off game
+      # carries, the jobs and their subordinates, the tracker's numbers, the
+      # briefing and the draw. The phone's FearNoEvilBoxTest asserts the same
+      # answers against the same template.
+      - name: Fear No Evil one-off
+        working-directory: web
+        run: npm run test:fne-solo
+
       # What a campaign's tile says: the final villain as its face, and won
       # or lost as the engine means it rather than as the last game went.
       - name: Campaign tiles

@@ -1,3 +1,4 @@
+import { isFne } from './fearNoEvil';
 import { liveQuery } from 'dexie';
 import { db } from './db';
 import { modularOverallKey, modularSubject, scenarioSubject } from './ratings';
@@ -22,7 +23,8 @@ export class RatingsInView {
   async show(scenario: string | null, sets: readonly string[], storageOk: boolean): Promise<void> {
     this.stop?.();
     this.stop = null;
-    if (scenario === null || scenario === '') {
+    // Fear No Evil played on its own names no set: nothing to ask for.
+    if (scenario === null || scenario === '' || isFne(scenario)) {
       this.summaries = new Map();
       this.own = new Map();
       return;

@@ -1,4 +1,5 @@
 import type { CardSet, IndexRow } from './types';
+import { composeFne, needsVillain, splitFne, type FneScenario } from './fearNoEvil';
 
 /**
  * The draw.
@@ -57,6 +58,11 @@ export interface ScenarioRule {
   /** Added to `modularCount` once per hero at the table. */
   readonly modularCountPerHero?: number;
   readonly needsReview?: boolean;
+  /**
+   * The scenario takes no modular set at all, extras included: Fear No
+   * Evil's, whose encounter deck is named in the setup text.
+   */
+  readonly noModulars?: boolean;
 }
 
 export interface ScenarioRulesFile {
@@ -111,6 +117,13 @@ export interface Pools {
    * filter panel is set. See `roll`.
    */
   readonly ownedDifficulties: readonly DifficultyId[];
+  /**
+   * Scenarios that are played against a villain drawn at the table, and
+   * the villains to draw from: Fear No Evil's jobs and its subordinates.
+   * A draw of such a scenario draws its villain too, and a choice of one
+   * asks for it. See lib/fearNoEvil.
+   */
+  readonly villainChoices: Readonly<Record<string, readonly string[]>>;
 }
 
 function pick<T>(items: readonly T[]): T | null {
@@ -143,6 +156,16 @@ export interface PoolInput {
   readonly ownedPackCodes: ReadonlySet<string>;
   readonly excludedModularSets: ReadonlySet<string>;
   readonly excludedScenarios: ReadonlySet<string>;
+  /**
+   * Fear No Evil's box, when its template has been read: its pack, its
+   * scenarios and its subordinates. On no card database, so it cannot come
+   * through the rules file like the others.
+   */
+  readonly fne?: {
+    readonly packCode: string;
+    readonly scenarios: readonly FneScenario[];
+    readonly villains: readonly string[];
+  } | null;
 }
 
 /**
@@ -160,10 +183,38 @@ export interface PoolInput {
 export function buildPools(input: PoolInput): Pools {
   const { rules, sets, index, ownedPackCodes } = input;
 
-  const scenarios = rules.scenarios.filter(
-    (rule) =>
-      ownedPackCodes.has(rule.packCode) && !input.excludedScenarios.has(rule.code),
-  );
+  // Fear No Evil enters as six entries, not one per job and subordinate,
+  // which would make the box come up five times as often as any other.
+  const fne = input.fne ?? null;
+  const fneScenarios: ScenarioRule[] =
+    fne !== null && ownedPackCodes.has(fne.packCode)
+      ? fne.scenarios
+          .filter((scenario) => !input.excludedScenarios.has(scenario.code))
+          .map((scenario) => ({
+            code: scenario.code,
+            packCode: fne.packCode,
+            modularCount: 0,
+            mandatoryModulars: [],
+            recommendedModulars: [],
+            noModulars: true,
+          }))
+      : [];
+  const villainChoices: Record<string, readonly string[]> = {};
+  if (fne !== null) {
+    for (const scenario of fneScenarios) {
+      if (fne.scenarios.find((s) => s.code === scenario.code)?.needsVillain === true) {
+        villainChoices[scenario.code] = fne.villains;
+      }
+    }
+  }
+
+  const scenarios = [
+    ...rules.scenarios.filter(
+      (rule) =>
+        ownedPackCodes.has(rule.packCode) && !input.excludedScenarios.has(rule.code),
+    ),
+    ...fneScenarios,
+  ];
 
   const modularSets = sets.filter(
     (set) =>
@@ -205,7 +256,26 @@ export function buildPools(input: PoolInput): Pools {
     difficulties,
     aspects,
     ownedDifficulties: difficulties,
+    villainChoices,
   };
+}
+
+/**
+ * The rule a scenario code falls under.
+ *
+ * A Fear No Evil job carries its villain in the code once one is drawn, and
+ * the rule is the job's: the code is read back to the job before looking.
+ */
+export const ruleFor = (pools: Pools, code: string | null): ScenarioRule | null =>
+  code === null ? null : (pools.scenarios.find((rule) => rule.code === splitFne(code).job) ?? null);
+
+/** A scenario that draws its villain gets one; every other code comes back as it is. */
+export function withVillain(scenarioCode: string, pools: Pools): string {
+  if (!needsVillain(scenarioCode, pools.villainChoices)) {
+    return scenarioCode;
+  }
+  const villain = pick(pools.villainChoices[scenarioCode] ?? []);
+  return villain === null ? scenarioCode : composeFne(scenarioCode, villain);
 }
 
 /**
@@ -292,6 +362,8 @@ export function applyFilters(pools: Pools, filters: DrawFilters): Pools {
     aspects: pools.aspects.filter((aspect) => !filters.excludedAspects.has(aspect)),
     // Deliberately untouched: what the collection allows is not a preference.
     ownedDifficulties: pools.ownedDifficulties,
+    // Nor is which villains a job draws from; excluding a job excludes it whole.
+    villainChoices: pools.villainChoices,
   };
 }
 
@@ -341,6 +413,12 @@ export function modularShortfall(
   playerCount: number,
   extras: number,
 ): number {
+  // A scenario that takes no modular set is never short of one, extras or
+  // not: the extras are a wish about the encounter deck, and this one's is
+  // fixed by its own rules.
+  if (rule.noModulars === true) {
+    return 0;
+  }
   const mandatoryHere = rule.mandatoryModulars.filter((code) =>
     pools.modularSets.some((set) => set.code === code),
   ).length;
@@ -409,8 +487,17 @@ export function roll(input: RollInput): Draw {
   // kept even if it is short — the page has already told them.
   const short = new Set(scenariosShortOfExtras(pools, playerCount, extras).map((r) => r.code));
   const scenarioRule = locked.has('scenario')
-    ? (pools.scenarios.find((rule) => rule.code === previous.scenarioCode) ?? null)
+    ? ruleFor(pools, previous.scenarioCode)
     : pick(pools.scenarios.filter((rule) => !short.has(rule.code)));
+  // A job of Fear No Evil is played against a villain drawn with it; the
+  // draw is not complete without one. A locked scenario keeps the villain
+  // it has.
+  const scenarioCode =
+    scenarioRule === null
+      ? null
+      : locked.has('scenario')
+        ? previous.scenarioCode
+        : withVillain(scenarioRule.code, pools);
 
   const heroes = locked.has('heroes')
     ? previous.heroes
@@ -440,13 +527,15 @@ export function roll(input: RollInput): Draw {
       // sampled without replacement, so no set is drawn twice and none that
       // is mandated is drawn at all.
       const candidates = modularCandidatesFor(pools, scenarioRule);
-      const wanted = modularCountFor(scenarioRule, playerCount) - mandatory.length + extras;
+      const wanted = scenarioRule.noModulars === true
+        ? 0
+        : modularCountFor(scenarioRule, playerCount) - mandatory.length + extras;
       drawn = sample(candidates, wanted).map((set) => set.code);
     }
   }
 
   return {
-    scenarioCode: scenarioRule?.code ?? null,
+    scenarioCode,
     difficulty,
     standardSet,
     playerCount,
