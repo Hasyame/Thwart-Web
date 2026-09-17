@@ -671,6 +671,8 @@ export const fr: Strings = {
   briefingNoSetup: "Ce scénario n'imprime aucune mise en place sur sa manigance principale : elle se trouve dans le livret de règles ou le livret de campagne.",
   howDidItEnd: "Comment cela s'est-il terminé ?",
   timePlayedLabel: 'Temps de jeu',
+  roundsPlayed: 'Tours',
+  villainStageReached: 'Stade du Méchant atteint',
 
   startCampaign: 'Commencer une campagne',
   campaign: 'Campagne',

@@ -662,6 +662,8 @@ export const en: Strings = {
   briefingNoSetup: 'This scenario prints no setup on its main scheme; it is in the rules insert or the campaign book.',
   howDidItEnd: 'How did it end?',
   timePlayedLabel: 'Time played',
+  roundsPlayed: 'Rounds',
+  villainStageReached: 'Villain stage reached',
 
   startCampaign: 'Start a campaign',
   campaign: 'Campaign',

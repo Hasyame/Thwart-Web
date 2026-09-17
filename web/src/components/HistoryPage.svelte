@@ -8,6 +8,8 @@
   import type { RatingSubject } from '../lib/ratings';
   import { count, inCampaign, page, runOf, type PlayFilter } from '../lib/playQuery';
   import { playerBucket } from '../lib/plays';
+  import { cardImageUrl } from '../lib/data';
+  import { scenarioFaceOf } from '../lib/scenarioFace';
   import PlayDetail from './PlayDetail.svelte';
 
   /**
@@ -337,6 +339,24 @@
     };
   });
 
+  /**
+   * The villain of each scenario on screen, by scenario code.
+   *
+   * Looked up once per distinct scenario rather than per row: a long history
+   * is the same few villains many times over. The picture is MarvelCDB's,
+   * by the path the index carries; nothing is fetched to find it.
+   */
+  const faceCache = new Map<string, string | null>();
+  function faceOf(scenarioCode: string): string | null {
+    const cached = faceCache.get(scenarioCode);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const url = cardImageUrl(scenarioFaceOf(index, scenarioCode)?.img);
+    faceCache.set(scenarioCode, url);
+    return url;
+  }
+
   const dayOf = (millis: number): string =>
     new Date(millis).toLocaleDateString(uiLocale, {
       year: 'numeric',
@@ -514,6 +534,7 @@
         {ratingSubjects}
         {setNames}
         {storageOk}
+        art={faceOf(openPlay.scenarioCode)}
       />
     {/if}
 
@@ -540,13 +561,23 @@
       <ul class="games">
         {#each rows as play (play.id)}
           {@const run = runOf(play) === null ? null : runs.get(runOf(play) ?? '')}
+          {@const face = faceOf(play.scenarioCode)}
           <li class="game">
+            <!-- The villain on the left, the game beside it; the whole row
+                 opens the detail. A scenario the index has no face for keeps
+                 the row's shape with an empty frame. -->
             <button
               class="link-row"
               type="button"
               aria-expanded={filter.play === play.id}
               onclick={() => open('play', filter.play === play.id ? '' : play.id)}
             >
+              {#if face !== null}
+                <img class="face" src={face} alt="" loading="lazy" />
+              {:else}
+                <span class="face face-blank" aria-hidden="true">{(play.scenarioName || play.scenarioCode).slice(0, 1)}</span>
+              {/if}
+              <span class="words">
               <span class="top">
                 <span class="scenario">
                   {#if favouriteIds.has(play.id)}
@@ -572,6 +603,7 @@
                 {#if inCampaign(play)}
                   <span class="chip">{run?.name || run?.templateName || t.historyInACampaign}</span>
                 {/if}
+              </span>
               </span>
             </button>
           </li>
@@ -660,8 +692,8 @@
    */
   .link-row {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-0-5);
+    align-items: center;
+    gap: var(--space-3);
     width: 100%;
     min-height: var(--tap-min);
     padding: var(--space-3) var(--space-1);
@@ -675,6 +707,32 @@
 
   .link-row:hover {
     background: var(--surface-2);
+  }
+
+  /* The villain's portrait: the top of the card, where the art is. */
+  .face {
+    flex: none;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    object-position: 50% 12%;
+    background: var(--surface-2);
+  }
+
+  .face-blank {
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
+    font-weight: var(--weight-bold);
+  }
+
+  .words {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-0-5);
+    min-width: 0;
   }
 
   .top {

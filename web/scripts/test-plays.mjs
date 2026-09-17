@@ -13,6 +13,9 @@
  *   npm run test:plays
  */
 import { computeStatistics, counts } from '../src/lib/plays.ts';
+import { parseTrackerNotes, trackerLines } from '../src/lib/playNotes.ts';
+import { scenarioFaceOf } from '../src/lib/scenarioFace.ts';
+import { readFileSync } from 'node:fs';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -308,6 +311,37 @@ const play = (id, extra = {}) => ({
     solo.byPlayerCount[0]?.key === 'players_1' && four.byPlayerCount[0]?.key === 'players_4',
     `${solo.byPlayerCount[0]?.key} then ${four.byPlayerCount[0]?.key}`,
   );
+}
+
+{
+  // The tracker's facts travel in the notes, as the modular sets do, and come
+  // back out as facts rather than text.
+  const lines = trackerLines(7, 'II');
+  check('the tracker writes its two lines', lines.join('|') === 'Rounds: 7|Villain stage: II', lines.join('|'));
+  check('and nothing for a game it did not follow', trackerLines(0, '').length === 0);
+
+  const notes = ['A close one.', 'Modular sets: Bomb Scare', ...lines].join('\n');
+  const read = parseTrackerNotes(notes);
+  check('the rounds read back', read.rounds === 7, String(read.rounds));
+  check('so does the stage', read.villainStage === 'II', String(read.villainStage));
+  check('and the rest is left for reading', read.rest === 'A close one.\nModular sets: Bomb Scare', JSON.stringify(read.rest));
+  check('a game without them has none', parseTrackerNotes('Just notes').rounds === null);
+}
+
+{
+  // The face of a scenario, against the real index: the villain, or the main
+  // scheme when the box has no villain, and always one with a picture when
+  // any of them has one.
+  const index = JSON.parse(readFileSync(new URL('../public/data/index.en.json', import.meta.url), 'utf8'));
+  const rhino = scenarioFaceOf(index, 'rhino');
+  check('Rhino is faced by Rhino', rhino?.name === 'Rhino' && rhino?.typeCode === 'villain', rhino?.name);
+  check('and the row carries its picture', typeof rhino?.img === 'string', rhino?.img);
+  const crew = scenarioFaceOf(index, 'wrecking_crew');
+  check('a scenario with no villain shows its scheme', crew?.typeCode === 'main_scheme', crew?.typeCode);
+  check('an unknown scenario has no face', scenarioFaceOf(index, 'no_such') === null);
+  const scenarios = JSON.parse(readFileSync(new URL('../public/data/scenario-rules.json', import.meta.url), 'utf8')).scenarios;
+  const faceless = scenarios.filter((s) => scenarioFaceOf(index, s.code) === null).map((s) => s.code);
+  check('every scenario the rules know has a face', faceless.length === 0, faceless.join(',') || 'none');
 }
 
 process.exit(failures === 0 ? 0 : 1);

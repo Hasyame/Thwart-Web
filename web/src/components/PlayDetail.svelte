@@ -9,6 +9,7 @@
   import { playerBucket } from '../lib/plays';
   import { inCampaign, runOf } from '../lib/playQuery';
   import { campaignFigures } from '../lib/campaignFigures';
+  import { parseTrackerNotes } from '../lib/playNotes';
   import { bgg, bggCanSend, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
   import { bggComment } from '../lib/bggComment';
   import { ApiError } from '../lib/sync/api';
@@ -50,11 +51,16 @@
     ratingSubjects: readonly RatingSubject[];
     setNames: ReadonlyMap<string, string>;
     storageOk: boolean;
+    /** The scenario's villain, on MarvelCDB, or null when it has none the index knows. */
+    art: string | null;
   }
 
   const {
-    t, uiLocale, play, run, onClose, onOpenRun, onReplay, starred, ratingSubjects, setNames, storageOk,
+    t, uiLocale, play, run, onClose, onOpenRun, onReplay, starred, ratingSubjects, setNames, storageOk, art,
   }: Props = $props();
+
+  /** The round count and villain stage the tracker wrote, read back as facts. */
+  const tracked = $derived(parseTrackerNotes(play.notes));
 
   async function toggleStar(): Promise<void> {
     busy = true;
@@ -280,7 +286,10 @@
 
 <div class="detail surface">
   <div class="head">
-    <div>
+    {#if art !== null}
+      <img class="face" src={art} alt="" loading="lazy" />
+    {/if}
+    <div class="title">
       <h2>{play.scenarioName || play.scenarioCode}</h2>
       <p class="muted note">{when}</p>
     </div>
@@ -372,6 +381,18 @@
           <dd>{formatElapsed(play.elapsedMillis)}</dd>
         </div>
       {/if}
+      {#if tracked.rounds !== null}
+        <div>
+          <dt>{t.roundsPlayed}</dt>
+          <dd>{tracked.rounds}</dd>
+        </div>
+      {/if}
+      {#if tracked.villainStage !== null}
+        <div>
+          <dt>{t.villainStageReached}</dt>
+          <dd>{tracked.villainStage}</dd>
+        </div>
+      {/if}
       {#if play.victoryPoints > 0}
         <div>
           <dt>{t.victoryPoints}</dt>
@@ -400,10 +421,10 @@
           <dd>{figure.value}</dd>
         </div>
       {/each}
-      {#if play.notes !== ''}
+      {#if tracked.rest !== ''}
         <div class="wide">
           <dt>{t.notes}</dt>
-          <dd class="notes">{play.notes}</dd>
+          <dd class="notes">{tracked.rest}</dd>
         </div>
       {/if}
     </dl>
@@ -516,8 +537,23 @@
   .head {
     display: flex;
     align-items: start;
-    justify-content: space-between;
     gap: var(--space-3);
+  }
+
+  .title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* The villain's portrait: the top of the card, where the art is. */
+  .face {
+    flex: none;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    object-position: 50% 12%;
+    background: var(--surface-2);
   }
 
   h2 {

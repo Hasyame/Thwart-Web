@@ -1,6 +1,8 @@
 import type { Play, PlayHero } from './records';
 import { inCampaign, isLive } from './playQuery';
 import type { Session } from './session.svelte';
+import { villainSideOf } from './encounter';
+import { trackerLines } from './playNotes';
 
 /**
  * Turning a finished game into a play record.
@@ -11,7 +13,8 @@ import type { Session } from './session.svelte';
  * enum name lowercased, so `expert_i` rather than `EXPERT_I`; and `notes`
  * carries the modular sets, sorted and prefixed, because which modulars were
  * in play changes a scenario enough that a win rate without them is only half
- * the story.
+ * the story. The tracker's round count and the villain's last stage go in
+ * the same way (lib/playNotes), because the record has no field for them.
  *
  * Getting these wrong would not fail loudly. It would quietly produce a second
  * dialect of the same data, and the statistics on the two clients would
@@ -45,7 +48,11 @@ export function buildPlay(input: RecordInput): Play {
       ? ''
       : `Modular sets: ${[...modularSetNames].sort().join(', ')}`;
 
-  const notes = [input.notes.trim(), modularNote].filter((s) => s !== '').join('\n');
+  const tracked = session.encounter === null
+    ? []
+    : trackerLines(session.encounter.progress.round, villainSideOf(session.encounter)?.stage ?? '');
+
+  const notes = [input.notes.trim(), modularNote, ...tracked].filter((s) => s !== '').join('\n');
 
   return {
     id: crypto.randomUUID(),

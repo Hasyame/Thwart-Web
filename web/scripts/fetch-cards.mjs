@@ -171,6 +171,8 @@ async function getJson(url) {
  * resources as letters -- "PP" for two physical, "W" for a wild -- since the
  * rules only ask whether a card gives a kind, not how many.
  */
+const FACE_TYPES = new Set(['hero', 'villain', 'leader', 'main_scheme']);
+
 function deckFields(card) {
   const out = {};
   if (card.quantity != null && card.quantity !== 1) {
@@ -196,9 +198,10 @@ function deckFields(card) {
   if (card.deck_requirements || card.deck_options) {
     out.deckRules = { requirements: card.deck_requirements ?? null, options: card.deck_options ?? null };
   }
-  // The hero's picture, for a grid of identities: seventy-odd rows, so the
-  // draft can show the heroes without loading every pack they come from.
-  if (card.type_code === 'hero' && card.imagesrc) {
+  // The picture, on the rows that stand for something: heroes for the
+  // draft's grid of identities, villains and main schemes for the history's
+  // scenario faces. A few hundred rows, so neither screen loads every pack.
+  if (FACE_TYPES.has(card.type_code) && card.imagesrc) {
     out.img = card.imagesrc;
   }
   return out;

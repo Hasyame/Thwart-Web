@@ -590,6 +590,9 @@ export interface Strings {
   readonly briefingNoSetup: string;
   readonly howDidItEnd: string;
   readonly timePlayedLabel: string;
+  /** The history's facts read back from the tracker's notes lines. */
+  readonly roundsPlayed: string;
+  readonly villainStageReached: string;
 
   // Campaigns you can actually play.
   readonly startCampaign: string;
