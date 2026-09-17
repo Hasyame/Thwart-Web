@@ -471,7 +471,7 @@ export const en: Strings = {
   hubPaused: 'A game is waiting',
   settingsGroupedPlay: 'One Play tab',
   settingsGroupedPlayHint:
-    'Puts the random game, your own setup, the campaigns and versus behind a single Play tab, the way the Android app does.',
+    'Puts the random game, your own setup, the draft, the campaigns and versus behind a single Play tab, the way the Android app does.',
   navMoreTitle: 'Everything else',
   settingsTitle: 'Settings',
   close: 'Close',

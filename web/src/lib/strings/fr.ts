@@ -479,7 +479,7 @@ export const fr: Strings = {
   hubPaused: 'Une partie vous attend',
   settingsGroupedPlay: 'Un seul onglet Jouer',
   settingsGroupedPlayHint:
-    'Regroupe la partie aléatoire, votre propre partie, les campagnes et le compétitif derrière un seul onglet Jouer, comme l’application Android.',
+    'Regroupe la partie aléatoire, votre propre partie, le draft, les campagnes et le compétitif derrière un seul onglet Jouer, comme l’application Android.',
   navMoreTitle: 'Tout le reste',
   settingsTitle: 'Paramètres',
   close: 'Fermer',

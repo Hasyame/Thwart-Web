@@ -91,11 +91,13 @@ export function saveTheme(theme: ThemeChoice): void {
  * record is fixed at five keys by the contract with the phone, so a sixth would
  * be dropped on its next write and the toggle would turn itself off.
  *
- * Off by default. Somebody who has used the web app already knows where things
- * are, and moving them without being asked is not an improvement.
+ * On by default since the draft joined the hub: five ways of playing is too
+ * many for a bar of four tabs, and one Play tab holding all of them is what
+ * the phone does. Somebody who turned it off keeps it off; only the absence of
+ * a choice reads as on.
  */
 export function loadGroupedPlay(): boolean {
-  return read(KEY_GROUPED_PLAY) === 'on';
+  return read(KEY_GROUPED_PLAY) !== 'off';
 }
 
 export function saveGroupedPlay(grouped: boolean): void {
