@@ -35,6 +35,7 @@ import {
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { synergyOf, traitKeys, unrecognised } from './lib/synergy.mjs';
 import { normalizeForSearch } from '../src/lib/normalize.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -164,6 +165,39 @@ async function getJson(url) {
   return response.json();
 }
 
+/**
+ * The fields a deck's rules read, on the rows that have them. `res` is the
+ * resources as letters -- "PP" for two physical, "W" for a wild -- since the
+ * rules only ask whether a card gives a kind, not how many.
+ */
+function deckFields(card) {
+  const out = {};
+  if (card.quantity != null && card.quantity !== 1) {
+    out.quantity = card.quantity;
+  }
+  if (card.deck_limit != null && card.deck_limit !== 3) {
+    out.deckLimit = card.deck_limit;
+  }
+  if (card.duplicate_of_code) {
+    out.duplicateOf = card.duplicate_of_code;
+  }
+  if (card.hidden === true) {
+    out.hidden = true;
+  }
+  const res =
+    'P'.repeat(card.resource_physical ?? 0) +
+    'M'.repeat(card.resource_mental ?? 0) +
+    'E'.repeat(card.resource_energy ?? 0) +
+    'W'.repeat(card.resource_wild ?? 0);
+  if (res !== '') {
+    out.res = res;
+  }
+  if (card.deck_requirements || card.deck_options) {
+    out.deckRules = { requirements: card.deck_requirements ?? null, options: card.deck_options ?? null };
+  }
+  return out;
+}
+
 /** The row the results list needs, and nothing more. */
 function toIndexRow(card) {
   return {
@@ -188,9 +222,22 @@ function toIndexRow(card) {
     // list of the traits that exist. MarvelCDB writes them as one string,
     // "Avenger. Spy.", so this is the one place that shape is understood.
     traits: String(card.traits ?? '')
-      .split('.')
+      .split(/\.\s+|\.$/)
       .map((trait) => trait.trim())
       .filter((trait) => trait !== ''),
+    // The same traits as language-independent keys, read off the English
+    // traits both languages carry, so an identity's faces can be matched
+    // against a card's condition without loading the full card.
+    traitKeys: traitKeys(card.real_traits ?? card.traits),
+    // "Play only if your identity has the [[X]] trait", read once here. See
+    // scripts/lib/synergy.mjs; null on every card without such a condition.
+    synergy: synergyOf(card),
+    // What a deck's rules need of a card, so the draft can run off the index
+    // alone and offline: copies printed in the pack, the copy limit, the
+    // original printing a reprint repeats, the resources it gives, and for
+    // the seven identities that carry one, the deck-building rule itself.
+    // Kept short: this file is read on every start.
+    ...deckFields(card),
     // Folded exactly as SearchNormalizer folds it, so the browser compares
     // like with like and never has to normalise 4000 cards at startup.
     s: normalizeForSearch(
@@ -230,8 +277,18 @@ async function buildLocale(locale) {
   const rawPacks = await getJson(packsUrl);
   process.stdout.write(`${rawPacks.length} packs\n`);
 
-  const cards = rawCards.map(sanitizeCard);
+  const cards = rawCards.map((card) => ({ ...sanitizeCard(card), synergy: synergyOf(card) }));
   const index = rawCards.map(toIndexRow);
+
+  // Every "Play only if" the derivation did not read, so a new wording is
+  // noticed the day it appears rather than silently never warning anybody.
+  if (locale.code === LOCALES[0].code) {
+    const missed = unrecognised(rawCards);
+    console.log(`  synergy: ${index.filter((row) => row.synergy !== null).length} cards carry a trait condition; ${missed.length} "Play only if" not read:`);
+    for (const miss of missed) {
+      console.log(`    ${miss.code} ${miss.name}: ${miss.condition}`);
+    }
+  }
   const metaByCode = new Map(PACK_METADATA.packs.map((entry) => [entry.code, entry]));
   const packs = rawPacks.map((pack) => {
     const meta = metaByCode.get(pack.code);

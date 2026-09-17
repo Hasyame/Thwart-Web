@@ -3,7 +3,8 @@
   import DeckBanner from './DeckBanner.svelte';
   import CardPanel from './CardPanel.svelte';
   import { cardImageUrl } from '../lib/data';
-  import type { Card, Locale } from '../lib/types';
+  import type { Card, IndexRow, Locale } from '../lib/types';
+  import { identityTraitKeys, synergyProblems } from '../lib/synergy';
   import type { DeckFolder, SavedDeck } from '../lib/records';
   import { folderOf, inShelfOrder, moveDeck } from '../lib/folders';
   import type { Strings } from '../lib/i18n';
@@ -22,6 +23,8 @@
     cardLocale: Locale;
     /** Full records for every pack the deck draws on, keyed by code. */
     cards: ReadonlyMap<string, Card>;
+    /** For the identity's faces and the cards' conditions (lib/synergy). */
+    index: readonly IndexRow[];
     ownedPackCodes: ReadonlySet<string>;
     packNames: ReadonlyMap<string, string>;
     openCard: (code: string) => void;
@@ -34,7 +37,7 @@
     folders?: readonly DeckFolder[];
   }
 
-  const { t, deck, cardLocale, cards, ownedPackCodes, packNames, openCard, cardHref, onEdit, onDelete, onBack, folders = [] }:
+  const { t, deck, index, cardLocale, cards, ownedPackCodes, packNames, openCard, cardHref, onEdit, onDelete, onBack, folders = [] }:
     Props = $props();
 
   /*
@@ -125,6 +128,13 @@
   );
 
   const stats = $derived(deckStatistics(slots, cards));
+
+  /* Cards the identity cannot play: a warning under the verdict, never stored. */
+  const synergyIssues = $derived.by(() => {
+    const rowByCode = new Map(index.map((row) => [row.code, row] as const));
+    return synergyProblems(slots, (code) => rowByCode.get(code), identityTraitKeys(index, deck.heroCode))
+      .map((row) => row.name);
+  });
 
   /**
    * Legality, only where it can be judged.
@@ -294,6 +304,11 @@
           {/each}
         </ul>
       </div>
+    {/if}
+    {#if synergyIssues.length > 0}
+      <!-- Recomputed on open, never stored: a synced or imported deck says
+           the same thing as one built here. -->
+      <p class="synergy" role="status">{t.synergyIssue(synergyIssues)}</p>
     {/if}
   {:else}
     <p class="muted note">{t.deckLegalityUnknown}</p>
@@ -733,6 +748,15 @@
     color: var(--danger);
     font-weight: 600;
     margin-bottom: var(--space-1);
+  }
+
+  .synergy {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border-inline-start: 3px solid var(--gold);
+    font-size: var(--text-sm);
   }
 
   /*

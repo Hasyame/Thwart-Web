@@ -305,7 +305,15 @@ export function inferAspects(
 }
 
 /** The card types a player deck can hold. */
-const PLAYER_TYPES: ReadonlySet<string> = new Set(['ally', 'event', 'upgrade', 'support', 'resource']);
+const PLAYER_TYPES: ReadonlySet<string> = new Set([
+  'ally',
+  'event',
+  'upgrade',
+  'support',
+  'resource',
+  // Cable's own allowance is for these, and a deck is where they go.
+  'player_side_scheme',
+]);
 
 /**
  * Whether a card can be offered to a deck being built for a hero.

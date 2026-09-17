@@ -82,6 +82,8 @@ export function headFor(
       case 'decks':
       case 'deck':
         return { title: seo.decksTitle, description: seo.decksDescription };
+      case 'draft':
+        return { title: seo.draftTitle, description: seo.draftDescription };
       case 'history':
         return { title: seo.historyTitle, description: seo.historyDescription };
       case 'stats':

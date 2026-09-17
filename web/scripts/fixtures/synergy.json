@@ -1,0 +1,222 @@
+{
+  "_note": [
+    "Shared fixture for the synergy rule, identical on Thwart Web and Android.",
+    "docs/spec/synergie-et-draft.md, phase 1. Traits and conditions are real",
+    "cards' English text as MarvelCDB serves it (real_text, real_traits);",
+    "expected values are what scripts/lib/synergy.mjs derives and decides.",
+    "A change here is a change of contract: both clients' tests read it."
+  ],
+  "traitKeys": [
+    {
+      "traits": "Guardian. Mystic.",
+      "keys": [
+        "guardian",
+        "mystic"
+      ]
+    },
+    {
+      "traits": "Avenger. S.H.I.E.L.D. Spy.",
+      "keys": [
+        "avenger",
+        "shield",
+        "spy"
+      ]
+    },
+    {
+      "traits": "Mystic. X-Men.",
+      "keys": [
+        "mystic",
+        "x-men"
+      ]
+    },
+    {
+      "traits": "",
+      "keys": []
+    }
+  ],
+  "cards": [
+    {
+      "code": "16019",
+      "name": "Rocket Raccoon",
+      "real_text": "Play only if your identity has the [[Guardian]] trait.\n<b>Interrupt</b>: When Rocket Raccoon attacks a minion, he gets +2 ATK for this attack.",
+      "synergy": {
+        "anyOfTraits": [
+          "guardian"
+        ]
+      }
+    },
+    {
+      "code": "42011",
+      "name": "Elixir",
+      "real_text": "Play only if your identity has the [[X-Force]] or [[X-Men]] trait.",
+      "synergy": {
+        "anyOfTraits": [
+          "x-force",
+          "x-men"
+        ]
+      }
+    },
+    {
+      "code": "45021",
+      "name": "Marrow",
+      "real_text": "Play only if you have the [[X-FORCE]] or [[X-MEN]] trait.",
+      "synergy": {
+        "anyOfTraits": [
+          "x-force",
+          "x-men"
+        ]
+      }
+    },
+    {
+      "code": "54033",
+      "name": "S.H.I.E.L.D. Deputy",
+      "real_text": "Play only if your identity has the [[S.H.I.E.L.D.]] trait.",
+      "synergy": {
+        "anyOfTraits": [
+          "shield"
+        ]
+      }
+    },
+    {
+      "code": "01050",
+      "name": "Helicarrier",
+      "real_text": "<b>Resource</b>: Generate a [wild] resource for a card you play.",
+      "synergy": null
+    },
+    {
+      "code": "41030",
+      "name": "Psi-Bow Attack",
+      "real_text": "Play only if your hero has the [[PSIONIC]] trait.",
+      "synergy": null,
+      "_why": "A one-face condition; out of scope until the spec says how to encode it."
+    },
+    {
+      "code": "27017",
+      "name": "Spider-Man",
+      "real_text": "Play only if you control a [[Web-Warrior]] card.",
+      "synergy": null,
+      "_why": "Not a trait of the identity."
+    },
+    {
+      "code": "37021",
+      "name": "Mutant Education",
+      "real_text": "Play only if your identity has the [[MUTANT]] trait.",
+      "synergy": {
+        "anyOfTraits": [
+          "mutant"
+        ]
+      }
+    }
+  ],
+  "identities": [
+    {
+      "id": "adam-warlock",
+      "faces": [
+        "Guardian. Mystic.",
+        "Mystic."
+      ]
+    },
+    {
+      "id": "magik",
+      "faces": [
+        "Mystic. X-Men.",
+        "Mutant. Mystic."
+      ]
+    },
+    {
+      "id": "spider-man",
+      "faces": [
+        "Avenger.",
+        "Genius."
+      ]
+    },
+    {
+      "id": "alter-ego-only-mutant",
+      "faces": [
+        "Mystic.",
+        "Mutant."
+      ]
+    },
+    {
+      "id": "hero-only-x-force",
+      "faces": [
+        "X-Force.",
+        "Scientist."
+      ]
+    },
+    {
+      "id": "maria-hill",
+      "faces": [
+        "Avenger. S.H.I.E.L.D. Spy.",
+        "S.H.I.E.L.D."
+      ]
+    }
+  ],
+  "compatibility": [
+    {
+      "card": "16019",
+      "identity": "adam-warlock",
+      "compatible": true
+    },
+    {
+      "card": "16019",
+      "identity": "magik",
+      "compatible": false
+    },
+    {
+      "card": "16019",
+      "identity": "spider-man",
+      "compatible": false
+    },
+    {
+      "card": "01050",
+      "identity": "magik",
+      "compatible": true
+    },
+    {
+      "card": "42011",
+      "identity": "magik",
+      "compatible": true
+    },
+    {
+      "card": "42011",
+      "identity": "hero-only-x-force",
+      "compatible": true
+    },
+    {
+      "card": "42011",
+      "identity": "adam-warlock",
+      "compatible": false
+    },
+    {
+      "card": "45021",
+      "identity": "magik",
+      "compatible": true
+    },
+    {
+      "card": "37021",
+      "identity": "alter-ego-only-mutant",
+      "compatible": true
+    },
+    {
+      "card": "54033",
+      "identity": "maria-hill",
+      "compatible": true
+    },
+    {
+      "card": "54033",
+      "identity": "spider-man",
+      "compatible": false
+    },
+    {
+      "card": "41030",
+      "identity": "spider-man",
+      "compatible": true
+    },
+    {
+      "card": "27017",
+      "identity": "adam-warlock",
+      "compatible": true
+    }
+  ]
+}
