@@ -66,6 +66,8 @@ export interface IndexRow {
   readonly res?: string;
   /** `deck_requirements` and `deck_options`, on the identities that carry them. */
   readonly deckRules?: { readonly requirements: unknown; readonly options: unknown };
+  /** The card's picture, on hero rows only: a grid of identities needs no pack files. */
+  readonly img?: string;
   /** Pre-folded search text. See lib/normalize.js. */
   readonly s: string;
 }

@@ -196,6 +196,11 @@ function deckFields(card) {
   if (card.deck_requirements || card.deck_options) {
     out.deckRules = { requirements: card.deck_requirements ?? null, options: card.deck_options ?? null };
   }
+  // The hero's picture, for a grid of identities: seventy-odd rows, so the
+  // draft can show the heroes without loading every pack they come from.
+  if (card.type_code === 'hero' && card.imagesrc) {
+    out.img = card.imagesrc;
+  }
   return out;
 }
 

@@ -321,6 +321,7 @@ export const en: Strings = {
     shortfallLine: (player, needed, available) => `Player ${player}: cards needed, ${needed}; on the shelf with these aspects, ${available}.`,
     shortfallHint: 'Lower a deck size, choose other aspects, or turn the synergy option off.',
     picksMade: (made, total) => `${made} / ${total} picks made`,
+    picksLabel: 'picks made',
     round: (n) => `Round ${n} \u00b7 pick one card`,
     yourDeck: 'Your deck',
     identity: 'Identity',

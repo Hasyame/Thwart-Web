@@ -325,6 +325,7 @@ export const fr: Strings = {
     shortfallLine: (player, needed, available) => `Joueur ${player}\u00a0: cartes n\u00e9cessaires, ${needed}\u00a0; en stock avec ces affinit\u00e9s, ${available}.`,
     shortfallHint: 'R\u00e9duisez une taille de deck, choisissez d\u2019autres affinit\u00e9s, ou d\u00e9sactivez l\u2019option synergie.',
     picksMade: (made, total) => `${made} / ${total} choix faits`,
+    picksLabel: 'choix faits',
     round: (n) => `Manche ${n} \u00b7 choisissez une carte`,
     yourDeck: 'Votre deck',
     identity: 'Identit\u00e9',

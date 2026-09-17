@@ -315,14 +315,14 @@
     if (current === null || context === null) {
       return [];
     }
-    const groups = new Map<string, { code: string; name: string; count: number }[]>();
+    const groups = new Map<string, { code: string; name: string; count: number; cost: number | null }[]>();
     for (const [code, count] of slotsOf(current)) {
       const row = context.pool.get(code) ?? rowByCode.get(code);
       if (row === undefined) {
         continue;
       }
       const list = groups.get(row.typeName) ?? [];
-      list.push({ code, name: row.name, count });
+      list.push({ code, name: row.name, count, cost: row.cost });
       groups.set(row.typeName, list);
     }
     return [...groups.entries()]
@@ -432,14 +432,19 @@
     if (draft === null) {
       return [];
     }
+    // The engine counts this player's own choice as taken; here it stays
+    // clickable so the ring can move to another card.
     const available = new Set(availableHeroes(draft, heroes));
+    const own = current?.heroCode ?? null;
     const q = heroQuery.trim().toLowerCase();
     return heroes
-      .map((code) => ({ code, name: nameOf(code), available: available.has(code) }))
+      .map((code) => ({ code, name: nameOf(code), available: available.has(code) || code === own }))
       .filter((h) => q === '' || h.name.toLowerCase().includes(q));
   });
+  // Which other player holds this identity; the current player's own choice
+  // is shown by the ring, not by a line saying they took it.
   const takenBy = (code: string): number | null => {
-    const i = draft?.players.findIndex((p) => p.heroCode === code) ?? -1;
+    const i = draft?.players.findIndex((p, n) => p.heroCode === code && n !== draft?.current) ?? -1;
     return i < 0 ? null : i + 1;
   };
 </script>
@@ -474,8 +479,8 @@
             {/each}
           </div>
         </div>
-        <label class="setting">
-          <span class="label">{t.draft.offerSize} <strong class="value">{settings.offerSize}</strong></span>
+        <label class="slider">
+          <span class="slider-head"><span class="label">{t.draft.offerSize}</span><strong class="value">{settings.offerSize}</strong></span>
           <input type="range" min={DRAFT_RULES.MIN_OFFER_SIZE} max={DRAFT_RULES.MAX_OFFER_SIZE} bind:value={settings.offerSize} />
           <span class="muted note">{t.draft.offerSizeDetail}</span>
         </label>
@@ -490,64 +495,77 @@
       </div>
     {/if}
   {:else if draft.phase === 'identity' && current !== null}
-    <!-- Page 2: this player's identity, aspects and deck size. -->
-    <div class="surface panel">
-      <h2>{t.draft.identityTitle(draft.current + 1)}</h2>
-
-      {#if current.heroCode !== null && draft.settings.identityMode !== 'choice'}
-        <div class="chosen">
-          {#if images.get(current.heroCode) !== undefined}
-            <img class="hero-art" src={images.get(current.heroCode)} alt="" />
-          {/if}
-          <div>
-            <p class="muted small">{draft.settings.identityMode === 'random' ? t.draft.identityDrawn : ''}</p>
-            <p class="hero-name">{current.heroName}</p>
-            {#if draft.settings.identityMode === 'random'}
-              <button type="button" class="btn small" onclick={drawAgain}>{t.draft.drawAgain}</button>
+    <!-- Page 2: this player's identity, aspects and deck size, in three
+         numbered steps, the identities as their cards. -->
+    <div class="steps">
+      <section class="step">
+        <header class="step-head">
+          <h2>1. {t.draft.identityTitle(draft.current + 1)}</h2>
+          <div class="step-tools">
+            {#if draft.settings.identityMode !== 'choice'}
+              <button type="button" class="btn small" onclick={drawAgain}>⇶ {t.draft.drawAgain}</button>
+            {:else}
+              <input class="field search" type="search" placeholder={t.draft.searchHeroes} aria-label={t.draft.searchHeroes} bind:value={heroQuery} />
             {/if}
           </div>
-        </div>
-      {:else if draft.settings.identityMode === 'random_of_five'}
-        <p class="muted">{t.draft.chooseOfFive}</p>
-        <ul class="heroes">
-          {#each current.heroChoices as code (code)}
-            {@render heroTile(code, true)}
-          {/each}
-        </ul>
-        <div class="btn-row"><button type="button" class="btn small" onclick={drawAgain}>{t.draft.drawAgain}</button></div>
-      {:else}
-        <p class="muted">{t.draft.chooseIdentity}</p>
-        <input class="field" type="search" placeholder={t.draft.searchHeroes} aria-label={t.draft.searchHeroes} bind:value={heroQuery} />
-        <ul class="heroes">
-          {#each heroList as hero (hero.code)}
-            {@render heroTile(hero.code, hero.available)}
-          {/each}
-        </ul>
-      {/if}
+        </header>
+
+        {#if draft.settings.identityMode === 'random'}
+          <p class="muted small">{t.draft.identityDrawn}</p>
+          <ul class="heroes single">
+            {#if current.heroCode !== null}
+              {@render heroTile(current.heroCode, true)}
+            {/if}
+          </ul>
+        {:else if draft.settings.identityMode === 'random_of_five'}
+          <p class="muted small">{t.draft.chooseOfFive}</p>
+          <ul class="heroes">
+            {#each current.heroChoices as code (code)}
+              {@render heroTile(code, true)}
+            {/each}
+          </ul>
+        {:else}
+          <ul class="heroes">
+            {#each heroList as hero (hero.code)}
+              {@render heroTile(hero.code, hero.available)}
+            {/each}
+          </ul>
+        {/if}
+      </section>
 
       {#if current.heroCode !== null}
-        <h3>{t.draft.aspectsTitle}</h3>
-        {#if imposedAspects(currentRules) !== null}
-          <p class="muted note">{t.draft.aspectsImposed}</p>
-        {:else}
-          {#if (currentRules?.aspectCount ?? 1) > 1}
-            <p class="muted note">{t.draft.aspectsPickN(currentRules?.aspectCount ?? 1)}</p>
+        <section class="step">
+          <header class="step-head">
+            <h2>2. {t.draft.aspectsTitle}</h2>
+            {#if imposedAspects(currentRules) === null}
+              <div class="step-tools">
+                <button type="button" class="btn small" onclick={drawAspects}>⇶ {t.draft.aspectsDraw}</button>
+              </div>
+            {/if}
+          </header>
+          {#if imposedAspects(currentRules) !== null}
+            <p class="muted note">{t.draft.aspectsImposed}</p>
+          {:else}
+            {#if (currentRules?.aspectCount ?? 1) > 1}
+              <p class="muted small">{t.draft.aspectsPickN(currentRules?.aspectCount ?? 1)}</p>
+            {/if}
+            <div class="aspects">
+              {#each aspectOptions as aspect (aspect)}
+                <button type="button" class="aspect" data-faction={aspect} aria-pressed={current.aspects.includes(aspect)} onclick={() => toggleAspect(aspect)}>
+                  <span class="dot" aria-hidden="true"></span>{t.aspect(aspect)}
+                </button>
+              {/each}
+            </div>
           {/if}
-          <div class="aspects">
-            {#each aspectOptions as aspect (aspect)}
-              <button type="button" class="aspect" data-faction={aspect} aria-pressed={current.aspects.includes(aspect)} onclick={() => toggleAspect(aspect)}>
-                <span class="dot" aria-hidden="true"></span>{t.aspect(aspect)}
-              </button>
-            {/each}
-          </div>
-          <div class="btn-row"><button type="button" class="btn small" onclick={drawAspects}>{t.draft.aspectsDraw}</button></div>
-        {/if}
+        </section>
 
-        <label class="setting">
-          <span class="label">{t.draft.deckSize} <strong class="value">{current.deckSize}</strong></span>
-          <input type="range" min={DRAFT_RULES.MIN_DECK_SIZE} max={DRAFT_RULES.MAX_DECK_SIZE} value={current.deckSize} oninput={(e) => setDeckSize(Number(e.currentTarget.value))} />
-          <span class="muted note">{t.draft.deckSizeDetail(current.deckSize, signatureCount(current), remaining(current))}</span>
-        </label>
+        <section class="step sliders">
+          <label class="slider">
+            <span class="slider-head"><span class="label">3. {t.draft.deckSize}</span><strong class="value">{current.deckSize}</strong></span>
+            <input type="range" min={DRAFT_RULES.MIN_DECK_SIZE} max={DRAFT_RULES.MAX_DECK_SIZE} value={current.deckSize} oninput={(e) => setDeckSize(Number(e.currentTarget.value))} />
+            <span class="muted note">{t.draft.deckSizeDetail(current.deckSize, signatureCount(current), remaining(current))}</span>
+          </label>
+        </section>
       {/if}
 
       {#if shortfallLines.length > 0}
@@ -560,11 +578,23 @@
         </div>
       {/if}
 
-      <div class="btn-row">
-        <button type="button" class="btn btn--primary" disabled={!identityReady} onclick={confirmIdentity}>
-          {draft.current >= draft.players.length - 1 ? t.draft.startDraft : t.draft.next}
-        </button>
-        {@render abandonButton()}
+      <!-- The way on, pinned to the foot so it is never below a long grid. -->
+      <div class="foot surface">
+        <span class="muted small">
+          {#if current.heroCode === null}
+            {t.draft.chooseIdentity}
+          {:else if !identityReady}
+            {t.draft.aspectsPickN(currentRules?.aspectCount ?? 1)}
+          {:else}
+            {current.heroName} · {current.aspects.map((a) => t.aspect(a)).join(', ')} · {current.deckSize}
+          {/if}
+        </span>
+        <span class="btn-row">
+          {@render abandonButton()}
+          <button type="button" class="btn btn--primary" disabled={!identityReady} onclick={confirmIdentity}>
+            {draft.current >= draft.players.length - 1 ? t.draft.startDraft : t.draft.next}
+          </button>
+        </span>
       </div>
     </div>
   {:else if draft.phase === 'pick' && current !== null}
@@ -577,15 +607,18 @@
         <button type="button" class="btn btn--primary" onclick={() => (handedOver = true)}>{t.draft.reveal}</button>
       </div>
     {:else}
-      <!-- Page 3: the table. -->
+      <!-- Page 3: the table, the deck beside it. -->
       <div class="table">
         <div class="board">
           <header class="board-head">
             <div>
               <p class="hero-name">{current.heroName}</p>
-              <p class="muted small">{draft.players.length > 1 ? `${t.draft.playerN(draft.current + 1)} · ` : ''}{current.aspects.map((a) => t.aspect(a)).join(', ')}</p>
+              <p class="aspect-line">{draft.players.length > 1 ? `${t.draft.playerN(draft.current + 1)} · ` : ''}{current.aspects.map((a) => t.aspect(a)).join(', ')}</p>
             </div>
-            <p class="progress-text">{t.draft.picksMade(current.picks.length, current.picks.length + remaining(current))}</p>
+            <div class="progress-block">
+              <p class="progress-text">{current.picks.length} / {current.picks.length + remaining(current)}</p>
+              <p class="muted small">{t.draft.picksLabel}</p>
+            </div>
           </header>
           <span class="progress" aria-hidden="true">
             <span class="fill" style:width={`${Math.round((current.picks.length / Math.max(1, current.picks.length + remaining(current))) * 100)}%`}></span>
@@ -611,8 +644,8 @@
                     </button>
                   </CardHover>
                   <p class="card-name">{row.name}</p>
-                  <p class="muted small">{row.typeName}{row.cost === null ? '' : ` · ${row.cost}`}</p>
-                  <button type="button" class="btn btn--text small" onclick={() => showCard(row.code)}>?</button>
+                  <p class="muted small">{row.typeName}{row.cost === null ? '' : ` · ${t.cost} ${row.cost}`}
+                    <button type="button" class="btn btn--text small" aria-label={row.name} onclick={() => showCard(row.code)}>?</button></p>
                 </li>
               {/each}
             </ul>
@@ -626,12 +659,16 @@
             <span class="count">{cardCount(current)}/{current.deckSize}</span>
           </header>
           <p class="group-title">{t.draft.identity}</p>
-          <p class="small">{current.heroName}</p>
+          <p class="deck-identity"><span class="chip">{current.heroName}</span></p>
           {#each deckGroups as group (group.type)}
             <p class="group-title">{group.type} ({group.cards.reduce((n, c) => n + c.count, 0)})</p>
             <ul class="deck-list">
               {#each group.cards as card (card.code)}
-                <li><span class="muted">{card.count}×</span> <CardHover code={card.code}><span>{card.name}</span></CardHover></li>
+                <li>
+                  <span class="muted qty">{card.count}×</span>
+                  <CardHover code={card.code}><span class="deck-card-name">{card.name}</span></CardHover>
+                  {#if card.cost !== null}<span class="cost">{card.cost}</span>{/if}
+                </li>
               {/each}
             </ul>
           {/each}
@@ -662,11 +699,17 @@
 
 {#snippet heroTile(code: string, available: boolean)}
   {@const taken = takenBy(code)}
+  {@const art = cardImageUrl(rowByCode.get(code)?.img)}
   <li>
-    <button type="button" class="hero-tile" disabled={!available} onclick={() => chooseHero(code)}>
-      <span class="hero-tile-name">{nameOf(code)}</span>
-      {#if taken !== null}<span class="muted small">{t.draft.takenBy(taken)}</span>{/if}
+    <button type="button" class="hero" class:chosen={current?.heroCode === code} disabled={!available} aria-label={nameOf(code)} onclick={() => chooseHero(code)}>
+      {#if art !== null}
+        <img class="hero-card" src={art} alt="" loading="lazy" />
+      {:else}
+        <span class="hero-card hero-blank">{nameOf(code)}</span>
+      {/if}
     </button>
+    <p class="hero-tile-name">{nameOf(code)}</p>
+    {#if taken !== null}<p class="muted small">{t.draft.takenBy(taken)}</p>{/if}
   </li>
 {/snippet}
 
@@ -691,11 +734,6 @@
     margin: 0 0 var(--space-2);
   }
 
-  h3 {
-    font-size: var(--text-base);
-    margin: var(--space-4) 0 var(--space-2);
-  }
-
   .intro {
     max-width: var(--prose-max);
   }
@@ -718,7 +756,6 @@
 
   .value {
     color: var(--accent);
-    margin-inline-start: var(--space-2);
   }
 
   .note,
@@ -752,54 +789,147 @@
     gap: var(--space-1);
   }
 
-  /* The identities, a grid of names; the drawn one shows its card. */
+  /* The identities as their cards, the chosen one ringed. */
   .heroes {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fill, minmax(min(9.5rem, 45%), 1fr));
+    gap: var(--space-3);
   }
 
-  .hero-tile {
-    width: 100%;
-    min-height: var(--tap-min);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--hairline);
-    background: var(--surface-2);
-    color: inherit;
-    font: inherit;
-    text-align: start;
+  .heroes.single {
+    grid-template-columns: minmax(0, 12rem);
+  }
+
+  .heroes li {
     display: grid;
-    cursor: pointer;
+    gap: 2px;
+    justify-items: center;
   }
 
-  .hero-tile:disabled {
-    opacity: 0.5;
+  .hero {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    padding: 0;
+    border: 3px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
+  }
+
+  .hero:hover:not(:disabled),
+  .hero:focus-visible {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+
+  .hero.chosen {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .hero:disabled {
+    opacity: 0.4;
     cursor: default;
   }
 
-  .hero-tile-name {
+  .hero-card {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hero-blank {
+    display: grid;
+    place-items: center;
+    padding: var(--space-2);
     font-weight: var(--weight-semibold);
   }
 
-  .chosen {
-    display: flex;
-    gap: var(--space-3);
-    align-items: center;
-  }
-
-  .hero-art {
-    width: 7rem;
-    border-radius: var(--radius-sm);
+  .hero-tile-name {
+    margin: 0;
+    font-weight: var(--weight-semibold);
+    text-align: center;
   }
 
   .hero-name {
     font-size: var(--text-xl);
     font-weight: var(--weight-bold);
     margin: 0;
+  }
+
+  /* The numbered steps of the identity page. */
+  .steps {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .step-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .step-head h2 {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .step-tools .search {
+    width: min(18rem, 100%);
+  }
+
+  .sliders {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+  }
+
+  @media (min-width: 48rem) {
+    .sliders {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .slider {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .slider-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .slider .value {
+    font-size: var(--text-2xl);
+    color: var(--gold);
+  }
+
+  /* The way on, pinned above the bottom bar so it never scrolls away. */
+  .foot {
+    position: sticky;
+    bottom: calc(var(--safe-bottom, 0px) + 4.25rem);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    z-index: 2;
   }
 
   /* The five aspects as wide buttons with their colour, as on a card. */
@@ -875,10 +1005,21 @@
     margin: 0;
   }
 
-  .progress-text {
+  .aspect-line {
     color: var(--accent);
+    font-weight: var(--weight-semibold);
+  }
+
+  .progress-block {
+    text-align: end;
+  }
+
+  .progress-text {
+    color: var(--gold);
+    font-size: var(--text-2xl);
     font-weight: var(--weight-bold);
     font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
 
   .progress {
@@ -997,9 +1138,39 @@
   }
 
   .deck-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     padding: 2px var(--space-2);
     border-radius: var(--radius-xs);
     background: var(--surface-2);
+  }
+
+  .qty {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .deck-card-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cost {
+    flex: none;
+    min-width: 1.4rem;
+    text-align: center;
+    border-radius: var(--radius-xs);
+    background: var(--surface-1);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .deck-identity {
+    margin: 0;
   }
 
   .notice {

@@ -248,6 +248,7 @@ export interface Strings {
     readonly shortfallLine: (player: number, needed: number, available: number) => string;
     readonly shortfallHint: string;
     readonly picksMade: (made: number, total: number) => string;
+    readonly picksLabel: string;
     readonly round: (n: number) => string;
     readonly yourDeck: string;
     readonly identity: string;
