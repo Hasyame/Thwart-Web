@@ -51,6 +51,21 @@ export interface IndexRow {
    * time (scripts/lib/synergy.mjs). Null on a card without such a condition.
    */
   readonly synergy?: Synergy | null;
+  /**
+   * What a deck's rules read, so the draft runs off the index alone
+   * (lib/draft/cards). Each is absent when it is the usual value: one copy
+   * printed, a limit of three, an original printing, a visible face, no
+   * resource, no rule of its own.
+   */
+  readonly quantity?: number;
+  readonly deckLimit?: number;
+  /** The original printing this card repeats. A reprint is the same card. */
+  readonly duplicateOf?: string;
+  readonly hidden?: boolean;
+  /** Resources as letters: P physical, M mental, E energy, W wild. */
+  readonly res?: string;
+  /** `deck_requirements` and `deck_options`, on the identities that carry them. */
+  readonly deckRules?: { readonly requirements: unknown; readonly options: unknown };
   /** Pre-folded search text. See lib/normalize.js. */
   readonly s: string;
 }

@@ -322,6 +322,13 @@ jobs:
         working-directory: web
         run: npm run test:synergy
 
+      # The draft engine against the real index, the same cases as the
+      # phone's: offers, copy limits, uniques, Adam Warlock, four players on
+      # one shelf, whole drafts ending legal, the names.
+      - name: Draft
+        working-directory: web
+        run: npm run test:draft
+
 
   server:
     name: Server

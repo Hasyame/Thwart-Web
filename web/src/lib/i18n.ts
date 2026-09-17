@@ -41,6 +41,8 @@ export interface Strings {
     readonly rulesDescription: string;
     readonly decksTitle: string;
     readonly decksDescription: string;
+    readonly draftTitle: string;
+    readonly draftDescription: string;
     readonly historyTitle: string;
     readonly historyDescription: string;
     readonly statsTitle: string;
@@ -210,6 +212,60 @@ export interface Strings {
   readonly playerBucket: (bucket: string) => string;
   readonly deckLegal: string;
   readonly deckLegalShort: string;
+  /** The draft page, docs/spec/synergie-et-draft.md phase 2. */
+  readonly draft: {
+    readonly title: string;
+    readonly intro: string;
+    readonly noHeroes: string;
+    readonly resume: string;
+    readonly players: string;
+    readonly synergy: string;
+    readonly synergyDetail: string;
+    readonly identityMode: string;
+    readonly modeRandom: string;
+    readonly modeRandomOfFive: string;
+    readonly modeChoice: string;
+    readonly offerSize: string;
+    readonly offerSizeDetail: string;
+    readonly begin: string;
+    readonly playerN: (n: number) => string;
+    readonly identityTitle: (n: number) => string;
+    readonly identityDrawn: string;
+    readonly drawAgain: string;
+    readonly chooseIdentity: string;
+    readonly chooseOfFive: string;
+    readonly searchHeroes: string;
+    readonly takenBy: (n: number) => string;
+    readonly aspectsTitle: string;
+    readonly aspectsImposed: string;
+    readonly aspectsPickN: (n: number) => string;
+    readonly aspectsDraw: string;
+    readonly deckSize: string;
+    readonly deckSizeDetail: (cards: number, signature: number, picks: number) => string;
+    readonly next: string;
+    readonly startDraft: string;
+    readonly shortfallTitle: string;
+    readonly shortfallLine: (player: number, needed: number, available: number) => string;
+    readonly shortfallHint: string;
+    readonly picksMade: (made: number, total: number) => string;
+    readonly round: (n: number) => string;
+    readonly yourDeck: string;
+    readonly identity: string;
+    readonly handOver: (n: number) => string;
+    readonly handOverDetail: string;
+    readonly reveal: string;
+    readonly nothingLeft: string;
+    readonly stopHere: string;
+    readonly abandon: string;
+    readonly abandonConfirm: string;
+    readonly finishTitle: string;
+    readonly finishDetail: string;
+    readonly deckName: string;
+    readonly finish: string;
+    readonly saved: (n: number) => string;
+    readonly illegal: (name: string, problems: number) => string;
+    readonly short: (name: string, cards: number, size: number) => string;
+  };
   /** Synergy: cards the identity cannot play. A warning, never a rule. */
   readonly synergyIssue: (names: readonly string[]) => string;
   readonly synergyHideIncompatible: string;
@@ -321,6 +377,7 @@ export interface Strings {
   readonly notOwned: string;
   readonly deckLocaleNote: (locale: string) => string;
   readonly navRandomizer: string;
+  readonly navDraft: string;
   readonly navVersus: string;
 
   // The competitive mode. The tie-breaks are the rulebook's, in the order they

@@ -202,3 +202,26 @@ En solo un seul passage, en multijoueur chaque joueur à son tour.
 - Case « Masquer les cartes sans synergie » : **réinitialisée à chaque
   ouverture**, non mémorisée. C'est une aide de parcours, et mémorisée elle
   cacherait des cartes en silence au deck suivant.
+
+**2026-09-17, phase 2 (Web).**
+
+- Le moteur Web (`web/src/lib/draft/`) reprend l'Android (`domain/draft/`)
+  fonction pour fonction : mêmes états, mêmes règles, mêmes noms. Les tirages
+  sont déterministes par seed de chaque côté mais ne sont pas identiques
+  entre plateformes (générateurs différents) — un draft ne voyage pas.
+- **X par défaut : 5**, comme sur Android (la spec disait 3).
+- Le draft tourne entièrement sur l'index de cartes : `quantity`,
+  `deckLimit`, `duplicateOf`, `hidden`, `res` et `deckRules` y sont ajoutés
+  à la construction, et `lib/draft/cards.ts` reconstitue la forme que le
+  validateur lit. Un seul validateur, donc une seule règle de légalité.
+- Nommage : `MULTI` pour les affinités imposées (Adam Warlock), les deux codes
+  triés pour Spider-Woman (`DRAFT-SPIDERWOMAN-JUSTICE-PROTECTION-01`).
+- Aucun marqueur « issu d'un draft » sur le deck : le nom suffit ; `tags`
+  existe déjà si on en veut un plus tard.
+- L'état du draft est une table Dexie locale (`drafts`), jamais synchronisée
+  ni sauvegardée : un draft est une session de table sur un appareil.
+- Les réimpressions sont comptées par nom dans la validation existante (les
+  deux clients), et par `duplicate_of_code` dans le stock du draft.
+- `player_side_scheme` est ajouté aux types de cartes constructibles (l'option
+  de Cable) : la piscine de l'éditeur les propose aussi désormais.
+

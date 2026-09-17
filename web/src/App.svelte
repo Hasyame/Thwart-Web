@@ -21,6 +21,7 @@
   const RandomizerPage = lazy(() => import('./components/RandomizerPage.svelte'));
   const VersusPage = lazy(() => import('./components/VersusPage.svelte'));
   const DecksPage = lazy(() => import('./components/DecksPage.svelte'));
+  const DraftPage = lazy(() => import('./components/DraftPage.svelte'));
   const DeckPage = lazy(() => import('./components/DeckPage.svelte'));
   const PlayPage = lazy(() => import('./components/PlayPage.svelte'));
   const StatsPage = lazy(() => import('./components/StatsPage.svelte'));
@@ -443,7 +444,7 @@
     if (loading) {
       return;
     }
-    warm([PlayPage, CampaignsPage, DecksPage, DeckPage, CollectionPage, RandomizerPage,
+    warm([PlayPage, CampaignsPage, DecksPage, DeckPage, DraftPage, CollectionPage, RandomizerPage,
       HistoryPage, StatsPage, VersusPage, RulesPage, AccountPage, BggPage, VerifyPage]);
   });
 
@@ -844,6 +845,17 @@
       <!-- The chunk did not arrive: a connection that dropped, or a tab
            open across a release whose files it was built against are
            gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
+    {/await}
+  {:else if route.name === 'draft'}
+    {#await DraftPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {uiLocale} {cardLocale} {index} {storageOk} onDone={() => navigate({ name: 'decks' })} />
+    {:catch}
       <div class="notice surface">
         <p>{t.pageLoadError}</p>
         <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { completePlay } from './playShape';
+import type { DraftState } from './draft/types';
 import type {
   BackupSettings,
   CampaignEvent,
@@ -44,6 +45,13 @@ export interface StoredSettings extends BackupSettings {
 
 export const SETTINGS_KEY = 'app';
 
+/** The draft in progress, as lib/draft/types writes it. */
+export interface DraftRow {
+  readonly id: string;
+  readonly state: DraftState;
+  readonly updatedAt: number;
+}
+
 class ThwartDatabase extends Dexie {
   // Written by this version.
   ownedPacks!: Table<OwnedPack, string>;
@@ -52,6 +60,12 @@ class ThwartDatabase extends Dexie {
   favouriteCards!: Table<FavouriteCard, string>;
   favouritePlays!: Table<FavouritePlay, string>;
   deckFolders!: Table<DeckFolder, string>;
+  /**
+   * The draft in progress, one row. This device's table session: never
+   * synced, never in a backup, not in ALL_TABLES -- erasing the collection
+   * clears it separately, since a draft without its shelf is nothing.
+   */
+  drafts!: Table<DraftRow, string>;
   ratings!: Table<Rating, string>;
 
   // Carried, not yet written. See the class comment.
@@ -195,6 +209,11 @@ class ThwartDatabase extends Dexie {
     // v9: folders on the shelf of decks.
     this.version(9).stores({
       deckFolders: 'id, updatedAt',
+    });
+
+    // v10: the draft in progress.
+    this.version(10).stores({
+      drafts: 'id',
     });
   }
 }

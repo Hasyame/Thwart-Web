@@ -14,6 +14,8 @@ export type Route =
   | { readonly name: 'randomizer' }
   | { readonly name: 'versus' }
   | { readonly name: 'decks' }
+  /** The draft: decks built from the collection, a pick at a time. */
+  | { readonly name: 'draft' }
   /**
    * One deck on a page of its own, to read or, with `edit`, to build.
    *
@@ -69,6 +71,7 @@ const COLLECTION_PATH = /^\/collection\/?$/;
 const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 const VERSUS_PATH = /^\/versus\/?$/;
 const DECKS_PATH = /^\/decks\/?$/;
+const DRAFT_PATH = /^\/draft\/?$/;
 const DECK_PATH = /^\/decks\/([^/]+)(\/edit)?\/?$/;
 const PLAY_PATH = /^\/play\/?$/;
 const HUB_PATH = /^\/hub\/?$/;
@@ -172,6 +175,9 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (DECKS_PATH.test(normalised)) {
     return { name: 'decks' };
   }
+  if (DRAFT_PATH.test(normalised)) {
+    return { name: 'draft' };
+  }
   const deck = DECK_PATH.exec(normalised);
   if (deck !== null && deck[1] !== undefined) {
     return deck[2] === undefined
@@ -229,6 +235,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'decks') {
     return `${trimmedBase}/decks`;
+  }
+  if (route.name === 'draft') {
+    return `${trimmedBase}/draft`;
   }
   if (route.name === 'deck') {
     return `${trimmedBase}/decks/${encodeURIComponent(route.id)}${route.edit === true ? '/edit' : ''}`;

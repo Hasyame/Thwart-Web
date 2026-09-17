@@ -22,6 +22,7 @@ export type NavTarget =
   | 'hub'
   | 'collection'
   | 'decks'
+  | 'draft'
   | 'randomizer'
   | 'versus'
   | 'play'
@@ -67,6 +68,7 @@ export const DESTINATIONS: readonly Destination[] = [
   { id: 'search', label: (t) => t.navCards, tab: (t) => t.navCards, glyph: '▤' },
   { id: 'hub', label: (t) => t.navPlayShort, tab: (t) => t.navPlayShort, glyph: '▶' },
   { id: 'decks', label: (t) => t.navDecks, tab: (t) => t.navDecks, glyph: '❐' },
+  { id: 'draft', label: (t) => t.navDraft, tab: (t) => t.navDraft, glyph: '⇶' },
   { id: 'campaigns', label: (t) => t.navCampaigns, tab: (t) => t.navCampaigns, glyph: '◈' },
   { id: 'play', label: (t) => t.navPlay, tab: (t) => t.navPlayShort, glyph: '▶' },
   { id: 'randomizer', label: (t) => t.navRandomizer, tab: (t) => t.navRandomizer, glyph: '✦' },
