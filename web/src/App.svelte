@@ -41,6 +41,7 @@
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { applyHead, headFor } from './lib/head';
   import { configureCardViewer } from './lib/cardViewer.svelte';
+  import HomePage from './components/HomePage.svelte';
   import { watchOwnedPacks } from './lib/ownedCopies.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { loadSyncState } from './lib/sync/sync.svelte';
@@ -409,6 +410,18 @@
     route = routeFromPath(window.location.pathname, BASE, window.location.search);
   }
 
+  /*
+   * A search link that carries its words — /cards?q=rhino, which is what a
+   * search engine's sitelinks box sends — opens the search on them. Only on
+   * arrival: typing afterwards does not rewrite the address on every key.
+   */
+  $effect(() => {
+    if (route.name === 'search' && route.query !== undefined) {
+      query = route.query;
+      resultLimit = RESULT_PAGE;
+    }
+  });
+
   function setUiLocale(locale: Locale): void {
     saveUiLocale(locale);
     // The words first, then the language: a frame in the new language with
@@ -589,7 +602,7 @@
 
 <TopBar
   {t}
-  onHome={() => navigate({ name: 'search' })}
+  onHome={() => navigate({ name: 'home' })}
   onNavigate={(name) => navigate({ name })}
   hrefFor={(name) => pathForRoute({ name }, BASE)}
   active={route.name}
@@ -797,6 +810,14 @@
         <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
       </div>
     {/await}
+  {:else if route.name === 'home'}
+    <HomePage
+      {t}
+      {uiLocale}
+      {index}
+      hrefFor={(r) => pathForRoute(r, BASE)}
+      onNavigate={navigate}
+    />
   {:else if route.name === 'notFound'}
     <!-- nginx already answered this address with a 404; this is what the
          status looks like. -->
@@ -805,13 +826,13 @@
       <p class="muted">{t.notFoundBody}</p>
       <p>
         <a
-          href={pathForRoute({ name: 'search' }, BASE)}
+          href={pathForRoute({ name: 'home' }, BASE)}
           onclick={(event) => {
             if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
               return;
             }
             event.preventDefault();
-            navigate({ name: 'search' });
+            navigate({ name: 'home' });
           }}
         >
           {t.notFoundHome}
@@ -931,20 +952,14 @@
 
     {#if query.trim() === '' && activeFilterCount(filters) === 0}
       <!--
-        The home page's own words, for a first visit and for whoever indexes
-        it: what this is, and where the rest of it is. Gone as soon as a
-        search begins, because then the results are the page.
+        The search page's own words, for whoever indexes it: what this is.
+        The home page now carries the introduction; this is the card search
+        and says so. Gone as soon as a search begins, because then the
+        results are the page.
       -->
       <section class="intro">
         <h1>{t.homeIntroTitle}</h1>
         <p>{t.homeIntro}</p>
-        <p class="intro-links">
-          <a href={pathForRoute({ name: 'collection' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'collection' }); } }}>{t.homeIntroLinks.collection}</a>
-          <a href={pathForRoute({ name: 'play' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'play' }); } }}>{t.homeIntroLinks.play}</a>
-          <a href={pathForRoute({ name: 'campaigns' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'campaigns' }); } }}>{t.homeIntroLinks.campaigns}</a>
-          <a href={pathForRoute({ name: 'decks' }, BASE)} onclick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) { e.preventDefault(); navigate({ name: 'decks' }); } }}>{t.homeIntroLinks.decks}</a>
-        </p>
-        <p class="muted intro-note">{t.homeIntroNote}</p>
       </section>
     {/if}
 
@@ -1119,20 +1134,6 @@
   .intro p {
     margin: 0 0 var(--space-2);
     font-size: var(--text-sm);
-  }
-
-  .intro-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
-  }
-
-  .intro-links a {
-    font-weight: var(--weight-semibold);
-  }
-
-  .intro-note {
-    font-size: var(--text-xs);
   }
 
   /*

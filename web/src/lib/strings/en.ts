@@ -12,6 +12,9 @@ export const en: Strings = {
     homeTitle: 'Thwart — Marvel Champions companion: cards, collection, decks, campaigns',
     homeDescription:
       'A free companion for Marvel Champions: The Card Game. Search every card, track your collection, build decks, draw a game, play the campaigns. Offline, no account.',
+    cardsTitle: 'Marvel Champions card search, every card in English and French — Thwart',
+    cardsDescription:
+      'Search every Marvel Champions card by name, text, trait, type, aspect or pack, in English or French, with the cards you own marked. Free, offline.',
     cardTitle: 'Marvel Champions card — Thwart',
     cardTitleNamed: (name) => `${name} — Marvel Champions card — Thwart`,
     cardDescription:
@@ -52,18 +55,39 @@ export const en: Strings = {
   },
   notFoundTitle: 'There is nothing here',
   notFoundBody: 'That address does not match any page of Thwart. The link may be old, or mistyped.',
-  notFoundHome: 'Go to the card search',
+  notFoundHome: 'Go to the home page',
   homeIntroTitle: 'Thwart, a Marvel Champions companion',
   homeIntro:
     'Every card of Marvel Champions: The Card Game, in English or French, searchable below. Tick the packs you own, and the site knows which decks you can build, which games you can draw and which campaigns you can play.',
-  homeIntroLinks: {
-    collection: 'Your collection',
-    play: 'Play a game',
-    campaigns: 'Campaigns',
-    decks: 'Decks',
-  },
   homeIntroNote:
     'Free, works offline, nothing to install and no account needed. Also on Android. Unofficial: card data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.',
+  home: {
+    title: 'Thwart, the Marvel Champions companion',
+    lead:
+      'Every card of Marvel Champions: The Card Game in English or French, your collection, a deck builder that knows the rules, a random game generator, a draft, the nine campaigns with their setup and tracker, and the history and statistics of your games. Free, offline, in the browser and on Android.',
+    readyToPlay: (name) => `Ready to play, ${name}`,
+    accountTitle: 'Keep your games, wherever you play',
+    accountBody:
+      'Without an account, everything lives in this browser alone: clearing its data, or changing device, loses your collection, decks, campaigns and games. An account keeps them safe and in sync between browsers and the Android app, and logs your games on BoardGameGeek if you like.',
+    accountNote: 'Everything works without one, on this device. An address, a password, nothing else asked.',
+    signIn: 'Sign in or create an account',
+    whereTo: 'Where to',
+    cardsDetail: 'Every card, searchable by name, text, trait, type, aspect or pack.',
+    rulesDetail: 'The rules reference, for the question that comes up mid-game.',
+    collectionDetail: 'Tick the packs you own; the rest of the site follows.',
+    playDetail: 'A campaign, your own setup, a random game or a draft, with the clock and the encounter tracker.',
+    randomCard: 'A random card',
+    randomCardDetail: 'One card from the whole game, for the fun of it. Reload for another.',
+    historyDetail: 'Every game you recorded, with its villain, heroes, rounds and time.',
+    statsDetail: 'Win rates by hero, aspect, scenario and table size.',
+    elsewhere: 'Elsewhere',
+    patreon: 'Support Thwart on Patreon',
+    patreonDetail: 'The site and the app are free and stay so; a coffee keeps the server running.',
+    android: 'Thwart for Android',
+    androidDetail: 'The same companion as an app, on GitHub. Your account syncs both.',
+    whatsNew: 'What’s new',
+    earlier: 'Earlier changes',
+  },
   searchPlaceholder: 'Search cards…',
   searchLabel: 'Search cards',
   interfaceLanguage: 'Interface',

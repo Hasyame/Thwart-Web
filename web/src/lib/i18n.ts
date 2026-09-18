@@ -24,6 +24,8 @@ export interface Strings {
   readonly seo: {
     readonly homeTitle: string;
     readonly homeDescription: string;
+    readonly cardsTitle: string;
+    readonly cardsDescription: string;
     readonly cardTitle: string;
     readonly cardTitleNamed: (name: string) => string;
     readonly cardDescription: string;
@@ -61,13 +63,33 @@ export interface Strings {
   /** The home page's own words, above the card search, for a first visit. */
   readonly homeIntroTitle: string;
   readonly homeIntro: string;
-  readonly homeIntroLinks: {
-    readonly collection: string;
-    readonly play: string;
-    readonly campaigns: string;
-    readonly decks: string;
-  };
   readonly homeIntroNote: string;
+  /** The front door: the greeting, the account offer, the doors, what is new. */
+  readonly home: {
+    readonly title: string;
+    readonly lead: string;
+    readonly readyToPlay: (name: string) => string;
+    readonly accountTitle: string;
+    readonly accountBody: string;
+    readonly accountNote: string;
+    readonly signIn: string;
+    readonly whereTo: string;
+    readonly cardsDetail: string;
+    readonly rulesDetail: string;
+    readonly collectionDetail: string;
+    readonly playDetail: string;
+    readonly randomCard: string;
+    readonly randomCardDetail: string;
+    readonly historyDetail: string;
+    readonly statsDetail: string;
+    readonly elsewhere: string;
+    readonly patreon: string;
+    readonly patreonDetail: string;
+    readonly android: string;
+    readonly androidDetail: string;
+    readonly whatsNew: string;
+    readonly earlier: string;
+  };
   readonly searchPlaceholder: string;
   readonly searchLabel: string;
   readonly interfaceLanguage: string;

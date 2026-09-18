@@ -13,6 +13,9 @@ export const fr: Strings = {
     homeDescription:
       'Un compagnon gratuit pour Marvel Champions : Le Jeu de Cartes. Cartes, collection, decks, parties au hasard et campagnes. Hors ligne, sans compte.',
     cardTitle: 'Carte Marvel Champions — Thwart',
+    cardsTitle: 'Recherche de cartes Marvel Champions, toutes les cartes en français et en anglais — Thwart',
+    cardsDescription:
+      'Cherchez toutes les cartes Marvel Champions par nom, texte, trait, type, affinité ou extension, en français ou en anglais, avec vos cartes possédées marquées. Gratuit, hors ligne.',
     cardTitleNamed: (name) => `${name} — carte Marvel Champions — Thwart`,
     cardDescription:
       'Texte, caractéristiques, set et extension de la carte pour Marvel Champions : Le Jeu de Cartes, d’après MarvelCDB, en français ou en anglais.',
@@ -52,18 +55,39 @@ export const fr: Strings = {
   },
   notFoundTitle: 'Il n’y a rien ici',
   notFoundBody: 'Cette adresse ne correspond à aucune page de Thwart. Le lien est peut-être ancien, ou mal tapé.',
-  notFoundHome: 'Aller à la recherche de cartes',
+  notFoundHome: 'Aller à l’accueil',
   homeIntroTitle: 'Thwart, un compagnon pour Marvel Champions',
   homeIntro:
     'Toutes les cartes de Marvel Champions : Le Jeu de Cartes, en français ou en anglais, à chercher ci-dessous. Cochez les extensions que vous possédez, et le site sait quels decks vous pouvez construire, quelles parties vous pouvez tirer et quelles campagnes vous pouvez jouer.',
-  homeIntroLinks: {
-    collection: 'Votre collection',
-    play: 'Jouer une partie',
-    campaigns: 'Campagnes',
-    decks: 'Decks',
-  },
   homeIntroNote:
     'Gratuit, hors ligne, rien à installer et sans compte. Aussi sur Android. Non officiel : données des cartes de MarvelCDB ; Marvel Champions appartient à Fantasy Flight Games et Marvel.',
+  home: {
+    title: 'Thwart, le compagnon Marvel Champions',
+    lead:
+      'Toutes les cartes de Marvel Champions : Le Jeu de Cartes en français ou en anglais, votre collection, un constructeur de decks qui connaît les règles, un générateur de partie aléatoire, un draft, les neuf campagnes avec leur mise en place et leur suivi, et l’historique et les statistiques de vos parties. Gratuit, hors ligne, dans le navigateur et sur Android.',
+    readyToPlay: (name) => `Prêt à jouer, ${name}`,
+    accountTitle: 'Gardez vos parties, où que vous jouiez',
+    accountBody:
+      'Sans compte, tout vit dans ce seul navigateur : effacer ses données, ou changer d’appareil, perd votre collection, vos decks, vos campagnes et vos parties. Un compte les garde en sûreté et synchronisées entre navigateurs et l’application Android, et enregistre vos parties sur BoardGameGeek si vous le souhaitez.',
+    accountNote: 'Tout fonctionne sans, sur cet appareil. Une adresse, un mot de passe, rien d’autre.',
+    signIn: 'Se connecter ou créer un compte',
+    whereTo: 'Où aller',
+    cardsDetail: 'Toutes les cartes, par nom, texte, trait, type, affinité ou extension.',
+    rulesDetail: 'La référence des règles, pour la question qui arrive en pleine partie.',
+    collectionDetail: 'Cochez les extensions que vous possédez ; le reste du site suit.',
+    playDetail: 'Une campagne, votre propre partie, une partie aléatoire ou un draft, avec le chrono et le suivi de la rencontre.',
+    randomCard: 'Une carte au hasard',
+    randomCardDetail: 'Une carte parmi tout le jeu, pour le plaisir. Rechargez pour une autre.',
+    historyDetail: 'Toutes vos parties enregistrées, avec leur méchant, leurs héros, leurs tours et leur durée.',
+    statsDetail: 'Taux de victoire par héros, affinité, scénario et nombre de joueurs.',
+    elsewhere: 'Ailleurs',
+    patreon: 'Soutenir Thwart sur Patreon',
+    patreonDetail: 'Le site et l’application sont gratuits et le restent ; un café fait tourner le serveur.',
+    android: 'Thwart pour Android',
+    androidDetail: 'Le même compagnon en application, sur GitHub. Votre compte synchronise les deux.',
+    whatsNew: 'Nouveautés',
+    earlier: 'Changements précédents',
+  },
   searchPlaceholder: 'Rechercher des cartes…',
   searchLabel: 'Rechercher des cartes',
   interfaceLanguage: 'Interface',

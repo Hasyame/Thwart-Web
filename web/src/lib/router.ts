@@ -9,7 +9,10 @@
  */
 
 export type Route =
-  | { readonly name: 'search' }
+  /** The front door: what is new, where everything is. */
+  | { readonly name: 'home' }
+  /** The card search, with the words typed so far when a link carries them. */
+  | { readonly name: 'search'; readonly query?: string }
   | { readonly name: 'collection' }
   | { readonly name: 'randomizer' }
   | { readonly name: 'versus' }
@@ -67,6 +70,7 @@ export type Route =
   | { readonly name: 'card'; readonly code: string };
 
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
+const CARDS_PATH = /^\/cards\/?$/;
 const COLLECTION_PATH = /^\/collection\/?$/;
 const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 const VERSUS_PATH = /^\/versus\/?$/;
@@ -211,10 +215,16 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (RULES_PATH.test(normalised)) {
     return { name: 'rules' };
   }
+  // The search, with a query when the address carries one: what a search
+  // engine's sitelinks box sends, and what a shared search link is.
+  if (CARDS_PATH.test(normalised)) {
+    const q = new URLSearchParams(search).get('q');
+    return q === null || q === '' ? { name: 'search' } : { name: 'search', query: q };
+  }
   // The home page, by its root and by the name the file has on disk: a
   // request for /index.html is the same document, not a missing one.
   if (normalised === '/' || normalised === '/index.html') {
-    return { name: 'search' };
+    return { name: 'home' };
   }
   return { name: 'notFound', path: normalised };
 }
@@ -223,6 +233,10 @@ export function pathForRoute(route: Route, base: string): string {
   const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
   if (route.name === 'card') {
     return `${trimmedBase}/card/${encodeURIComponent(route.code)}`;
+  }
+  if (route.name === 'search') {
+    const q = route.query === undefined || route.query === '' ? '' : `?q=${encodeURIComponent(route.query)}`;
+    return `${trimmedBase}/cards${q}`;
   }
   if (route.name === 'collection') {
     return `${trimmedBase}/collection`;

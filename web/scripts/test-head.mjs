@@ -25,11 +25,15 @@ const pathOf = (route) => pathForRoute(route, '');
 const head = (route, t = en, name = null) => headFor(route, t, pathOf, name);
 
 {
-  const home = head({ name: 'search' });
+  const home = head({ name: 'home' });
   check('the home page names the game', home.title.includes('Marvel Champions'), home.title);
   check('and is indexable', home.noindex === false);
   check('with the site as its canonical', home.canonical === `${SITE_ORIGIN}/`, home.canonical);
   check('a description under 160 characters, or Google truncates it', home.description.length <= 165, String(home.description.length));
+  const cards = head({ name: 'search', query: 'rhino' });
+  check('the card search has words of its own, naming the game', cards.title.includes('Marvel Champions') && cards.title !== home.title, cards.title);
+  check('and its canonical is /cards, without the words typed', cards.canonical === `${SITE_ORIGIN}/cards`, cards.canonical);
+  check('and it is indexable', cards.noindex === false);
 }
 
 {
@@ -73,7 +77,7 @@ const head = (route, t = en, name = null) => headFor(route, t, pathOf, name);
 
 {
   // In French, the French words: a French reader's tab and a French result.
-  const home = head({ name: 'search' }, fr);
+  const home = head({ name: 'home' }, fr);
   check('the French title is French', home.title.includes('compagnon'), home.title);
   check('and the canonical does not change with the language', home.canonical === `${SITE_ORIGIN}/`);
   for (const key of Object.keys(en.seo)) {

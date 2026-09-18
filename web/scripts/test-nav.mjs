@@ -114,7 +114,7 @@ for (const grouped of [false, true]) {
 
 // --- a deck's own page, and its editor, as URLs ----------------------------------------------
 {
-  const there = (path) => routeFromPath(path, '');
+  const there = (path, search = '') => routeFromPath(path, '', search);
   const back = (route) => pathForRoute(route, '');
   check('a deck has a page', JSON.stringify(there('/decks/local-abc')) === JSON.stringify({ name: 'deck', id: 'local-abc' }));
   check('and an editor', JSON.stringify(there('/decks/local-abc/edit')) === JSON.stringify({ name: 'deck', id: 'local-abc', edit: true }));
@@ -128,7 +128,10 @@ for (const grouped of [false, true]) {
     there('/no-such-page').name === 'notFound' && there('/card').name === 'notFound', there('/no-such-page').name);
   check('and keeps its own path', back(there('/no/such')) === '/no/such');
   check('the root and index.html are the home page',
-    there('/').name === 'search' && there('/index.html').name === 'search');
+    there('/').name === 'home' && there('/index.html').name === 'home');
+  check('the card search lives at /cards', there('/cards').name === 'search' && back({ name: 'search' }) === '/cards');
+  check('and carries the words typed, as a sitelinks box sends them',
+    there('/cards', '?q=rhino').query === 'rhino' && back({ name: 'search', query: 'a b' }) === '/cards?q=a%20b' && there('/cards', '?q=').query === undefined);
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

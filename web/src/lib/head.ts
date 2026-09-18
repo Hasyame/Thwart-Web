@@ -59,8 +59,10 @@ export function headFor(
   const seo = t.seo;
   const page = ((): { title: string; description: string } => {
     switch (route.name) {
-      case 'search':
+      case 'home':
         return { title: seo.homeTitle, description: seo.homeDescription };
+      case 'search':
+        return { title: seo.cardsTitle, description: seo.cardsDescription };
       case 'card':
         return {
           title: cardName === null || cardName === '' ? seo.cardTitle : seo.cardTitleNamed(cardName),
