@@ -225,3 +225,38 @@ En solo un seul passage, en multijoueur chaque joueur à son tour.
 - `player_side_scheme` est ajouté aux types de cartes constructibles (l'option
   de Cable) : la piscine de l'éditeur les propose aussi désormais.
 
+**2026-09-18, paquets construits à l'avance (Web).**
+
+Le tirage carte par carte est remplacé par des **paquets** (boosters),
+comme à une table de draft. Moteur `web/src/lib/draft/engine.ts`
+(`buildPacks`, `openPack`), état `packs` et `builds` dans `DraftState`,
+test `npm run test:draft`. Android reste à aligner.
+
+- Les paquets sont construits **avant le premier choix**, une fois toutes
+  les identités validées : pour chaque joueur, un paquet de X cartes
+  distinctes par carte qu'il lui reste à prendre, tiré de ce que son deck
+  peut accepter à ce moment (affinités, basiques, options de l'identité,
+  synergie si activée, limites d'exemplaires, équilibre des affinités).
+- Un exemplaire physique n'est **dans un seul paquet** à la fois, tous
+  joueurs confondus : le stock est décrémenté à la construction et
+  ré-approvisionné quand un paquet est ouvert et ses cartes non prises
+  reposées. Les paquets sont distribués tour par tour (un paquet pour
+  chaque joueur, puis un autre), pour qu'un stock insuffisant soit partagé.
+- Une carte que le deck ne peut contenir qu'une fois (unique, ou « max 1
+  par deck » comme les ressources de base Force, Énergie, Génie) n'apparaît
+  **qu'une fois dans l'ensemble des paquets d'une construction**, même si
+  la collection en possède plusieurs exemplaires ; les autres exemplaires
+  restent en stock.
+- Si le stock ne suffit pas pour tous les paquets, on construit ceux qu'il
+  permet ; quand un joueur a ouvert son dernier paquet et qu'il lui manque
+  encore des cartes, **le stock restant est rebattu en nouveaux paquets**
+  (les cartes reposées comprises) et le draft continue. Un joueur pour qui
+  rien de légal ne reste après ce rebattage s'arrête là, deck court.
+- À l'ouverture d'un paquet, une carte devenue illégale entre-temps (les
+  paquets ont été faits avant les choix suivants) est reposée sans être
+  montrée ; un paquet vidé ainsi est passé. Le choix rend les autres cartes
+  du paquet au stock.
+- La graine gouverne toujours tout : même seed, mêmes paquets. Un draft
+  enregistré avant cette version n'a pas de paquets ; il les construit à sa
+  prochaine ouverture depuis le stock tel quel.
+

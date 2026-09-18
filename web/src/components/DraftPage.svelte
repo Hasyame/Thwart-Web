@@ -128,6 +128,8 @@
       phase: 'identity',
       current: 0,
       stock: {},
+      packs: [],
+      builds: 0,
       pickCount: 0,
       offer: [],
       seed: freshSeed(),
@@ -625,6 +627,9 @@
             <span class="fill" style:width={`${Math.round((current.picks.length / Math.max(1, current.picks.length + remaining(current))) * 100)}%`}></span>
           </span>
           <h2 class="round">{t.draft.round(current.picks.length + 1)}</h2>
+          <!-- The packs were built before the first pick; this is how many
+               are still to open before the shelf is shuffled into more. -->
+          <p class="muted small sealed">{t.draft.packsSealed((draft.packs[draft.current] ?? []).length)}</p>
 
           {#if offerRows.length === 0}
             <div class="notice surface">
@@ -1043,6 +1048,12 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-size: var(--text-base);
+    margin-bottom: 0;
+  }
+
+  .sealed {
+    text-align: center;
+    margin: 0 0 var(--space-3);
   }
 
   .offer {

@@ -250,6 +250,8 @@ export interface Strings {
     readonly picksMade: (made: number, total: number) => string;
     readonly picksLabel: string;
     readonly round: (n: number) => string;
+    /** Packs built ahead and still sealed for this player. */
+    readonly packsSealed: (n: number) => string;
     readonly yourDeck: string;
     readonly identity: string;
     readonly handOver: (n: number) => string;

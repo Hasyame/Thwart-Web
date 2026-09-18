@@ -5,11 +5,12 @@ import type { IndexRow } from '../types';
  * A draft, as it is written down between two taps.
  *
  * Everything here is what survives the page being closed: the settings, each
- * player's identity and picks, the stock left on the shelf, and the seed. The
- * card data behind it is not written down; a `DraftContext` is rebuilt from
- * the index each time. The shape is the Android app's `DraftModels.kt`,
- * field for field, so the two engines can be read side by side.
- * docs/spec/synergie-et-draft.md, phase 2.
+ * player's identity and picks, the packs built ahead and the stock left on
+ * the shelf beside them, and the seed. The card data behind it is not
+ * written down; a `DraftContext` is rebuilt from the index each time. The
+ * shape is the Android app's `DraftModels.kt` with the packs added, so the
+ * two engines can be read side by side.
+ * docs/spec/synergie-et-draft.md, phase 2 and the packs decision.
  */
 
 export type IdentityMode = 'random' | 'random_of_five' | 'choice';
@@ -55,11 +56,24 @@ export interface DraftState {
   readonly phase: DraftPhase;
   /** Whose turn it is, on the identity pages and at the table. */
   readonly current: number;
-  /** Copies left of each card, by canonical code. Shared by every player. */
+  /**
+   * Copies of each card on the shelf, by canonical code, shared by every
+   * player: what is in no unopened pack and in no deck. A card leaves the
+   * shelf when a pack is built around it and comes back when the pack is
+   * opened and it is not the one taken.
+   */
   readonly stock: Readonly<Record<string, number>>;
-  /** How many picks have been made in all, which is what seeds each offer. */
+  /**
+   * Each player's packs, built ahead and still sealed, in the order they
+   * will be opened. One pack is one pick: a player opens the front one,
+   * takes a card, and the rest go back on the shelf.
+   */
+  readonly packs: readonly (readonly (readonly string[])[])[];
+  /** How many times packs have been built, which seeds each building. */
+  readonly builds: number;
+  /** How many picks have been made in all. */
   readonly pickCount: number;
-  /** The cards on the table for the current player, by canonical code. */
+  /** The open pack in front of the current player, by canonical code. */
   readonly offer: readonly string[];
   readonly seed: number;
   /** Identity and aspect draws made so far, so "draw again" draws again. */

@@ -16,18 +16,31 @@ import {
 } from './types';
 
 /**
- * The draft, turn by turn.
+ * The draft, pack by pack.
  *
  * Pure: every function takes the state and gives the next one, and every
- * draw comes from the seed, so a draft written down and reopened offers the
- * same cards, and a test gets the same draft twice. The Android app's
- * `DraftEngine.kt`, function for function, so a rule read on one side is
- * the rule on the other.
+ * draw comes from the seed, so a draft written down and reopened opens the
+ * same packs, and a test gets the same draft twice. The identities and the
+ * shelf are the Android app's `DraftEngine.kt`; the packs are the web's
+ * reading of the table's own way of drafting, decided on 2026-09-18:
+ *
+ * - The packs are built **before** the first pick, once every identity is
+ *   settled: one pack of `offerSize` distinct cards per card a player still
+ *   needs, from what that player may take.
+ * - A physical copy is in one pack at most, across every player: the shelf
+ *   is decremented as the packs are built, and comes back up as they are
+ *   opened and left.
+ * - A card a deck may hold once — a unique, or "max 1 per deck" like the
+ *   basic resources — is in one pack at most across all the packs built
+ *   together, however many copies the shelf holds.
+ * - When the shelf cannot fill every pack, the packs it can fill are built,
+ *   and once a player has opened the last of theirs the cards left are
+ *   shuffled into new packs so the draft carries on.
  */
 
 const BASIC_FACTION = 'basic';
 const DEFAULT_COPY_LIMIT = 3;
-const PICK_STRIDE = 1_000;
+const BUILD_STRIDE = 1_000;
 const IDENTITY_STRIDE = 7_919;
 
 /** What stands between the table and a deck of the size asked for. */
@@ -221,7 +234,7 @@ export function shortfalls(state: DraftState, context: DraftContext): Shortfall[
   return out;
 }
 
-// --- picks ----------------------------------------------------------------------
+// --- packs ----------------------------------------------------------------------
 
 /**
  * Whether the deck can still be finished legally with the card in it.
@@ -266,7 +279,7 @@ export function canTake(player: DraftPlayer, row: IndexRow, context: DraftContex
   return remainingAfter >= deficit;
 }
 
-/** The cards the current player may be offered right now. */
+/** The cards the current player may be offered right now, from the shelf. */
 export function legalOffers(state: DraftState, context: DraftContext): IndexRow[] {
   const player = state.players[state.current];
   if (player === undefined) {
@@ -276,23 +289,143 @@ export function legalOffers(state: DraftState, context: DraftContext): IndexRow[
 }
 
 /**
- * Puts the current player's offer on the table: `offerSize` cards drawn at
- * random from what they may take, or what is left when that is fewer.
- * Seeded by the pick count, so reopening the draft finds the same cards.
+ * A card a deck holds once: a unique, or one printed "max 1 per deck", as
+ * the basic resources are. Whatever the shelf holds, one copy is all a
+ * building of packs may place, since one is all any deck could take.
  */
-export function deal(state: DraftState, context: DraftContext): DraftState {
-  const legal = legalOffers(state, context);
-  const random = seeded(state.seed + state.pickCount * PICK_STRIDE + state.current);
-  const offer = shuffled(legal, random)
-    .slice(0, state.settings.offerSize)
-    .map((row) => row.code);
-  return { ...state, offer };
+const holdsOnce = (row: IndexRow): boolean => row.isUnique || row.deckLimit === 1;
+
+/** Copies of the card this deck may still take, beyond what it holds. */
+function copiesLeftFor(player: DraftPlayer, row: IndexRow, context: DraftContext): number {
+  const rules = player.heroCode === null ? undefined : context.rules.get(player.heroCode);
+  if (rules === undefined) {
+    return 0;
+  }
+  const limit = row.isUnique ? 1 : (rules.copyLimitOverride ?? row.deckLimit ?? DEFAULT_COPY_LIMIT);
+  return Math.max(0, limit - (slotsOf(player).get(row.code) ?? 0));
 }
 
 /**
- * The current player takes the card. The copy leaves the shelf, and the
- * turn passes to the next player who still has room; when nobody has room
- * the draft is over.
+ * Builds packs for the players named, from the shelf as it stands.
+ *
+ * Round by round — a pack for each player in turn, then another — so a
+ * shelf that cannot fill everybody's is shared rather than emptied into the
+ * first player's. Only cards the deck could take as it stands go in, so a
+ * pack built at the last pick holds a legal card if the shelf has one; a
+ * player's packs together never hold more copies of a card than their deck
+ * may still take, and a card that holds once is placed once in the whole
+ * building. A player whose pool runs dry stops getting packs; the draft
+ * rebuilds from what is left when they open their last.
+ */
+export function buildPacks(state: DraftState, context: DraftContext, forPlayers?: readonly number[]): DraftState {
+  const stock: Record<string, number> = { ...state.stock };
+  const packs = state.players.map((_, i) => [...(state.packs[i] ?? [])]);
+  const wanted = new Set(forPlayers ?? state.players.map((p) => p.index));
+  const random = seeded(state.seed + BUILD_STRIDE * (state.builds + 1));
+  const placedOnce = new Set<string>();
+  const placed = state.players.map(() => new Map<string, number>());
+  const needed = state.players.map((player, i) =>
+    wanted.has(i) ? Math.max(0, remaining(player) - (packs[i]?.length ?? 0)) : 0,
+  );
+  // What each player may take as their deck stands, judged once per
+  // building: the picks do not move while the packs are made. Read off the
+  // whole shelf, and narrowed to what is still on it pack by pack.
+  const legal = state.players.map((player, i) =>
+    (needed[i] ?? 0) > 0
+      ? playerPool({ ...state, stock: Object.fromEntries(context.initialStock) }, player, context).filter((row) =>
+          canTake(player, row, context),
+        )
+      : [],
+  );
+  const rounds = Math.max(0, ...needed);
+  for (let round = 0; round < rounds; round += 1) {
+    for (const [i, player] of state.players.entries()) {
+      if ((needed[i] ?? 0) <= round) {
+        continue;
+      }
+      const mine = placed[i] as Map<string, number>;
+      const pool = (legal[i] ?? []).filter((row) => {
+        if ((stock[row.code] ?? 0) <= 0 || (holdsOnce(row) && placedOnce.has(row.code))) {
+          return false;
+        }
+        return (mine.get(row.code) ?? 0) < copiesLeftFor(player, row, context);
+      });
+      const pack = shuffled(pool, random)
+        .slice(0, state.settings.offerSize)
+        .map((row) => row.code);
+      if (pack.length === 0) {
+        needed[i] = 0;
+        continue;
+      }
+      for (const code of pack) {
+        stock[code] = (stock[code] ?? 1) - 1;
+        mine.set(code, (mine.get(code) ?? 0) + 1);
+        const row = context.pool.get(code);
+        if (row !== undefined && holdsOnce(row)) {
+          placedOnce.add(code);
+        }
+      }
+      (packs[i] as string[][]).push(pack);
+    }
+  }
+  return { ...state, stock, packs, builds: state.builds + 1 };
+}
+
+/** The shelf with these cards put back on it. */
+function returned(stock: Readonly<Record<string, number>>, codes: readonly string[]): Record<string, number> {
+  const out: Record<string, number> = { ...stock };
+  for (const code of codes) {
+    out[code] = (out[code] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Opens the current player's next pack and puts it on the table.
+ *
+ * A card the deck can no longer take — the packs were built before the picks
+ * that came between — goes back on the shelf unseen; a pack with nothing
+ * left in it is passed over. When the player's packs are all opened and
+ * their deck is not yet full, the shelf is shuffled into new packs once;
+ * an empty table after that means nothing legal is left for them.
+ */
+export function openPack(state: DraftState, context: DraftContext): DraftState {
+  const player = state.players[state.current];
+  if (player === undefined || isFull(player)) {
+    return { ...state, offer: [] };
+  }
+  let next = state;
+  let rebuilt = false;
+  for (;;) {
+    const queue = next.packs[next.current] ?? [];
+    const pack = queue[0];
+    if (pack === undefined) {
+      if (rebuilt) {
+        return { ...next, offer: [] };
+      }
+      rebuilt = true;
+      next = buildPacks(next, context, [next.current]);
+      continue;
+    }
+    const rest = queue.slice(1);
+    const packs = next.packs.map((q, i) => (i === next.current ? rest : q));
+    const legal: string[] = [];
+    const back: string[] = [];
+    for (const code of pack) {
+      const row = context.pool.get(code);
+      (row !== undefined && canTake(player, row, context) ? legal : back).push(code);
+    }
+    next = { ...next, packs, stock: returned(next.stock, back) };
+    if (legal.length > 0) {
+      return { ...next, offer: legal };
+    }
+  }
+}
+
+/**
+ * The current player takes the card. The rest of the pack goes back on the
+ * shelf, and the turn passes to the next player who still has room; when
+ * nobody has room the draft is over.
  */
 export function pick(state: DraftState, canonicalCode: string, context: DraftContext): DraftState {
   if (!state.offer.includes(canonicalCode)) {
@@ -301,11 +434,11 @@ export function pick(state: DraftState, canonicalCode: string, context: DraftCon
   const players = state.players.map((player, i) =>
     i === state.current ? { ...player, picks: [...player.picks, canonicalCode] } : player,
   );
-  const stock = { ...state.stock, [canonicalCode]: (state.stock[canonicalCode] ?? 1) - 1 };
+  const stock = returned(state.stock, state.offer.filter((code) => code !== canonicalCode));
   return nextTurn({ ...state, players, stock, pickCount: state.pickCount + 1, offer: [] }, context);
 }
 
-/** The next player with room takes the table, or the draft ends. */
+/** The next player with room opens a pack, or the draft ends. */
 export function nextTurn(state: DraftState, context: DraftContext): DraftState {
   if (everyoneFull(state)) {
     return { ...state, phase: 'finish', current: 0, offer: [] };
@@ -314,27 +447,35 @@ export function nextTurn(state: DraftState, context: DraftContext): DraftState {
   do {
     next = (next + 1) % state.players.length;
   } while (isFull(state.players[next] as DraftPlayer));
-  return { ...deal({ ...state, current: next }, context), phase: 'pick' };
+  return { ...openPack({ ...state, current: next }, context), phase: 'pick' };
 }
 
-/** The first turn, once every identity is settled. */
+/**
+ * The first turn, once every identity is settled: every player's packs are
+ * built from the shelf, and the first player opens one.
+ */
 export function start(state: DraftState, context: DraftContext): DraftState {
   const first = state.players.findIndex((player) => !isFull(player));
   if (first < 0) {
     return { ...state, phase: 'finish', current: 0 };
   }
-  return { ...deal({ ...state, current: first }, context), phase: 'pick' };
+  const built = buildPacks({ ...state, packs: state.players.map(() => []) }, context);
+  return { ...openPack({ ...built, current: first }, context), phase: 'pick' };
 }
 
 /**
- * A player whose offer came up empty: nothing legal is left for them, which
- * the stock check makes rare but not impossible once the others have
- * drafted. Their deck stops where it is, short, and the draft goes on
- * without them; the finish page then refuses to save it, by design.
+ * A player whose table came up empty: nothing legal is left for them, even
+ * after the shelf was shuffled into new packs. Their deck stops where it is,
+ * short, their sealed packs go back on the shelf for the others, and the
+ * draft goes on without them; the finish page then refuses to save it, by
+ * design.
  */
 export function skipCurrent(state: DraftState, context: DraftContext): DraftState {
   const players = state.players.map((player, i) =>
     i === state.current ? { ...player, deckSize: cardCount(player) } : player,
   );
-  return nextTurn({ ...state, players }, context);
+  const sealed = (state.packs[state.current] ?? []).flat();
+  const packs = state.packs.map((q, i) => (i === state.current ? [] : q));
+  const stock = returned(state.stock, [...sealed, ...state.offer]);
+  return nextTurn({ ...state, players, packs, stock, offer: [] }, context);
 }

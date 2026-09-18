@@ -1,11 +1,12 @@
 /**
  * The draft, against the real card index.
  *
- * The same cases as the Android app's DraftEngineTest, DraftNamingTest and
- * DraftStockBuilderTest, so a rule read on one side is the rule on the
- * other: what an offer is made of, that a seed repeats, copy limits, uniques,
- * Adam Warlock's single copies, the shelf shared by four players, whole
- * drafts ending legal for every size, and the names.
+ * The identities, the shelf, the copy limits and the names are the Android
+ * app's DraftEngineTest, DraftNamingTest and DraftStockBuilderTest, so a
+ * rule read on one side is the rule on the other. The packs are the web's:
+ * built before the first pick, one physical copy in one pack at most, a
+ * card that holds once placed once across all of them, and the shelf
+ * shuffled into new packs when a player opens their last.
  *
  *   npm run test:draft
  */
@@ -15,7 +16,7 @@ import { buildContext, ownedHeroes, rulesFor } from '../src/lib/draft/context.ts
 import { buildStock } from '../src/lib/draft/stock.ts';
 import { cardFromRow } from '../src/lib/draft/cards.ts';
 import {
-  aspectChoices, availableHeroes, canTake, deal, imposedAspects, legalOffers, nextTurn, pick,
+  aspectChoices, availableHeroes, buildPacks, canTake, imposedAspects, legalOffers, nextTurn, openPack, pick,
   playerPool, randomAspects, randomHero, randomHeroChoices, shortfalls, skipCurrent, start,
 } from '../src/lib/draft/engine.ts';
 import { aspectPart, defaultName, fold } from '../src/lib/draft/naming.ts';
@@ -59,6 +60,8 @@ function fresh(players, over = {}) {
     phase: 'identity',
     current: 0,
     stock: {},
+    packs: [],
+    builds: 0,
     pickCount: 0,
     offer: [],
     seed: over.seed ?? 12345,
@@ -151,25 +154,75 @@ function validate(playerState, context) {
 
 {
   const { state, context } = ready([player(0, SPIDER, ['justice'])]);
-  check('an offer has the size asked for', state.offer.length === DRAFT_RULES.DEFAULT_OFFER_SIZE, String(state.offer.length));
+  check('an open pack has the size asked for', state.offer.length === DRAFT_RULES.DEFAULT_OFFER_SIZE, String(state.offer.length));
   check('from the player\'s aspect and basic', state.offer.every((code) => ['justice', 'basic'].includes(context.pool.get(code).factionCode)));
-  const again = deal(state, context);
-  check('the same state deals the same offer', again.offer.join(',') === state.offer.join(','));
+  const again = start({ ...fresh([player(0, SPIDER, ['justice'])]), stock: Object.fromEntries(context.initialStock) }, context);
+  check('the same seed builds the same packs', JSON.stringify(again.packs) === JSON.stringify(state.packs) && again.offer.join(',') === state.offer.join(','));
   const other = ready([player(0, SPIDER, ['justice'])], { seed: 999 }).state;
-  check('another seed deals another', other.offer.join(',') !== state.offer.join(','));
+  check('another seed builds others', other.offer.join(',') !== state.offer.join(','));
 
   const taken = state.offer[0];
+  const shelfBefore = Object.values(state.stock).reduce((n, c) => n + c, 0);
   const after = pick(state, taken, context);
   check('a pick joins the deck', after.players[0].picks.includes(taken));
-  check('and leaves the shelf', after.stock[taken] === state.stock[taken] - 1);
-  check('and a new offer is on the table', after.offer.length > 0 && after.pickCount === 1);
+  check('the rest of the pack goes back on the shelf, and the next pack comes off it',
+    Object.values(after.stock).reduce((n, c) => n + c, 0) === shelfBefore + state.offer.length - 1 && after.packs[0].length === state.packs[0].length - 1);
+  check('and a new pack is on the table', after.offer.length > 0 && after.pickCount === 1);
   let threw = false;
   try { pick(state, 'no-such', context); } catch { threw = true; }
   check('a card off the table cannot be picked', threw);
+  check('the shelf still offers what a pack would', legalOffers(state, context).length > 0);
+}
 
-  const small = { ...state, settings: { ...state.settings, offerSize: 10 } };
-  const legal = legalOffers(small, context).length;
-  check('fewer cards than asked are offered when fewer are left', deal({ ...small, stock: Object.fromEntries([...context.initialStock].filter(([c]) => small.offer.slice(0, 3).includes(c))) }, context).offer.length <= 3 && legal > 0);
+// --- the packs ---------------------------------------------------------------------------
+
+{
+  const { state, context } = ready([player(0, SPIDER, ['justice'], 40)]);
+  const me = state.players[0];
+  const needed = 40 - cardCount(me);
+  // The open pack counts: it was the first of the queue.
+  check(`the packs are built before the first pick: one per card needed (${needed})`, state.packs[0].length === needed - 1 && state.offer.length > 0, String(state.packs[0].length));
+  check('every pack holds distinct cards, no more than asked for', state.packs[0].every((pack) => new Set(pack).size === pack.length && pack.length <= DRAFT_RULES.DEFAULT_OFFER_SIZE));
+  const inPacks = new Map();
+  for (const pack of [state.offer, ...state.packs[0]]) for (const code of pack) inPacks.set(code, (inPacks.get(code) ?? 0) + 1);
+  check('a physical copy is in one pack at most', [...inPacks].every(([code, n]) => n + (state.stock[code] ?? 0) === context.initialStock.get(code)));
+  check('and no card is in more packs than the deck may hold copies', [...inPacks].every(([code, n]) => {
+    const row = context.pool.get(code);
+    return n <= (row.isUnique ? 1 : (row.deckLimit ?? 3));
+  }));
+  const strength = [...context.pool.values()].find((row) => row.name === 'Strength');
+  check(`a "max 1 per deck" card is placed once across all the packs, whatever the shelf holds (${strength.name}: ${context.initialStock.get(strength.code)} owned)`,
+    context.initialStock.get(strength.code) > 1 && (inPacks.get(strength.code) ?? 0) <= 1);
+  const uniques = [...inPacks].filter(([code]) => context.pool.get(code).isUnique);
+  check('as is a unique', uniques.every(([, n]) => n === 1));
+
+  // Four players: one copy in one pack across everybody, and the packs shared round by round.
+  const four = ready([player(0, SPIDER, ['justice']), player(1, WARLOCK, [...DRAFT_RULES.CLASSIC_ASPECTS]), player(2, MAGIK, ['protection']), player(3, SPIDERWOMAN, ['aggression', 'leadership'])], { seed: 5 });
+  const all = new Map();
+  for (const [i, queue] of four.state.packs.entries()) for (const pack of [...(i === four.state.current ? [four.state.offer] : []), ...queue]) for (const code of pack) all.set(code, (all.get(code) ?? 0) + 1);
+  check('with four players a physical copy is still in one pack at most', [...all].every(([code, n]) => n + (four.state.stock[code] ?? 0) === four.context.initialStock.get(code)));
+  check('and a card that holds once is in one pack across all four', [...all].filter(([code]) => { const r = four.context.pool.get(code); return r.isUnique || r.deckLimit === 1; }).every(([, n]) => n === 1));
+  check('everybody gets packs', four.state.packs.every((queue, i) => queue.length + (i === four.state.current ? 1 : 0) >= 1));
+
+  // A shelf too small for all the packs: what it can fill is built, and the rest comes when the packs run out.
+  const tiny = new Map([['core', 1]]);
+  const tctx = buildContext(index, tiny, [SPIDER]);
+  const tstate = start({ ...fresh([player(0, SPIDER, ['justice'], 50)], { settings: { offerSize: 10 } }), stock: Object.fromEntries(tctx.initialStock) }, tctx);
+  const tneeded = 50 - cardCount(tstate.players[0]);
+  check('a shelf too small builds what it can, not what was asked', tstate.packs[0].length + 1 < tneeded, `${tstate.packs[0].length + 1} of ${tneeded}`);
+  let t = tstate;
+  let opened = 0;
+  while (t.phase === 'pick' && t.packs[0].length > 0) { t = pick(t, t.offer[0], tctx); opened += 1; }
+  const buildsBefore = t.builds;
+  t = pick(t, t.offer[0], tctx);
+  check('when the last pack is opened, the shelf is shuffled into new ones and the draft carries on', t.builds === buildsBefore + 1 && t.phase === 'pick' && t.offer.length > 0, `builds ${buildsBefore} then ${t.builds}, phase ${t.phase}`);
+  const tend = playThrough(t, tctx);
+  const tv = validate(tend.players[0], tctx);
+  check('and it ends in a legal deck of fifty from one Core Set', tend.phase === 'finish' && tv.legal && cardCount(tend.players[0]) === 50, tv.problems.map((p) => p.kind).join(',') || String(cardCount(tend.players[0])));
+  check('with three picks of nothing twice over', new Set(tend.players[0].picks).size < tend.players[0].picks.length);
+  void opened;
+  void buildPacks;
+  void openPack;
 }
 
 {
@@ -196,7 +249,8 @@ function validate(playerState, context) {
   // Synergy option.
   const on = ready([player(0, MAGIK, ['justice'])], { settings: { synergyOnly: true } });
   const off = ready([player(0, MAGIK, ['justice'])]);
-  const pooled = (s, c) => playerPool(s, s.players[0], c).map((r) => r.code);
+  // Read off the whole shelf: once the packs are built, what they hold is off it.
+  const pooled = (s, c) => playerPool({ ...s, stock: Object.fromEntries(c.initialStock) }, s.players[0], c).map((r) => r.code);
   check('the synergy option keeps out what the identity cannot play (Rocket Raccoon, Magik)', !pooled(on.state, on.context).includes('16019') && pooled(off.state, off.context).includes('16019'));
   const wl = ready([player(0, WARLOCK, [...DRAFT_RULES.CLASSIC_ASPECTS])], { settings: { synergyOnly: true } });
   check('and leaves in what it can (Rocket Raccoon, Warlock)', pooled(wl.state, wl.context).includes('16019'));

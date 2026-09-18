@@ -12,7 +12,13 @@ const ROW_ID = 'current';
 
 export async function loadDraft(): Promise<DraftState | null> {
   const row = await db.drafts.get(ROW_ID);
-  return row?.state ?? null;
+  if (row === undefined) {
+    return null;
+  }
+  // A draft written down before the packs existed has none; its next open
+  // builds them from the shelf as it stands, and it carries on.
+  const state = row.state as Partial<DraftState> & DraftState;
+  return { ...state, packs: state.packs ?? state.players.map(() => []), builds: state.builds ?? 0 };
 }
 
 export async function saveDraft(state: DraftState): Promise<void> {
