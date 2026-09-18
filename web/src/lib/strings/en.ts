@@ -564,6 +564,7 @@ export const en: Strings = {
   savedToHistory: 'Saved',
   wave: (n) => `Wave ${n}`,
   waveUnknown: 'Not yet classified',
+  navHome: 'Home',
   navCards: 'Cards',
   navCollection: 'My collection',
   navPlayShort: 'Play',

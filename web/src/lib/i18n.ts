@@ -502,6 +502,7 @@ export interface Strings {
   readonly savedToHistory: string;
   readonly wave: (n: number) => string;
   readonly waveUnknown: string;
+  readonly navHome: string;
   readonly navCards: string;
   readonly navCollection: string;
   /** The Play tab's label, which has about six characters of room. */

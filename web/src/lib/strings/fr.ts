@@ -571,6 +571,7 @@ export const fr: Strings = {
   savedToHistory: 'Enregistré',
   wave: (n) => `Vague ${n}`,
   waveUnknown: 'Non classés',
+  navHome: 'Accueil',
   navCards: 'Cartes',
   navCollection: 'Ma collection',
   navPlayShort: 'Jouer',

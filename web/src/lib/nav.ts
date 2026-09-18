@@ -10,6 +10,8 @@ import type { Strings } from './i18n';
  */
 
 export type NavTarget =
+  /** The front door. In the top bar and the More sheet, never a tab: the brand is its tab. */
+  | 'home'
   | 'search'
   | 'achievements'
   /**
@@ -40,7 +42,7 @@ export type NavTarget =
  * reached from a link in somebody's mail. All three are places the app can be
  * without being a tab, and none of them should light one up.
  */
-export type ActiveTarget = NavTarget | 'home' | 'card' | 'deck' | 'account' | 'bgg' | 'verify' | 'notFound';
+export type ActiveTarget = NavTarget | 'card' | 'deck' | 'account' | 'bgg' | 'verify' | 'notFound';
 
 export interface Destination {
   readonly id: NavTarget;
@@ -66,6 +68,7 @@ export interface Destination {
  * go and look at cards.
  */
 export const DESTINATIONS: readonly Destination[] = [
+  { id: 'home', label: (t) => t.navHome, tab: (t) => t.navHome, glyph: '⌂' },
   { id: 'search', label: (t) => t.navCards, tab: (t) => t.navCards, glyph: '▤' },
   { id: 'hub', label: (t) => t.navPlayShort, tab: (t) => t.navPlayShort, glyph: '▶' },
   { id: 'decks', label: (t) => t.navDecks, tab: (t) => t.navDecks, glyph: '❐' },
