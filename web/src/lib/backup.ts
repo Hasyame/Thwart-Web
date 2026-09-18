@@ -1,5 +1,5 @@
 import { db, SETTINGS_KEY } from './db';
-import { completePlay } from './playShape';
+import { completePlay, playWire } from './playShape';
 import {
   BACKUP_FORMAT_VERSION,
   type Backup,
@@ -81,11 +81,11 @@ export function parseBackup(text: string): Backup {
     throw new BackupError('not-a-backup');
   }
   if (formatVersion > BACKUP_FORMAT_VERSION) {
-    // Readable in principle — the convention says so — but say it out loud, so
-    // a user restoring a file from a much newer app is not surprised later by
-    // something that quietly did not come across.
+    // Readable: the convention says so, and the fields this build does not
+    // know are kept on each record and written back on export. Said out
+    // loud all the same, so a file from a much newer app is not a surprise.
     console.warn(
-      `Backup format ${formatVersion} is newer than ${BACKUP_FORMAT_VERSION}; unknown fields will be ignored.`,
+      `Backup format ${formatVersion} is newer than ${BACKUP_FORMAT_VERSION}; unknown fields are kept, not read.`,
     );
   }
 
@@ -254,7 +254,9 @@ export async function exportBackup(): Promise<Backup> {
     decks,
     campaignRuns,
     campaignEvents,
-    plays,
+    // On the wire shape: the unknown fields a play carried go back beside
+    // the known ones, so a file round-trips through this build whole.
+    plays: plays.map((play) => playWire(play) as unknown as Play),
     randomizerHistory,
     favouriteCards,
     favouritePlays,

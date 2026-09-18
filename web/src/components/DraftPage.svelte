@@ -404,7 +404,8 @@
           ignoreDeckLimitSlots: '',
           descriptionMd: null,
           version: null,
-          tags: null,
+          // So a game played with it records mode `draft`. Spec: achievements §5.
+          tags: 'draft',
           rawJson: '',
           lastSyncedAt: now,
           locallyEdited: true,

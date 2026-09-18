@@ -35,13 +35,56 @@ import type { Play, PlayHero } from './records';
  */
 
 /** A seat, with the three fields the app reads. */
+const SEAT_KEYS = new Set(['code', 'name', 'aspect', 'isOwner', 'extra']);
+
+/** The keys of a record this client does not read, kept aside; undefined when none. */
+function extrasOf(raw: Record<string, unknown>, known: ReadonlySet<string>): Record<string, unknown> | undefined {
+  const carried = raw['extra'];
+  const out: Record<string, unknown> = carried !== null && typeof carried === 'object' && !Array.isArray(carried)
+    ? { ...(carried as Record<string, unknown>) }
+    : {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!known.has(key) && value !== undefined) {
+      out[key] = value;
+    }
+  }
+  return Object.keys(out).length === 0 ? undefined : out;
+}
+
 function seatOf(value: unknown): PlayHero {
-  const seat = (value ?? {}) as Partial<PlayHero>;
+  const raw = (value ?? {}) as Record<string, unknown>;
+  const extra = extrasOf(raw, SEAT_KEYS);
   return {
-    code: typeof seat.code === 'string' ? seat.code : '',
-    name: typeof seat.name === 'string' ? seat.name : '',
-    aspect: typeof seat.aspect === 'string' ? seat.aspect : '',
+    code: typeof raw.code === 'string' ? raw.code : '',
+    name: typeof raw.name === 'string' ? raw.name : '',
+    aspect: typeof raw.aspect === 'string' ? raw.aspect : '',
+    ...(raw.isOwner === true ? { isOwner: true } : {}),
+    ...(extra === undefined ? {} : { extra }),
   };
+}
+
+const PLAY_KEYS = new Set([
+  'id', 'playedAt', 'scenarioCode', 'scenarioName', 'difficulty', 'standardSet', 'modularSets',
+  'heroCode', 'heroName', 'aspects', 'otherHeroes', 'roster', 'players', 'won', 'elapsedMillis',
+  'notes', 'location', 'victoryPoints', 'campaignRunId', 'reportedToBgg', 'photos', 'updatedAt',
+  'deletedAt', 'mode', 'extra',
+]);
+
+/**
+ * The record as it goes on the wire and into a backup: the known fields,
+ * with every unknown one this client carried put back beside them, and
+ * nothing this client added for itself. The inverse of `completePlay`, so
+ * a record round-trips through a client that does not know its newest
+ * fields without losing them. docs/spec/achievements/sync.md §2.
+ */
+export function playWire(play: Play): Record<string, unknown> {
+  const { extra, roster, mode, ...known } = play;
+  // A row written before the roster existed may lack it; the wire says none.
+  const seats = (roster ?? []).map((seat) => {
+    const { extra: seatExtra, isOwner, ...seatKnown } = seat;
+    return { ...(seatExtra ?? {}), ...seatKnown, ...(isOwner === true ? { isOwner: true } : {}) };
+  });
+  return { ...(extra ?? {}), ...known, roster: seats, ...(mode === undefined ? {} : { mode }) };
 }
 
 const text = (value: unknown, fallback = ''): string =>
@@ -61,6 +104,7 @@ export function completePlay(body: unknown, id: string): Play {
   const raw = (body ?? {}) as Record<string, unknown>;
 
   const playedAt = number(raw.playedAt, 0);
+  const extra = extrasOf(raw, PLAY_KEYS);
 
   return {
     id,
@@ -114,5 +158,9 @@ export function completePlay(body: unknown, id: string): Play {
     updatedAt: number(raw.updatedAt, 0) > 0 ? number(raw.updatedAt, 0) : playedAt,
     // PlayEntity: `deletedAt: Long? = null`
     deletedAt: typeof raw.deletedAt === 'number' ? raw.deletedAt : null,
+    // Thwart's own mode, when the record names one; an unknown value is
+    // kept as it is and read as none. docs/spec/achievements/data-model.md §3.
+    ...(typeof raw.mode === 'string' && raw.mode !== '' ? { mode: raw.mode } : {}),
+    ...(extra === undefined ? {} : { extra }),
   };
 }

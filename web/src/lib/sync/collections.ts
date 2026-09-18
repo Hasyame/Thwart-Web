@@ -1,6 +1,6 @@
 import type { Table } from 'dexie';
 import { db, SETTINGS_KEY, type StoredSettings } from '../db';
-import { completePlay } from '../playShape';
+import { completePlay, playWire } from '../playShape';
 import type {
   CampaignEvent,
   CampaignRun,
@@ -224,7 +224,9 @@ export const PLAYS: Mapping<Play> = {
   name: 'plays',
   table: () => db.plays,
   idOf: (row) => row.id,
-  bodyOf: whole,
+  // The known fields and every unknown one this client carried, put back:
+  // a device one release behind must not strip what a newer one recorded.
+  bodyOf: (row) => playWire(row),
   /*
     Filled in, not spread.
 

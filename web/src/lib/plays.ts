@@ -30,15 +30,20 @@ export interface RecordInput {
   readonly victoryPoints: number;
   /** Modular set names, already localised, for the notes line. */
   readonly modularSetNames: readonly string[];
+  /** Thwart's own mode, when the owner's deck came out of one: `draft`. */
+  readonly mode?: string;
 }
 
 export function buildPlay(input: RecordInput): Play {
   const { session, modularSetNames } = input;
 
-  const roster: PlayHero[] = session.seats.map((seat) => ({
+  // The first seat is the person at this device: the owner's, for the
+  // achievements. docs/spec/achievements/data-model.md §3.
+  const roster: PlayHero[] = session.seats.map((seat, i) => ({
     code: seat.heroCode,
     name: seat.heroName,
     aspect: seat.aspect,
+    ...(i === 0 ? { isOwner: true } : {}),
   }));
 
   const first = roster[0];
@@ -86,6 +91,7 @@ export function buildPlay(input: RecordInput): Play {
     campaignRunId: null,
     reportedToBgg: false,
     photos: '',
+    ...(input.mode === undefined ? {} : { mode: input.mode }),
   };
 }
 

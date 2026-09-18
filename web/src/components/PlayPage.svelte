@@ -129,6 +129,10 @@
 
   const decks = $state<{ saved: readonly SavedDeck[] }>({ saved: [] });
 
+  /** A deck's tags, as the phone stores them: one string, comma-separated. */
+  const deckTags = (deckId: string | undefined): readonly string[] =>
+    (decks.saved.find((deck) => deck.id === deckId)?.tags ?? '').split(',').map((t) => t.trim()).filter((t) => t !== '');
+
   $effect(() => {
     if (!storageOk) {
       return;
@@ -459,6 +463,9 @@
         modularSetNames: session.current.modularSetCodes.map(
           (code) => setNames.get(code) ?? code,
         ),
+        // A deck the draft built carries the tag; the game then counts for
+        // the draft achievements. docs/spec/achievements/data-model.md §5.
+        ...(deckTags(session.current.seats[0]?.deckId).includes('draft') ? { mode: 'draft' } : {}),
       });
       await db.plays.put(play);
       lastPlay = play;

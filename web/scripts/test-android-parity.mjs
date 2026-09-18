@@ -14,7 +14,8 @@
  *   npm run test:parity
  */
 import { computeStatistics } from '../src/lib/plays.ts';
-import { completePlay } from '../src/lib/playShape.ts';
+import { completePlay, playWire } from '../src/lib/playShape.ts';
+import { readFileSync } from 'node:fs';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -374,6 +375,33 @@ const sorted = (values) => [...values].sort();
 
   const again = completePlay(filled, filled.id);
   check('completing a complete row changes nothing', JSON.stringify(again) === JSON.stringify(filled));
+}
+
+{
+  // Backup format 2 round trip: a phone's export, with the achievements'
+  // fields and two fields this build has never heard of, comes through
+  // completePlay and back out of playWire whole. docs/spec/achievements/sync.md §2.
+  const fixture = JSON.parse(readFileSync(new URL('./fixtures/backup-android-v2.json', import.meta.url), 'utf8'));
+  const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : v !== null && typeof v === 'object'
+    ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])])) : v);
+  const same = (a, b) => JSON.stringify(sortKeys(a)) === JSON.stringify(sortKeys(b));
+  const [full, sparse] = fixture.plays;
+  const filledFull = completePlay(full, full.id);
+  check('a v2 play keeps the owner seat', filledFull.roster[0].isOwner === true && filledFull.roster[1].isOwner === undefined);
+  check('and its mode', filledFull.mode === 'draft');
+  check('an unknown play field is kept aside, not read', filledFull.extra?.weather === 'rain' && !('weather' in filledFull));
+  check('an unknown seat field too', filledFull.roster[1].extra?.seatColour === 'blue');
+  check('and the record goes back on the wire field for field', same(playWire(filledFull), full), JSON.stringify(playWire(filledFull)));
+  const filledSparse = completePlay(sparse, sparse.id);
+  check('a reserved mode is kept as it is', filledSparse.mode === 'sealed');
+  check('a sparse v2 play fills in and writes back its own fields plus the defaults', (() => {
+    const wire = playWire(filledSparse);
+    return wire.mode === 'sealed' && wire.roster.length === 0 && wire.players === 1 && wire.difficulty === 'expert';
+  })());
+  check('completing twice is the same as once', same(completePlay(filledFull, full.id), filledFull));
+  const v1 = { id: 'v1', playedAt: 1, scenarioCode: 'rhino', roster: [{ code: '01001a', name: 'Spider-Man', aspect: 'justice' }], won: true };
+  const filledV1 = completePlay(v1, v1.id);
+  check('a v1 play carries no owner flag and no mode: the readings supply them', filledV1.roster[0].isOwner === undefined && filledV1.mode === undefined && !('extra' in filledV1));
 }
 
 console.log(failures === 0 ? '\nthe two clients agree' : `\n${failures} FAILED`);

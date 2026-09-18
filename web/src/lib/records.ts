@@ -142,6 +142,14 @@ export interface PlayHero {
   readonly code: string;
   readonly name: string;
   readonly aspect: string;
+  /**
+   * The seat of the person whose device recorded the game. Absent on a
+   * record from before it existed, and then the first seat is the owner.
+   * docs/spec/achievements/data-model.md §3.
+   */
+  readonly isOwner?: boolean;
+  /** Keys this client does not know, kept for the next one that does. See `Play.extra`. */
+  readonly extra?: Readonly<Record<string, unknown>>;
 }
 
 /** `data/db/entity/PlayEntity.kt`. */
@@ -176,6 +184,23 @@ export interface Play {
   readonly campaignRunId: string | null;
   readonly reportedToBgg: boolean;
   readonly photos: string;
+  /**
+   * Which of Thwart's own modes produced the game: `draft` when the owner's
+   * deck came out of the draft. Absent for an ordinary game; `sealed`,
+   * `daily` and `shared` are reserved. docs/spec/achievements/data-model.md §3.
+   */
+  readonly mode?: string;
+  /**
+   * Fields the record carried that this client does not know.
+   *
+   * A backup or a sync body from a newer client may name fields this build
+   * has never heard of. They are kept here, off the typed fields, and put
+   * back into every body this client writes for the record, so a device one
+   * release behind never strips what a newer one recorded. Known fields
+   * always win over an extra key of the same name. Never read for meaning.
+   * docs/spec/achievements/sync.md §2.
+   */
+  readonly extra?: Readonly<Record<string, unknown>>;
   /**
    * When this row last changed, in epoch milliseconds.
    *
@@ -317,10 +342,11 @@ export interface BackupSettings {
 /**
  * The export bundle, exactly as `data/backup/BackupModels.kt` declares it.
  *
- * `formatVersion` stays at 1. The app's own comment explains the convention:
- * fields added after the format shipped do not bump it, because an older build
- * ignores unknown keys and can still read a newer file, which beats refusing
- * the backup outright.
+ * `formatVersion` is 2 since the achievements: the play record gained
+ * `roster[].isOwner` and `mode`. Both clients read 1 and 2, write 2, and
+ * keep every field they do not know on the record and write it back, so a
+ * file from a newer build imports without losing anything.
+ * docs/spec/achievements/sync.md.
  */
 export interface Backup {
   readonly formatVersion: number;
@@ -353,4 +379,4 @@ export interface Backup {
   readonly settings?: BackupSettings | null;
 }
 
-export const BACKUP_FORMAT_VERSION = 1;
+export const BACKUP_FORMAT_VERSION = 2;

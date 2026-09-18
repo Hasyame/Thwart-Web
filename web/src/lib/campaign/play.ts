@@ -25,12 +25,14 @@ export interface CampaignPlayInput {
 }
 
 export function buildCampaignPlay(input: CampaignPlayInput): Play {
-  const roster: PlayHero[] = input.campaign.heroes.map((hero) => {
+  const roster: PlayHero[] = input.campaign.heroes.map((hero, i) => {
     const deck = input.decks.find((candidate) => candidate.id === hero.deckId);
     return {
       code: hero.heroCardCode,
       name: hero.name,
       aspect: (deck?.aspects ?? '').split(',').filter((a) => a !== '').join(', '),
+      // The first hero of a campaign is the one at this device.
+      ...(i === 0 ? { isOwner: true } : {}),
     };
   });
 

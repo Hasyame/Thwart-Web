@@ -1,0 +1,81 @@
+{
+  "formatVersion": 2,
+  "createdAt": 1758200000000,
+  "appVersion": "android 1.55.0",
+  "ownedPacks": [
+    {
+      "packCode": "core",
+      "quantity": 1
+    },
+    {
+      "packCode": "trors",
+      "quantity": 1
+    }
+  ],
+  "excludedModularSets": [],
+  "excludedScenarios": [],
+  "decks": [],
+  "campaignRuns": [],
+  "campaignEvents": [],
+  "plays": [
+    {
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "playedAt": 1758100000000,
+      "scenarioCode": "rhino",
+      "scenarioName": "Rhino",
+      "difficulty": "standard_i",
+      "standardSet": "",
+      "modularSets": "bomb_scare",
+      "heroCode": "01001a",
+      "heroName": "Spider-Man",
+      "aspects": "justice",
+      "otherHeroes": "Captain America",
+      "roster": [
+        {
+          "code": "01001a",
+          "name": "Spider-Man",
+          "aspect": "justice",
+          "isOwner": true
+        },
+        {
+          "code": "04001a",
+          "name": "Captain America",
+          "aspect": "leadership",
+          "seatColour": "blue"
+        }
+      ],
+      "players": 2,
+      "won": true,
+      "elapsedMillis": 2700000,
+      "notes": "Modular sets: Bomb Scare",
+      "location": "",
+      "victoryPoints": 0,
+      "campaignRunId": null,
+      "reportedToBgg": false,
+      "photos": "",
+      "updatedAt": 1758100000000,
+      "deletedAt": null,
+      "mode": "draft",
+      "weather": "rain"
+    },
+    {
+      "id": "a1b2c3d4-0001-4000-8000-000000000002",
+      "playedAt": 1758150000000,
+      "scenarioCode": "fne_s1_musee__fne_villain_electro",
+      "scenarioName": "Art Museum Heist : Electro",
+      "difficulty": "expert",
+      "heroCode": "01010a",
+      "heroName": "Captain Marvel",
+      "aspects": "aggression",
+      "won": false,
+      "mode": "sealed"
+    }
+  ],
+  "randomizerHistory": [],
+  "favouriteCards": [],
+  "settings": null,
+  "photos": [],
+  "achievementsHint": {
+    "definitionsVersion": 1
+  }
+}
