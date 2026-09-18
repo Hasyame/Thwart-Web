@@ -39,6 +39,3 @@ export function cardFromRow(row: IndexRow): Card {
     deck_options: row.deckRules?.options ?? undefined,
   } as Card;
 }
-
-/** The code a card is counted under: the original printing's, for a reprint. */
-export const canonicalOf = (row: IndexRow): string => row.duplicateOf ?? row.code;

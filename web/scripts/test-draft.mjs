@@ -123,6 +123,14 @@ function validate(playerState, context) {
   check('no signature card is on the shelf', [...pool.values()].every((row) => row.setCode === null));
   check('no encounter card is on the shelf', [...pool.values()].every((row) => row.factionCode !== 'encounter'));
   check('an unowned pack puts nothing on the shelf', ![...pool.values()].some((row) => row.packCode === 'next'));
+  // A card owned only as a reprint is shown as that printing, never as the
+  // original from a pack the collection does not have.
+  const onlyMsm = buildStock(index, new Map([['msm', 1]]));
+  check('every card on the shelf is a printing the collection holds', [...onlyMsm.pool.values()].every((row) => row.packCode === 'msm'),
+    [...onlyMsm.pool.values()].filter((row) => row.packCode !== 'msm').map((r) => `${r.code} ${r.name}`).join(','));
+  check("so Energy from Ms. Marvel's pack alone is her printing, once", onlyMsm.pool.has('05019') && onlyMsm.stock.get('05019') === 1 && !onlyMsm.pool.has('01088'));
+  const withCore = buildStock(index, new Map([['msm', 1], ['core', 1]]));
+  check('and with the Core Set owned, the original names it and the copies add up', withCore.pool.has('01088') && !withCore.pool.has('05019') && withCore.stock.get('01088') === 5, String(withCore.stock.get('01088')));
   void swarm;
 }
 
