@@ -1,5 +1,5 @@
 import { loadCard } from './data';
-import type { Card, IndexRow, Locale } from './types';
+import type { Card, IndexRow, Locale, Pack } from './types';
 
 /**
  * Looking at a card without leaving the page you are on.
@@ -17,15 +17,21 @@ import type { Card, IndexRow, Locale } from './types';
 interface Config {
   index: readonly IndexRow[];
   cardLocale: Locale;
+  packs: readonly Pack[];
 }
 
-const config = $state<Config>({ index: [], cardLocale: 'en' });
+const config = $state<Config>({ index: [], cardLocale: 'en', packs: [] });
 
 /** Told once, by the root, since only it knows which language the cards are in. */
-export function configureCardViewer(index: readonly IndexRow[], cardLocale: Locale): void {
+export function configureCardViewer(index: readonly IndexRow[], cardLocale: Locale, packs: readonly Pack[] = []): void {
   config.index = index;
   config.cardLocale = cardLocale;
+  config.packs = packs;
 }
+
+/** The index and the packs as the root gave them, for what a card detail counts from them. */
+export const viewerIndex = (): readonly IndexRow[] => config.index;
+export const viewerPacks = (): readonly Pack[] => config.packs;
 
 export const viewer = $state<{ code: string | null }>({ code: null });
 

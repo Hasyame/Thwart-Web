@@ -104,6 +104,10 @@ export interface Strings {
   readonly traits: string;
   readonly illustrator: string;
   readonly pack: string;
+  /** The card detail's count of copies in the collection. */
+  readonly inYourCollection: string;
+  readonly ownedNone: string;
+  readonly ownedCopies: (n: number) => string;
   readonly viewOnMarvelCdb: string;
   readonly resources: string;
   readonly cost: string;

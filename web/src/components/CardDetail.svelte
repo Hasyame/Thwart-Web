@@ -3,6 +3,8 @@
   import type { Strings } from '../lib/i18n';
   import { cardImageUrl, marvelCdbCardUrl } from '../lib/data';
   import { cardHtml } from '../lib/cardText';
+  import { viewerIndex, viewerPacks } from '../lib/cardViewer.svelte';
+  import { copiesOwned } from '../lib/ownedCopies.svelte';
 
   interface Props {
     card: Card;
@@ -23,6 +25,11 @@
   }: Props = $props();
 
   const image = $derived(cardImageUrl(card.imagesrc));
+
+  /* How many of this card the collection holds, every printing counted;
+     null until the collection has been read, and then the row is left out
+     rather than claiming none. */
+  const owned = $derived(copiesOwned(card.code, viewerIndex(), viewerPacks()));
   const backImage = $derived(cardImageUrl(card.backimagesrc));
 
   interface Stat {
@@ -142,6 +149,19 @@
     <dl class="facts">
       <dt>{t.pack}</dt>
       <dd>{card.pack_name}</dd>
+      {#if owned !== null}
+        <dt>{t.inYourCollection}</dt>
+        <dd>
+          {#if owned.total === 0}
+            {t.ownedNone}
+          {:else}
+            {t.ownedCopies(owned.total)}
+            {#if owned.parts.length > 1 || owned.parts.some((p) => p.packCode !== card.pack_code)}
+              <span class="muted">· {owned.parts.map((p) => `${p.packName} (${p.copies})`).join(', ')}</span>
+            {/if}
+          {/if}
+        </dd>
+      {/if}
       {#if card.illustrator !== null && card.illustrator !== undefined && card.illustrator !== ''}
         <dt>{t.illustrator}</dt>
         <dd>{card.illustrator}</dd>

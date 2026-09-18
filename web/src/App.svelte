@@ -41,6 +41,7 @@
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { applyHead, headFor } from './lib/head';
   import { configureCardViewer } from './lib/cardViewer.svelte';
+  import { watchOwnedPacks } from './lib/ownedCopies.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { loadSyncState } from './lib/sync/sync.svelte';
   import { syncAfter, watchAutoSync, watchWrites } from './lib/sync/auto.svelte';
@@ -180,6 +181,7 @@
   // The preferences the account carries, watched for the life of the app so a
   // sync that brings new ones in is reflected without a reload.
   $effect(() => (storageOk ? watchAppSettings() : undefined));
+  $effect(() => (storageOk ? watchOwnedPacks() : undefined));
 
   $effect(() => {
     if (!storageOk) {
@@ -435,7 +437,7 @@
   });
 
   $effect(() => {
-    configureCardViewer(index, cardLocale);
+    configureCardViewer(index, cardLocale, packs);
   });
 
   // Once the shell is up, the rest in idle time, so a tap a few seconds in
