@@ -93,6 +93,12 @@ keeps serving; on the very first run there is simply no site yet.
 
 ## 5. nginx
 
+The `location ~ ^/(card|cards|...)` list names every page of the app. A
+new page — `/achievements` was the last — has to be added to the **live**
+file by hand (never `cp` the repo's over it once certbot has run), then
+`nginx -t && systemctl reload nginx`; without it a direct hit on the new
+address answers 404 while in-app navigation still works.
+
 ```bash
 cp /srv/thwart/repo/deploy/nginx-thwart.app.conf /etc/nginx/sites-available/thwart.app
 ln -s /etc/nginx/sites-available/thwart.app /etc/nginx/sites-enabled/

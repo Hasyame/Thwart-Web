@@ -18,6 +18,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-09-19',
+    en: [
+      'Achievements: a heroes-by-scenarios grid of what you have played and beaten, thirty-one named achievements and a completion rate over your collection, all read from your game history. On the Play hub, from the statistics, and said after a game that earns one.',
+      'The card search moved to /cards; the home page took the root.',
+    ],
+    fr: [
+      'Succès : une grille héros par scénarios de ce que vous avez joué et battu, trente et un succès nommés et un taux de complétion sur votre collection, le tout lu dans l’historique de vos parties. Sur l’onglet Jouer, depuis les statistiques, et annoncé après une partie qui en gagne un.',
+      'La recherche de cartes a déménagé sur /cards ; la page d’accueil a pris la racine.',
+    ],
+  },
+  {
     date: '2026-09-18',
     en: [
       'A home page: what is new, where everything is, and why an account is worth having.',

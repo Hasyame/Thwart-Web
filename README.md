@@ -50,6 +50,16 @@ template may say and the rulebook readings behind Fear No Evil.
   deck is full — one to four players on one device, each physical copy
   drafted once, every offer legal, every deck saved to the shelf under a
   `DRAFT-HERO-ASPECT-01` name. The state survives a closed tab.
+- **Achievements**, at `/achievements`: a heroes-by-scenarios grid of what
+  you have played and beaten, thirty-one named achievements, and a
+  completion rate over your collection. Nothing is stored: the state is a
+  pure function of the game history, recomputed live, specified once for
+  both clients in [`docs/spec/achievements/`](docs/spec/achievements/)
+  with the vectors both must reproduce. The definitions are a versioned
+  data file, [`web/public/achievements.json`](web/public/achievements.json),
+  of which Android bundles a snapshot. The backup format is 2 since then:
+  the play record carries the owner's seat and Thwart's own mode, and every
+  field a build does not know is kept and written back.
 - **Randomiser.** Draws a scenario, difficulty, heroes with aspects and modular
   sets from what you own, honouring each scenario's own setup rules. Every
   field can be locked and rerolled on its own. Up to five **extra modular
