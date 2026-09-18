@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import type { IndexRow, Locale } from '../lib/types';
+  import type { IndexRow, Locale, Pack } from '../lib/types';
   import type { Route } from '../lib/router';
   import { CHANGELOG, changelogLines } from '../lib/changelog';
   import { session } from '../lib/sync/session.svelte';
-  import { achievements } from '../lib/achievements/store.svelte';
+  import AchievementsStrip from './AchievementsStrip.svelte';
 
   /**
    * The front door.
@@ -22,11 +22,12 @@
     t: Strings;
     uiLocale: Locale;
     index: readonly IndexRow[];
+    packs: readonly Pack[];
     hrefFor: (route: Route) => string;
     onNavigate: (route: Route) => void;
   }
 
-  const { t, uiLocale, index, hrefFor, onNavigate }: Props = $props();
+  const { t, uiLocale, index, packs, hrefFor, onNavigate }: Props = $props();
 
   const PATREON = 'https://www.patreon.com/cw/thwart';
   const ANDROID = 'https://github.com/Hasyame/Thwart/releases/latest';
@@ -117,18 +118,8 @@
     </div>
   {/if}
 
-  {#if achievements.state !== null}
-    {@const owned = achievements.state.completion.owned}
-    <!-- The achievements as progress, the same tile the Play hub shows:
-         a number and a bar, next to the greeting, before the doors. -->
-    <a class="surface progress" href={hrefFor({ name: 'achievements' })} onclick={(e) => go(e, { name: 'achievements' })}>
-      <span class="glyph" aria-hidden="true">★</span>
-      <span class="words">
-        <span class="title">{t.achievements.hubProgress(owned.won, owned.cells)} <span class="muted small">{t.achievements.hubLabel}</span></span>
-        <span class="bar" aria-hidden="true"><span class="fill" style:width={`${owned.cells === 0 ? 0 : Math.round((owned.won / owned.cells) * 100)}%`}></span></span>
-      </span>
-    </a>
-  {/if}
+  <!-- The achievements at a glance, the way a store shows them. -->
+  <AchievementsStrip {t} {uiLocale} {index} {packs} {hrefFor} {onNavigate} />
 
   <h2 class="section-title">{t.home.whereTo}</h2>
   <ul class="tiles">
@@ -266,49 +257,6 @@
 
   .account p {
     margin: 0 0 var(--space-1);
-  }
-
-  .progress {
-    display: flex;
-    gap: var(--space-3);
-    align-items: center;
-    margin-top: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .progress:hover {
-    border-color: var(--accent);
-  }
-
-  .progress .glyph {
-    color: var(--accent);
-    font-size: var(--text-xl);
-  }
-
-  .progress .words {
-    flex: 1;
-    display: grid;
-    gap: var(--space-1);
-  }
-
-  .progress .title {
-    font-weight: var(--weight-semibold);
-  }
-
-  .bar {
-    display: block;
-    height: 5px;
-    border-radius: var(--radius-pill);
-    background: var(--surface-2);
-    overflow: hidden;
-  }
-
-  .fill {
-    display: block;
-    height: 100%;
-    background: var(--accent);
   }
 
   .tiles {

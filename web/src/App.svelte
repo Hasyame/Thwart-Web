@@ -830,6 +830,7 @@
       {t}
       {uiLocale}
       {index}
+      {packs}
       hrefFor={(r) => pathForRoute(r, BASE)}
       onNavigate={navigate}
     />

@@ -128,6 +128,10 @@ export interface Strings {
     readonly toastOpen: string;
     readonly unavailableFile: string;
     readonly hubProgress: (won: number, cells: number) => string;
+    /** The strip on the home page: "40/88 achievements unlocked". */
+    readonly stripCount: (unlocked: number, total: number) => string;
+    readonly lockedTitle: string;
+    readonly seeMine: string;
     readonly hubLabel: string;
     readonly statsLink: string;
     readonly category: (category: string) => string;
