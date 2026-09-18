@@ -69,8 +69,8 @@ the whole body. Adding `isOwner` and `mode`:
 
 `achievements.json` (data-model.md §4):
 
-- The web repository is the master; the file is fetched with the card
-  data on the web and **bundled as a snapshot** on Android
+- The web repository is the master (`web/public/achievements.json`, served
+  by the site); it is **bundled as a snapshot** on Android
   (`assets/achievements.json`) with the `definitionsVersion` it shipped
   with recorded in the build. Android never fetches it at runtime in v1.
 - A test on Android asserts the bundled snapshot is byte-identical to the

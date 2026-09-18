@@ -129,8 +129,8 @@ give the resolved key as an input fact (see `algorithm.md` §1).
 
 ## 4. Definitions file
 
-`web/public/data/achievements.json`, fetched with the card data on the
-web, bundled as a snapshot on Android. Master copy: the web repository.
+`web/public/achievements.json`, committed in the web repository and served
+by the site; bundled as a snapshot on Android. Master copy: the web repository.
 
 ```json
 {
