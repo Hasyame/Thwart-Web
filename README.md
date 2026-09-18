@@ -233,6 +233,7 @@ the real modules:
 | `npm run test:tile` | A campaign's tile: the final villain as its face, won or lost as the engine means it |
 | `npm run test:synergy` | Which cards an identity can play: the shared fixture, the real cards, and the conditions not read |
 | `npm run test:draft` | The draft: offers, limits, the shared shelf, whole drafts ending legal, the names |
+| `npm run test:achievements` | The achievements: the vectors shared with Android (`docs/spec/achievements/`), the definitions file, the reading of the records |
 | `npm run test:setup` | Scenario setup text, in both languages |
 | `npm run test:encounter` | The ported tracker rules against the real card database |
 | `npm run test:paused` | That a game put away comes back the same |
