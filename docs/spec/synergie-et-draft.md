@@ -247,11 +247,18 @@ test `npm run test:draft`. Android reste à aligner.
   **qu'une fois dans l'ensemble des paquets d'une construction**, même si
   la collection en possède plusieurs exemplaires ; les autres exemplaires
   restent en stock.
-- Si le stock ne suffit pas pour tous les paquets, on construit ceux qu'il
-  permet ; quand un joueur a ouvert son dernier paquet et qu'il lui manque
-  encore des cartes, **le stock restant est rebattu en nouveaux paquets**
-  (les cartes reposées comprises) et le draft continue. Un joueur pour qui
-  rien de légal ne reste après ce rebattage s'arrête là, deck court.
+- **Seuls des paquets complets (X cartes) sont construits.** Les cartes
+  distinctes du stock s'épuisent bien avant ses exemplaires (un exemplaire
+  n'est que dans un paquet) : un paquet court construit maintenant serait
+  ouvert plus tard, quand les cartes des paquets précédents sont revenues
+  et auraient pu le remplir. Si le stock ne suffit pas pour tous les
+  paquets, on construit ceux qu'il permet ; quand un joueur a ouvert son
+  dernier paquet et qu'il lui manque encore des cartes, **le stock restant,
+  cartes reposées comprises, est rebattu en nouveaux paquets complets** et
+  le draft continue. Quand même un paquet complet ne peut plus être fait
+  (moins de X cartes distinctes légales en stock), ce qui reste est proposé
+  en un dernier paquet plus court ; un joueur pour qui rien de légal ne
+  reste s'arrête là, deck court.
 - À l'ouverture d'un paquet, une carte devenue illégale entre-temps (les
   paquets ont été faits avant les choix suivants) est reposée sans être
   montrée ; un paquet vidé ainsi est passé. Le choix rend les autres cartes

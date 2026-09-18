@@ -310,12 +310,12 @@ function copiesLeftFor(player: DraftPlayer, row: IndexRow, context: DraftContext
  *
  * Round by round — a pack for each player in turn, then another — so a
  * shelf that cannot fill everybody's is shared rather than emptied into the
- * first player's. Only cards the deck could take as it stands go in, so a
- * pack built at the last pick holds a legal card if the shelf has one; a
- * player's packs together never hold more copies of a card than their deck
- * may still take, and a card that holds once is placed once in the whole
- * building. A player whose pool runs dry stops getting packs; the draft
- * rebuilds from what is left when they open their last.
+ * first player's. Only cards the deck could take as it stands go in, and
+ * only full packs are built: a player's packs together never hold more
+ * copies of a card than their deck may still take, and a card that holds
+ * once is placed once in the whole building. A player whose shelf cannot
+ * fill another pack stops getting them; the draft rebuilds from what is
+ * left, the opened packs' cards included, when they open their last.
  */
 export function buildPacks(state: DraftState, context: DraftContext, forPlayers?: readonly number[]): DraftState {
   const stock: Record<string, number> = { ...state.stock };
@@ -353,7 +353,12 @@ export function buildPacks(state: DraftState, context: DraftContext, forPlayers?
       const pack = shuffled(pool, random)
         .slice(0, state.settings.offerSize)
         .map((row) => row.code);
-      if (pack.length === 0) {
+      // Only a full pack is built. The shelf's distinct cards run out long
+      // before its copies do — a copy is in one pack at most — and a short
+      // pack built now would be opened later, when the cards left in the
+      // packs before it are back on the shelf and could have filled it. The
+      // draft rebuilds from that fuller shelf instead.
+      if (pack.length < state.settings.offerSize) {
         needed[i] = 0;
         continue;
       }
@@ -386,8 +391,10 @@ function returned(stock: Readonly<Record<string, number>>, codes: readonly strin
  * A card the deck can no longer take — the packs were built before the picks
  * that came between — goes back on the shelf unseen; a pack with nothing
  * left in it is passed over. When the player's packs are all opened and
- * their deck is not yet full, the shelf is shuffled into new packs once;
- * an empty table after that means nothing legal is left for them.
+ * their deck is not yet full, the shelf is shuffled into new full packs
+ * once; when even one full pack cannot be made, what is left that the deck
+ * can take goes on the table as a last, shorter pack, and an empty table
+ * means nothing legal is left for them.
  */
 export function openPack(state: DraftState, context: DraftContext): DraftState {
   const player = state.players[state.current];
@@ -401,7 +408,15 @@ export function openPack(state: DraftState, context: DraftContext): DraftState {
     const pack = queue[0];
     if (pack === undefined) {
       if (rebuilt) {
-        return { ...next, offer: [] };
+        const random = seeded(next.seed + BUILD_STRIDE * next.builds + next.pickCount);
+        const last = shuffled(legalOffers(next, context), random)
+          .slice(0, next.settings.offerSize)
+          .map((row) => row.code);
+        const stock = { ...next.stock };
+        for (const code of last) {
+          stock[code] = (stock[code] ?? 1) - 1;
+        }
+        return { ...next, stock, offer: last };
       }
       rebuilt = true;
       next = buildPacks(next, context, [next.current]);

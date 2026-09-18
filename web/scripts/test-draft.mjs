@@ -218,6 +218,24 @@ function validate(playerState, context) {
   const tstate = start({ ...fresh([player(0, SPIDER, ['justice'], 50)], { settings: { offerSize: 10 } }), stock: Object.fromEntries(tctx.initialStock) }, tctx);
   const tneeded = 50 - cardCount(tstate.players[0]);
   check('a shelf too small builds what it can, not what was asked', tstate.packs[0].length + 1 < tneeded, `${tstate.packs[0].length + 1} of ${tneeded}`);
+  check('and every pack it builds is full', tstate.offer.length === 10 && tstate.packs[0].every((pack) => pack.length === 10), tstate.packs[0].map((p) => p.length).join(','));
+  // Every pack opened through the whole draft is full until the shelf itself
+  // cannot fill one: the short packs the first building would have made are
+  // left for the rebuild, when the opened packs' cards are back.
+  {
+    let d = tstate;
+    const short = [];
+    let guard = 0;
+    while (d.phase === 'pick' && guard++ < 200) {
+      // Distinct cards the deck could take, the open pack put back on the shelf.
+      const back = { ...d.stock };
+      for (const code of d.offer) back[code] = (back[code] ?? 0) + 1;
+      const legal = legalOffers({ ...d, stock: back }, tctx).length;
+      if (d.offer.length < 10 && legal >= 10) short.push(`${d.offer.length}/${legal}`);
+      d = d.offer.length === 0 ? skipCurrent(d, tctx) : pick(d, d.offer[0], tctx);
+    }
+    check('no pack is short while the shelf could have filled it', short.length === 0, short.join(' ') || 'none');
+  }
   let t = tstate;
   let opened = 0;
   while (t.phase === 'pick' && t.packs[0].length > 0) { t = pick(t, t.offer[0], tctx); opened += 1; }
