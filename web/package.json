@@ -31,6 +31,7 @@
     "test:tile": "vite-node scripts/test-campaign-tile.mjs",
     "test:synergy": "vite-node scripts/test-synergy.mjs",
     "test:draft": "vite-node scripts/test-draft.mjs",
+    "test:achievements": "vite-node scripts/test-achievements.mjs",
     "test:sync": "vite-node scripts/test-sync-state.mjs",
     "test:engine-sync": "vite-node scripts/test-sync-engine.mjs",
     "test:plays": "vite-node scripts/test-plays.mjs",
