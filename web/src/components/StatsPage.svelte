@@ -199,6 +199,7 @@
    */
   /** Where the individual games are, now that this screen is only aggregates. */
   const historyHref = $derived(pathForRoute({ name: 'history' }, base));
+  const achievementsHref = $derived(pathForRoute({ name: 'achievements' }, base));
 </script>
 
 <section>
@@ -288,6 +289,7 @@
     -->
     <p class="muted note">
       <a href={historyHref}>{t.statsSeeHistory(stats.total)}</a>
+      · <a href={achievementsHref}>{t.achievements.statsLink}</a>
     </p>
 
     <!--

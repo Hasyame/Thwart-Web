@@ -40,6 +40,7 @@ export interface Head {
 /** Routes that show this browser's own data, and nothing to a crawler. */
 const PRIVATE: ReadonlySet<Route['name']> = new Set([
   'history',
+  'achievements',
   'stats',
   'decks',
   'deck',
@@ -90,6 +91,8 @@ export function headFor(
         return { title: seo.historyTitle, description: seo.historyDescription };
       case 'stats':
         return { title: seo.statsTitle, description: seo.statsDescription };
+      case 'achievements':
+        return { title: seo.achievementsTitle, description: seo.achievementsDescription };
       case 'account':
       case 'verify':
         return { title: seo.accountTitle, description: seo.accountDescription };

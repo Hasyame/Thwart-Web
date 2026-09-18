@@ -11,6 +11,7 @@ import type { Strings } from './i18n';
 
 export type NavTarget =
   | 'search'
+  | 'achievements'
   /**
    * The Play hub, which exists only when the play screens are grouped.
    *
@@ -76,6 +77,7 @@ export const DESTINATIONS: readonly Destination[] = [
   { id: 'collection', label: (t) => t.navCollection, tab: (t) => t.navCollection, glyph: '▣' },
   { id: 'history', label: (t) => t.navHistory, tab: (t) => t.navHistory, glyph: '⏱' },
   { id: 'stats', label: (t) => t.navStats, tab: (t) => t.navStats, glyph: '▥' },
+  { id: 'achievements', label: (t) => t.achievements.hubLabel, tab: (t) => t.achievements.hubLabel, glyph: '★' },
   { id: 'rules', label: (t) => t.navRules, tab: (t) => t.navRules, glyph: '❔' },
 ];
 

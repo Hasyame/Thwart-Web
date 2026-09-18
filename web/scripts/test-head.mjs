@@ -34,6 +34,8 @@ const head = (route, t = en, name = null) => headFor(route, t, pathOf, name);
   check('the card search has words of its own, naming the game', cards.title.includes('Marvel Champions') && cards.title !== home.title, cards.title);
   check('and its canonical is /cards, without the words typed', cards.canonical === `${SITE_ORIGIN}/cards`, cards.canonical);
   check('and it is indexable', cards.noindex === false);
+  const ach = head({ name: 'achievements' });
+  check("the achievements show this browser's games, so they stay out of the index", ach.noindex === true && ach.canonical === `${SITE_ORIGIN}/achievements`);
 }
 
 {

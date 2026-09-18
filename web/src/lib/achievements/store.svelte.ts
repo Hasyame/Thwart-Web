@@ -12,7 +12,7 @@ import { buildCatalogue } from './catalogue';
 import { loadDefinitions } from './definitions';
 import { derive } from './derive';
 import { factOf, runFactOf } from './normalise';
-import type { AchievementState, Catalogue, DefinitionsFile, PlayFact, RunFact } from './types';
+import type { AchievementState, Catalogue, DefinitionsFile, DeriveInput, PlayFact, RunFact } from './types';
 
 /**
  * The achievement state, live.
@@ -37,9 +37,11 @@ interface Store {
   refused: boolean;
   catalogue: Catalogue | null;
   loaded: boolean;
+  /** What the state was derived from, so a page can re-derive over a subset for a filtered grid. */
+  lastInput: DeriveInput | null;
 }
 
-export const achievements = $state<Store>({ state: null, definitions: null, refused: false, catalogue: null, loaded: false });
+export const achievements = $state<Store>({ state: null, definitions: null, refused: false, catalogue: null, loaded: false, lastInput: null });
 
 interface Inputs {
   plays: readonly Play[];
@@ -91,14 +93,16 @@ function recompute(): void {
     const state = template === null ? null : fold(template, inputs?.events.get(run.id) ?? []);
     return runFactOf(run, state);
   });
-  achievements.state = derive({
+  const input: DeriveInput = {
     definitions: definitions.achievements,
     definitionsVersion: definitions.definitionsVersion,
     catalogue,
     ownedPacks: inputs.ownedPacks,
     facts,
     runs,
-  });
+  };
+  achievements.lastInput = input;
+  achievements.state = derive(input);
   achievements.loaded = true;
 }
 

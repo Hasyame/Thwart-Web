@@ -44,6 +44,8 @@ export const en: Strings = {
       'Draft a Marvel Champions deck from the cards you own: an identity, an aspect, then one card at a time out of a random hand. One to four players on one device.',
     historyTitle: 'Game history — Thwart',
     historyDescription: 'Every Marvel Champions game you recorded, filtered by hero, scenario, result or campaign.',
+    achievementsTitle: 'Achievements — Thwart',
+    achievementsDescription: 'Which heroes have beaten which scenarios, and the achievements your games have earned. Read from your history, kept on your device.',
     statsTitle: 'Statistics — Thwart',
     statsDescription: 'Your Marvel Champions win rates by hero, aspect, scenario, difficulty and table size.',
     accountTitle: 'Account — Thwart',

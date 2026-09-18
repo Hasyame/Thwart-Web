@@ -14,6 +14,7 @@ export type Route =
   /** The card search, with the words typed so far when a link carries them. */
   | { readonly name: 'search'; readonly query?: string }
   | { readonly name: 'collection' }
+  | { readonly name: 'achievements' }
   | { readonly name: 'randomizer' }
   | { readonly name: 'versus' }
   | { readonly name: 'decks' }
@@ -72,6 +73,7 @@ export type Route =
 const CARD_PATH = /^\/card\/([^/]+)\/?$/;
 const CARDS_PATH = /^\/cards\/?$/;
 const COLLECTION_PATH = /^\/collection\/?$/;
+const ACHIEVEMENTS_PATH = /^\/achievements\/?$/;
 const RANDOMIZER_PATH = /^\/randomizer\/?$/;
 const VERSUS_PATH = /^\/versus\/?$/;
 const DECKS_PATH = /^\/decks\/?$/;
@@ -170,6 +172,9 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   if (COLLECTION_PATH.test(normalised)) {
     return { name: 'collection' };
   }
+  if (ACHIEVEMENTS_PATH.test(normalised)) {
+    return { name: 'achievements' };
+  }
   if (RANDOMIZER_PATH.test(normalised)) {
     return { name: 'randomizer' };
   }
@@ -240,6 +245,9 @@ export function pathForRoute(route: Route, base: string): string {
   }
   if (route.name === 'collection') {
     return `${trimmedBase}/collection`;
+  }
+  if (route.name === 'achievements') {
+    return `${trimmedBase}/achievements`;
   }
   if (route.name === 'versus') {
     return `${trimmedBase}/versus`;

@@ -2,6 +2,7 @@
   import type { Strings } from '../lib/i18n';
   import type { NavTarget } from '../lib/nav';
   import { loadPausedGame } from '../lib/pausedGame';
+  import { achievements } from '../lib/achievements/store.svelte';
 
   interface Props {
     t: Strings;
@@ -108,6 +109,19 @@
 <section class="page hub">
   <h1>{t.hubStart}</h1>
 
+  {#if achievements.state !== null}
+    {@const owned = achievements.state.completion.owned}
+    <!-- The achievements, as progress rather than a word: a number and a
+         bar are what somebody taps; the word "Achievements" is not. -->
+    <a class="surface progress" href={hrefFor('achievements')} onclick={(event) => go(event, 'achievements')}>
+      <span class="glyph" aria-hidden="true">★</span>
+      <span class="words">
+        <span class="title">{t.achievements.hubProgress(owned.won, owned.cells)} <span class="muted small">{t.achievements.hubLabel}</span></span>
+        <span class="bar" aria-hidden="true"><span class="fill" style:width={`${owned.cells === 0 ? 0 : Math.round((owned.won / owned.cells) * 100)}%`}></span></span>
+      </span>
+    </a>
+  {/if}
+
   <ul>
     {#each entries as entry (entry.id)}
       <li>
@@ -175,6 +189,45 @@
 
   .entry:hover {
     border-color: var(--accent);
+  }
+
+  .progress {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    margin-bottom: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .progress:hover {
+    border-color: var(--accent);
+  }
+
+  .progress .words {
+    flex: 1;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .small {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-normal);
+  }
+
+  .bar {
+    display: block;
+    height: 5px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  .fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
   }
 
   .glyph {

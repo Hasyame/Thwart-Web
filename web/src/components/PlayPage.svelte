@@ -38,6 +38,10 @@
     backToSetup,
   } from '../lib/session.svelte';
   import { buildPlay } from '../lib/plays';
+  import { achievements } from '../lib/achievements/store.svelte';
+  import { newlyUnlocked } from '../lib/achievements/derive';
+  import type { AchievementState, Unlock } from '../lib/achievements/types';
+  import { pathForRoute } from '../lib/router';
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
   import { resumeSession, setupNotice } from '../lib/session.svelte';
   import { normalizeForSearch } from '../lib/normalize';
@@ -443,12 +447,31 @@
     outcome = won;
   }
 
+  /*
+   * What the game just earned: the state before it was written, compared
+   * with the state after the store has read it back. A delta, never the
+   * whole list, and never more than three named.
+   */
+  let stateBefore = $state.raw<AchievementState | null>(null);
+  let unlocks = $state.raw<readonly Unlock[]>([]);
+  $effect(() => {
+    const before = stateBefore;
+    const after = achievements.state;
+    if (before !== null && after !== null && after !== before) {
+      unlocks = newlyUnlocked(before, after);
+      stateBefore = null;
+    }
+  });
+  const unlockTitle = (id: string): string => t.achievement[id]?.title ?? id;
+
   async function record(): Promise<void> {
     if (recording || outcome === null) {
       return;
     }
     const won = outcome;
     recording = true;
+    stateBefore = achievements.state;
+    unlocks = [];
     try {
       const play = buildPlay({
         session: session.current,
@@ -595,6 +618,16 @@
       {/if}
       <button type="button" class="btn btn--primary" onclick={newGame}>{t.playAnother}</button>
     </div>
+    {#if unlocks.length > 0}
+      <!-- Said once, here, for what this game earned; the page says the rest. -->
+      <div class="surface unlocks" role="status">
+        <p>
+          <strong>{unlocks.length === 1 ? t.achievements.toastOne(unlockTitle(unlocks[0]?.id ?? '')) : t.achievements.toastMany(unlocks.length)}</strong>
+          {#if unlocks.length > 1}<span class="muted"> · {unlocks.slice(0, 3).map((u) => unlockTitle(u.id)).join(', ')}{unlocks.length > 3 ? '…' : ''}</span>{/if}
+        </p>
+        <a class="btn btn--quiet" href={pathForRoute({ name: 'achievements' }, '')}>{t.achievements.toastOpen}</a>
+      </div>
+    {/if}
     {#if lastPlay !== null}
       {@const rated = lastPlay}
       <!--
@@ -1271,5 +1304,20 @@
 
   .danger-text {
     color: var(--danger);
+  }
+
+  .unlocks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    margin: var(--space-3) 0;
+    border-color: var(--gold);
+  }
+
+  .unlocks p {
+    margin: 0;
   }
 </style>

@@ -130,6 +130,7 @@ for (const grouped of [false, true]) {
   check('the root and index.html are the home page',
     there('/').name === 'home' && there('/index.html').name === 'home');
   check('the card search lives at /cards', there('/cards').name === 'search' && back({ name: 'search' }) === '/cards');
+  check('the achievements have a page, reachable from More and lighting no tab', there('/achievements').name === 'achievements' && back({ name: 'achievements' }) === '/achievements' && overflowFor(true).some((d) => d.id === 'achievements'));
   check('and carries the words typed, as a sitelinks box sends them',
     there('/cards', '?q=rhino').query === 'rhino' && back({ name: 'search', query: 'a b' }) === '/cards?q=a%20b' && there('/cards', '?q=').query === undefined);
 }

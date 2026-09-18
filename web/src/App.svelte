@@ -23,6 +23,7 @@
   const DecksPage = lazy(() => import('./components/DecksPage.svelte'));
   const DraftPage = lazy(() => import('./components/DraftPage.svelte'));
   const DeckPage = lazy(() => import('./components/DeckPage.svelte'));
+  const AchievementsPage = lazy(() => import('./components/AchievementsPage.svelte'));
   const PlayPage = lazy(() => import('./components/PlayPage.svelte'));
   const StatsPage = lazy(() => import('./components/StatsPage.svelte'));
   const CampaignsPage = lazy(() => import('./components/CampaignsPage.svelte'));
@@ -43,6 +44,7 @@
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import HomePage from './components/HomePage.svelte';
   import { watchOwnedPacks } from './lib/ownedCopies.svelte';
+  import { watchAchievements } from './lib/achievements/store.svelte';
   import { loadSession, session } from './lib/sync/session.svelte';
   import { loadSyncState } from './lib/sync/sync.svelte';
   import { syncAfter, watchAutoSync, watchWrites } from './lib/sync/auto.svelte';
@@ -183,6 +185,8 @@
   // sync that brings new ones in is reflected without a reload.
   $effect(() => (storageOk ? watchAppSettings() : undefined));
   $effect(() => (storageOk ? watchOwnedPacks() : undefined));
+  // The achievements follow the history live, once the card index is here.
+  $effect(() => (storageOk && index.length > 0 ? watchAchievements(index) : undefined));
 
   $effect(() => {
     if (!storageOk) {
@@ -749,6 +753,17 @@
       <!-- The chunk did not arrive: a connection that dropped, or a tab
            open across a release whose files it was built against are
            gone. A reload fetches the current build. -->
+      <div class="notice surface">
+        <p>{t.pageLoadError}</p>
+        <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>
+      </div>
+    {/await}
+  {:else if route.name === 'achievements'}
+    {#await AchievementsPage()}
+      <p class="notice muted">{t.loading}</p>
+    {:then { default: Page }}
+      <Page {t} {uiLocale} {cardLocale} {index} {sets} {packs} {storageOk} />
+    {:catch}
       <div class="notice surface">
         <p>{t.pageLoadError}</p>
         <button type="button" class="btn" onclick={() => location.reload()}>{t.retry}</button>

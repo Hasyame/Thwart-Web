@@ -44,6 +44,8 @@ export const fr: Strings = {
       'Draftez un deck Marvel Champions avec les cartes que vous poss\u00e9dez\u00a0: une identit\u00e9, une affinit\u00e9, puis une carte \u00e0 la fois parmi une main tir\u00e9e au hasard. De un \u00e0 quatre joueurs sur un appareil.',
     historyTitle: 'Historique des parties — Thwart',
     historyDescription: 'Toutes vos parties de Marvel Champions, filtrées par héros, scénario, résultat ou campagne.',
+    achievementsTitle: 'Succès — Thwart',
+    achievementsDescription: 'Quels héros ont battu quels scénarios, et les succès que vos parties ont gagnés. Lu dans votre historique, gardé sur votre appareil.',
     statsTitle: 'Statistiques — Thwart',
     statsDescription: 'Vos taux de victoire à Marvel Champions par héros, aspect, scénario, difficulté et nombre de joueurs.',
     accountTitle: 'Compte — Thwart',

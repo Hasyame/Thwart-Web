@@ -49,6 +49,8 @@ export interface Strings {
     readonly historyDescription: string;
     readonly statsTitle: string;
     readonly statsDescription: string;
+    readonly achievementsTitle: string;
+    readonly achievementsDescription: string;
     readonly accountTitle: string;
     readonly accountDescription: string;
     readonly bggTitle: string;
