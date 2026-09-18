@@ -13,6 +13,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { boxArtOf, faceCardOf, fieldHue, parseEventRows, tileOf } from '../src/lib/campaignTile.ts';
 import { expandTemplate } from '../src/lib/campaign/engine.ts';
+import { scenarioFaceOf } from '../src/lib/scenarioFace.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -127,4 +128,21 @@ const run = (templateId, finished = false) => ({ id: 'r', templateId, templateNa
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);
+{
+  // The face of a one-off game on the history, against the real index: the
+  // villain, or the main scheme when the box has no villain, and always one
+  // with a picture when any of them has one. Here rather than with the plays
+  // because this is the one test of those that runs after the card data.
+  const index = JSON.parse(readFileSync(new URL('../public/data/index.en.json', import.meta.url), 'utf8'));
+  const rhino = scenarioFaceOf(index, 'rhino');
+  check('Rhino is faced by Rhino', rhino?.name === 'Rhino' && rhino?.typeCode === 'villain', rhino?.name);
+  check('and the row carries its picture', typeof rhino?.img === 'string', rhino?.img);
+  const crew = scenarioFaceOf(index, 'wrecking_crew');
+  check('a scenario with no villain shows its scheme', crew?.typeCode === 'main_scheme', crew?.typeCode);
+  check('an unknown scenario has no face', scenarioFaceOf(index, 'no_such') === null);
+  const scenarios = JSON.parse(readFileSync(new URL('../public/data/scenario-rules.json', import.meta.url), 'utf8')).scenarios;
+  const faceless = scenarios.filter((s) => scenarioFaceOf(index, s.code) === null).map((s) => s.code);
+  check('every scenario the rules know has a face', faceless.length === 0, faceless.join(',') || 'none');
+}
+
 process.exit(failures === 0 ? 0 : 1);
