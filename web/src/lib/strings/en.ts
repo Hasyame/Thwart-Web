@@ -123,6 +123,7 @@ export const en: Strings = {
     filterAspect: 'Aspect',
     filterMinDifficulty: 'Minimum difficulty',
     filterShowLosses: 'Show games lost as played',
+    filterAnySeat: 'Include every hero at the table (off: my seat only)',
     filterAll: 'All',
     filterEveryHero: 'Show every hero',
     heroWon: (won, total) => `${won} / ${total} scenarios beaten in your collection`,
@@ -1108,11 +1109,14 @@ export const en: Strings = {
   backupReplace: 'Replace everything',
   backupMergeHint:
     'Merging keeps what is already in this browser and lets the file win where both hold the same thing. Importing the same file twice changes nothing.',
-  backupCarriedNote:
-    'Decks, plays and campaigns are stored and will be in anything you export, but this site cannot display them yet.',
-  backupPhotosNote: (count) =>
-    `${count} photographs are named in this file. The images themselves live on the phone and are not part of the bundle.`,
-  backupNotJson: 'That file is not JSON.',
+  backupCarriedNote: 'Decks, plays and campaigns are stored locally and included in exports.',
+  backupPhotosNote: (count, available) =>
+    `${available} of ${count} listed photos are included. Imported photos stay in this browser and in its ZIP exports; account sync does not transfer them. Missing images require the original photo backup.`,
+  backupExportFailed: 'The backup could not be exported. Your data is unchanged.',
+  playPhotos: 'Photos',
+  playPhoto: (index) => `Photo ${index}`,
+  playPhotosMissing: 'Some photos are unavailable on this device. Import the original backup with photos to display them.',
+  backupNotJson: 'That file is not a readable JSON or ZIP backup.',
   backupUnreadable: 'That file is not a Thwart backup.',
   backupImportFailed: 'The import failed and nothing was changed.',
   backupImported: (packs, favourites) =>

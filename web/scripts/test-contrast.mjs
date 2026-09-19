@@ -86,6 +86,13 @@ const ratio = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
+for (const [scheme, tokens] of [['light', light], ['dark', dark]]) {
+  for (const ground of ['heading-fill', 'heading-hover']) {
+    const contrast = ratio(tokens['heading-ink'], tokens[ground]);
+    check(`${scheme}: shared heading text and controls on ${ground}`, contrast >= 4.5, contrast.toFixed(2));
+  }
+}
+
 /** [what it is, foreground token, background token, threshold]. */
 const PAIRS = [
   ['body text on the page', 'text', 'bg', 4.5],

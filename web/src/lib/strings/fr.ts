@@ -125,6 +125,7 @@ export const fr: Strings = {
     filterAspect: 'Affinité',
     filterMinDifficulty: 'Difficulté minimale',
     filterShowLosses: 'Afficher les défaites comme jouées',
+    filterAnySeat: 'Inclure tous les héros de la table (désactivé : ma place uniquement)',
     filterAll: 'Toutes',
     filterEveryHero: 'Afficher tous les héros',
     heroWon: (won, total) => `${won} / ${total} scénarios battus dans votre collection`,
@@ -1123,11 +1124,14 @@ export const fr: Strings = {
   backupReplace: 'Tout remplacer',
   backupMergeHint:
     'La fusion conserve ce qui est déjà dans ce navigateur et laisse le fichier gagner en cas de doublon. Importer deux fois le même fichier ne change rien.',
-  backupCarriedNote:
-    "Les decks, parties et campagnes sont enregistrés et figureront dans vos exports, mais ce site ne sait pas encore les afficher.",
-  backupPhotosNote: (count) =>
-    `${count} photographies sont nommées dans ce fichier. Les images elles-mêmes restent sur le téléphone et ne font pas partie de la sauvegarde.`,
-  backupNotJson: "Ce fichier n'est pas du JSON.",
+  backupCarriedNote: 'Les decks, parties et campagnes sont conservés localement et inclus dans les exports.',
+  backupPhotosNote: (count, available) =>
+    `${available} photos sur les ${count} indiquées sont présentes. Les photos importées restent dans ce navigateur et dans ses exports ZIP ; la synchronisation du compte ne les transfère pas. Les images manquantes nécessitent la sauvegarde originale avec photos.`,
+  backupExportFailed: "La sauvegarde n'a pas pu être exportée. Vos données sont inchangées.",
+  playPhotos: 'Photos',
+  playPhoto: (index) => `Photo ${index}`,
+  playPhotosMissing: 'Certaines photos ne sont pas disponibles sur cet appareil. Importez la sauvegarde originale avec photos pour les afficher.',
+  backupNotJson: "Ce fichier n'est pas une sauvegarde JSON ou ZIP lisible.",
   backupUnreadable: "Ce fichier n'est pas une sauvegarde Thwart.",
   backupImportFailed: "L'import a échoué et rien n'a été modifié.",
   backupImported: (packs, favourites) =>

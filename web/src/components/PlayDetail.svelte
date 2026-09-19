@@ -4,6 +4,7 @@
   import type { CampaignRun, Play } from '../lib/records';
   import { db, toggleFavouritePlay } from '../lib/db';
   import RatingPanel from './RatingPanel.svelte';
+  import ImportedPhotos from './ImportedPhotos.svelte';
   import { ratingOfPlay, type RatingSubject } from '../lib/ratings';
   import { formatElapsed } from '../lib/session.svelte';
   import { playerBucket } from '../lib/plays';
@@ -428,6 +429,8 @@
         </div>
       {/if}
     </dl>
+
+    <ImportedPhotos names={play.photos} {t} />
 
     {#if confirming}
       <div class="confirm">

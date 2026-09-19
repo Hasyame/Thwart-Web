@@ -39,6 +39,7 @@
   let aspect = $state('');
   let minLevel = $state<DifficultyLevel>('unknown');
   let showLosses = $state(true);
+  let anySeat = $state(true);
 
   const current = $derived(achievements.state);
 
@@ -58,7 +59,7 @@
       if (aspect === '') {
         return true;
       }
-      return fact.seats.some((seat) => seat.aspects.includes(aspect));
+      return fact.seats.some((seat) => (anySeat || seat.isOwner) && seat.aspects.includes(aspect));
     });
     return derive({ ...input, facts });
   });
@@ -146,7 +147,7 @@
   const heroRows = $derived.by((): HeroRow[] => {
     const played = new Map<string, { won: Set<string>; wonGlobal: Set<string>; played: Set<string> }>();
     for (const cell of gridState?.cells ?? []) {
-      const tally = cell.anySeat;
+      const tally = anySeat ? cell.anySeat : cell;
       if (tally.attempts === 0) {
         continue;
       }
@@ -230,7 +231,7 @@
     if (cell === undefined) {
       return null;
     }
-    return cell.anySeat;
+    return anySeat ? cell.anySeat : cell;
   };
   const stateOf = (tally: Tally | null): 'never' | 'played' | 'won' => {
     if (tally === null || tally.attempts === 0) {
@@ -372,6 +373,7 @@
         </select>
       </label>
       <label class="tick"><input type="checkbox" bind:checked={showLosses} /><span>{t.achievements.filterShowLosses}</span></label>
+      <label class="tick"><input type="checkbox" bind:checked={anySeat} /><span>{t.achievements.filterAnySeat}</span></label>
       <label class="tick"><input type="checkbox" bind:checked={everyHero} /><span>{t.achievements.filterEveryHero}</span></label>
     </div>
 

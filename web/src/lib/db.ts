@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { BackupPhoto } from './backupArchive';
 import { completePlay } from './playShape';
 import type { DraftState } from './draft/types';
 import type {
@@ -45,6 +46,13 @@ export interface StoredSettings extends BackupSettings {
 
 export const SETTINGS_KEY = 'app';
 
+/** Opaque backup fields stay device-local, outside the account sync contract. */
+export interface BackupMetadata {
+  readonly id: typeof SETTINGS_KEY;
+  readonly extra: Record<string, unknown>;
+  readonly settingsExtra: Record<string, unknown>;
+}
+
 /** The draft in progress, as lib/draft/types writes it. */
 export interface DraftRow {
   readonly id: string;
@@ -77,6 +85,9 @@ class ThwartDatabase extends Dexie {
   // One row, keyed by a constant. The app's settings are carried through this
   // site without being applied to it.
   appSettings!: Table<StoredSettings, string>;
+  backupMetadata!: Table<BackupMetadata, string>;
+  /** Local photo bytes, never included in account sync. */
+  photos!: Table<BackupPhoto, string>;
   /** At most one row. See the PausedGame comment for why. */
   pausedGames!: Table<PausedGame, string>;
 
@@ -215,6 +226,13 @@ class ThwartDatabase extends Dexie {
     this.version(10).stores({
       drafts: 'id',
     });
+
+    // v11 preserves unknown backup envelope/settings fields without changing
+    // existing rows or sending opaque imported data to an account.
+    this.version(11).stores({
+      backupMetadata: 'id',
+    });
+    this.version(12).stores({ photos: 'name' });
   }
 }
 

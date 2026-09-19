@@ -33,7 +33,9 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: var(--leading-body);
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dot-ink) 0.7px, transparent 0.7px);
+  background-size: 6px 6px;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 
@@ -175,7 +177,7 @@ textarea {
 .surface {
   background: var(--surface-1);
   color: var(--text);
-  border: 1px solid var(--hairline);
+  border: var(--panel-width) solid var(--hairline);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-1);
 }

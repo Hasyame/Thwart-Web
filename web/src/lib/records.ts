@@ -332,6 +332,7 @@ export type VillainStep = (typeof VILLAIN_STEPS)[number];
  * unchanged is what keeps a phone to phone round trip through here lossless.
  */
 export interface BackupSettings {
+  readonly [key: string]: unknown;
   readonly cardLocale: string;
   readonly themeChoice: string;
   readonly playLocation: string;
@@ -349,6 +350,7 @@ export interface BackupSettings {
  * docs/spec/achievements/sync.md.
  */
 export interface Backup {
+  readonly [key: string]: unknown;
   readonly formatVersion: number;
   readonly createdAt: number;
   readonly appVersion: string;

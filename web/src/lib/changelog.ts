@@ -20,6 +20,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-09-19',
     en: [
+      'A shared Thwart look with warm surfaces and clearer contrast. Filter the achievement album to your own seat without changing unlocks.',
+      'Import and view photos from Android backups, then export them again in a ZIP. Unknown backup fields are preserved.',
       'Achievement details show completed objectives, the actions still needed and remaining milestone counts, with named scenarios, heroes and aspects.',
       'Keep the selected Play shield and status icons readable in both light and dark themes.',
       'Tap an achievement or scenario sticker for its progress, milestones and victory details. Mobile navigation adds a central Play shield, a Progress tab and grouped shortcuts.',
@@ -29,6 +31,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'The card search moved to /cards; the home page took the root.',
     ],
     fr: [
+      'Une identité Thwart commune, avec des surfaces chaleureuses et des contrastes renforcés. Filtrez les succès sur votre place sans modifier les déblocages.',
+      'Importez et consultez les photos des sauvegardes Android, puis réexportez-les en ZIP. Les champs inconnus des sauvegardes sont conservés.',
       'Les détails des succès indiquent les objectifs accomplis, les actions restantes et les paliers à atteindre, avec les noms des scénarios, héros et affinités.',
       'Le bouclier Jouer sélectionné et les icônes d’état restent lisibles dans les thèmes clair et sombre.',
       'Touchez un succès ou une vignette de scénario pour voir sa progression, ses paliers et ses victoires. La navigation mobile ajoute un bouclier Jouer central, un onglet Succès et des raccourcis regroupés.',
