@@ -299,18 +299,18 @@
            beaten one scenario, and the totals are the products spelled out,
            so the numbers explain themselves. -->
       <div class="stat">
+        <p class="stat-title">{t.achievements.namedTitle}</p>
+        <strong class="big">{t.achievements.rate(percent(unlockedCount, shown.length))}</strong>
+        <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(unlockedCount, shown.length)}%`}></span></span>
+        <p class="muted small">{t.achievements.namedCount(unlockedCount, shown.length)}</p>
+        <div class="stat">
         <p class="stat-title">{t.achievements.pairsTitle}</p>
         <strong class="big">{t.achievements.rate(percent(current.completion.owned.won, current.completion.owned.cells))}</strong>
         <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(current.completion.owned.won, current.completion.owned.cells)}%`}></span></span>
         <p class="muted small">{t.achievements.pairsOwned(current.completion.owned.won, current.completion.owned.cells, ownedHeroCount, ownedScenarioKeys.size)}</p>
         <p class="muted small">{t.achievements.pairsGlobal(current.completion.global.won, current.completion.global.cells, allHeroCount, allScenarioKeys.size)}</p>
       </div>
-      <div class="stat">
-        <p class="stat-title">{t.achievements.namedTitle}</p>
-        <strong class="big">{t.achievements.rate(percent(unlockedCount, shown.length))}</strong>
-        <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(unlockedCount, shown.length)}%`}></span></span>
-        <p class="muted small">{t.achievements.namedCount(unlockedCount, shown.length)}</p>
-      </div>
+    </div>
     </div>
 
     <h2>{t.achievements.gridTitle}</h2>
@@ -522,7 +522,7 @@
 
   @media (min-width: 48rem) {
     .completion {
-      grid-template-columns: 3fr 2fr;
+      grid-template-columns: 2fr 3fr;
     }
   }
 
