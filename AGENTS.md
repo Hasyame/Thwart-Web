@@ -393,12 +393,12 @@ devices with `last_seen`: `device`, timestamps in ms). Probe accounts
 
 ## 8. Known issues and technical debt
 
-- BGG connection diagnosis (2026-09-19): the live API unit has
-  `IPAddressDeny=any` and `IPAddressAllow=localhost`, which blocks the relay's
-  outgoing requests. Journald shows login timeouts; the host outside the unit
-  reaches BGG immediately. `deploy/thwart-api-bgg.conf` clears this obsolete
-  restriction while the API remains bound to loopback. Applying this drop-in
-  and restarting the production API requires owner approval.
+- BGG networking was corrected on the host on 2026-09-19 with owner approval:
+  `deploy/thwart-api-bgg.conf` was installed as
+  `/etc/systemd/system/thwart-api.service.d/bgg.conf`, clearing the obsolete
+  loopback-only IP filter that blocked outbound login requests. The API was
+  restarted, health/version verified, and its listener remains 127.0.0.1:8787.
+  No real account was used to verify BGG authentication.
 
 - The nginx route regex is duplicated (repo conf vs live file) and must be
   edited by hand on the host for each new route.
