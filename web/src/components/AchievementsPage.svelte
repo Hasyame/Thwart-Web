@@ -4,8 +4,10 @@
   import { achievements } from '../lib/achievements/store.svelte';
   import { derive } from '../lib/achievements/derive';
   import { CLASSIC_ASPECTS, LEVEL_RANK, type AchievementDefinition, type AchievementStatus, type Cell, type DifficultyLevel, type Tally } from '../lib/achievements/types';
-  import { FNE_PREFIX, loadFneBox } from '../lib/fearNoEvil';
+  import { FNE_PREFIX, FNE_TEMPLATE_ID, isFne, loadFneBox } from '../lib/fearNoEvil';
   import { cardImageUrl } from '../lib/data';
+  import { scenarioFaceOf } from '../lib/scenarioFace';
+  import { boxArtOf } from '../lib/campaignTile';
 
   /**
    * The achievements: the grid, the named ones, the recent unlocks.
@@ -80,6 +82,10 @@
   });
   const scenarioName = (key: string): string =>
     setName.get(key) ?? fneNames.get(key) ?? (key.startsWith(FNE_PREFIX) ? key.slice(FNE_PREFIX.length) : key);
+  /** The villain's face for a scenario, or the box's cover for Fear No Evil. */
+  const scenarioArt = (key: string): string | null =>
+    isFne(key) ? boxArtOf(FNE_TEMPLATE_ID) : cardImageUrl(scenarioFaceOf(index, key)?.img);
+  const heroArt = (code: string): string | null => cardImageUrl(index.find((r) => r.code === code)?.img);
 
   // --- the grid ---------------------------------------------------------------------
   const catalogue = $derived(achievements.catalogue);
@@ -340,23 +346,30 @@
       <label class="tick"><input type="checkbox" bind:checked={everyHero} /><span>{t.achievements.filterEveryHero}</span></label>
     </div>
 
-    <!-- A bar per hero, and the chosen hero's scenarios beside it: the
-         last hero played opens by default, since that is the one whose
-         next game is being decided. -->
+    <!-- The heroes as portraits with a bar each, and the chosen hero's
+         album beside them: every scenario as its villain, in colour once
+         beaten, faded when only played, grey while never met. The hero
+         last played opens by default. -->
     <div class="heroes">
-      <ol class="hero-list" aria-label={t.achievements.gridTitle}>
+      <ol class="hero-grid" aria-label={t.achievements.gridTitle}>
         {#each heroRows as row (row.code)}
+          {@const art = heroArt(row.code)}
           <li>
             <button
               type="button"
-              class="hero-row"
+              class="hero-tile"
               class:chosen={selectedHero?.code === row.code}
               aria-pressed={selectedHero?.code === row.code}
               onclick={() => (chosenHero = row.code)}
             >
+              {#if art !== null}
+                <img class="portrait" src={art} alt="" loading="lazy" />
+              {:else}
+                <span class="portrait blank" aria-hidden="true">★</span>
+              {/if}
               <span class="hero-name">{row.name}</span>
-              <span class="hero-count muted small">{t.achievements.progress(row.won, row.total)}</span>
               <span class="bar hero-bar" aria-hidden="true"><span class="fill" style:width={`${percent(row.won, row.total)}%`}></span></span>
+              <span class="hero-count muted">{row.won} / {row.total}</span>
             </button>
           </li>
         {/each}
@@ -367,15 +380,14 @@
 
       {#if selectedHero !== null}
         {@const hero = selectedHero}
-        {@const art = cardImageUrl(index.find((r) => r.code === hero.code)?.img)}
-        <section class="surface hero-detail" aria-live="polite">
-          <header class="hero-head">
-            {#if art !== null}<img class="hero-art" src={art} alt="" loading="lazy" />{/if}
-            <div>
+        {@const art = heroArt(hero.code)}
+        <section class="surface album" aria-live="polite">
+          <header class="album-head">
+            {#if art !== null}<img class="album-art" src={art} alt="" loading="lazy" />{/if}
+            <div class="album-words">
               <h3>{hero.name}</h3>
-              <p class="muted small">
-                {t.achievements.heroWon(hero.won, hero.total)} · {t.achievements.completionGlobal(hero.wonGlobal, hero.totalGlobal)}
-              </p>
+              <p class="muted small">{t.achievements.heroWon(hero.won, hero.total)} · {t.achievements.completionGlobal(hero.wonGlobal, hero.totalGlobal)}</p>
+              <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(hero.won, hero.total)}%`}></span></span>
             </div>
           </header>
           <p class="legend muted small">
@@ -384,22 +396,34 @@
             <span class="swatch won" aria-hidden="true"></span>{t.achievements.legendWon}
           </p>
           {#each heroScenarios as group (group.pack)}
-            <p class="group-title muted small">{group.name}</p>
-            <ul class="scenarios">
-              {#each group.items as line (line.key)}
-                <li class="scenario-line" class:dim={!line.owned} title={t.achievements.cell(hero.name, line.name, line.tally?.attempts ?? 0, line.tally?.wins ?? 0)}>
-                  <span class="swatch {line.kind}" aria-hidden="true">{#if line.kind === 'won'}<span class="mark">{levelMark(line.tally?.bestLevelWon ?? null)}</span>{/if}</span>
-                  <span class="scenario-name">{line.name}</span>
-                  <span class="muted small">
+            {@const wonHere = group.items.filter((l) => l.kind === 'won').length}
+            <div class="pack">
+              <p class="pack-title">
+                <span>{group.name}</span>
+                <span class="muted small">{wonHere} / {group.items.length}</span>
+              </p>
+              <ul class="stickers">
+                {#each group.items as line (line.key)}
+                  {@const villain = scenarioArt(line.key)}
+                  <li class="sticker {line.kind}" class:dim={!line.owned} title={t.achievements.cell(hero.name, line.name, line.tally?.attempts ?? 0, line.tally?.wins ?? 0) + (line.tally?.lastPlayedAt ? ` · ${dayOf(line.tally.lastPlayedAt)}` : '')}>
+                    <span class="frame">
+                      {#if villain !== null}
+                        <img src={villain} alt="" loading="lazy" />
+                      {:else}
+                        <span class="no-art" aria-hidden="true">?</span>
+                      {/if}
+                      {#if line.kind === 'won'}
+                        <span class="seal" aria-hidden="true">{levelMark(line.tally?.bestLevelWon ?? null) || '✓'}</span>
+                      {/if}
+                    </span>
+                    <span class="sticker-name">{line.name}</span>
                     {#if line.tally !== null && line.tally.attempts > 0}
-                      {t.achievements.cellShort(line.tally.attempts, line.tally.wins)}{#if line.tally.lastPlayedAt !== null} · {dayOf(line.tally.lastPlayedAt)}{/if}
-                    {:else}
-                      {t.achievements.legendNever}
+                      <span class="muted tiny">{t.achievements.cellShort(line.tally.attempts, line.tally.wins)}</span>
                     {/if}
-                  </span>
-                </li>
-              {/each}
-            </ul>
+                  </li>
+                {/each}
+              </ul>
+            </div>
           {/each}
         </section>
       {/if}
@@ -575,130 +599,227 @@
 
   @media (min-width: 56rem) {
     .heroes {
-      grid-template-columns: minmax(16rem, 1fr) 2fr;
+      grid-template-columns: minmax(15rem, 1fr) 2fr;
     }
   }
 
-  .hero-list {
+  /* The heroes as portraits: a face, a name, a bar. */
+  .hero-grid {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 2px;
     display: grid;
-    gap: 2px;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: var(--space-2);
     max-height: 70vh;
     overflow: auto;
   }
 
-  .hero-row {
+  .hero-tile {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0 var(--space-2);
+    justify-items: center;
+    gap: 4px;
     width: 100%;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    background: none;
+    padding: var(--space-2) var(--space-1);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
     color: inherit;
     font: inherit;
-    text-align: start;
+    text-align: center;
     cursor: pointer;
+    transition: transform var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
   }
 
-  .hero-row:hover {
-    background: var(--surface-2);
+  .hero-tile:hover {
+    transform: translateY(-2px);
+    border-color: var(--hairline);
   }
 
-  .hero-row.chosen {
+  .hero-tile.chosen {
     border-color: var(--accent);
-    background: var(--surface-1);
+    background: var(--accent-soft);
   }
 
-  .hero-name {
-    font-weight: var(--weight-semibold);
-  }
-
-  .hero-bar {
-    grid-column: 1 / -1;
-    margin-top: var(--space-1);
-    height: 5px;
-  }
-
-  .hero-detail {
-    padding: var(--space-4);
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  .hero-head {
-    display: flex;
-    gap: var(--space-3);
-    align-items: center;
-  }
-
-  .hero-head h3 {
-    margin: 0;
-    font-size: var(--text-lg);
-  }
-
-  .hero-head p {
-    margin: 2px 0 0;
-  }
-
-  .hero-art {
-    flex: none;
-    width: 3.5rem;
-    height: 3.5rem;
+  .portrait {
+    width: 3.25rem;
+    height: 3.25rem;
     border-radius: 50%;
     object-fit: cover;
     object-position: 50% 15%;
-    border: 2px solid var(--accent);
+    background: var(--surface-2);
   }
 
-  .group-title {
-    margin: var(--space-2) 0 0;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .scenarios {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .blank {
     display: grid;
-    gap: 2px;
+    place-items: center;
+    color: var(--accent);
   }
 
-  .scenario-line {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: var(--space-2);
-    align-items: center;
-    padding: 2px var(--space-2);
-    border-radius: var(--radius-xs);
-  }
-
-  .scenario-line.dim {
-    opacity: 0.55;
-  }
-
-  .scenario-name {
-    min-width: 0;
+  .hero-name {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .scenario-line .swatch {
-    display: grid;
-    place-items: center;
-    width: 1.1rem;
-    height: 1.1rem;
-    color: var(--on-accent, #fff);
-    font-weight: var(--weight-bold);
+  .hero-bar {
+    width: 100%;
+    height: 4px;
   }
 
-  .mark {
-    font-size: 0.6rem;
+  .hero-count {
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The album: the chosen hero, then each pack's villains as stickers. */
+  .album {
+    padding: var(--space-4);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .album-head {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+  }
+
+  .album-words {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .album-head h3 {
+    margin: 0;
+    font-size: var(--text-xl);
+  }
+
+  .album-head p {
+    margin: 0;
+  }
+
+  .album-art {
+    flex: none;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: 50% 15%;
+    border: 3px solid var(--accent);
+  }
+
+  .pack-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: var(--space-2) 0 var(--space-1);
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--hairline);
+    font-weight: var(--weight-semibold);
+  }
+
+  .stickers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: var(--space-2);
+  }
+
+  .sticker {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    text-align: center;
+  }
+
+  .frame {
+    position: relative;
+    width: 4.25rem;
+    height: 4.25rem;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 2px solid var(--hairline);
+  }
+
+  .frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 12%;
+    display: block;
+  }
+
+  .no-art {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    color: var(--text-muted);
+  }
+
+  /* Never met: grey and quiet. Played: colour, but faded. Won: in full
+     colour, framed in the accent, sealed with the level. */
+  .sticker.never .frame img {
+    filter: grayscale(1);
+    opacity: 0.35;
+  }
+
+  .sticker.played .frame {
+    border-color: var(--gold);
+  }
+
+  .sticker.played .frame img {
+    opacity: 0.75;
+  }
+
+  .sticker.won .frame {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+
+  .seal {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 4px;
+    border-radius: var(--radius-pill) 0 var(--radius-md) 0;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: var(--weight-bold);
+    line-height: 1.4rem;
+  }
+
+  .sticker.dim {
+    opacity: 0.5;
+  }
+
+  .sticker-name {
+    font-size: var(--text-xs);
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sticker.never .sticker-name {
+    color: var(--text-muted);
+  }
+
+  .tiny {
+    font-size: 0.7rem;
   }
 
   .named {
