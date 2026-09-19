@@ -101,7 +101,7 @@ export const fr: Strings = {
     completionGlobal: (won, cells) => `${won} / ${cells} dans tout le jeu`,
     rate: (percent) => `${percent} %`,
     gridTitle: 'Héros × scénarios',
-    gridIntro: 'Chaque héros à la table compte, dans une partie à un, deux, trois ou quatre. Choisissez un héros pour voir quels scénarios il a rencontrés et battus.',
+    gridIntro: 'Chaque héros à la table compte, dans une partie à un, deux, trois ou quatre — un choix de conception : un héros que vous avez joué est un héros joué, quelles que soient les autres mains. Choisissez un héros pour voir quels scénarios il a rencontrés et battus.',
     legendNever: 'Jamais joué',
     legendPlayed: 'Joué, pas gagné',
     legendWon: 'Gagné',
