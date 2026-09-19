@@ -93,7 +93,7 @@
 
 <section class="home">
   <header class="hero">
-    <h1>{t.home.title}</h1>
+    <h1 class="comic-title">{t.home.title}</h1>
     <p class="lead">{t.home.lead}</p>
   </header>
   <InstallGuide {t} />

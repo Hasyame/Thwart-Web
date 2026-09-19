@@ -30,7 +30,19 @@ const HERO_BY_ID: Readonly<Record<string, string>> = {
   three_player_win: '01019a',
   four_player_win: '01029a',
   four_player_four_aspects: '04031a',
-  draft_win: '21031a',
+  draft_win: '05001a',
+  draft_wins_5: '04031a',
+  draft_wins_10: '01029a',
+  draft_wins_50: '21031a',
+  sealed_win: '04001a',
+  sealed_wins_5: '16029a',
+  sealed_wins_10: '01040a',
+  sealed_wins_50: '09001a',
+  losses_1: '01001a',
+  losses_5: '05001a',
+  losses_10: '35001a',
+  losses_50: '34001a',
+  losses_100: '03001a',
 };
 
 /** Scenario keys, for the achievements about beating something. */

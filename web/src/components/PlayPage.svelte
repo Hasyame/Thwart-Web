@@ -488,7 +488,8 @@
         ),
         // A deck the draft built carries the tag; the game then counts for
         // the draft achievements. docs/spec/achievements/data-model.md §5.
-        ...(deckTags(session.current.seats[0]?.deckId).includes('draft') ? { mode: 'draft' } : {}),
+        ...(['draft', 'sealed'].find((mode) => deckTags(session.current.seats[0]?.deckId).includes(mode)) !== undefined
+          ? { mode: ['draft', 'sealed'].find((mode) => deckTags(session.current.seats[0]?.deckId).includes(mode)) } : {}),
       });
       await db.plays.put(play);
       lastPlay = play;
@@ -591,7 +592,7 @@
 </script>
 
 <section>
-  <h1>{t.playTitle}</h1>
+  <h1 class="comic-title">{t.playTitle}</h1>
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>

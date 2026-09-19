@@ -93,6 +93,28 @@ a {
   text-underline-offset: 2px;
 }
 
+/* Shared page masthead: Thwart's red comic caption, with room for translated titles. */
+.page h1.comic-title {
+  display: table;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.2em 0.65em 0.28em;
+  margin-block: var(--space-5) var(--space-4);
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(0.35em 0, 100% 0, calc(100% - 0.35em) 100%, 0 100%);
+  font-size: clamp(1.6rem, 4.5vw, 2.7rem);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
 /*
  * `textarea` belongs in this list.
  *

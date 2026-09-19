@@ -114,7 +114,7 @@
 
 <section>
   <button class="back" type="button" onclick={onBack}>← {t.settingsTitle}</button>
-  <h1>{t.bggTitle}</h1>
+  <h1 class="comic-title">{t.bggTitle}</h1>
 
   <div class="panel">
     <h2>{t.bggAboutTitle}</h2>

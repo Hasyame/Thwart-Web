@@ -335,7 +335,7 @@
     <span class="avatar" aria-hidden="true">{(handle ?? '?').slice(0, 1).toUpperCase()}</span>
     <div class="who">
       {#if handle !== null}<p class="muted small handle">@{handle}</p>{/if}
-      <h1>{handle === null ? t.decksOfThisBrowser : t.decksOf(handle)}</h1>
+      <h1 class="comic-title">{handle === null ? t.decksOfThisBrowser : t.decksOf(handle)}</h1>
       <p class="muted small stats">
         <span>{t.decksCount(saved.decks.length)}</span>
         <span>{t.foldersCount(folders.length)}</span>

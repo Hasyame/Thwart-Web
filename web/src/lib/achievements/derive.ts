@@ -252,8 +252,13 @@ export function derive(input: DeriveInput): AchievementState {
         return { done: false, current: 0, target: 1, unlock: null };
       }
       case 'mode_win': {
-        const fact = wins.find((f) => f.mode === p.mode) ?? null;
-        return { done: fact !== null, current: fact === null ? 0 : 1, target: 1, unlock: fact };
+        const matching = wins.filter((f) => f.mode === p.mode);
+        const target = p.n ?? 1;
+        return { done: matching.length >= target, current: Math.min(matching.length, target), target, unlock: matching[target - 1] ?? null };
+      }
+      case 'loss_count': {
+        const matching = facts.filter((f) => !f.won);
+        return { done: matching.length >= p.n, current: Math.min(matching.length, p.n), target: p.n, unlock: matching[p.n - 1] ?? null };
       }
     }
   };

@@ -2,7 +2,9 @@
   import { tick } from 'svelte';
   import { liveQuery } from 'dexie';
   import type { Strings } from '../lib/i18n';
-  import type { IndexRow, Locale } from '../lib/types';
+  import type { IndexRow, Locale, Pack } from '../lib/types';
+  import { dealSealed, selectSealed, SEALED_SIZE, BOOSTER_SIZE, BOOSTER_COUNT, openedBoosters, openBooster, openAllBoosters, isBuilding, buildSealedDeck } from '../lib/draft/sealed';
+  import { canTake } from '../lib/draft/engine';
   import { db } from '../lib/db';
   import { cardImageUrl } from '../lib/data';
   import { fetchCard, showCard } from '../lib/cardViewer.svelte';
@@ -54,12 +56,16 @@
     uiLocale: Locale;
     cardLocale: Locale;
     index: readonly IndexRow[];
+    packs: readonly Pack[];
+    initiallySealed?: boolean;
     storageOk: boolean;
     /** Opens a deck's page, once the decks are on the shelf. */
     onDone: () => void;
+    onPlay: (ids: readonly string[], mode: 'random' | 'campaign' | 'own') => Promise<void>;
   }
 
-  const { t, index, storageOk, onDone }: Props = $props();
+  const { t, index, packs, storageOk, onDone, onPlay, initiallySealed = false }: Props = $props();
+  let savedDeckIds = $state<string[]>([]);
 
   // --- the collection -----------------------------------------------------------
 
@@ -134,16 +140,26 @@
       return null;
     }
     const codes = draft.players.map((p) => p.heroCode).filter((c): c is string => c !== null);
-    return buildContext(index, ownedPacks, codes);
+    return buildContext(index, draft.collection === undefined ? ownedPacks : new Map(Object.entries(draft.collection)), codes);
   });
 
   // --- settings -------------------------------------------------------------------
 
   let settings = $state({ ...DEFAULT_SETTINGS });
+  let initialFormatApplied = $state(false);
+  $effect(() => {
+    if (!initialFormatApplied) {
+      settings.format = initiallySealed ? 'sealed' : 'draft';
+      initialFormatApplied = true;
+    }
+  });
 
   function begin(): void {
+    names = {};
+    finishError = null;
     const players = Array.from({ length: settings.players }, (_, i) => EMPTY_PLAYER(i));
     const fresh: DraftState = {
+      collection: Object.fromEntries(ownedPacks),
       settings: { ...settings },
       players,
       phase: 'identity',
@@ -176,7 +192,7 @@
   }
 
   function withPlayer(s: DraftState, player: DraftPlayer): DraftState {
-    return { ...s, players: s.players.map((p, i) => (i === s.current ? player : p)) };
+    return { ...s, players: s.players.map((p, i) => (i === player.index ? player : p)) };
   }
 
   /** Settles the identity: the hero, its signature cards, and no aspect yet. */
@@ -265,7 +281,13 @@
       shortfallLines = short.map((s) => ({ player: s.playerIndex + 1, needed: s.needed, available: s.available }));
       return;
     }
-    commit(start(stocked, context));
+    const started = draft.settings.format === 'sealed' ? dealSealed(stocked, context) : start(stocked, context);
+    if (draft.settings.format === 'sealed') {
+      shortfallLines = (started.sealedPools ?? []).flatMap((pool, i) => pool.length < SEALED_SIZE
+        ? [{ player: i + 1, needed: SEALED_SIZE, available: pool.length }] : []);
+      if (shortfallLines.length > 0) return;
+    }
+    commit(started);
     handedOver = draft.players.length === 1;
   }
 
@@ -274,11 +296,34 @@
   /** Whether the current player has taken the device; false hides the offer. */
   let handedOver = $state(false);
 
+  function setPack(code: string, value: number): void {
+    if (draft === null || !Number.isFinite(value)) return;
+    commit({ ...draft, collection: { ...(draft.collection ?? Object.fromEntries(ownedPacks)), [code]: Math.max(0, Math.min(99, Math.trunc(value))) } });
+  }
+
+  function chooseSealed(code: string, add: boolean): void {
+    if (draft !== null && context !== null) commit(selectSealed(draft, code, add, context));
+  }
+
+  function confirmSealed(): void {
+    if (draft === null || current === null || !isFull(current)) return;
+    if (draft.current + 1 < draft.players.length) commit({ ...draft, current: draft.current + 1 });
+    else commit({ ...draft, phase: 'finish' });
+  }
+
   const current = $derived(draft === null ? null : (draft.players[draft.current] ?? null));
+  const sealedVisible = $derived.by(() => {
+    if (draft === null) return [];
+    const pool = draft.sealedPools?.[draft.current] ?? [];
+    if (isBuilding(draft)) return [...new Set(pool)];
+    const opened = openedBoosters(draft);
+    return opened === 0 ? [] : pool.slice((opened - 1) * BOOSTER_SIZE, opened * BOOSTER_SIZE);
+  });
   const offerRows = $derived(
     draft === null || context === null
       ? []
-      : draft.offer.map((code) => context.pool.get(code)).filter((r): r is IndexRow => r !== undefined),
+      : (draft.settings.format === 'sealed' ? sealedVisible : draft.offer)
+        .map((code) => context.pool.get(code)).filter((r): r is IndexRow => r !== undefined),
   );
 
   /* The offer's pictures, fetched as they come; the picks show names only.
@@ -359,6 +404,14 @@
   let names = $state<Record<number, string>>({});
   let finishError = $state<string | null>(null);
   let saving = $state(false);
+  async function play(mode: 'random' | 'campaign' | 'own'): Promise<void> {
+    if (saving) return;
+    saving = true;
+    finishError = null;
+    try { await onPlay(savedDeckIds, mode); }
+    catch (error) { finishError = error instanceof Error && error.message === t.draft.activeGame ? error.message : t.draft.preparationFailed; }
+    finally { saving = false; }
+  }
 
   /** Each player's name, the one typed or the default, with the earlier ones taken. */
   const proposedNames = $derived.by((): string[] => {
@@ -367,9 +420,11 @@
     }
     const taken = [...deckNames];
     return draft.players.map((player) => {
-      const typed = names[player.index]?.trim();
+      const typed = (names[player.index] ?? player.deckName)?.trim();
       const rules = player.heroCode === null ? null : rulesFor(index, player.heroCode);
-      const name = typed !== undefined && typed !== '' ? typed : defaultName(player.heroName, player.aspects, rules, taken);
+      const prefix = draft?.settings.format === 'sealed' ? 'SEALED-' : 'DRAFT-';
+      const name = typed !== undefined && typed !== '' ? typed : defaultName(player.heroName, player.aspects, rules,
+        taken.map((name) => name.replace(prefix, 'DRAFT-'))).replace('DRAFT-', prefix);
       taken.push(name);
       return name;
     });
@@ -411,31 +466,36 @@
         return;
       }
       const now = Date.now();
-      await db.decks.bulkPut(
-        decks.map(({ player, slots, name }) => ({
-          id: `local-${crypto.randomUUID()}`,
-          marvelCdbId: 0,
-          kind: 'LOCAL',
-          url: '',
-          name,
-          heroCode: player.heroCode ?? '',
-          heroName: player.heroName,
-          aspects: player.aspects.join(','),
-          slots: [...slots].map(([code, quantity]) => `${code}=${quantity}`).join(','),
-          ignoreDeckLimitSlots: '',
-          descriptionMd: null,
-          version: null,
-          // So a game played with it records mode `draft`. Spec: achievements §5.
-          tags: 'draft',
-          rawJson: '',
-          lastSyncedAt: now,
-          locallyEdited: true,
-        })),
-      );
-      await clearDraft();
+      const ids = decks.map(() => `local-${crypto.randomUUID()}`);
+      await db.transaction('rw', db.decks, db.drafts, async () => {
+        await db.decks.bulkPut(
+          decks.map(({ player, slots, name }, i) => ({
+            id: ids[i]!,
+            marvelCdbId: 0,
+            kind: 'LOCAL',
+            url: '',
+            name,
+            heroCode: player.heroCode ?? '',
+            heroName: player.heroName,
+            aspects: player.aspects.join(','),
+            slots: [...slots].map(([code, quantity]) => `${code}=${quantity}`).join(','),
+            ignoreDeckLimitSlots: '',
+            descriptionMd: null,
+            version: null,
+            // So a game played with it records mode `draft`. Spec: achievements §5.
+            tags: draft?.settings.format === 'sealed' ? 'sealed' : 'draft',
+            rawJson: '',
+            lastSyncedAt: now,
+            locallyEdited: true,
+          })),
+        );
+        await clearDraft();
+      });
       syncAfter('edit');
       draft = null;
-      onDone();
+      savedDeckIds = ids;
+    } catch {
+      finishError = t.storageUnavailable;
     } finally {
       saving = false;
     }
@@ -473,7 +533,7 @@
     return i < 0 ? null : i + 1;
   };
   let heading = $state.raw<HTMLHeadingElement | null>(null);
-  const stepKey = $derived(`${draft?.phase ?? 'setup'}:${draft?.current ?? 0}:${draft?.pickCount ?? 0}:${handedOver}`);
+  const stepKey = $derived(`${draft?.phase ?? 'setup'}:${draft?.current ?? 0}:${draft?.pickCount ?? 0}:${handedOver}:${draft?.sealedOpened?.[draft.current]}:${draft?.sealedBuilding?.[draft.current]}`);
   $effect(() => {
     void stepKey;
     let cancelled = false;
@@ -487,20 +547,38 @@
 </script>
 
 <section class="draft">
-  <h1 bind:this={heading} tabindex="-1">{t.draft.title}</h1>
+  <h1 class="limited-title" bind:this={heading} tabindex="-1">
+    <span class="title-burst">{draft?.settings.format === 'sealed' ? t.draft.sealed : 'Draft'}</span>
+    {#if draft === null}<span class="title-divider" aria-hidden="true">/</span><span class="title-secondary">{t.draft.sealed}</span>{/if}
+  </h1>
 
-  {#if !storageOk}
+  {#if savedDeckIds.length > 0}
+    <div class="surface panel">
+      <h2>{t.draft.playNext}</h2>
+      {#if finishError}<p role="alert">{finishError}</p>{/if}
+      <div class="btn-row">
+        <button class="btn btn--primary" type="button" disabled={saving} onclick={() => play('random')}>{t.draft.randomGame}</button>
+        <button class="btn" type="button" disabled={saving} onclick={() => play('campaign')}>{t.draft.campaign}</button>
+        <button class="btn" type="button" disabled={saving} onclick={() => play('own')}>{t.draft.ownGame}</button>
+        <button class="btn btn--quiet" type="button" onclick={onDone}>{t.draft.later}</button>
+      </div>
+    </div>
+  {:else if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
   {:else if !loaded}
     <p class="notice muted">{t.loading}</p>
   {:else if draft === null}
     <!-- Page 1: the settings. -->
-    <p class="muted intro">{t.draft.intro}</p>
+    <p class="muted intro">{settings.format === 'sealed' ? t.draft.sealedDescription : t.draft.intro}</p>
     {#if heroes.length === 0}
       <div class="notice surface"><p>{t.draft.noHeroes}</p><a class="btn btn--primary" href="/collection">{t.navCollection}</a></div>
     {:else}
       <div class="setup">
       <div class="surface panel">
+        <div class="mode-choice">
+          <button type="button" class="mode-button" aria-pressed={settings.format !== 'sealed'} onclick={() => (settings.format = 'draft')}>Draft</button>
+          <button type="button" class="mode-button" aria-pressed={settings.format === 'sealed'} onclick={() => (settings.format = 'sealed')}>{t.draft.sealed}</button>
+        </div>
         <div class="setting">
           <span class="label">{t.draft.players}</span>
           <div class="chip-row">
@@ -517,11 +595,11 @@
             {/each}
           </div>
         </div>
-        <label class="slider">
+        {#if settings.format !== 'sealed'}<label class="slider">
           <span class="slider-head"><span class="label">{t.draft.offerSize}</span><strong class="value">{settings.offerSize}</strong></span>
           <input type="range" min={DRAFT_RULES.MIN_OFFER_SIZE} max={DRAFT_RULES.MAX_OFFER_SIZE} bind:value={settings.offerSize} />
           <span class="muted note">{t.draft.offerSizeDetail}</span>
-        </label>
+        </label>{/if}
         <label class="tick">
           <input type="checkbox" bind:checked={settings.synergyOnly} />
           <span>{t.draft.synergy}</span>
@@ -547,7 +625,7 @@
         <ol class="steps-list">
           <li>{t.draft.stepIdentity}</li>
           <li>{t.draft.stepAspects}</li>
-          <li>{t.draft.stepPacks}</li>
+          <li>{settings.format === 'sealed' ? t.draft.sealedDescription : t.draft.stepPacks}</li>
         </ol>
       </aside>
       </div>
@@ -610,13 +688,20 @@
             <div class="aspects">
               {#each aspectOptions as aspect (aspect)}
                 <button type="button" class="aspect" data-faction={aspect} aria-pressed={current.aspects.includes(aspect)} onclick={() => toggleAspect(aspect)}>
-                  <span class="dot" aria-hidden="true"></span>{t.aspect(aspect)}
+                  <span class="dot" aria-hidden="true"></span><span class="aspect-label">{t.aspect(aspect)}</span>
                 </button>
               {/each}
             </div>
           {/if}
         </section>
 
+        <details class="surface panel">
+          <summary>{t.draft.sessionCollection}</summary>
+          <p>{t.draft.sessionCollectionHint}</p>
+          {#each packs as pack (pack.code)}
+            <label class="setting">{pack.name}<input class="field" type="number" min="0" max="99" value={draft.collection?.[pack.code] ?? ownedPacks.get(pack.code) ?? 0} oninput={(e) => setPack(pack.code, Number(e.currentTarget.value))} /></label>
+          {/each}
+        </details>
         <section class="step sliders">
           <label class="slider">
             <span class="slider-head"><span class="label">3. {t.draft.deckSize}</span><strong class="value">{current.deckSize}</strong></span>
@@ -650,10 +735,48 @@
         <span class="btn-row">
           {@render abandonButton()}
           <button type="button" class="btn btn--primary" disabled={!identityReady} onclick={confirmIdentity}>
-            {draft.current >= draft.players.length - 1 ? t.draft.startDraft : t.draft.next}
+            {draft.current >= draft.players.length - 1 ? (draft.settings.format === 'sealed' ? t.draft.sealedStart : t.draft.startDraft) : t.draft.next}
           </button>
         </span>
       </div>
+    </div>
+  {:else if draft.phase === 'pick' && current !== null && draft.settings.format === 'sealed' && context !== null}
+    <div class="surface panel">
+      <h2>{t.draft.playerN(draft.current + 1)} · {current.heroName}</h2>
+      <p>{t.draft.sealedDescription}</p>
+      {#if !isBuilding(draft)}
+        <div class="booster-track" aria-label={t.draft.sealed}>
+          {#each Array.from({ length: BOOSTER_COUNT }, (_, i) => i + 1) as number}
+            <span class="booster" class:opened={number <= openedBoosters(draft)} aria-label={t.draft.boosterProgress(number)}>{number <= openedBoosters(draft) ? '✓' : number}</span>
+          {/each}
+        </div>
+        {#if openedBoosters(draft) > 0}<h3>{t.draft.boosterProgress(openedBoosters(draft))}</h3>{/if}
+      {:else}<p>{cardCount(current)} / {current.deckSize}</p>{/if}
+      {@render sealedActions()}
+      <div class="sealed-grid">
+      {#each sealedVisible as code, position (`${position}-${code}`)}
+        {@const row = context.pool.get(code)}
+        {@const selected = current.picks.filter((c) => c === code).length}
+        {@const copies = draft.sealedPools?.[draft.current]?.filter((c) => c === code).length ?? 0}
+        <div class="sealed-card">
+          <CardHover {code}>
+          <button class="card" type="button" aria-label={row?.name ?? code} onclick={() => showCard(code)}>
+            {#if typeof images.get(code) === 'string'}
+              <img src={images.get(code)} alt="" loading="lazy" />
+            {:else}<span class="card-blank">{row?.name ?? code}</span>{/if}
+          </button>
+          </CardHover>
+          <p class="sealed-name">{row?.name ?? code}</p>
+          {#if isBuilding(draft)}<div class="sealed-controls">
+          <button class="btn" type="button" aria-label={`− ${row?.name ?? code}`} disabled={selected === 0} onclick={() => chooseSealed(code, false)}>−</button>
+          <span>{selected} / {copies}</span>
+          <button class="btn" type="button" aria-label={`+ ${row?.name ?? code}`} disabled={isFull(current) || selected >= copies || row === undefined || !canTake(current, row, context)} onclick={() => chooseSealed(code, true)}>+</button>
+          </div>{/if}
+        </div>
+      {/each}
+      </div>
+      {#if sealedVisible.length > 0}{@render sealedActions()}{/if}
+      {@render abandonButton()}
     </div>
   {:else if draft.phase === 'pick' && current !== null}
     {#if !handedOver}
@@ -744,14 +867,15 @@
       {#each draft.players as player, i (player.index)}
         <label class="setting">
           <span class="label">{t.draft.playerN(player.index + 1)} · {player.heroName} · {player.aspects.map((a) => t.aspect(a)).join(', ')} · {cardCount(player)}/{player.deckSize}{isFull(player) ? '' : ' ✗'}</span>
-          <input class="field" type="text" aria-label={t.draft.deckName} value={names[player.index] ?? proposedNames[i] ?? ''} oninput={(e) => (names = { ...names, [player.index]: e.currentTarget.value })} />
+          <input class="field" type="text" aria-label={t.draft.deckName} value={names[player.index] ?? player.deckName ?? proposedNames[i] ?? ''} oninput={(e) => { names = { ...names, [player.index]: e.currentTarget.value }; if (draft) commit(withPlayer(draft, { ...player, deckName: e.currentTarget.value })); }} />
         </label>
       {/each}
       {#if finishError !== null}
         <p class="warn" role="alert">{finishError}</p>
       {/if}
       <div class="btn-row">
-        <button type="button" class="btn btn--primary" disabled={saving} onclick={() => void finish()}>{t.draft.finish}</button>
+        {#if draft.settings.format === 'sealed'}<button type="button" class="btn" disabled={saving} onclick={() => draft && commit({ ...draft, phase: 'pick', current: 0 })}>{t.draft.reviseSealed}</button>{/if}
+        <button type="button" class="btn btn--primary" disabled={saving} onclick={() => void finish()}>{draft.settings.format === 'sealed' ? t.draft.sealedFinish : t.draft.finish}</button>
         {@render abandonButton()}
       </div>
     </div>
@@ -774,22 +898,106 @@
   </li>
 {/snippet}
 
+{#snippet sealedActions()}
+  {#if draft !== null && current !== null}
+    <div class="btn-row">
+      {#if !isBuilding(draft)}
+        {#if openedBoosters(draft) < BOOSTER_COUNT}
+          <button class="btn btn--primary" type="button" onclick={() => draft && commit(openBooster(draft))}>{t.draft.openBooster(openedBoosters(draft) + 1)}</button>
+          <button class="btn" type="button" onclick={() => draft && commit(openAllBoosters(draft))}>{t.draft.openAllBoosters}</button>
+        {:else}
+          <button class="btn btn--primary" type="button" onclick={() => draft && commit(buildSealedDeck(draft))}>{t.draft.buildSealed}</button>
+        {/if}
+      {:else}<button class="btn btn--primary" type="button" disabled={!isFull(current)} onclick={confirmSealed}>{t.draft.next}</button>{/if}
+    </div>
+  {/if}
+{/snippet}
+
 {#snippet abandonButton()}
   {#if confirmingAbandon}
-    <span class="muted small">{t.draft.abandonConfirm}</span>
-    <button type="button" class="btn btn--quiet danger" onclick={() => void abandon()}>{t.draft.abandon}</button>
+    <span class="muted small">{draft?.settings.format === 'sealed' ? t.draft.sealedAbandonConfirm : t.draft.abandonConfirm}</span>
+    <button type="button" class="btn btn--quiet danger" onclick={() => void abandon()}>{draft?.settings.format === 'sealed' ? t.draft.sealedAbandon : t.draft.abandon}</button>
     <button type="button" class="btn btn--quiet" onclick={() => (confirmingAbandon = false)}>{t.cancel}</button>
   {:else}
-    <button type="button" class="btn btn--quiet danger" onclick={() => (confirmingAbandon = true)}>{t.draft.abandon}</button>
+    <button type="button" class="btn btn--quiet danger" onclick={() => (confirmingAbandon = true)}>{draft?.settings.format === 'sealed' ? t.draft.sealedAbandon : t.draft.abandon}</button>
   {/if}
 {/snippet}
 
 <style>
-  h1 {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top));
-    font-size: var(--text-2xl);
-    margin: var(--space-5) 0 var(--space-3);
+  .mode-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-2); }
+  .mode-button {
+    min-height: 4rem;
+    padding: var(--space-3);
+    border: 2px solid var(--hairline);
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
   }
+  .mode-button:hover { transform: translateY(-2px); }
+  .mode-button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: 4px 4px 0 var(--text); transform: translate(-2px, -2px); }
+  @media (prefers-reduced-motion: reduce) { .mode-button { transition: none; } }
+  .booster-track { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .booster {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    aspect-ratio: 2 / 3;
+    background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(0 0 0 / 12%) 6px 8px), var(--accent);
+    color: var(--accent-ink);
+    border-block: 4px solid var(--text);
+    font-size: var(--text-xl);
+    font-weight: 900;
+    transform: skewY(-4deg);
+  }
+  .booster.opened { background: var(--surface-2); color: var(--text-muted); }
+  .sealed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
+    gap: var(--space-4);
+    margin-block: var(--space-4);
+  }
+  .sealed-card { display: flex; flex-direction: column; min-width: 0; }
+  .sealed-name { overflow-wrap: anywhere; margin-block: var(--space-2); }
+  .sealed-controls {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-1);
+    margin-top: auto;
+  }
+  .sealed-controls .btn { padding: 0; min-height: 2.75rem; }
+  .limited-title {
+    scroll-margin-top: calc(5rem + env(safe-area-inset-top));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35em;
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 900;
+    font-style: italic;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: -0.035em;
+    margin: var(--space-5) 0 var(--space-5);
+    border: 0;
+    outline: none;
+  }
+  .title-burst {
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 0.16em 0.45em 0.22em;
+    clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+  }
+  .title-divider { color: var(--accent); font-weight: 900; }
+  .title-secondary { color: var(--text); }
 
   h2 {
     font-size: var(--text-lg);
@@ -1065,11 +1273,13 @@
   /* The five aspects as wide buttons with their colour, as on a card. */
   .aspects {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
     gap: var(--space-2);
   }
 
   .aspect {
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
     min-height: 3rem;
     border-radius: var(--radius-md);
     border: 2px solid var(--hairline);
@@ -1085,6 +1295,12 @@
     justify-content: center;
     gap: 2px;
     cursor: pointer;
+  }
+
+  .aspect-label {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
   }
 
   .aspect[aria-pressed='true'] {

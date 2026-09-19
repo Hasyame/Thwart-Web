@@ -54,10 +54,40 @@
   import PlayHub from './components/PlayHub.svelte';
   import { replayOf } from './lib/replay';
   import type { Draw } from './lib/randomizer';
+  import { limitedGame, challengeGame } from './lib/limitedGame';
+  import type { AchievementChallenge } from './lib/achievements/challenge';
+  let campaignExpert = $state(false);
+  let campaignStartPending = $state(false);
+  let draftSealed = $state(false);
+  async function prepareAchievement(challenge: AchievementChallenge): Promise<void> {
+    if (gameSession.current.phase !== 'setup') throw new Error(t.draft.activeGame);
+    if (challenge.destination === 'campaign') {
+      campaignExpert = challenge.expert ?? false;
+      campaignStartPending = true;
+      navigate({ name: 'campaigns' });
+    } else if (challenge.destination === 'draft' || challenge.destination === 'sealed') {
+      draftSealed = challenge.destination === 'sealed';
+      navigate({ name: 'draft' });
+    } else {
+      prepareSession(await challengeGame(challenge, sets, index));
+      navigate({ name: 'play' });
+    }
+  }
+  let campaignDeckIds = $state<readonly string[]>([]);
+  async function playLimited(ids: readonly string[], mode: 'random' | 'campaign' | 'own'): Promise<void> {
+    if (gameSession.current.phase !== 'setup') throw new Error(t.draft.activeGame);
+    if (mode === 'campaign') {
+      campaignDeckIds = [...ids];
+      navigate({ name: 'campaigns' });
+    } else {
+      prepareSession(await limitedGame(ids, mode === 'random', sets, index));
+      navigate({ name: 'play' });
+    }
+  }
   import { campaignLayoutOf, subjectsOfPlay, type CampaignLayout, type RatingSubject } from './lib/ratings';
   import { eventsOf } from './lib/campaign/store';
   import { inCampaign, runOf } from './lib/playQuery';
-  import { prepareSession, setupNotice } from './lib/session.svelte';
+  import { prepareSession, setupNotice, session as gameSession } from './lib/session.svelte';
   import type { Play } from './lib/records';
   import { watchStoredOnServer } from './lib/sync/stored.svelte';
   import { watchAppSettings } from './lib/appsettings.svelte';
@@ -762,7 +792,7 @@
     {#await AchievementsPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {uiLocale} {cardLocale} {index} {sets} {packs} {storageOk} />
+      <Page {t} {uiLocale} {cardLocale} {index} {sets} {packs} {storageOk} onPrepare={prepareAchievement} />
     {:catch}
       <div class="notice surface">
         <p>{t.pageLoadError}</p>
@@ -787,7 +817,7 @@
     {#await CampaignsPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} />
+      <Page {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} initialDeckIds={campaignDeckIds} initiallyExpert={campaignExpert} initialStart={campaignStartPending} onConsumeDecks={() => { campaignDeckIds = []; campaignStartPending = false; campaignExpert = false; }} />
     {:catch}
       <!-- The chunk did not arrive: a connection that dropped, or a tab
            open across a release whose files it was built against are
@@ -838,7 +868,7 @@
     <!-- nginx already answered this address with a 404; this is what the
          status looks like. -->
     <section class="notice surface not-found">
-      <h1>{t.notFoundTitle}</h1>
+      <h1 class="comic-title">{t.notFoundTitle}</h1>
       <p class="muted">{t.notFoundBody}</p>
       <p>
         <a
@@ -892,7 +922,7 @@
     {#await DraftPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {uiLocale} {cardLocale} {index} {storageOk} onDone={() => navigate({ name: 'decks' })} />
+      <Page {t} {uiLocale} {cardLocale} {index} {packs} {storageOk} initiallySealed={draftSealed} onDone={() => navigate({ name: 'decks' })} onPlay={playLimited} />
     {:catch}
       <div class="notice surface">
         <p>{t.pageLoadError}</p>
@@ -950,7 +980,7 @@
       {/await}
     {/key}
   {:else}
-    <h1 class="search-title">{t.navCards}</h1>
+    <h1 class="search-title comic-title">{t.navCards}</h1>
     <SearchControls
       {t}
       {query}

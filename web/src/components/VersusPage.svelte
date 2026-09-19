@@ -228,7 +228,7 @@
 </script>
 
 <section>
-  <h1>{t.versusTitle}</h1>
+  <h1 class="comic-title">{t.versusTitle}</h1>
 
   {#if owned.length === 0}
     <div class="notice surface">

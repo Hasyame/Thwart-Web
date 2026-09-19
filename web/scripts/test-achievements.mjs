@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { derive, newlyUnlocked } from '../src/lib/achievements/derive.ts';
 import { achievementTargets } from '../src/lib/achievements/details.ts';
+import { achievementChallenge } from '../src/lib/achievements/challenge.ts';
 import { parseDefinitions } from '../src/lib/achievements/definitions.ts';
 import { factOf, levelOf, runFactOf, scenarioKeyOf, seatsOf } from '../src/lib/achievements/normalise.ts';
 
@@ -36,6 +37,18 @@ for (const c of vectors.cases) {
   const got = derive(c.input);
   for (const definition of c.input.definitions) {
     const targets = achievementTargets(c.input, definition);
+    const challenge = achievementChallenge(c.input, definition);
+    if (targets !== null) {
+      const remaining = targets.find((t) => t.completedBy === null && (t.pack === null || c.input.ownedPacks.includes(t.pack)));
+      check(`challenge chooses an owned missing requirement: ${c.name}/${definition.id}`,
+        remaining === undefined ? challenge === null : challenge?.[remaining.kind] === remaining.key);
+    }
+    if (challenge !== null && 'minDifficulty' in definition.predicate) {
+      check('challenge preserves required difficulty', challenge.expert === (definition.predicate.minDifficulty === 'expert'));
+    }
+    if (definition.predicate.kind === 'table_win') {
+      check('challenge preserves table size and distinct aspects', challenge.players === definition.predicate.players && challenge.distinctAspects === definition.predicate.distinctAspects);
+    }
     if (targets === null) continue;
     const expected = c.expected.achievements.find((a) => a.id === definition.id);
     check(`checklist matches shared progress: ${c.name}/${definition.id}`, targets.length === expected.progress.target && targets.filter((t) => t.completedBy !== null).length === expected.progress.current);

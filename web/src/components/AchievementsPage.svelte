@@ -5,6 +5,8 @@
   import { achievements } from '../lib/achievements/store.svelte';
   import { derive } from '../lib/achievements/derive';
   import { achievementTargets } from '../lib/achievements/details';
+  import { achievementArt } from '../lib/achievements/art';
+  import { achievementChallenge, type AchievementChallenge } from '../lib/achievements/challenge';
   import { CLASSIC_ASPECTS, LEVEL_RANK, type AchievementDefinition, type AchievementStatus, type Cell, type DifficultyLevel, type Tally } from '../lib/achievements/types';
   import { FNE_PREFIX, FNE_TEMPLATE_ID, isFne, loadFneBox } from '../lib/fearNoEvil';
   import { cardImageUrl } from '../lib/data';
@@ -29,9 +31,20 @@
     sets: readonly CardSet[];
     packs: readonly Pack[];
     storageOk: boolean;
+    onPrepare: (challenge: AchievementChallenge) => Promise<void>;
   }
 
-  const { t, uiLocale, cardLocale, index, sets, packs, storageOk }: Props = $props();
+  const { t, uiLocale, cardLocale, index, sets, packs, storageOk, onPrepare }: Props = $props();
+  let preparationError = $state<string | null>(null);
+  let preparing = $state(false);
+  async function prepare(challenge: AchievementChallenge): Promise<void> {
+    if (preparing) return;
+    preparing = true;
+    preparationError = null;
+    try { await onPrepare(challenge); }
+    catch (error) { preparationError = error instanceof Error && error.message === t.draft.activeGame ? error.message : t.draft.preparationFailed; }
+    finally { preparing = false; }
+  }
 
   // --- filters ----------------------------------------------------------------------
   let heroPack = $state('');
@@ -304,7 +317,7 @@
 </script>
 
 <section class="achievements">
-  <h1>{t.achievements.title}</h1>
+  <h1 class="comic-title">{t.achievements.title}</h1>
   <p class="muted intro">{t.achievements.intro}</p>
 
   {#if !storageOk}
@@ -468,9 +481,13 @@
           {@const definition = definitions.get(status.id)}
           {#if definition !== undefined}
             {@const words = wordsOf(definition)}
+            {@const art = achievementArt(definition, index, achievements.catalogue)}
             <li><button type="button" class="surface named-item {status.status}" aria-haspopup="dialog" onclick={() => (detail = { kind: 'named', id: status.id })}>
               <span class="named-head">
-                <span class="glyph" aria-hidden="true">{status.status === 'unlocked' ? '★' : status.status === 'unavailable' ? '○' : '☆'}</span>
+                <span class="achievement-badge" aria-hidden="true">
+                  {#if art !== null}<img src={art} alt="" loading="lazy" />{/if}
+                  <span class="glyph">{status.status === 'unlocked' ? '★' : status.status === 'unavailable' ? '○' : '☆'}</span>
+                </span>
                 <span class="words">
                   <span class="title">{words.title}{#if status.tier !== null}<span class="tier {status.tier}">{t.achievements.tier(status.tier)}</span>{/if}</span>
                   <span class="muted small">{words.description}</span>
@@ -514,7 +531,12 @@
 {#if detail?.kind === 'named' && detailDefinition && detailStatus}
   {@const words = wordsOf(detailDefinition)}
   <DetailDialog title={words.title} closeLabel={t.close} onClose={() => (detail = null)}>
+    {@const challenge = achievements.lastInput === null ? null : achievementChallenge(achievements.lastInput, detailDefinition)}
+    {#if preparationError}<p role="alert">{preparationError}</p>{/if}
+    {#if challenge !== null}<button class="btn btn--primary" type="button" disabled={preparing} onclick={() => prepare(challenge)}>{t.draft.prepareAchievement}</button>{/if}
     <p class="eyebrow">{t.achievements.category(detailDefinition.category)}</p>
+    {@const art = achievementArt(detailDefinition, index, achievements.catalogue)}
+    {#if art !== null}<img class="detail-art" src={art} alt="" />{/if}
     <p>{words.description}</p>
     <p><strong>{detailStatus.status === 'unlocked' ? t.achievements.unlocked : detailStatus.status === 'unavailable' ? t.achievements.unavailable : t.achievements.locked}</strong></p>
     <p>{t.achievements.progress(detailStatus.progress.current, detailStatus.progress.target)}</p>
@@ -573,6 +595,8 @@
 {:else if detail?.kind === 'cell'}
   {@const tally = tallyOf(detail.scenario, detail.hero)}
   <DetailDialog title={`${heroName.get(detail.hero) ?? detail.hero} · ${scenarioName(detail.scenario)}`} closeLabel={t.close} onClose={() => (detail = null)}>
+    {#if preparationError}<p role="alert">{preparationError}</p>{/if}
+    <button class="btn btn--primary" type="button" disabled={preparing} onclick={() => detail?.kind === 'cell' && prepare({ hero: detail.hero, scenario: detail.scenario, expert: minLevel === 'expert' })}>{t.draft.prepareAchievement}</button>
     <p>{t.achievements.cellShort(tally?.attempts ?? 0, tally?.wins ?? 0)}</p>
     {#if tally?.bestLevelWon}<p>{t.achievements.bestLevel(t.achievements.level(tally.bestLevelWon))}</p>{/if}
     {#if tally?.firstWonAt !== null && tally?.firstWonAt !== undefined}<p>{t.achievements.detailFirstWin(dayOf(tally.firstWonAt))}</p>{/if}
@@ -988,6 +1012,11 @@
     font-size: var(--text-lg);
     line-height: 1.1;
   }
+
+  .achievement-badge { position: relative; width: 3.5rem; height: 3.5rem; grid-row: span 2; }
+  .achievement-badge img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; border: 2px solid var(--text); border-radius: 50%; }
+  .achievement-badge .glyph { position: absolute; bottom: -0.15rem; right: -0.15rem; background: var(--surface-1); border-radius: 50%; padding: 0.1rem; }
+  .detail-art { display: block; width: 6rem; height: 6rem; object-fit: cover; object-position: 50% 20%; border: 2px solid var(--text); border-radius: 50%; margin-block: var(--space-3); }
 
   .named-item.locked .glyph,
   .named-item.unavailable .glyph {

@@ -345,6 +345,10 @@ jobs:
         working-directory: web
         run: npm run test:draft
 
+      - name: Limited-mode deck hand-off
+        working-directory: web
+        run: npm run test:limited
+
       # The achievements: the thirty-one vectors shared with the Android
       # port, reproduced exactly and in any input order, the shipped
       # definitions file, and the reading of this client's own records.

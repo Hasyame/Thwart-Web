@@ -318,6 +318,29 @@ export interface Strings {
   readonly deckLegalShort: string;
   /** The draft page, docs/spec/synergie-et-draft.md phase 2. */
   readonly draft: {
+    readonly prepareAchievement: string;
+    readonly preparationFailed: string;
+    readonly activeGame: string;
+    readonly playNext: string;
+    readonly randomGame: string;
+    readonly ownGame: string;
+    readonly campaign: string;
+    readonly later: string;
+    readonly unplayedOnly: string;
+    readonly noUnplayed: string;
+    readonly sealed: string;
+    readonly sealedDescription: string;
+    readonly sealedAbandon: string;
+    readonly sealedAbandonConfirm: string;
+    readonly sealedStart: string;
+    readonly sealedFinish: string;
+    readonly reviseSealed: string;
+    readonly openBooster: (number: number) => string;
+    readonly boosterProgress: (number: number) => string;
+    readonly buildSealed: string;
+    readonly openAllBoosters: string;
+    readonly sessionCollection: string;
+    readonly sessionCollectionHint: string;
     readonly title: string;
     readonly intro: string;
     readonly noHeroes: string;

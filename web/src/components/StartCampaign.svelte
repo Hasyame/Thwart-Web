@@ -19,11 +19,13 @@
     t: Strings;
     uiLocale: Locale;
     decks: readonly SavedDeck[];
+    initialDeckIds?: readonly string[];
+    initiallyExpert?: boolean;
     onStarted: (runId: string) => void;
     onCancel: () => void;
   }
 
-  const { t, uiLocale, decks, onStarted, onCancel }: Props = $props();
+  const { t, uiLocale, decks, onStarted, onCancel, initialDeckIds = [], initiallyExpert = false }: Props = $props();
 
   /* How hard the community found the campaign chosen, and how hard this
      player did, beside the choice. */
@@ -78,6 +80,14 @@
   let difficulty = $state('standard');
   let name = $state('');
   let chosenDeckIds = $state<string[]>([]);
+  let appliedInitialDecks = $state(false);
+  $effect(() => {
+    if (!appliedInitialDecks) {
+      chosenDeckIds = [...initialDeckIds];
+      difficulty = initiallyExpert ? 'expert' : 'standard';
+      appliedInitialDecks = true;
+    }
+  });
   let choices = $state<Record<string, string>>({});
   let starting = $state(false);
 
@@ -96,7 +106,7 @@
         }
         template = loaded;
         name = textOf(loaded.name, uiLocale);
-        difficulty = loaded.difficulties?.[0] ?? 'standard';
+        difficulty = initiallyExpert && loaded.difficulties?.includes('expert') ? 'expert' : loaded.difficulties?.[0] ?? 'standard';
         // Every question gets its own first option, so a campaign started
         // without touching them behaves exactly as the fold would assume.
         choices = Object.fromEntries(
