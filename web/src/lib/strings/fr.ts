@@ -117,7 +117,7 @@ export const fr: Strings = {
     filterEveryHero: 'Afficher tous les héros',
     heroWon: (won, total) => `${won} / ${total} scénarios battus dans votre collection`,
     cellShort: (attempts, wins) => `${wins} gagnée${wins > 1 ? 's' : ''} sur ${attempts}`,
-    listTitle: 'Succès nommés',
+    listTitle: 'Succès',
     unlocked: 'Débloqué',
     locked: 'Verrouillé',
     unavailable: 'Absent de votre collection',
