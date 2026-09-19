@@ -39,7 +39,7 @@ export const fr: Strings = {
     decksTitle: 'Constructeur de decks Marvel Champions · Thwart',
       decksDescription:
         'Construisez et v\u00e9rifiez des decks Marvel Champions avec les cartes que vous poss\u00e9dez, importez depuis MarvelCDB, rangez-les en dossiers.',
-    draftTitle: 'Draft Marvel Champions \u2014 Thwart',
+    draftTitle: 'Draft Marvel Champions \u00b7 Thwart',
     draftDescription:
       'Draftez un deck Marvel Champions avec les cartes que vous poss\u00e9dez\u00a0: une identit\u00e9, une affinit\u00e9, puis une carte \u00e0 la fois parmi une main tir\u00e9e au hasard. De un \u00e0 quatre joueurs sur un appareil.',
     historyTitle: 'Historique des parties · Thwart',
@@ -458,7 +458,7 @@ export const fr: Strings = {
     deckName: 'Nom du deck',
     finish: 'Fin du draft',
     saved: (n) => (n === 1 ? 'Le deck est sur l\u2019\u00e9tag\u00e8re.' : `${n} decks sont sur l\u2019\u00e9tag\u00e8re.`),
-    illegal: (name, problems) => `${name} n\u2019est pas l\u00e9gal (${problems} probl\u00e8me${problems === 1 ? '' : 's'}) \u2014 c\u2019est un bug, et rien n\u2019a \u00e9t\u00e9 enregistr\u00e9. Les d\u00e9tails sont dans la console du navigateur.`,
+    illegal: (name, problems) => `${name} n\u2019est pas l\u00e9gal (${problems} probl\u00e8me${problems === 1 ? '' : 's'}) : c\u2019est un bug, et rien n\u2019a \u00e9t\u00e9 enregistr\u00e9. Les d\u00e9tails sont dans la console du navigateur.`,
     short: (name, cards, size) => `${name} s\u2019est arr\u00eat\u00e9 \u00e0 ${cards} cartes sur ${size} et ne peut pas \u00eatre enregistr\u00e9. Les autres, oui.`,
   },
   synergyIssue: (names) =>
@@ -699,7 +699,7 @@ export const fr: Strings = {
   recoveryDone: 'Termin\u00e9',
   recoveryFileBody: (handle, code) =>
     [
-      'Thwart \u2014 code de r\u00e9cup\u00e9ration du compte',
+      'Thwart : code de r\u00e9cup\u00e9ration du compte',
       '',
       `Compte : ${handle}`,
       `Code :   ${code}`,
@@ -1045,7 +1045,7 @@ export const fr: Strings = {
         'la partie enregistr\u00e9e pour elle'
       : `les ${plays} parties enregistr\u00e9es pour elle`;
     const leave = plays === 1 ? 'elle quitte' : 'elles quittent';
-    return `Ceci supprime la campagne, ${log} et ${games} \u2014 ${leave} donc aussi vos statistiques. C\u2019est d\u00e9finitif.`;
+    return `Ceci supprime la campagne, ${log} et ${games}, ${leave} donc aussi vos statistiques. C\u2019est d\u00e9finitif.`;
   },
   campaignDeleteYes: 'Supprimer',
   campaignGames: 'Parties enregistr\u00e9es',

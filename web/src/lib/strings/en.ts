@@ -39,7 +39,7 @@ export const en: Strings = {
     decksTitle: 'Marvel Champions deck builder · Thwart',
     decksDescription:
       'Build and check Marvel Champions decks against the cards you own, import from MarvelCDB, and sort them into folders.',
-    draftTitle: 'Marvel Champions draft \u2014 Thwart',
+    draftTitle: 'Marvel Champions draft \u00b7 Thwart',
     draftDescription:
       'Draft a Marvel Champions deck from the cards you own: an identity, an aspect, then one card at a time out of a random hand. One to four players on one device.',
     historyTitle: 'Game history · Thwart',
@@ -454,7 +454,7 @@ export const en: Strings = {
     deckName: 'Deck name',
     finish: 'Finish the draft',
     saved: (n) => (n === 1 ? 'The deck is on the shelf.' : `${n} decks are on the shelf.`),
-    illegal: (name, problems) => `${name} is not legal (${problems} problem${problems === 1 ? '' : 's'}) \u2014 this is a bug, and nothing was saved. The details are in the browser console.`,
+    illegal: (name, problems) => `${name} is not legal (${problems} problem${problems === 1 ? '' : 's'}): this is a bug, and nothing was saved. The details are in the browser console.`,
     short: (name, cards, size) => `${name} stopped at ${cards} of ${size} cards and cannot be saved. The others can.`,
   },
   synergyIssue: (names) =>
@@ -645,12 +645,12 @@ export const en: Strings = {
   navSignIn: 'Login',
   accountEmail: 'Email address',
   accountEmailNote:
-    'This is what you sign in with. It is used for nothing else \u2014 no newsletter, no analytics, and it is never passed to anybody.',
+    'This is what you sign in with. It is used for nothing else: no newsletter, no analytics, and it is never passed to anybody.',
   accountHandleNote: 'The name on your account. You sign in with your address, not with this.',
   accountPasswordRule:
     'At least 12 characters. A phrase you will actually remember beats a short password with symbols in it. It cannot contain your pseudonym or your address.',
   accountRecoveryNote:
-    'You also get a recovery code, once. Until this server can send email, that code is the only way back in if you forget your password \u2014 so keep it.',
+    'You also get a recovery code, once. Until this server can send email, that code is the only way back in if you forget your password, so keep it.',
   accountSignedInAs: 'Signed in as',
   accountDeviceIs: (name) => `This browser is registered as \u201c${name}\u201d.`,
   accountDevices: 'Devices',
@@ -690,7 +690,7 @@ export const en: Strings = {
   recoveryDone: 'Done',
   recoveryFileBody: (handle, code) =>
     [
-      'Thwart \u2014 account recovery code',
+      'Thwart: account recovery code',
       '',
       `Account: ${handle}`,
       `Code:    ${code}`,
@@ -882,7 +882,7 @@ export const en: Strings = {
   syncOn: 'In step with the account.',
   syncNow: 'Sync now',
   syncStopped:
-    'A batch did not get through, so the rest is still waiting. It will be sent again next time \u2014 nothing was applied twice.',
+    'A batch did not get through, so the rest is still waiting. It will be sent again next time; nothing was applied twice.',
   syncDone: (pulled, pushed) =>
     pulled === 0 && pushed === 0 ?
       'Already in step. Nothing to move.'
@@ -1033,7 +1033,7 @@ export const en: Strings = {
     const games =
       plays === 1 ? 'the game recorded against it' : `the ${plays} games recorded against it`;
     const leave = plays === 1 ? 'it leaves' : 'they leave';
-    return `This removes the campaign, ${log}, and ${games} \u2014 so ${leave} your statistics too. It does not come back.`;
+    return `This removes the campaign, ${log}, and ${games}, so ${leave} your statistics too. It does not come back.`;
   },
   campaignDeleteYes: 'Delete it',
   campaignGames: 'Games recorded',
