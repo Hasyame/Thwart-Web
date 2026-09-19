@@ -1,4 +1,5 @@
 <script lang="ts">
+  import NavIcon from './NavIcon.svelte';
   import type { Strings } from '../lib/i18n';
   import { tabFor, tabsFor, type ActiveTarget, type NavTarget } from '../lib/nav';
 
@@ -50,16 +51,17 @@
     <a
       href={hrefFor(tab.id)}
       class:current={isCurrent(tab.id)}
+      class:play={tab.id === 'hub' || tab.id === 'play'}
       aria-current={isCurrent(tab.id) ? 'page' : undefined}
       onclick={(event) => go(event, tab.id)}
     >
-      <span class="glyph" aria-hidden="true">{tab.glyph}</span>
+      <span class="glyph"><NavIcon name={tab.id} /></span>
       <span class="label">{tab.tab(t)}</span>
     </a>
   {/each}
 
-  <button type="button" class:current={moreOpen} aria-expanded={moreOpen} onclick={onMore}>
-    <span class="glyph" aria-hidden="true">⋯</span>
+  <button type="button" class:current={moreOpen || !tabs.some((tab) => tab.id === current)} aria-expanded={moreOpen} aria-haspopup="dialog" onclick={onMore}>
+    <span class="glyph"><NavIcon name="more" /></span>
     <span class="label">{t.navMore}</span>
   </button>
 </nav>
@@ -73,6 +75,7 @@
     display: flex;
     background: var(--surface-1);
     border-top: 1px solid var(--hairline);
+    box-shadow: 0 -4px 24px rgb(0 0 0 / 12%);
 
     /*
      * The home indicator sits over the bottom of the screen, so the bar is
@@ -96,7 +99,7 @@
     justify-content: center;
     gap: var(--space-0-5);
 
-    min-height: var(--tap-min);
+    min-height: 4rem;
     padding: var(--space-2) var(--space-1);
     border: 0;
     background: none;
@@ -118,10 +121,23 @@
   }
 
   .glyph {
-    font-size: var(--text-lg);
+    display: grid;
+    place-items: center;
     line-height: 1;
-    padding: 2px var(--space-3);
+    padding: 3px var(--space-3);
     border-radius: var(--radius-pill);
+  }
+
+  .tabs a.play .glyph {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 12px 4px 12px 4px;
+    box-shadow: 2px 2px 0 var(--text);
+  }
+
+  .tabs a:focus-visible, .tabs button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -4px;
   }
 
   /* The active tab is marked by a filled pill behind its glyph as well as by

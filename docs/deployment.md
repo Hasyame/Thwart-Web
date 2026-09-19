@@ -448,3 +448,19 @@ has not been load-tested.
 - **The account API has never run under load.** It is tested, and it has been
   exercised end to end on a laptop, but nothing has yet measured what a small
   VPS does when several people log in at once and each login wants 64 MiB.
+
+### BGG relay networking
+
+The API must connect outward to `https://boardgamegeek.com`. Its listener
+remains bound to `127.0.0.1:8787`. The old unit's `IPAddressDeny=any` with only
+localhost allowed also blocks outbound HTTPS, causing BGG login timeouts.
+The repository unit no longer applies that restriction. For an existing
+installation, `deploy/thwart-api-bgg.conf` is the exact drop-in for
+`/etc/systemd/system/thwart-api.service.d/bgg.conf`. The operator must approve
+installing it, reloading systemd and restarting the API. Preserve the rest of
+the live unit and its hardening; never replace a live unit wholesale.
+BGG uses changing CDN addresses, so a fixed IP allowlist is not reliable.
+After applying it, verify the effective unit properties, API health and
+version. Test relay behaviour locally with a fake BGG service, never a real
+user account. A successful anonymous BGG request verifies connectivity only,
+not successful account authentication.

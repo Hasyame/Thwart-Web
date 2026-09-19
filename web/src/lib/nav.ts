@@ -80,7 +80,7 @@ export const DESTINATIONS: readonly Destination[] = [
   { id: 'collection', label: (t) => t.navCollection, tab: (t) => t.navCollection, glyph: '▣' },
   { id: 'history', label: (t) => t.navHistory, tab: (t) => t.navHistory, glyph: '⏱' },
   { id: 'stats', label: (t) => t.navStats, tab: (t) => t.navStats, glyph: '▥' },
-  { id: 'achievements', label: (t) => t.achievements.hubLabel, tab: (t) => t.achievements.hubLabel, glyph: '★' },
+  { id: 'achievements', label: (t) => t.achievements.hubLabel, tab: (t) => t.navProgress, glyph: '★' },
   { id: 'rules', label: (t) => t.navRules, tab: (t) => t.navRules, glyph: '❔' },
 ];
 
@@ -97,16 +97,15 @@ export const DESTINATIONS: readonly Destination[] = [
  *   separate  what the browser has always had. Campaigns and your own setup
  *             are tabs; the random draw and versus are in the More sheet.
  *
- *   grouped   what the phone does. One Play tab opens a hub holding all five
- *             ways of playing, which frees a slot, and the statistics take it
- *             -- the phone has a Stats tab too, and a bar that dropped to
- *             three tabs would read as something having gone missing.
+ *   grouped   the default mobile arrangement. Play sits in the centre and
+ *             opens the five ways to play; Progress opens achievements.
+ *             History and statistics share a group in More.
  *
  * Everything stays reachable in both: the five play screens keep their URLs
  * and are one tap from the hub, so grouping moves things without hiding any.
  */
 const SEPARATE_TABS: readonly NavTarget[] = ['search', 'decks', 'campaigns', 'play'];
-const GROUPED_TABS: readonly NavTarget[] = ['search', 'decks', 'hub', 'stats'];
+const GROUPED_TABS: readonly NavTarget[] = ['search', 'decks', 'hub', 'achievements'];
 
 /**
  * What the hub gathers, and therefore what the More sheet must not repeat.

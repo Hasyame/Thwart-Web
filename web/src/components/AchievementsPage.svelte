@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DetailDialog from './DetailDialog.svelte';
   import type { Strings } from '../lib/i18n';
   import type { CardSet, IndexRow, Locale, Pack } from '../lib/types';
   import { achievements } from '../lib/achievements/store.svelte';
@@ -273,6 +274,12 @@
   };
   const dayOf = (millis: number): string =>
     new Date(millis).toLocaleDateString(uiLocale, { year: 'numeric', month: 'long', day: 'numeric' });
+
+  let detail = $state<{ kind: 'named'; id: string } | { kind: 'cell'; hero: string; scenario: string } | null>(null);
+  const detailId = $derived(detail?.kind === 'named' ? detail.id : null);
+  const detailStatus = $derived(current?.achievements.find((a) => a.id === detailId));
+  const detailDefinition = $derived(detail?.kind === 'named' ? definitions.get(detail.id) : undefined);
+  const unlockPlay = $derived(achievements.lastInput?.facts.find((fact) => fact.id === detailStatus?.unlockedByPlayId));
 </script>
 
 <section class="achievements">
@@ -407,7 +414,7 @@
               <ul class="stickers">
                 {#each group.items as line (line.key)}
                   {@const villain = scenarioArt(line.key)}
-                  <li class="sticker {line.kind}" class:dim={!line.owned} title={t.achievements.cell(hero.name, line.name, line.tally?.attempts ?? 0, line.tally?.wins ?? 0) + (line.tally?.lastPlayedAt ? ` · ${dayOf(line.tally.lastPlayedAt)}` : '')}>
+                  <li><button type="button" class="sticker {line.kind}" class:dim={!line.owned} aria-haspopup="dialog" aria-label={t.achievements.cell(hero.name, line.name, line.tally?.attempts ?? 0, line.tally?.wins ?? 0)} onclick={() => (detail = { kind: 'cell', hero: hero.code, scenario: line.key })}>
                     <span class="frame">
                       {#if villain !== null}
                         <img src={villain} alt="" loading="lazy" />
@@ -422,7 +429,7 @@
                     {#if line.tally !== null && line.tally.attempts > 0}
                       <span class="muted tiny">{t.achievements.cellShort(line.tally.attempts, line.tally.wins)}</span>
                     {/if}
-                  </li>
+                  </button></li>
                 {/each}
               </ul>
             </div>
@@ -439,8 +446,8 @@
           {@const definition = definitions.get(status.id)}
           {#if definition !== undefined}
             {@const words = wordsOf(definition)}
-            <li class="surface named-item {status.status}">
-              <div class="named-head">
+            <li><button type="button" class="surface named-item {status.status}" aria-haspopup="dialog" onclick={() => (detail = { kind: 'named', id: status.id })}>
+              <span class="named-head">
                 <span class="glyph" aria-hidden="true">{status.status === 'unlocked' ? '★' : status.status === 'unavailable' ? '○' : '☆'}</span>
                 <span class="words">
                   <span class="title">{words.title}{#if status.tier !== null}<span class="tier {status.tier}">{t.achievements.tier(status.tier)}</span>{/if}</span>
@@ -457,12 +464,12 @@
                     {t.achievements.progress(status.progress.current, status.progress.target)}
                   {/if}
                 </span>
-              </div>
+              </span>
               {#if status.status !== 'unlocked'}
                 <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(status.progress.current, status.progress.target)}%`}></span></span>
                 {#if status.status === 'unavailable'}<span class="muted small">{t.achievements.unavailableHint} · {t.achievements.progress(status.progress.current, status.progress.target)}</span>{/if}
               {/if}
-            </li>
+            </button></li>
           {/if}
         {/each}
       </ul>
@@ -475,14 +482,62 @@
       <ol class="recent">
         {#each current.recent.slice(0, 10) as unlock (unlock.id)}
           {@const definition = definitions.get(unlock.id)}
-          <li><span class="muted small">{dayOf(unlock.unlockedAt)}</span> {definition === undefined ? unlock.id : wordsOf(definition).title}</li>
+          <li><button type="button" class="recent-link" aria-haspopup="dialog" onclick={() => (detail = { kind: 'named', id: unlock.id })}><span class="muted small">{dayOf(unlock.unlockedAt)}</span> {definition === undefined ? unlock.id : wordsOf(definition).title}</button></li>
         {/each}
       </ol>
     {/if}
   {/if}
 </section>
 
+{#if detail?.kind === 'named' && detailDefinition && detailStatus}
+  {@const words = wordsOf(detailDefinition)}
+  <DetailDialog title={words.title} closeLabel={t.close} onClose={() => (detail = null)}>
+    <p class="eyebrow">{t.achievements.category(detailDefinition.category)}</p>
+    <p>{words.description}</p>
+    <p><strong>{detailStatus.status === 'unlocked' ? t.achievements.unlocked : detailStatus.status === 'unavailable' ? t.achievements.unavailable : t.achievements.locked}</strong></p>
+    <p>{t.achievements.progress(detailStatus.progress.current, detailStatus.progress.target)}</p>
+    {#if detailStatus.progress.target > 0}
+      <progress max={detailStatus.progress.target} value={detailStatus.progress.current} aria-label={words.title}></progress>
+    {/if}
+    {#if detailStatus.status === 'unavailable'}<p>{t.achievements.unavailableHint}</p>{/if}
+    {#if detailDefinition.tiers}
+      <h3>{t.achievements.detailTiers}</h3>
+      <ul class="tier-list">
+        {#each detailDefinition.tiers as tier (tier.tier)}
+          <li><span>{t.achievements.tier(tier.tier)} · {tier.n}</span><strong>{detailStatus.progress.current >= tier.n ? t.achievements.unlocked : t.achievements.locked}</strong></li>
+        {/each}
+      </ul>
+    {/if}
+    {#if detailStatus.unlockedAt !== null}<p>{t.achievements.unlockedOn(dayOf(detailStatus.unlockedAt))}</p>{/if}
+    {#if unlockPlay}
+      <h3>{t.achievements.detailUnlockPlay}</h3>
+      <p>{scenarioName(unlockPlay.scenarioKey)} · {t.achievements.level(unlockPlay.level)}</p>
+      <p>{unlockPlay.seats.map((seat) => heroName.get(seat.heroCode) ?? seat.heroCode).join(', ')}</p>
+    {/if}
+    <p class="muted small">{t.achievements.detailDerived}</p>
+  </DetailDialog>
+{:else if detail?.kind === 'cell'}
+  {@const tally = tallyOf(detail.scenario, detail.hero)}
+  <DetailDialog title={`${heroName.get(detail.hero) ?? detail.hero} · ${scenarioName(detail.scenario)}`} closeLabel={t.close} onClose={() => (detail = null)}>
+    <p>{t.achievements.cellShort(tally?.attempts ?? 0, tally?.wins ?? 0)}</p>
+    {#if tally?.bestLevelWon}<p>{t.achievements.bestLevel(t.achievements.level(tally.bestLevelWon))}</p>{/if}
+    {#if tally?.firstWonAt !== null && tally?.firstWonAt !== undefined}<p>{t.achievements.detailFirstWin(dayOf(tally.firstWonAt))}</p>{/if}
+    {#if tally?.lastPlayedAt !== null && tally?.lastPlayedAt !== undefined}<p>{t.achievements.detailLastPlay(dayOf(tally.lastPlayedAt))}</p>{/if}
+    <p class="muted small">{t.achievements.detailFilters}</p>
+  </DetailDialog>
+{/if}
+
 <style>
+  button.sticker, button.named-item, .recent-link { font: inherit; color: inherit; cursor: pointer; width: 100%; }
+  button.sticker { background: none; border: 0; padding: var(--space-1); }
+  button.named-item { text-align: start; height: 100%; }
+  .recent-link { background: none; border: 0; text-align: start; padding: var(--space-2); min-height: var(--tap-min); }
+  button.sticker:hover, button.named-item:hover, .recent-link:hover { background: var(--surface-2); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  progress { width: 100%; accent-color: var(--accent); }
+  .tier-list { padding: 0; list-style: none; }
+  .tier-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding-block: var(--space-2); border-bottom: 1px solid var(--hairline); }
+
   h1 {
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-2);
@@ -864,7 +919,8 @@
   }
 
   .named-head {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: var(--space-2);
     align-items: flex-start;
   }
@@ -892,7 +948,8 @@
   }
 
   .state {
-    white-space: nowrap;
+    grid-column: 2;
+    white-space: normal;
   }
 
   .tier {
