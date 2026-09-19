@@ -105,6 +105,7 @@ export interface Strings {
     readonly completionGlobal: (won: number, cells: number) => string;
     readonly rate: (percent: number) => string;
     readonly gridTitle: string;
+    readonly gridIntro: string;
     readonly legendNever: string;
     readonly legendPlayed: string;
     readonly legendWon: string;

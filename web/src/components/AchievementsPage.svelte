@@ -307,6 +307,7 @@
     </div>
 
     <h2>{t.achievements.gridTitle}</h2>
+    <p class="muted intro">{t.achievements.gridIntro}</p>
     <div class="filters" role="group" aria-label={t.achievements.gridTitle}>
       <label>
         <span class="muted lbl">{t.achievements.filterHeroPack}</span>
