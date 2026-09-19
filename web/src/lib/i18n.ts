@@ -296,6 +296,11 @@ export interface Strings {
     readonly title: string;
     readonly intro: string;
     readonly noHeroes: string;
+    /** The setup page's showcase: what the shelf holds, and the three steps. */
+    readonly shelf: (heroes: number, cards: number) => string;
+    readonly stepIdentity: string;
+    readonly stepAspects: string;
+    readonly stepPacks: string;
     readonly resume: string;
     readonly players: string;
     readonly synergy: string;

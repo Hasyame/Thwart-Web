@@ -403,6 +403,10 @@ export const fr: Strings = {
     intro:
       'Un deck construit un choix \u00e0 la fois, comme un draft de Magic\u00a0: une identit\u00e9, une affinit\u00e9, puis une main de cartes tir\u00e9es au hasard dans votre collection, une gard\u00e9e, et on recommence. De un \u00e0 quatre joueurs sur cet appareil, chacun son tour\u00a0; chaque deck finit l\u00e9gal et arrive sur l\u2019\u00e9tag\u00e8re.',
     noHeroes: 'Aucune identit\u00e9 dans votre collection. Cochez d\u2019abord les extensions que vous poss\u00e9dez sur la page Collection.',
+    shelf: (heroes, cards) => `${heroes} identités et ${cards} cartes sur l’étagère, depuis votre collection.`,
+    stepIdentity: 'Une identité, tirée ou choisie',
+    stepAspects: 'Ses affinités et la taille du deck',
+    stepPacks: 'Des paquets construits depuis votre collection : ouvrez-en un, gardez une carte, jusqu’à ce que le deck soit plein',
     resume: 'Un draft est en cours.',
     players: 'Joueurs',
     synergy: 'Exclure les cartes sans synergie avec l\u2019identit\u00e9',

@@ -399,6 +399,10 @@ export const en: Strings = {
     intro:
       'A deck built one pick at a time, as in a Magic draft: an identity, an aspect, then a hand of random cards from your collection, keep one, again. One to four players on this device, taking turns; every deck ends legal and lands on the shelf.',
     noHeroes: 'No identity in your collection. Tick the packs you own on the Collection page first.',
+    shelf: (heroes, cards) => `${heroes} identities and ${cards} cards on the shelf, from your collection.`,
+    stepIdentity: 'An identity, drawn or chosen',
+    stepAspects: 'Its aspects and the deck size',
+    stepPacks: 'Packs built from your collection: open one, keep a card, until the deck is full',
     resume: 'A draft is in progress.',
     players: 'Players',
     synergy: 'Leave out cards without synergy with the identity',

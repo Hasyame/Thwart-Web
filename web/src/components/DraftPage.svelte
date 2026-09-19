@@ -22,7 +22,8 @@
     start,
   } from '../lib/draft/engine';
   import { defaultName } from '../lib/draft/naming';
-  import { freshSeed } from '../lib/draft/random';
+  import { freshSeed, seeded, shuffled } from '../lib/draft/random';
+  import { buildStock } from '../lib/draft/stock';
   import { clearDraft, loadDraft, saveDraft } from '../lib/draft/store';
   import {
     DEFAULT_SETTINGS,
@@ -80,6 +81,25 @@
 
   const heroes = $derived(ownedHeroes(index, ownedPacks));
   const rowByCode = $derived(new Map(index.map((row) => [row.code, row] as const)));
+
+  /*
+   * The setup page's showcase: a hand of the collection's identities, fanned
+   * out, and what the shelf holds. Five drawn once per opening of the page,
+   * not per render, so the hand stays still while the settings change.
+   */
+  const showcase = $derived.by(() => {
+    const pool = heroes.filter((code) => rowByCode.get(code)?.img !== undefined);
+    const hand = shuffled(pool, seeded(showcaseSeed)).slice(0, 5);
+    return hand.map((code) => ({ code, name: nameOf(code), art: cardImageUrl(rowByCode.get(code)?.img) }));
+  });
+  const showcaseSeed = freshSeed();
+  const shelfSize = $derived.by(() => {
+    let cards = 0;
+    for (const copies of buildStock(index, ownedPacks).stock.values()) {
+      cards += copies;
+    }
+    return cards;
+  });
   const nameOf = (code: string | null): string => (code === null ? '' : (rowByCode.get(code)?.name ?? code));
 
   // --- the draft, written down after every change ----------------------------------
@@ -466,6 +486,7 @@
     {#if heroes.length === 0}
       <div class="notice surface"><p>{t.draft.noHeroes}</p></div>
     {:else}
+      <div class="setup">
       <div class="surface panel">
         <div class="setting">
           <span class="label">{t.draft.players}</span>
@@ -496,6 +517,26 @@
         <div class="btn-row">
           <button type="button" class="btn btn--primary" onclick={begin}>{t.draft.begin}</button>
         </div>
+      </div>
+
+      <!-- A hand of the collection's identities, and what the draft does
+           with it: the page was a form on an empty field, and a draft is a
+           table with cards on it. -->
+      <aside class="showcase" aria-hidden="true">
+        <div class="fan">
+          {#each showcase as hero, i (hero.code)}
+            {#if hero.art !== null}
+              <img class="fan-card" src={hero.art} alt="" loading="lazy" style:--i={i - (showcase.length - 1) / 2} />
+            {/if}
+          {/each}
+        </div>
+        <p class="muted small shelf">{t.draft.shelf(heroes.length, shelfSize)}</p>
+        <ol class="steps-list">
+          <li>{t.draft.stepIdentity}</li>
+          <li>{t.draft.stepAspects}</li>
+          <li>{t.draft.stepPacks}</li>
+        </ol>
+      </aside>
       </div>
     {/if}
   {:else if draft.phase === 'identity' && current !== null}
@@ -750,6 +791,72 @@
     display: grid;
     gap: var(--space-3);
     max-width: 48rem;
+  }
+
+  /* The settings and the showcase side by side where there is room. */
+  .setup {
+    display: grid;
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  @media (min-width: 64rem) {
+    .setup {
+      grid-template-columns: minmax(0, 48rem) minmax(18rem, 1fr);
+    }
+  }
+
+  .showcase {
+    display: grid;
+    gap: var(--space-3);
+    justify-items: center;
+    padding: var(--space-3) 0;
+  }
+
+  /* Five cards fanned as a hand, each turned a little more than the last. */
+  .fan {
+    position: relative;
+    width: 100%;
+    max-width: 26rem;
+    aspect-ratio: 26 / 15;
+  }
+
+  .fan-card {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 32%;
+    aspect-ratio: 5 / 7;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+    transform-origin: 50% 130%;
+    transform: translateX(-50%) rotate(calc(var(--i) * 11deg));
+    transition: transform var(--motion-base) var(--ease-out);
+  }
+
+  .fan:hover .fan-card {
+    transform: translateX(-50%) rotate(calc(var(--i) * 15deg));
+  }
+
+  .shelf {
+    margin: 0;
+    text-align: center;
+  }
+
+  .steps-list {
+    margin: 0;
+    padding-left: 1.4em;
+    max-width: 24rem;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .steps-list li::marker {
+    color: var(--accent);
+    font-weight: var(--weight-bold);
   }
 
   .setting {
