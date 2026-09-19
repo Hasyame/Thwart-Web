@@ -5,7 +5,7 @@ import { FALLBACK_LIMITS, version } from './api';
 import { planAdoption, type AdoptionPlan, type AdoptionWrite } from './adoption';
 import { syncOnce, type RejectedRecord, type SyncOutcome } from './engine';
 import { applyAdoption, dexiePorts, stageAccount } from './ports';
-import { SYNC_STATE_KEY } from './state';
+import { hasAdopted, SYNC_STATE_KEY } from './state';
 
 /**
  * Whether this browser keeps in step with the account, and what happens first.
@@ -34,6 +34,7 @@ interface State {
   phase: SyncPhase;
   /** Set once adoption has happened, so it is never offered twice. */
   adopted: boolean;
+  enabled: boolean;
   lastSyncedAt: number | null;
   /**
    * Records the server refused, kept until somebody has seen them.
@@ -61,10 +62,13 @@ export type AdoptionSummary = Omit<AdoptionPlan, 'writes'>;
  * with.
  */
 let pendingWrites: readonly AdoptionWrite[] = [];
+let inFlight: Promise<void> | null = null;
+let generation = 0;
 
 export const sync = $state<State>({
   phase: { kind: 'off' },
   adopted: false,
+  enabled: false,
   lastSyncedAt: null,
   rejected: [],
 });
@@ -81,10 +85,15 @@ const codeOf = (cause: unknown): string =>
 export async function loadSyncState(): Promise<void> {
   try {
     const state = await db.syncState.get(SYNC_STATE_KEY);
-    sync.adopted = (state?.cursor ?? 0) > 0 || state?.lastSyncedAt !== null;
+    sync.adopted = hasAdopted(state);
+    sync.enabled = sync.adopted && state?.syncEnabled !== false;
     sync.lastSyncedAt = state?.lastSyncedAt ?? null;
+    sync.phase = sync.enabled ? { kind: 'on', last: null } : { kind: 'off' };
   } catch {
     sync.adopted = false;
+    sync.enabled = false;
+    sync.lastSyncedAt = null;
+    sync.phase = { kind: 'off' };
   }
 }
 
@@ -96,7 +105,11 @@ export async function loadSyncState(): Promise<void> {
  * cancelling leaves the browser exactly as it was.
  */
 export async function turnOn(token: string, locale: Locale): Promise<void> {
+  const started = ++generation;
   if (sync.adopted) {
+    await db.syncState.update(SYNC_STATE_KEY, { syncEnabled: true });
+    if (started !== generation) return;
+    sync.enabled = true;
     await runSync(token, locale);
     return;
   }
@@ -108,16 +121,20 @@ export async function turnOn(token: string, locale: Locale): Promise<void> {
       .catch(() => FALLBACK_LIMITS);
     const staged = await stageAccount(token, locale, limits);
     const local = await dexiePorts(token, locale).readLocal();
-    const { writes, ...summary } = planAdoption(local, staged.records);
+    if (started !== generation) return;
+    const { writes, ...summary } = planAdoption(local, staged.records, {
+      forkSuffix: locale === 'fr' ? ' (cet appareil)' : ' (this device)',
+    });
     pendingWrites = writes;
     sync.phase = { kind: 'asking', summary, cursor: staged.cursor };
   } catch (cause) {
-    sync.phase = { kind: 'failed', code: codeOf(cause) };
+    if (started === generation) sync.phase = { kind: 'failed', code: codeOf(cause) };
   }
 }
 
 /** Cancels an adoption that was offered. Nothing was written, so nothing undoes. */
 export function cancelAdoption(): void {
+  generation += 1;
   pendingWrites = [];
   sync.phase = { kind: 'off' };
 }
@@ -129,30 +146,69 @@ export async function acceptAdoption(token: string, locale: Locale): Promise<voi
     return;
   }
   const writes = pendingWrites;
+  const started = generation;
   sync.phase = { kind: 'working' };
-  try {
+  inFlight = exclusive(async () => {
+    if (started !== generation || (await db.syncState.get(SYNC_STATE_KEY))?.token !== token) return;
     await applyAdoption({ ...phase.summary, writes }, phase.cursor);
+    if (started !== generation) return;
     pendingWrites = [];
     sync.adopted = true;
-    await runSync(token, locale);
-  } catch (cause) {
-    sync.phase = { kind: 'failed', code: codeOf(cause) };
+    await db.syncState.update(SYNC_STATE_KEY, { syncEnabled: true });
+    if (started !== generation) {
+      await db.syncState.update(SYNC_STATE_KEY, { syncEnabled: false });
+      return;
+    }
+    sync.enabled = true;
+    await performSync(token, locale);
+  }).catch((cause: unknown) => {
+    if (started === generation) sync.phase = { kind: 'failed', code: codeOf(cause) };
+  }).finally(() => { inFlight = null; });
+  await inFlight;
+}
+
+async function exclusive(work: () => Promise<void>): Promise<void> {
+  if (typeof navigator !== 'undefined' && navigator.locks !== undefined) {
+    await navigator.locks.request('thwart-sync', work);
+  } else {
+    await work();
   }
 }
 
 /** One synchronisation, on a browser that has already adopted. */
 export async function runSync(token: string, locale: Locale): Promise<void> {
+  if (!sync.enabled || !sync.adopted) return;
+  if (inFlight !== null) return inFlight;
+  const run = async (): Promise<void> => {
+    // The lock covers manual, live and automatic runs across tabs. Recheck
+    // the account after waiting so a queued run cannot use an old session.
+    const stored = await db.syncState.get(SYNC_STATE_KEY);
+    if (!sync.enabled || stored?.token !== token || stored.syncEnabled === false) return;
+    await performSync(token, locale);
+  };
+  inFlight = exclusive(run).catch((cause: unknown) => {
+    if (sync.enabled) sync.phase = { kind: 'failed', code: codeOf(cause) };
+  }).finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function performSync(token: string, locale: Locale): Promise<void> {
   sync.phase = { kind: 'working' };
   try {
     const outcome = await syncOnce(dexiePorts(token, locale));
-    sync.adopted = true;
-    sync.lastSyncedAt = Date.now();
-    sync.phase = { kind: 'on', last: outcome };
     if (outcome.rejected.length > 0) {
       sync.rejected = [...sync.rejected, ...outcome.rejected];
     }
+    if (!sync.enabled) return;
+    if (outcome.stoppedBecause !== undefined) {
+      sync.phase = { kind: 'failed', code: outcome.stoppedBecause };
+      return;
+    }
+    sync.lastSyncedAt = Date.now();
+    await db.syncState.update(SYNC_STATE_KEY, { lastSyncedAt: sync.lastSyncedAt });
+    if (sync.enabled) sync.phase = { kind: 'on', last: outcome };
   } catch (cause) {
-    sync.phase = { kind: 'failed', code: codeOf(cause) };
+    if (sync.enabled) sync.phase = { kind: 'failed', code: codeOf(cause) };
   }
 }
 
@@ -162,7 +218,22 @@ export async function runSync(token: string, locale: Locale): Promise<void> {
  * Local data stays and so does the account: this stops the browser reaching for
  * the server, and nothing else. It is not signing out and it is not erasing.
  */
-export function turnOff(): void {
+export async function turnOff(): Promise<void> {
+  generation += 1;
+  sync.enabled = false;
   pendingWrites = [];
   sync.phase = { kind: 'off' };
+  // Let an already-sent batch settle before sign-out can clear its records.
+  await db.syncState.update(SYNC_STATE_KEY, { syncEnabled: false });
+  await inFlight;
+  // Another tab may have held the lock before the persisted switch changed.
+  // Wait for it as well before sign-out can remove shared IndexedDB rows.
+  await exclusive(async () => {});
+}
+
+export async function resetSync(): Promise<void> {
+  await turnOff();
+  sync.adopted = false;
+  sync.lastSyncedAt = null;
+  sync.rejected = [];
 }

@@ -95,7 +95,7 @@ export function watchLive(): () => void {
     live.leading = false;
   };
 
-  if (typeof EventSource === 'undefined' || session.account === null) {
+  if (typeof EventSource === 'undefined' || session.account === null || !sync.enabled || !sync.adopted) {
     return teardown;
   }
 
@@ -157,7 +157,7 @@ export function watchLive(): () => void {
         cannot drift.
       */
       const current = session.account;
-      if (current !== null && sync.adopted) {
+      if (current !== null && sync.adopted && sync.enabled) {
         void runSync(current.token, loadUiLocale());
       }
     });

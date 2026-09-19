@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ResponsiveFilters from './ResponsiveFilters.svelte';
   import type { IndexRow, Pack } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import { activeFilterCount, NO_FILTERS, type Filters } from '../lib/search';
@@ -109,116 +110,118 @@
     />
   </label>
 
-  <div class="filters">
-    <select class="field"
-      aria-label={t.allTypes}
-      value={filters.typeCode ?? ''}
-      onchange={(event) =>
-        onFilters({ ...filters, typeCode: pick(event.currentTarget.value) })}
-    >
-      <option value="">{t.allTypes}</option>
-      {#each types as option (option.code)}
-        <option value={option.code}>{option.name}</option>
-      {/each}
-    </select>
-
-    <select class="field"
-      aria-label={t.allFactions}
-      value={filters.factionCode ?? ''}
-      onchange={(event) =>
-        onFilters({ ...filters, factionCode: pick(event.currentTarget.value) })}
-    >
-      <option value="">{t.allFactions}</option>
-      {#each factions as option (option.code)}
-        <option value={option.code}>{option.name}</option>
-      {/each}
-    </select>
-
-    <select class="field"
-      aria-label={t.allPacks}
-      value={filters.packCode ?? ''}
-      onchange={(event) =>
-        onFilters({ ...filters, packCode: pick(event.currentTarget.value) })}
-    >
-      <option value="">{t.allPacks}</option>
-      {#each packOptions as option (option.code)}
-        <option value={option.code}>{option.name}</option>
-      {/each}
-    </select>
-
-    {#if traits.length > 0}
-      <select
-        class="field"
-        aria-label={t.allTraits}
-        value={filters.trait ?? ''}
-        onchange={(event) => onFilters({ ...filters, trait: pick(event.currentTarget.value) })}
+  <ResponsiveFilters label={t.filters} count={active}>
+    <div class="filters">
+      <select class="field"
+        aria-label={t.allTypes}
+        value={filters.typeCode ?? ''}
+        onchange={(event) =>
+          onFilters({ ...filters, typeCode: pick(event.currentTarget.value) })}
       >
-        <option value="">{t.allTraits}</option>
-        {#each traits as trait (trait)}
-          <option value={trait}>{trait}</option>
+        <option value="">{t.allTypes}</option>
+        {#each types as option (option.code)}
+          <option value={option.code}>{option.name}</option>
         {/each}
       </select>
-    {/if}
-  </div>
 
-  <div class="filters second">
-    <!--
-      Cost as two numbers rather than a slider. A slider needs a maximum
-      nobody agrees on and cannot be typed into; two boxes say exactly what
-      they are and work with a keyboard.
-    -->
-    <label class="cost">
-      <span class="lbl">{t.costFrom}</span>
-      <input
-        class="field"
-        type="number"
-        min="0"
-        inputmode="numeric"
-        value={filters.minCost ?? ''}
-        onchange={(event) => onFilters({ ...filters, minCost: cost(event.currentTarget.value) })}
-      />
-    </label>
-    <label class="cost">
-      <span class="lbl">{t.costTo}</span>
-      <input
-        class="field"
-        type="number"
-        min="0"
-        inputmode="numeric"
-        value={filters.maxCost ?? ''}
-        onchange={(event) => onFilters({ ...filters, maxCost: cost(event.currentTarget.value) })}
-      />
-    </label>
-
-    <label class="tick">
-      <input
-        type="checkbox"
-        checked={filters.ownedOnly}
-        onchange={(event) => onFilters({ ...filters, ownedOnly: event.currentTarget.checked })}
-      />
-      <span>{t.ownedOnly}</span>
-    </label>
-
-    <label class="tick">
-      <input
-        type="checkbox"
-        checked={filters.favouritesOnly}
+      <select class="field"
+        aria-label={t.allFactions}
+        value={filters.factionCode ?? ''}
         onchange={(event) =>
-          onFilters({ ...filters, favouritesOnly: event.currentTarget.checked })}
-      />
-      <span>{t.favouritesOnly}</span>
-    </label>
+          onFilters({ ...filters, factionCode: pick(event.currentTarget.value) })}
+      >
+        <option value="">{t.allFactions}</option>
+        {#each factions as option (option.code)}
+          <option value={option.code}>{option.name}</option>
+        {/each}
+      </select>
 
-    <!--
-      Shown only when something is on, because a permanent Clear button reads
-      as a thing you have to press before you can search.
-    -->
-    {#if active > 0}
-      <button class="btn btn--quiet" type="button" onclick={() => onFilters(NO_FILTERS)}>
-        {t.clearFilters(active)}
-      </button>
-    {/if}
-  </div>
+      <select class="field"
+        aria-label={t.allPacks}
+        value={filters.packCode ?? ''}
+        onchange={(event) =>
+          onFilters({ ...filters, packCode: pick(event.currentTarget.value) })}
+      >
+        <option value="">{t.allPacks}</option>
+        {#each packOptions as option (option.code)}
+          <option value={option.code}>{option.name}</option>
+        {/each}
+      </select>
+
+      {#if traits.length > 0}
+        <select
+          class="field"
+          aria-label={t.allTraits}
+          value={filters.trait ?? ''}
+          onchange={(event) => onFilters({ ...filters, trait: pick(event.currentTarget.value) })}
+        >
+          <option value="">{t.allTraits}</option>
+          {#each traits as trait (trait)}
+            <option value={trait}>{trait}</option>
+          {/each}
+        </select>
+      {/if}
+    </div>
+
+    <div class="filters second">
+      <!--
+        Cost as two numbers rather than a slider. A slider needs a maximum
+        nobody agrees on and cannot be typed into; two boxes say exactly what
+        they are and work with a keyboard.
+      -->
+      <label class="cost">
+        <span class="lbl">{t.costFrom}</span>
+        <input
+          class="field"
+          type="number"
+          min="0"
+          inputmode="numeric"
+          value={filters.minCost ?? ''}
+          onchange={(event) => onFilters({ ...filters, minCost: cost(event.currentTarget.value) })}
+        />
+      </label>
+      <label class="cost">
+        <span class="lbl">{t.costTo}</span>
+        <input
+          class="field"
+          type="number"
+          min="0"
+          inputmode="numeric"
+          value={filters.maxCost ?? ''}
+          onchange={(event) => onFilters({ ...filters, maxCost: cost(event.currentTarget.value) })}
+        />
+      </label>
+
+      <label class="tick">
+        <input
+          type="checkbox"
+          checked={filters.ownedOnly}
+          onchange={(event) => onFilters({ ...filters, ownedOnly: event.currentTarget.checked })}
+        />
+        <span>{t.ownedOnly}</span>
+      </label>
+
+      <label class="tick">
+        <input
+          type="checkbox"
+          checked={filters.favouritesOnly}
+          onchange={(event) =>
+            onFilters({ ...filters, favouritesOnly: event.currentTarget.checked })}
+        />
+        <span>{t.favouritesOnly}</span>
+      </label>
+
+      <!--
+        Shown only when something is on, because a permanent Clear button reads
+        as a thing you have to press before you can search.
+      -->
+      {#if active > 0}
+        <button class="btn btn--quiet" type="button" onclick={() => onFilters(NO_FILTERS)}>
+          {t.clearFilters(active)}
+        </button>
+      {/if}
+    </div>
+  </ResponsiveFilters>
 </div>
 
 <style>

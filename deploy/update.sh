@@ -27,9 +27,10 @@ REPO="${REPO:-/srv/thwart/repo}"
 RELEASES="${RELEASES:-/srv/thwart/releases}"
 CURRENT="${CURRENT:-/srv/thwart/current}"
 KEEP="${KEEP:-3}"
-# Which branch to build. `main` by default, so running this by hand does what
-# it always did; release.sh passes `release`, which only moves when CI is green.
-REF="${REF:-main}"
+BIN="${BIN:-/srv/thwart/bin}"
+# Both the nightly timer and manual builds obey CI's tested pointer.
+REF="${REF:-release}"
+. "$REPO/deploy/api-ready.sh"
 # Skip the card fetch if the data on disk is younger than this. The nightly run
 # is 24 hours apart and always fetches; this only bites when several releases
 # land in one afternoon, and MarvelCDB is run by volunteers.
@@ -83,9 +84,13 @@ git fetch --quiet origin "$REF"
 # main, and resetting would drag the local main pointer to whichever ref
 # was deployed last. Untracked files are left alone deliberately, because
 # node_modules and the card data live there and both are expensive.
-git checkout --quiet --force --detach "origin/$REF"
+git checkout --quiet --force --detach "${COMMIT:-origin/$REF}"
 
 NOW_HEAD="$(git rev-parse HEAD)"
+if ! site_api_ready "$NOW_HEAD"; then
+    log "site held: running API is unhealthy or incompatible; use Release the API"
+    exit 1
+fi
 
 cd "$REPO/web"
 
@@ -128,6 +133,10 @@ STAMP="$(date -u +%Y%m%d%H%M%S)"
 TARGET="$RELEASES/$STAMP"
 
 log "publishing $STAMP"
+if ! site_api_ready "$NOW_HEAD"; then
+    log "site held: API changed or became unhealthy during the build"
+    exit 1
+fi
 mkdir -p "$TARGET"
 cp -a dist/. "$TARGET/"
 printf '%s' "$NOW_HEAD" > "$TARGET.commit"

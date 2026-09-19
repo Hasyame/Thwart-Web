@@ -34,6 +34,8 @@
     "test:achievements": "vite-node scripts/test-achievements.mjs",
     "test:sync": "vite-node scripts/test-sync-state.mjs",
     "test:engine-sync": "vite-node scripts/test-sync-engine.mjs",
+    "test:sync-integration": "vite-node scripts/test-sync-integration.mjs",
+    "test:release": "node scripts/test-release.mjs",
     "test:plays": "vite-node scripts/test-plays.mjs",
     "test:merge": "vite-node scripts/test-sync-merge.mjs",
     "test:adoption": "vite-node scripts/test-sync-adoption.mjs",
@@ -52,6 +54,7 @@
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
     "@tsconfig/svelte": "^5.0.4",
+    "fake-indexeddb": "^6.2.5",
     "sharp": "^0.35.4",
     "svelte": "^5.42.2",
     "svelte-check": "^4.3.2",

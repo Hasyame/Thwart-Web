@@ -4,6 +4,7 @@ import * as api from './api';
 import { SYNC_STATE_KEY, type StoredSyncState } from './state';
 import { releaseAccountData } from './device';
 import { stopLive } from './live.svelte';
+import { loadSyncState, resetSync } from './sync.svelte';
 
 /**
  * Who is signed in on this browser.
@@ -13,11 +14,8 @@ import { stopLive } from './live.svelte';
  * IndexedDB once at startup and written back on every change, so a reload does
  * not sign anybody out.
  *
- * **Nothing here syncs.** Signing in records a token and stops. Moving data is
- * the engine's job and it is not wired up yet — deliberately, because the first
- * sign-in on a browser that already holds data has to run the adoption flow in
- * doc 02 §6, and a sign-in that quietly synced before that existed is exactly
- * the accident the flow is there to prevent.
+ * Signing in records a token. The first sync stages the adoption flow in
+ * doc 02 §6 before any account records are merged into this browser.
  */
 
 export type SessionStatus = 'unknown' | 'signed-out' | 'signed-in';
@@ -86,6 +84,7 @@ async function remember(
     deviceName,
   };
   await db.syncState.put(stored);
+  await loadSyncState();
   session.account = stored;
   session.status = 'signed-in';
 }
@@ -160,11 +159,8 @@ export async function recover(
 }
 
 /**
- * Signs out, and leaves everything else alone.
- *
- * Doc 02 §6: local data stays, the sync state is cleared, the browser goes back
- * to being anonymous with everything intact. Erasing what is stored here is a
- * separate, clearly labelled action and never a side effect of this one.
+ * Signs out and removes confirmed account copies from this browser.
+ * Unsynced records and edits stay. See device.ts for the ownership rule.
  *
  * The token is revoked server-side first, but a failure there does not stop the
  * local half: somebody who has pressed sign out on a shared computer must end
@@ -187,7 +183,7 @@ export async function signOut(locale: Locale): Promise<void> {
   }
 }
 
-/** Drops the token and the cursor. Everything the app holds stays. */
+/** Releases confirmed account copies, then drops the session and sync state. */
 export async function forgetLocally(): Promise<void> {
   /*
     The account's data goes with the account.
@@ -200,6 +196,7 @@ export async function forgetLocally(): Promise<void> {
   */
   // The stream belongs to an account that is no longer signed in here.
   stopLive();
+  await resetSync();
 
   await releaseAccountData().catch(() => undefined);
 

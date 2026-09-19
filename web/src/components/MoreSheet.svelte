@@ -1,4 +1,5 @@
 <script lang="ts">
+  import InstallGuide from './InstallGuide.svelte';
   import type { Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
   import type { ThemeChoice } from '../lib/preferences';
@@ -258,6 +259,7 @@
         <span class="muted" aria-hidden="true">›</span>
       </button>
     </section>
+    <InstallGuide {t} />
   </div>
 </dialog>
 

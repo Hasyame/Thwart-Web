@@ -9,6 +9,7 @@
     setScenarioExcluded as writeScenarioExcluded,
   } from '../lib/db';
   import BackupPanel from './BackupPanel.svelte';
+  import ResponsiveFilters from './ResponsiveFilters.svelte';
   import { syncAfter } from '../lib/sync/auto.svelte';
 
   /*
@@ -213,41 +214,45 @@
       first: it is the only one of these that throws away something somebody
       typed, including the quantities.
     -->
-    <div class="bulk">
-      <span class="bulk-label muted">{t.bulkLabel}</span>
-      {#each BULK_GROUPS as group (group.id)}
-        {@const packs = packsOfType(group.type)}
-        {#if packs.length > 0}
-          <button
-            class="btn btn--quiet"
-            type="button"
-            disabled={busy || packs.every((pack) => (owned.value.get(pack.code) ?? 0) > 0)}
-            onclick={() => void ownAll(packs)}
-          >
-            {group.label(t)}
-            <span class="muted">{packs.length}</span>
+    <ResponsiveFilters label={t.bulkLabel}>
+      <div class="bulk">
+        {#each BULK_GROUPS as group (group.id)}
+          {@const packs = packsOfType(group.type)}
+          {#if packs.length > 0}
+            <button
+              class="btn btn--quiet"
+              type="button"
+              disabled={busy || packs.every((pack) => (owned.value.get(pack.code) ?? 0) > 0)}
+              onclick={() => void ownAll(packs)}
+            >
+              {group.label(t)}
+              <span class="muted">{packs.length}</span>
+            </button>
+          {/if}
+        {/each}
+
+        {#if clearing}
+          <span class="confirm">
+            <span class="muted">{t.bulkClearConfirm(ownedCount)}</span>
+            <button class="btn btn--quiet danger" type="button" disabled={busy} onclick={() => void clearAll()}>
+              {t.bulkClearYes}
+            </button>
+            <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => (clearing = false)}>
+              {t.cancel}
+            </button>
+          </span>
+        {:else if ownedCount > 0}
+          <button class="btn btn--quiet danger" type="button" onclick={() => (clearing = true)}>
+            {t.bulkClear}
           </button>
         {/if}
-      {/each}
+      </div>
+    </ResponsiveFilters>
 
-      {#if clearing}
-        <span class="confirm">
-          <span class="muted">{t.bulkClearConfirm(ownedCount)}</span>
-          <button class="btn btn--quiet danger" type="button" disabled={busy} onclick={() => void clearAll()}>
-            {t.bulkClearYes}
-          </button>
-          <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => (clearing = false)}>
-            {t.cancel}
-          </button>
-        </span>
-      {:else if ownedCount > 0}
-        <button class="btn btn--quiet danger" type="button" onclick={() => (clearing = true)}>
-          {t.bulkClear}
-        </button>
-      {/if}
-    </div>
-
-    <BackupPanel {t} />
+    <details>
+      <summary>{t.backupTitle}</summary>
+      <BackupPanel {t} />
+    </details>
 
     {#each waves as group (group.wave)}
       <section class="wave">
@@ -366,16 +371,13 @@
 </section>
 
 <style>
+  summary { cursor: pointer; color: var(--accent); min-height: var(--tap-min); align-content: center; }
   .bulk {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
     margin: var(--space-3) 0;
-  }
-
-  .bulk-label {
-    font-size: var(--text-sm);
   }
 
   .bulk .confirm {

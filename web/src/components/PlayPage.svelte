@@ -598,7 +598,7 @@
   {:else if pools === null}
     <p class="notice muted">{t.loading}</p>
   {:else if owned.packs.size === 0}
-    <div class="notice surface"><p>{t.randomizerNoCollection}</p></div>
+    <div class="notice surface"><p>{t.randomizerNoCollection}</p><a class="btn btn--primary" href="/collection">{t.navCollection}</a></div>
   {:else if recorded}
     <div class="notice surface">
       <p class="ok">{t.playRecorded}</p>
@@ -762,6 +762,7 @@
       {#if decks.saved.length === 0}
         <!-- Seats are decks, so with no decks there is nothing to seat. -->
         <p class="muted note">{t.noDecksForPlay}</p>
+        <a class="btn" href="/decks">{t.navDecks}</a>
       {:else}
         <label class="field-group">
           <span class="field-label">{t.addDeck}</span>
@@ -906,7 +907,10 @@
     </div>
     <p class="muted note">{t.clockStartsNote}</p>
   {:else if outcome === null}
-    <div class="running surface">
+    {#if trackEncounter}
+      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} />
+    {/if}
+    <div class="running surface" class:compact={trackEncounter}>
       <!-- Name, heroes and encounter deck at the top, as the app has it: the
            three things somebody glances up to check mid-game. -->
       <p class="scenario">{session.current.scenarioName}</p>
@@ -953,10 +957,6 @@
 
       <LongBreak {t} {storageOk} onSaved={refreshPutAway} />
     </div>
-
-    {#if trackEncounter}
-      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} />
-    {/if}
 
     <label class="awake surface">
       <span>{t.keepScreenOn}</span>
@@ -1012,6 +1012,9 @@
 </section>
 
 <style>
+  .running.compact { padding: var(--space-3); }
+  .compact .clock { font-size: var(--text-xl); margin-top: var(--space-2); min-height: var(--tap-min); }
+  .compact p { margin-block: var(--space-1); }
   h1 {
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);

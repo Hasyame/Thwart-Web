@@ -33,12 +33,14 @@ set -eu
 
 REPO="${REPO:-/srv/thwart/repo}"
 BIN="${BIN:-/srv/thwart/bin}"
-# Written by update-api.sh: the commit the running binary was built from. The
-# API also reports its build over HTTP, but that needs the service to be up,
-# and this has to be able to reason about a server that is down.
+# Written only after the running API passes health and version checks.
 STAMP="$BIN/thwart-api.commit"
+BUILT="$BIN/thwart-api.built"
+API_URL="${API_URL:-http://127.0.0.1:8787/v1}"
 
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+
+. "$REPO/deploy/api-ready.sh"
 
 # Re-exec from a copy of this file.
 #
@@ -85,15 +87,29 @@ API_CURRENT=""
 
 if [ -z "$API_TARGET" ]; then
     log "no api-release branch yet; the API has never been released from here"
-elif [ "$API_TARGET" = "$API_CURRENT" ]; then
+elif [ "$API_TARGET" = "$API_CURRENT" ] && healthy_at "$API_TARGET"; then
     log "api up to date at $(git rev-parse --short "$API_CURRENT")"
 else
-    log "api $(git rev-parse --short "$API_TARGET"): building"
-    REF=api-release "$REPO/deploy/update-api.sh"
+    # A failed restart must be retried, even if the correct binary is on disk.
+    if [ ! -f "$BUILT" ] || [ "$(cat "$BUILT")" != "$API_TARGET" ]; then
+        log "api $(git rev-parse --short "$API_TARGET"): building"
+        REF=api-release COMMIT="$API_TARGET" "$REPO/deploy/update-api.sh"
+    fi
     log "api: restarting"
     # The unit file allows exactly this one command to this one user, so the
     # deploy needs no general sudo. See deploy/thwart-release.sudoers.
     sudo -n /usr/bin/systemctl restart thwart-api
+    attempt=0
+    until healthy_at "$API_TARGET"; do
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge 15 ]; then
+            log "site held: API health/version did not confirm the new build"
+            exit 1
+        fi
+        sleep 1
+    done
+    printf '%s' "$API_TARGET" > "$STAMP.new"
+    mv -f "$STAMP.new" "$STAMP"
     API_CURRENT="$API_TARGET"
     log "api now $(git rev-parse --short "$API_CURRENT")"
 fi
@@ -103,6 +119,11 @@ fi
 if [ -z "$API_CURRENT" ]; then
     log "site held: the API has never been deployed, so there is nothing to match"
     exit 0
+fi
+
+if ! healthy_at "$API_CURRENT"; then
+    log "site held: the running API does not match its confirmed build"
+    exit 1
 fi
 
 if ! git diff --quiet "$API_CURRENT" "$RELEASE" -- server; then
@@ -121,9 +142,9 @@ fi
 
 log "site $(git rev-parse --short "$RELEASE"): publishing"
 if [ "$FORCE" -eq 1 ]; then
-    REF=release "$REPO/deploy/update.sh" --force
+    REF=release COMMIT="$RELEASE" "$REPO/deploy/update.sh" --force
 else
-    REF=release "$REPO/deploy/update.sh"
+    REF=release COMMIT="$RELEASE" "$REPO/deploy/update.sh"
 fi
 printf '%s' "$RELEASE" > "$BIN/thwart-site.commit"
 log "site now $(git rev-parse --short "$RELEASE")"

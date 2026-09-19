@@ -1,9 +1,10 @@
 # Deploying thwart.app
 
-The site is static files. There is no application server, no database and no
-container: nginx serves a directory, and a timer rebuilds that directory
-overnight. Doc 05's container layout describes the **sync server**, which does
-not exist yet and is not what this deploys.
+The site is static files served by nginx, alongside one Go account/sync API
+and a SQLite database. There are no containers. The release timer pulls tested
+branch pointers every five minutes; the nightly timer refreshes card data.
+See [AGENTS.md](../AGENTS.md) for the verified host layout and agent permissions.
+Commands below are Linux host commands, not local PowerShell commands.
 
 Target: `thwart.app` on `92.222.65.177`. DNS already resolves.
 
@@ -291,8 +292,8 @@ sudo -u thwart sqlite3 /srv/thwart/db/thwart.sqlite     ".backup '/srv/thwart/db
 `.backup` rather than `cp`, because the database runs in WAL mode and copying
 the file while a write is in flight gives you a database that is missing the
 end of it. Doc 05 has the retention argument; the short version is that a
-nightly copy kept for a fortnight is enough for a service where the client
-holds a full replica anyway.
+automatic timer uses the API snapshot command, verifies the copy, compresses it
+and retains 30 days under `/srv/thwart/backups/`. Off-site storage is not confirmed.
 
 ### Raising the Argon2 cost
 
@@ -304,27 +305,31 @@ later does not invalidate a single existing account.
 
 ## Deploying a change
 
-Push to `main`, then either wait for the timer or run it now:
+Push to `main` only after the owner authorizes it. Green Web and Server CI jobs
+advance `release`. The five-minute release timer then publishes compatible
+site changes. To run that same release flow immediately on the host:
 
 ```bash
-systemctl start thwart-update.service
+sudo -H -u thwart /srv/thwart/repo/deploy/release.sh
 ```
 
 The service pulls, builds and swaps the symlink. nginx needs no reload: it
 resolves the symlink per request.
 
-That covers the site only. A change to the account API is a separate step,
-because it restarts a process holding a database rather than swapping a
-directory of files:
+Any `server/` difference holds the site until the owner runs **Release the API**
+in GitHub Actions. That promotes tested `release` to `api-release`; the host
+builds, restarts and verifies the API before publishing the site. Never push
+either pointer by hand.
 
-```bash
-sudo -H -u thwart /srv/thwart/repo/deploy/update-api.sh
-sudo systemctl restart thwart-api
-curl -s https://thwart.app/api/v1/version
-```
+`update-api.sh` records the binary it built in `thwart-api.built`.
+`release.sh` writes `thwart-api.commit` only after both health and version
+match the approved commit. A failed restart is retried on the next run.
+Both `release.sh` and `update.sh` check the running API. The nightly builder
+defaults to `release`, and checks compatibility before building and publishing.
+The release coordinator pins both builds to the commits it resolved.
 
-The script runs the tests before it builds, and builds to a temporary name, so
-a failure leaves the running binary alone.
+These changes take effect when the host has this revision of the scripts.
+They have been tested locally with fake tools; that is not a production rollout.
 
 ## Rolling back
 
@@ -336,7 +341,10 @@ ln -sfn /srv/thwart/releases/<stamp> /srv/thwart/current.new
 mv -Tf /srv/thwart/current.new /srv/thwart/current
 ```
 
-No reload, no downtime. The swap is a rename on the same filesystem.
+No nginx reload is needed. The swap is a rename on the same filesystem.
+The release timer can republish its approved pointer within five minutes, so
+coordinate a rollback with the owner and suspend the timer if required.
+Never move `release` or `api-release` by hand.
 
 The API rolls back through git rather than through kept releases: check out the
 revision `/api/v1/version` reported before the bad deploy, rebuild, restart. A
@@ -413,37 +421,30 @@ where `thwart-rescue` flushes the firewall to ACCEPT and restores the backed-up
 `sshd_config`. Cancel it with `systemctl stop rescue.timer` once a new
 connection has succeeded.
 
-**Password authentication is still on**, because `debian` (uid 1000) has no key
-and root's only key is the deployment one. Give yourself a key before turning
-it off.
+**Password authentication status is unknown and requires confirmation.**
+Do not change SSH settings without the owner's explicit approval and a tested
+recovery path.
 
 ## What this costs
 
 The built site is about 18 MB, nearly all of it card data, times three kept
 releases. nginx idles at a few tens of megabytes. The nightly build is the only
 real work the machine does, and it is a few minutes of Node once a day. The
-smallest VPS either provider sells is more than enough, and will stay so when
-the sync server arrives beside it.
+current host also runs the sync API. Its memory usage under concurrent logins
+has not been load-tested.
 
 ## What is not here yet
 
-- **No service worker verification.** The worker is served and its routing is
-  tested in Node, but it has never been registered in a real browser: the
-  automated one used during development refuses to. Load the site on a phone,
-  add it to the home screen, then turn off the network and check it still
-  opens.
+- **Physical iOS verification remains.** Local browser offline navigation and
+  the worker's routing are tested. Installation, keyboard handling and safe
+  areas still need a real iPhone/iPad check.
 - **No monitoring.** `journalctl -u thwart-update.service` after a failed
   overnight run is the whole of it. A failed build is silent, and the site
   keeps serving the previous release, which is the safe failure but not an
   obvious one.
-- **Password SSH authentication is still enabled**, and the `debian` account
-  has no key. Turning it off is the real gain against the brute-force traffic;
-  fail2ban is the mitigation until somebody has a key of their own.
-- **No automatic backups.** Without the account API there is nothing to back
-  up: every byte on the server is rebuildable from the repository and
-  MarvelCDB. With it there is exactly one file that is not, and taking a copy
-  of it is still a command somebody has to remember to run. Section 8 has the
-  command; putting it on a timer is not done.
+- **Off-site backup configuration is unknown and requires confirmation.**
+  Automatic local backups already run daily at 03:14 via `thwart-backup.timer`;
+  `deploy/backup.sh` verifies snapshots, compresses them and keeps 30 days.
 - **The account API has never run under load.** It is tested, and it has been
   exercised end to end on a laptop, but nothing has yet measured what a small
   VPS does when several people log in at once and each login wants 64 MiB.

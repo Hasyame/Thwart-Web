@@ -223,7 +223,9 @@ the real modules:
 | `npm run test:merge` | Per-collection merge and conflict rules |
 | `npm run test:adoption` | What signing in does to data already on the device |
 | `npm run test:device` | Which rows signing out takes, and which it leaves |
-| `npm run test:engine-sync` | Campaign runs through the sync path |
+| `npm run test:engine-sync` | Pull/push ordering, batches, cursors and failures |
+| `npm run test:sync-integration` | IndexedDB merge rules, adoption, sync controls and retries |
+| `npm run test:release` | Release and nightly publication gates with isolated fake tools (requires Git Bash on Windows) |
 | `npm run test:nav` | That every destination is reachable, in both arrangements |
 | `npm run test:head` | What each page says about itself: titles, descriptions, canonicals, what is kept out of the index |
 | `npm run test:replay` | That a game played again is the game that was played |
