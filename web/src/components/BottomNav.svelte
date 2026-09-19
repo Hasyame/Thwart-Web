@@ -142,7 +142,7 @@
 
   /* The active tab is marked by a filled pill behind its glyph as well as by
      colour, so it is not colour alone doing the work (WCAG 1.4.1). */
-  .tabs a.current .glyph,
+  .tabs a.current:not(.play) .glyph,
   .tabs button.current .glyph {
     background: var(--accent-soft);
   }

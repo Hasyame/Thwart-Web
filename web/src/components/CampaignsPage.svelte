@@ -632,14 +632,14 @@
     height: 1.1rem;
     border-radius: 50%;
     font-size: 0.7rem;
-    color: #fff;
+    color: var(--surface-1);
     background: var(--text-muted);
   }
 
   .badge[data-status='won'] .glyph { background: var(--ok); }
   .badge[data-status='lost'] .glyph,
   .badge[data-status='conceded'] .glyph { background: var(--danger); }
-  .badge[data-status='in-progress'] .glyph { background: var(--accent); }
+  .badge[data-status='in-progress'] .glyph { background: var(--accent); color: var(--accent-ink); }
 
   .band {
     display: grid;
@@ -685,7 +685,7 @@
     border-radius: var(--radius-xs);
     font-size: 0.7rem;
     font-weight: var(--weight-bold);
-    color: #fff;
+    color: var(--surface-1);
   }
 
   .result.won { background: var(--ok); }

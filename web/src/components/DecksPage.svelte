@@ -609,7 +609,7 @@
     place-items: center;
     border-radius: 50%;
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
     font-size: var(--text-xl);
     font-weight: var(--weight-bold);
   }

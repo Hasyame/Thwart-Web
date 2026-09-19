@@ -291,7 +291,7 @@
     height: 1.75rem;
     border-radius: 50%;
     background: var(--ok);
-    color: #fff;
+    color: var(--surface-1);
     font-weight: var(--weight-bold);
     flex: none;
   }
