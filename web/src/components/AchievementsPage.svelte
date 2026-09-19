@@ -4,6 +4,7 @@
   import type { CardSet, IndexRow, Locale, Pack } from '../lib/types';
   import { achievements } from '../lib/achievements/store.svelte';
   import { derive } from '../lib/achievements/derive';
+  import { achievementTargets } from '../lib/achievements/details';
   import { CLASSIC_ASPECTS, LEVEL_RANK, type AchievementDefinition, type AchievementStatus, type Cell, type DifficultyLevel, type Tally } from '../lib/achievements/types';
   import { FNE_PREFIX, FNE_TEMPLATE_ID, isFne, loadFneBox } from '../lib/fearNoEvil';
   import { cardImageUrl } from '../lib/data';
@@ -279,7 +280,26 @@
   const detailId = $derived(detail?.kind === 'named' ? detail.id : null);
   const detailStatus = $derived(current?.achievements.find((a) => a.id === detailId));
   const detailDefinition = $derived(detail?.kind === 'named' ? definitions.get(detail.id) : undefined);
+  const detailTargets = $derived.by(() => {
+    if (!detailDefinition || !achievements.lastInput) return null;
+    return achievementTargets(achievements.lastInput, detailDefinition)?.map((target) => ({
+      ...target,
+      name: target.kind === 'scenario' ? scenarioName(target.key) : target.kind === 'hero' ? heroName.get(target.key) ?? target.key : t.aspect(target.key),
+    })).sort((a, b) => a.name.localeCompare(b.name, uiLocale)) ?? null;
+  });
   const unlockPlay = $derived(achievements.lastInput?.facts.find((fact) => fact.id === detailStatus?.unlockedByPlayId));
+  const detailActions = $derived.by(() => {
+    if (!detailDefinition || !detailStatus) return [];
+    const p = detailDefinition.predicate;
+    switch (p.kind) {
+      case 'count': return [t.achievements.detailCountAction(p.what, Math.max(0, detailStatus.progress.target - detailStatus.progress.current))];
+      case 'first_win': return [t.achievements.detailWinAtLevel(t.achievements.level(p.minDifficulty))];
+      case 'table_win': return [t.achievements.detailTableWin(p.players), ...(p.distinctAspects ? [t.achievements.detailDistinctAspects] : [])];
+      case 'campaign': return [t.achievements.detailCampaignWin, ...(p.noDefeat ? [t.achievements.detailNoDefeat] : []), ...(p.minDifficulty && p.minDifficulty !== 'unknown' ? [t.achievements.detailCampaignLevel(t.achievements.level(p.minDifficulty))] : [])];
+      case 'mode_win': return [p.mode === 'draft' ? t.achievements.detailDraftWin : wordsOf(detailDefinition).description];
+      default: return [wordsOf(detailDefinition).description];
+    }
+  });
 </script>
 
 <section class="achievements">
@@ -500,11 +520,43 @@
       <progress max={detailStatus.progress.target} value={detailStatus.progress.current} aria-label={words.title}></progress>
     {/if}
     {#if detailStatus.status === 'unavailable'}<p>{t.achievements.unavailableHint}</p>{/if}
+    {#if detailTargets === null}
+      <h3>{t.achievements.detailCompleted}</h3>
+      <p>{detailDefinition.predicate.kind === 'count' ? t.achievements.detailCountDone(detailDefinition.predicate.what, detailStatus.progress.current) : detailStatus.status === 'unlocked' ? t.achievements.detailAllCompleted : t.achievements.detailNoneCompleted}</p>
+      <h3>{t.achievements.detailNeeded}</h3>
+      {#if detailStatus.status === 'unlocked'}
+        <p>{t.achievements.detailAllCompleted}</p>
+      {:else}
+        {#each detailActions as action}<p>{action}</p>{/each}
+      {/if}
+    {/if}
+    {#if detailTargets !== null}
+      {#each [false, true] as completed}
+        {@const targets = detailTargets.filter((target) => (target.completedBy !== null) === completed)}
+        <h3>{completed ? t.achievements.detailCompleted : t.achievements.detailNeeded} ({targets.length})</h3>
+        {#if targets.length === 0}
+          <p class="muted">{completed ? t.achievements.detailNoneCompleted : t.achievements.detailAllCompleted}</p>
+        {:else}
+          <ul class="target-list">
+            {#each targets as target (target.key)}
+              <li>
+                <span class:target-done={completed} aria-hidden="true">{completed ? '✓' : '○'}</span>
+                <div>
+                  <strong>{target.name}</strong>
+                  {#if target.pack}<span class="muted small target-note">{packName.get(target.pack) ?? target.pack}{!ownedPacks.has(target.pack) ? ` · ${t.achievements.unavailable}` : ''}</span>{/if}
+                  {#if target.completedBy}<span class="muted small target-note">{dayOf(target.completedBy.playedAt)} · {t.achievements.level(target.completedBy.level)}</span>{/if}
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      {/each}
+    {/if}
     {#if detailDefinition.tiers}
       <h3>{t.achievements.detailTiers}</h3>
       <ul class="tier-list">
         {#each detailDefinition.tiers as tier (tier.tier)}
-          <li><span>{t.achievements.tier(tier.tier)} · {tier.n}</span><strong>{detailStatus.progress.current >= tier.n ? t.achievements.unlocked : t.achievements.locked}</strong></li>
+          <li><span>{t.achievements.tier(tier.tier)} · {tier.n}</span><strong>{detailStatus.progress.current >= tier.n ? t.achievements.unlocked : t.achievements.detailRemaining(tier.n - detailStatus.progress.current)}</strong>{#if detailStatus.progress.current < tier.n && detailDefinition.predicate.kind === 'count'}<span>{t.achievements.detailCountAction(detailDefinition.predicate.what, tier.n - detailStatus.progress.current)}</span>{/if}</li>
         {/each}
       </ul>
     {/if}
@@ -536,6 +588,10 @@
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   progress { width: 100%; accent-color: var(--accent); }
   .tier-list { padding: 0; list-style: none; }
+  .target-list { padding: 0; list-style: none; }
+  .target-list li { display: flex; gap: var(--space-2); padding-block: var(--space-2); border-bottom: 1px solid var(--hairline); overflow-wrap: anywhere; }
+  .target-done { color: var(--ok); }
+  .target-note { display: block; }
   .tier-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding-block: var(--space-2); border-bottom: 1px solid var(--hairline); }
 
   h1 {

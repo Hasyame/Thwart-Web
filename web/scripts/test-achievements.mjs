@@ -12,6 +12,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { derive, newlyUnlocked } from '../src/lib/achievements/derive.ts';
+import { achievementTargets } from '../src/lib/achievements/details.ts';
 import { parseDefinitions } from '../src/lib/achievements/definitions.ts';
 import { factOf, levelOf, runFactOf, scenarioKeyOf, seatsOf } from '../src/lib/achievements/normalise.ts';
 
@@ -33,6 +34,13 @@ const vectors = JSON.parse(readFileSync(join(import.meta.dirname, '..', '..', 'd
 check('at least twenty vectors', vectors.cases.length >= 20, String(vectors.cases.length));
 for (const c of vectors.cases) {
   const got = derive(c.input);
+  for (const definition of c.input.definitions) {
+    const targets = achievementTargets(c.input, definition);
+    if (targets === null) continue;
+    const expected = c.expected.achievements.find((a) => a.id === definition.id);
+    check(`checklist matches shared progress: ${c.name}/${definition.id}`, targets.length === expected.progress.target && targets.filter((t) => t.completedBy !== null).length === expected.progress.current);
+    check(`checklist ignores input order: ${c.name}/${definition.id}`, canonical(targets) === canonical(achievementTargets({ ...c.input, facts: [...c.input.facts].reverse() }, definition)));
+  }
   const ok = canonical(got) === canonical(c.expected);
   check(`vector: ${c.name}`, ok, ok ? '' : `\n  got      ${canonical(got).slice(0, 400)}\n  expected ${canonical(c.expected).slice(0, 400)}`);
   const again = derive({ ...c.input, facts: [...c.input.facts].reverse(), runs: [...c.input.runs].reverse() });
@@ -87,6 +95,17 @@ for (const c of vectors.cases) {
   const before = derive({ ...vectors.cases[0].input });
   const after = derive({ ...vectors.cases[2].input });
   check('newly unlocked is the delta, not the whole', newlyUnlocked(before, after).map((u) => u.id).join(',') === 'true_solo_win');
+}
+
+{
+  const definition = { id: 'test', scope: 'owned', category: 'difficulty', hidden: false, predicate: { kind: 'scenarios_won', pack: 'core', minDifficulty: 'expert' } };
+  const fact = { id: 'a', playedAt: 1, scenarioKey: 'rhino', level: 'expert', won: true, players: 1, seats: [{ heroCode: 'h', aspects: ['justice'], isOwner: false }], campaignRunId: null, mode: null };
+  const input = { definitions: [definition], definitionsVersion: 1, catalogue: { heroes: [], scenarios: ['rhino', 'klaw', 'ultron'].map((key) => ({ key, packCode: 'core' })) }, ownedPacks: [], facts: [fact, { ...fact, id: 'b', scenarioKey: 'klaw' }, { ...fact, id: 'c', scenarioKey: 'ultron', level: 'standard' }], runs: [] };
+  const targets = achievementTargets(input, definition);
+  check('two of three: name exactly the missing Expert scenario', targets.filter((t) => !t.completedBy).map((t) => t.key).join(',') === 'ultron');
+  check('two of three: name both completed scenarios, even without ownership', targets.filter((t) => t.completedBy).map((t) => t.key).join(',') === 'rhino,klaw');
+  check('losses never satisfy the missing scenario', achievementTargets({ ...input, facts: [...input.facts, { ...fact, id: 'd', scenarioKey: 'ultron', won: false }] }, definition).find((t) => t.key === 'ultron').completedBy === null);
+  check('a qualifying win completes the checklist', achievementTargets({ ...input, facts: [...input.facts, { ...fact, id: 'e', scenarioKey: 'ultron' }] }, definition).every((t) => t.completedBy !== null));
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

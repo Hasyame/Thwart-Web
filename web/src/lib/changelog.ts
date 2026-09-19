@@ -20,6 +20,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-09-19',
     en: [
+      'Achievement details show completed objectives, the actions still needed and remaining milestone counts, with named scenarios, heroes and aspects.',
       'Keep the selected Play shield and status icons readable in both light and dark themes.',
       'Tap an achievement or scenario sticker for its progress, milestones and victory details. Mobile navigation adds a central Play shield, a Progress tab and grouped shortcuts.',
       'Clearer setup links, compact mobile filters, encounter controls before the timer, and installation help for iPhone and iPad.',
@@ -28,6 +29,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'The card search moved to /cards; the home page took the root.',
     ],
     fr: [
+      'Les détails des succès indiquent les objectifs accomplis, les actions restantes et les paliers à atteindre, avec les noms des scénarios, héros et affinités.',
       'Le bouclier Jouer sélectionné et les icônes d’état restent lisibles dans les thèmes clair et sombre.',
       'Touchez un succès ou une vignette de scénario pour voir sa progression, ses paliers et ses victoires. La navigation mobile ajoute un bouclier Jouer central, un onglet Succès et des raccourcis regroupés.',
       'Des liens de configuration plus clairs, des filtres compacts sur mobile, les commandes de rencontre avant le chronomètre et une aide à l’installation sur iPhone et iPad.',
