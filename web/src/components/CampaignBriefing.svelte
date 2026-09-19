@@ -219,7 +219,7 @@
         <span class="chips">
           {#each campaign.heroes as hero (hero.id)}
             <button type="button" class="act" disabled={!enabled} onclick={() => onAction(action.id, hero.id)}>
-              {label(action.label)} — {hero.name}
+              {label(action.label)}: {hero.name}
             </button>
           {/each}
         </span>

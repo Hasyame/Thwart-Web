@@ -9,50 +9,50 @@ export const fr: Strings = {
   appName: 'Thwart',
   tagline: 'Cartes, collection, decks et statistiques pour Marvel Champions',
   seo: {
-    homeTitle: 'Thwart — compagnon Marvel Champions : cartes, collection, decks, campagnes',
+    homeTitle: 'Thwart · compagnon Marvel Champions : cartes, collection, decks, campagnes',
     homeDescription:
       'Un compagnon gratuit pour Marvel Champions : Le Jeu de Cartes. Cartes, collection, decks, parties au hasard et campagnes. Hors ligne, sans compte.',
-    cardTitle: 'Carte Marvel Champions — Thwart',
-    cardsTitle: 'Recherche de cartes Marvel Champions, toutes les cartes en français et en anglais — Thwart',
+    cardTitle: 'Carte Marvel Champions · Thwart',
+    cardsTitle: 'Recherche de cartes Marvel Champions, toutes les cartes en français et en anglais · Thwart',
     cardsDescription:
       'Cherchez toutes les cartes Marvel Champions par nom, texte, trait, type, affinité ou extension, en français ou en anglais, avec vos cartes possédées marquées. Gratuit, hors ligne.',
-    cardTitleNamed: (name) => `${name} — carte Marvel Champions — Thwart`,
+    cardTitleNamed: (name) => `${name} · carte Marvel Champions · Thwart`,
     cardDescription:
       'Texte, caractéristiques, set et extension de la carte pour Marvel Champions : Le Jeu de Cartes, d’après MarvelCDB, en français ou en anglais.',
-    collectionTitle: 'Suivi de collection Marvel Champions — Thwart',
+    collectionTitle: 'Suivi de collection Marvel Champions · Thwart',
     collectionDescription:
       'Cochez les extensions Marvel Champions que vous possédez et voyez quelles cartes, héros et scénarios vous avez. Conservé sur votre appareil, exportable, et synchronisé entre appareils avec un compte facultatif.',
-    randomizerTitle: 'Générateur de partie aléatoire Marvel Champions — Thwart',
+    randomizerTitle: 'Générateur de partie aléatoire Marvel Champions · Thwart',
     randomizerDescription:
       'Tirez une partie de Marvel Champions au hasard parmi les extensions que vous possédez : scénario, sets modulaires, héros et aspects, à la difficulté de votre choix.',
-    versusTitle: 'Mode compétitif Marvel Champions — Thwart',
+    versusTitle: 'Mode compétitif Marvel Champions · Thwart',
     versusDescription:
       'Le mode compétitif à deux boîtes de Marvel Champions, mis en place à partir des boîtes que vous possédez.',
-    playTitle: 'Suivi de partie Marvel Champions — Thwart',
+    playTitle: 'Suivi de partie Marvel Champions · Thwart',
     playDescription:
       'Mettez en place une partie de Marvel Champions, suivez les points de vie du vilain et la menace de la manigance, et enregistrez le résultat avec vos héros, aspects et sets modulaires.',
-    campaignsTitle: 'Suivi de campagne Marvel Champions — Thwart',
+    campaignsTitle: 'Suivi de campagne Marvel Champions · Thwart',
     campaignsDescription:
-      'Jouez les neuf campagnes de Marvel Champions — Crâne Rouge, Titan Fou, Convoitise Galactique, Genèse des Mutants, NeXt Evolution, Ère d’Apocalypse, Agents du S.H.I.E.L.D., Sinistres Motivations, Peur de Rien — avec chaque étape de mise en place, tirage et embranchement gérés pour vous.',
-    rulesTitle: 'Référence des règles Marvel Champions — Thwart',
+      'Jouez les neuf campagnes de Marvel Champions (Crâne Rouge, Titan Fou, Convoitise Galactique, Genèse des Mutants, NeXt Evolution, Ère d’Apocalypse, Agents du S.H.I.E.L.D., Sinistres Motivations, Peur de Rien) avec chaque étape de mise en place, tirage et embranchement gérés pour vous.',
+    rulesTitle: 'Référence des règles Marvel Champions · Thwart',
     rulesDescription: 'La référence des règles de Marvel Champions : Le Jeu de Cartes, avec recherche.',
-    decksTitle: 'Constructeur de decks Marvel Champions — Thwart',
+    decksTitle: 'Constructeur de decks Marvel Champions · Thwart',
       decksDescription:
         'Construisez et v\u00e9rifiez des decks Marvel Champions avec les cartes que vous poss\u00e9dez, importez depuis MarvelCDB, rangez-les en dossiers.',
     draftTitle: 'Draft Marvel Champions \u2014 Thwart',
     draftDescription:
       'Draftez un deck Marvel Champions avec les cartes que vous poss\u00e9dez\u00a0: une identit\u00e9, une affinit\u00e9, puis une carte \u00e0 la fois parmi une main tir\u00e9e au hasard. De un \u00e0 quatre joueurs sur un appareil.',
-    historyTitle: 'Historique des parties — Thwart',
+    historyTitle: 'Historique des parties · Thwart',
     historyDescription: 'Toutes vos parties de Marvel Champions, filtrées par héros, scénario, résultat ou campagne.',
-    achievementsTitle: 'Succès — Thwart',
+    achievementsTitle: 'Succès · Thwart',
     achievementsDescription: 'Quels héros ont battu quels scénarios, et les succès que vos parties ont gagnés. Lu dans votre historique, gardé sur votre appareil.',
-    statsTitle: 'Statistiques — Thwart',
+    statsTitle: 'Statistiques · Thwart',
     statsDescription: 'Vos taux de victoire à Marvel Champions par héros, aspect, scénario, difficulté et nombre de joueurs.',
-    accountTitle: 'Compte — Thwart',
+    accountTitle: 'Compte · Thwart',
     accountDescription: 'Un compte facultatif pour synchroniser Thwart entre vos appareils et l’application Android.',
-    bggTitle: 'BoardGameGeek — Thwart',
+    bggTitle: 'BoardGameGeek · Thwart',
     bggDescription: 'Envoyez vos parties de Marvel Champions sur BoardGameGeek depuis Thwart.',
-    notFoundTitle: 'Page introuvable — Thwart',
+    notFoundTitle: 'Page introuvable · Thwart',
     notFoundDescription: 'Il n’y a rien à cette adresse.',
   },
   notFoundTitle: 'Il n’y a rien ici',
@@ -101,7 +101,7 @@ export const fr: Strings = {
     completionGlobal: (won, cells) => `${won} / ${cells} dans tout le jeu`,
     rate: (percent) => `${percent} %`,
     gridTitle: 'Héros × scénarios',
-    gridIntro: 'Chaque héros à la table compte, dans une partie à un, deux, trois ou quatre — un choix de conception : un héros que vous avez joué est un héros joué, quelles que soient les autres mains. Choisissez un héros pour voir quels scénarios il a rencontrés et battus.',
+    gridIntro: 'Chaque héros à la table compte, dans une partie à un, deux, trois ou quatre. C’est un choix de conception : un héros que vous avez joué est un héros joué, quelles que soient les autres mains. Choisissez un héros pour voir quels scénarios il a rencontrés et battus.',
     legendNever: 'Jamais joué',
     legendPlayed: 'Joué, pas gagné',
     legendWon: 'Gagné',
@@ -615,7 +615,7 @@ export const fr: Strings = {
   registeredCheckMail: (address) =>
     `Le compte existe, et il est désactivé tant que vous n'avez pas ouvert le lien envoyé à ${address}. Regardez dans les indésirables s'il n'y est pas.`,
   registeredThenSignIn:
-    "S'inscrire ne vous connecte pas. Ouvrez le lien, puis connectez-vous ici — sur cet appareil et sur ceux que vous voulez garder synchronisés.",
+    "S'inscrire ne vous connecte pas. Ouvrez le lien, puis connectez-vous ici, sur cet appareil et sur ceux que vous voulez garder synchronisés.",
   accountYourData: 'Vos données',
   accountExport: 'Télécharger mes données',
   accountExporting: 'Préparation…',
@@ -649,7 +649,7 @@ export const fr: Strings = {
     'Affich\u00e9 dans la liste de vos appareils, pour les distinguer et pouvoir en d\u00e9connecter un.',
   accountManage: 'Gérer le compte',
   accountClosed:
-    'Ce serveur n’accepte pas de nouveaux comptes pour l’instant. Si vous en avez déjà un, connectez-vous — et si vous avez perdu le mot de passe, le code de récupération fonctionne toujours.',
+    'Ce serveur n’accepte pas de nouveaux comptes pour l’instant. Si vous en avez déjà un, connectez-vous ; et si vous avez perdu le mot de passe, le code de récupération fonctionne toujours.',
   navSignIn: 'Connexion',
   accountEmail: 'Adresse e-mail',
   accountEmailNote:
@@ -934,7 +934,7 @@ export const fr: Strings = {
   bggMenuSubtitle: 'Synchroniser avec BGG',
   bggAboutTitle: 'À propos de BoardGameGeek',
   bggAbout:
-    'BoardGameGeek tient le journal des parties que vous jouez. Une fois connecté, Thwart peut y envoyer chaque partie terminée : le résultat et le scénario, les héros et les aspects, le jour et les horaires, vos notes. BGG n’offre aucun moyen de le faire sans votre mot de passe : la partie passe donc par le serveur de thwart.app, qui se connecte, publie la partie et ne garde rien — ni le mot de passe, ni l’identifiant, ni la session. Les deux restent dans ce navigateur uniquement : jamais synchronisés, jamais dans une sauvegarde.',
+    'BoardGameGeek tient le journal des parties que vous jouez. Une fois connecté, Thwart peut y envoyer chaque partie terminée : le résultat et le scénario, les héros et les aspects, le jour et les horaires, vos notes. BGG n’offre aucun moyen de le faire sans votre mot de passe : la partie passe donc par le serveur de thwart.app, qui se connecte, publie la partie et ne garde rien : ni le mot de passe, ni l’identifiant, ni la session. Les deux restent dans ce navigateur uniquement : jamais synchronisés, jamais dans une sauvegarde.',
   bggConnectedAs: (username) => `Connecté à « ${username} »`,
   bggNotConnected: 'Non connecté',
   bggSignInTitle: 'Se connecter à BGG',

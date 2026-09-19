@@ -273,7 +273,7 @@
                 value={board.leaderSet ?? ''}
                 onchange={(event) => (board.leaderSet = event.currentTarget.value || null)}
               >
-                <option value="">—</option>
+                <option value="">·</option>
                 {#each leaderSets as leader (leader.code)}
                   <option value={leader.code}>{leader.name}</option>
                 {/each}
@@ -288,7 +288,7 @@
                   value={board.stageOne ?? ''}
                   onchange={(event) => (board.stageOne = event.currentTarget.value || null)}
                 >
-                  <option value="">—</option>
+                  <option value="">·</option>
                   {#each schemesOf(side.code, '1B') as scheme (scheme.code)}
                     <option value={scheme.code}>{scheme.name}</option>
                   {/each}
@@ -302,7 +302,7 @@
                   value={board.stageTwo ?? ''}
                   onchange={(event) => (board.stageTwo = event.currentTarget.value || null)}
                 >
-                  <option value="">—</option>
+                  <option value="">·</option>
                   {#each schemesOf(side.code, '2B') as scheme (scheme.code)}
                     <option value={scheme.code}>{scheme.name}</option>
                   {/each}
@@ -346,7 +346,7 @@
             <div class="counter">
               <p class="what">{leader?.name ?? ''} <span class="muted">{leader?.stage ?? ''}</span></p>
               <p class="value">
-                {game.progress.damage}<span class="muted">/{health ?? '—'}</span>
+                {game.progress.damage}<span class="muted">/{health ?? '·'}</span>
               </p>
               <div class="btn-row">
                 <button class="btn btn--quiet" type="button" onclick={() => change(team, (g) => damaged(g, -1))}>−1</button>
@@ -363,7 +363,7 @@
             <div class="counter">
               <p class="what">{scheme?.name ?? ''} <span class="muted">{scheme?.stage ?? ''}</span></p>
               <p class="value">
-                {threatOn(game, 0)}<span class="muted">/{limit ?? '—'}</span>
+                {threatOn(game, 0)}<span class="muted">/{limit ?? '·'}</span>
               </p>
               <div class="btn-row">
                 <button class="btn btn--quiet" type="button" onclick={() => change(team, (g) => threatened(g, -1))}>−1</button>

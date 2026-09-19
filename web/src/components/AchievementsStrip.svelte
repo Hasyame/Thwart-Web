@@ -63,7 +63,7 @@
         : status.status === 'unavailable'
           ? t.achievements.unavailable
           : t.achievements.progress(status.progress.current, status.progress.target);
-    return `${words.title} — ${words.description} (${state})`;
+    return `${words.title}: ${words.description} (${state})`;
   };
   const artOf = (status: AchievementStatus): string | null => {
     const definition = definitions.get(status.id);

@@ -362,7 +362,7 @@
               value={building.heroCode}
               onchange={(e) => building !== null && (building.heroCode = e.currentTarget.value)}
             >
-              <option value="">—</option>
+              <option value="">·</option>
               {#each heroes as hero (hero.code)}
                 <option value={hero.code}>{hero.label}</option>
               {/each}

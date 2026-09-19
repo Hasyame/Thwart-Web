@@ -271,7 +271,7 @@
         continue;
       }
       const row = index.find((entry) => entry.code === code);
-      const typeName = row?.typeName ?? '—';
+      const typeName = row?.typeName ?? '·';
       const entry = { code, name: row?.name ?? code, quantity, cost: row?.cost ?? null };
       const bucket = byType.get(typeName);
       if (bucket === undefined) {

@@ -9,50 +9,50 @@ export const en: Strings = {
   appName: 'Thwart',
   tagline: 'Cards, collection, decks and statistics for Marvel Champions',
   seo: {
-    homeTitle: 'Thwart — Marvel Champions companion: cards, collection, decks, campaigns',
+    homeTitle: 'Thwart · Marvel Champions companion: cards, collection, decks, campaigns',
     homeDescription:
       'A free companion for Marvel Champions: The Card Game. Search every card, track your collection, build decks, draw a game, play the campaigns. Offline, no account.',
-    cardsTitle: 'Marvel Champions card search, every card in English and French — Thwart',
+    cardsTitle: 'Marvel Champions card search, every card in English and French · Thwart',
     cardsDescription:
       'Search every Marvel Champions card by name, text, trait, type, aspect or pack, in English or French, with the cards you own marked. Free, offline.',
-    cardTitle: 'Marvel Champions card — Thwart',
-    cardTitleNamed: (name) => `${name} — Marvel Champions card — Thwart`,
+    cardTitle: 'Marvel Champions card · Thwart',
+    cardTitleNamed: (name) => `${name} · Marvel Champions card · Thwart`,
     cardDescription:
       'Card text, stats, set and pack for Marvel Champions: The Card Game, from MarvelCDB, in English or French.',
-    collectionTitle: 'Marvel Champions collection tracker — Thwart',
+    collectionTitle: 'Marvel Champions collection tracker · Thwart',
     collectionDescription:
       'Tick the Marvel Champions packs you own and see which cards, heroes and scenarios you have. Kept on your device, exportable, and synced across devices with an optional account.',
-    randomizerTitle: 'Marvel Champions random game generator — Thwart',
+    randomizerTitle: 'Marvel Champions random game generator · Thwart',
     randomizerDescription:
       'Draw a random Marvel Champions game from the packs you own: scenario, modular sets, heroes and aspects, at the difficulty you choose.',
-    versusTitle: 'Marvel Champions versus mode — Thwart',
+    versusTitle: 'Marvel Champions versus mode · Thwart',
     versusDescription:
       'The two-box versus mode of Marvel Champions, set up from the boxes you own.',
-    playTitle: 'Marvel Champions play tracker — Thwart',
+    playTitle: 'Marvel Champions play tracker · Thwart',
     playDescription:
       'Set up a Marvel Champions game, track villain health and main scheme threat, and record the result with your heroes, aspects and modular sets.',
-    campaignsTitle: 'Marvel Champions campaign tracker — Thwart',
+    campaignsTitle: 'Marvel Champions campaign tracker · Thwart',
     campaignsDescription:
-      'Play the nine Marvel Champions campaigns — Red Skull, Mad Titan, Galaxy, Mutant Genesis, NeXt Evolution, Age of Apocalypse, Agents of S.H.I.E.L.D., Sinister Motives, Fear No Evil — with every setup step, draw and branch handled for you.',
-    rulesTitle: 'Marvel Champions rules reference — Thwart',
+      'Play the nine Marvel Champions campaigns (Red Skull, Mad Titan, Galaxy, Mutant Genesis, NeXt Evolution, Age of Apocalypse, Agents of S.H.I.E.L.D., Sinister Motives, Fear No Evil) with every setup step, draw and branch handled for you.',
+    rulesTitle: 'Marvel Champions rules reference · Thwart',
     rulesDescription: 'The rules reference for Marvel Champions: The Card Game, searchable.',
-    decksTitle: 'Marvel Champions deck builder — Thwart',
+    decksTitle: 'Marvel Champions deck builder · Thwart',
     decksDescription:
       'Build and check Marvel Champions decks against the cards you own, import from MarvelCDB, and sort them into folders.',
     draftTitle: 'Marvel Champions draft \u2014 Thwart',
     draftDescription:
       'Draft a Marvel Champions deck from the cards you own: an identity, an aspect, then one card at a time out of a random hand. One to four players on one device.',
-    historyTitle: 'Game history — Thwart',
+    historyTitle: 'Game history · Thwart',
     historyDescription: 'Every Marvel Champions game you recorded, filtered by hero, scenario, result or campaign.',
-    achievementsTitle: 'Achievements — Thwart',
+    achievementsTitle: 'Achievements · Thwart',
     achievementsDescription: 'Which heroes have beaten which scenarios, and the achievements your games have earned. Read from your history, kept on your device.',
-    statsTitle: 'Statistics — Thwart',
+    statsTitle: 'Statistics · Thwart',
     statsDescription: 'Your Marvel Champions win rates by hero, aspect, scenario, difficulty and table size.',
-    accountTitle: 'Account — Thwart',
+    accountTitle: 'Account · Thwart',
     accountDescription: 'An optional account to sync Thwart between your devices and the Android app.',
-    bggTitle: 'BoardGameGeek — Thwart',
+    bggTitle: 'BoardGameGeek · Thwart',
     bggDescription: 'Send your Marvel Champions games to BoardGameGeek from Thwart.',
-    notFoundTitle: 'Page not found — Thwart',
+    notFoundTitle: 'Page not found · Thwart',
     notFoundDescription: 'There is nothing at this address.',
   },
   notFoundTitle: 'There is nothing here',
@@ -101,7 +101,7 @@ export const en: Strings = {
     completionGlobal: (won, cells) => `${won} / ${cells} in the whole game`,
     rate: (percent) => `${percent} %`,
     gridTitle: 'Heroes × scenarios',
-    gridIntro: 'Every hero at the table counts, in a game of one, two, three or four — a choice of design: a hero you played is a hero you played, whoever held the other hands. Pick a hero to see which scenarios it has met and beaten.',
+    gridIntro: 'Every hero at the table counts, in a game of one, two, three or four. That is a choice of design: a hero you played is a hero you played, whoever held the other hands. Pick a hero to see which scenarios it has met and beaten.',
     legendNever: 'Never played',
     legendPlayed: 'Played, not won',
     legendWon: 'Won',
@@ -607,7 +607,7 @@ export const en: Strings = {
   registeredCheckMail: (address) =>
     `The account exists, and it is disabled until you open the link sent to ${address}. Check the spam folder if it is not there.`,
   registeredThenSignIn:
-    'Registering does not sign you in. Open the link, then sign in here — on this device and on any other you want kept in step.',
+    'Registering does not sign you in. Open the link, then sign in here, on this device and on any other you want kept in step.',
   accountYourData: 'Your data',
   accountExport: 'Download my data',
   accountExporting: 'Preparing…',
@@ -641,7 +641,7 @@ export const en: Strings = {
     'Shown in your list of devices, so you can tell them apart and sign one out.',
   accountManage: 'Manage the account',
   accountClosed:
-    'This server is not taking new accounts at the moment. If you have one already, sign in — and if you have lost the password, the recovery code still works.',
+    'This server is not taking new accounts at the moment. If you have one already, sign in; and if you have lost the password, the recovery code still works.',
   navSignIn: 'Login',
   accountEmail: 'Email address',
   accountEmailNote:
@@ -728,7 +728,7 @@ export const en: Strings = {
   trackerUnavailable: 'This scenario has no numbers to count.',
   trackerStarred: 'The card prints a star, so type the number',
   trackerStarredAcceleration:
-    'This scheme accelerates by a starred amount that depends on the board, so nothing is added for it here — move the threat yourself at the end of the round.',
+    'This scheme accelerates by a starred amount that depends on the board, so nothing is added for it here: move the threat yourself at the end of the round.',
   trackerNote:
     "Counters only. It does not know that drones enter play or that a Crisis icon stops thwarting, because a tracker that half-adjudicates rules is wrong at somebody's table, and then the numbers it is keeping stop being trusted either.",
   round: (n) => `Round ${n}`,
@@ -924,7 +924,7 @@ export const en: Strings = {
   bggMenuSubtitle: 'Sync with BGG',
   bggAboutTitle: 'About BoardGameGeek',
   bggAbout:
-    'BoardGameGeek keeps a log of the games you play. Connected, Thwart can send each finished game there: the result and scenario, the heroes and aspects, the day and the times, your notes. BGG has no way to do this without your password, so it goes through the thwart.app server, which signs in, posts the play and keeps nothing — not the password, not the username, not the session. Both stay in this browser only: never synced, never in a backup.',
+    'BoardGameGeek keeps a log of the games you play. Connected, Thwart can send each finished game there: the result and scenario, the heroes and aspects, the day and the times, your notes. BGG has no way to do this without your password, so it goes through the thwart.app server, which signs in, posts the play and keeps nothing: not the password, not the username, not the session. Both stay in this browser only: never synced, never in a backup.',
   bggConnectedAs: (username) => `Connected to “${username}”`,
   bggNotConnected: 'Not connected',
   bggSignInTitle: 'Sign in to BGG',
