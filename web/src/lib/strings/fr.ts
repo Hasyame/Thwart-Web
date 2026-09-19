@@ -110,8 +110,6 @@ export const fr: Strings = {
     filterScenarioPack: 'Extension du scénario',
     filterAspect: 'Affinité',
     filterMinDifficulty: 'Difficulté minimale',
-    filterAnySeat: 'Compter tous les héros à la table',
-    filterOwnerSeat: 'Compter ma place seulement',
     filterShowLosses: 'Afficher les défaites comme jouées',
     filterAll: 'Toutes',
     filterEveryHero: 'Afficher tous les héros',

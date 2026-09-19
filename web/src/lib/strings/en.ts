@@ -110,8 +110,6 @@ export const en: Strings = {
     filterScenarioPack: 'Scenario pack',
     filterAspect: 'Aspect',
     filterMinDifficulty: 'Minimum difficulty',
-    filterAnySeat: 'Count every hero at the table',
-    filterOwnerSeat: 'Count my seat only',
     filterShowLosses: 'Show games lost as played',
     filterAll: 'All',
     filterEveryHero: 'Show every hero',

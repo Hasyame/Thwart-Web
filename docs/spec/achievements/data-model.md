@@ -177,8 +177,7 @@ bump).
 ```
 { kind: 'scenarios_won',   pack: string | '*', minDifficulty?: Level }
     every scenario of the pack (or of the whole catalogue) has a won cell
-    at or above the level; owner seat only (the "any seat" toggle is a
-    display filter and never changes unlocks)
+    at or above the level, any seat at the table
 
 { kind: 'heroes_won',      pack: string | '*', minDifficulty?: Level }
     every hero of the pack has at least one won cell at or above the level
@@ -192,8 +191,8 @@ bump).
     at least one win at or above the level
 
 { kind: 'count',           what: 'plays' | 'wins' | 'heroes_played' | 'distinct_days' }
-    tiered by `tiers`; `heroes_played` counts distinct owner-seat hero
-    codes over live plays; `distinct_days` counts distinct UTC calendar
+    tiered by `tiers`; `heroes_played` counts distinct hero codes at any
+    seat over live plays; `distinct_days` counts distinct UTC calendar
     days of `playedAt`
 
 { kind: 'table_win',       players: 1 | 2 | 3 | 4, distinctAspects?: boolean }
@@ -261,7 +260,8 @@ Cell
   firstWonAt            number | null    playedAt of the earliest win
   lastPlayedAt          number
   anySeat               same fields again, counting every seat at the table
-                        (the owner-only fields are the default view)
+                        (what everything is read from; the owner-only
+                        fields above are kept for reading)
 
 Status
   id
@@ -296,8 +296,9 @@ order, object keys in any order, `null` distinct from absent. A case's
 - Nothing in this feature makes a network request or needs an account.
 - Never delete or reduce progress because the collection shrank: `scope`
   changes only the `unavailable` flag and the `owned` denominator.
-- The grid credits the **owner's seat** by default; "any hero at the
-  table" is a display toggle over the `anySeat` fields. Unlocks are always
-  computed from the owner's seat.
+- **Every seat at the table counts**, in the grid and in every unlock
+  (decided 2026-09-19: a hero played as the second hand of a two-handed
+  game is a hero played). `isOwner` is recorded and kept, and decides
+  nothing in v1.
 - Losses count as `played` in the grid by default (tri-state); a toggle
   may hide them, and the completion rate counts wins only in either case.

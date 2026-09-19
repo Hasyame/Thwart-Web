@@ -114,8 +114,6 @@ export interface Strings {
     readonly filterScenarioPack: string;
     readonly filterAspect: string;
     readonly filterMinDifficulty: string;
-    readonly filterAnySeat: string;
-    readonly filterOwnerSeat: string;
     readonly filterShowLosses: string;
     readonly filterAll: string;
     readonly filterEveryHero: string;

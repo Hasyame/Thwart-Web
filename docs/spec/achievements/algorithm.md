@@ -97,7 +97,10 @@ lastPlayedAt = playedAt                                            (facts are in
 
 A cell exists in the output if its **any** tally has attempts > 0. The
 owner tally may be empty (attempts 0, best `played` is not emitted: fields
-are `attempts: 0, wins: 0, best: null`).
+are `attempts: 0, wins: 0, best: null`). **Every seat counts** (decided
+2026-09-19): completion and every predicate read the **any** tally and
+every seat of a fact; the owner tally and `isOwner` are kept for reading
+and decide nothing.
 
 ### 4.2 Completion
 
@@ -105,9 +108,9 @@ are `attempts: 0, wins: 0, best: null`).
 ownedHeroes     = catalogue.heroes    whose packCode ∈ ownedPacks
 ownedScenarios  = catalogue.scenarios whose packCode ∈ ownedPacks
 owned.cells     = |ownedHeroes| × |ownedScenarios|
-owned.won       = number of cells with owner.wins > 0 whose hero ∈ ownedHeroes and scenario ∈ ownedScenarios
+owned.won       = number of cells with any.wins > 0 whose hero ∈ ownedHeroes and scenario ∈ ownedScenarios
 global.cells    = |catalogue.heroes| × |catalogue.scenarios|
-global.won      = number of cells with owner.wins > 0 whose hero and scenario are both in the catalogue
+global.won      = number of cells with any.wins > 0 whose hero and scenario are both in the catalogue
 ```
 
 A cell for a hero or a scenario the catalogue does not know (an old code,
@@ -119,7 +122,7 @@ denominator nor numerator.
 Each predicate yields `{ done: boolean, current, target, unlockedAt,
 unlockedByPlayId }`. `unlockedAt` is the `playedAt` of the fact that made
 `done` true for the first time in order, and `unlockedByPlayId` its id;
-both null while not done. Owner seats only, everywhere.
+both null while not done. Every seat of a fact counts, everywhere.
 
 Let `wins` = facts with `won`, `atLeast(level, min)` = rank(level) ≥
 rank(min), `min` defaulting to `unknown` (rank 0, always satisfied).
@@ -134,13 +137,13 @@ rank(min), `min` defaulting to `unknown` (rank 0, always satisfied).
 
 **heroes_won { pack, minDifficulty }**
 - targets = heroes of the pack (or all). A target is met by the first
-  winning fact whose owner seat is that hero and `atLeast(level, min)`.
+  winning fact with a seat of that hero and `atLeast(level, min)`.
 - Rest as above.
 
 **aspects_won { scenario?, minDifficulty }**
 - targets = `[aggression, justice, leadership, protection]`.
 - A target is met by the first winning fact (with that `scenarioKey` when
-  `scenario` is given) whose owner seat's `aspects` contains it and
+  `scenario` is given) with a seat whose `aspects` contains it and
   `atLeast(level, min)`. A two-aspect seat meets both of its aspects.
 - Rest as above.
 
@@ -150,7 +153,7 @@ rank(min), `min` defaulting to `unknown` (rank 0, always satisfied).
 
 **count { what }** with tiers `t1 < t2 < …`
 - value over all facts: `plays` = |facts|; `wins` = |wins|;
-  `heroes_played` = |distinct owner-seat heroCodes|; `distinct_days` =
+  `heroes_played` = |distinct heroCodes over every seat|; `distinct_days` =
   |distinct `floor(playedAt / 86_400_000)`| (UTC days).
 - `target` = the highest tier's `n`; `current = min(value, target)`.
 - `tier` = the highest tier whose `n` ≤ value, or null.

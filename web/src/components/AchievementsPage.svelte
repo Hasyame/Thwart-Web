@@ -36,13 +36,6 @@
   let scenarioPack = $state('');
   let aspect = $state('');
   let minLevel = $state<DifficultyLevel>('unknown');
-  /*
-   * Every seat at the table by default. Most of this history is one person
-   * playing two hands, and a hero they played is a hero they played; the
-   * statistics credit every seat the same way. The named achievements keep
-   * the owner's seat, as the specification says.
-   */
-  let anySeat = $state(true);
   let showLosses = $state(true);
 
   const current = $derived(achievements.state);
@@ -63,9 +56,7 @@
       if (aspect === '') {
         return true;
       }
-      return anySeat
-        ? fact.seats.some((seat) => seat.aspects.includes(aspect))
-        : (fact.seats.find((seat) => seat.isOwner)?.aspects.includes(aspect) ?? false);
+      return fact.seats.some((seat) => seat.aspects.includes(aspect));
     });
     return derive({ ...input, facts });
   });
@@ -153,7 +144,7 @@
   const heroRows = $derived.by((): HeroRow[] => {
     const played = new Map<string, { won: Set<string>; wonGlobal: Set<string>; played: Set<string> }>();
     for (const cell of gridState?.cells ?? []) {
-      const tally = anySeat ? cell.anySeat : cell;
+      const tally = cell.anySeat;
       if (tally.attempts === 0) {
         continue;
       }
@@ -196,7 +187,7 @@
     const facts = achievements.lastInput?.facts ?? [];
     let latest: { playedAt: number; hero: string } | null = null;
     for (const fact of facts) {
-      const hero = anySeat ? fact.seats[0]?.heroCode : (fact.seats.find((seat) => seat.isOwner)?.heroCode ?? fact.seats[0]?.heroCode);
+      const hero = fact.seats.find((seat) => seat.isOwner)?.heroCode ?? fact.seats[0]?.heroCode;
       if (hero !== undefined && (latest === null || fact.playedAt > latest.playedAt)) {
         latest = { playedAt: fact.playedAt, hero };
       }
@@ -237,7 +228,7 @@
     if (cell === undefined) {
       return null;
     }
-    return anySeat ? cell.anySeat : cell;
+    return cell.anySeat;
   };
   const stateOf = (tally: Tally | null): 'never' | 'played' | 'won' => {
     if (tally === null || tally.attempts === 0) {
@@ -352,7 +343,6 @@
           <option value="expert">{t.achievements.level('expert')}</option>
         </select>
       </label>
-      <label class="tick"><input type="checkbox" bind:checked={anySeat} /><span>{anySeat ? t.achievements.filterAnySeat : t.achievements.filterOwnerSeat}</span></label>
       <label class="tick"><input type="checkbox" bind:checked={showLosses} /><span>{t.achievements.filterShowLosses}</span></label>
       <label class="tick"><input type="checkbox" bind:checked={everyHero} /><span>{t.achievements.filterEveryHero}</span></label>
     </div>
