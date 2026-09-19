@@ -1,4 +1,5 @@
 <script lang="ts">
+  import NavIcon from './NavIcon.svelte';
   import InstallGuide from './InstallGuide.svelte';
   import type { Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
@@ -58,6 +59,12 @@
     onClose,
   }: Props = $props();
 
+  const groups = $derived([
+    { title: t.navLibrary, ids: ['collection', 'decks', 'search'] },
+    { title: t.navJourney, ids: ['achievements', 'history', 'stats'] },
+    { title: t.navExplore, ids: ['home', 'rules', 'play', 'campaigns', 'draft', 'randomizer', 'versus'] },
+  ].map((group) => ({ ...group, destinations: visible(overflowFor(grouped), hidden).filter((d) => group.ids.includes(d.id)) })).filter((group) => group.destinations.length > 0));
+
   let dialog = $state.raw<HTMLDialogElement | null>(null);
 
   /*
@@ -100,19 +107,24 @@
       <!-- The destinations the tab bar has no room for. Full width rows rather
            than a grid: a row can hold "Partie aléatoire" without shrinking its
            own hit area to fit. -->
-      <nav>
-        {#each visible(overflowFor(grouped), hidden) as destination (destination.id)}
+      {#each groups as group (group.title)}
+      <section class="destinations">
+      <h3 class="eyebrow">{group.title}</h3>
+      <nav aria-label={group.title}>
+        {#each group.destinations as destination (destination.id)}
           <a
             href={hrefFor(destination.id)}
             class:current={active === destination.id}
             aria-current={active === destination.id ? 'page' : undefined}
             onclick={(event) => go(event, destination.id)}
           >
-            <span class="glyph" aria-hidden="true">{destination.glyph}</span>
+            <span class="glyph"><NavIcon name={destination.id} /></span>
             <span>{destination.label(t)}</span>
           </a>
         {/each}
       </nav>
+      </section>
+      {/each}
     {/if}
 
     <!--
@@ -326,7 +338,8 @@
 
   nav {
     display: grid;
-    gap: var(--space-1);
+    gap: var(--space-2);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   /*
@@ -343,7 +356,8 @@
     gap: var(--space-3);
     min-height: var(--tap-min);
     padding: var(--space-2);
-    margin-inline: calc(var(--space-2) * -1);
+    margin-inline: 0;
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-sm);
     color: inherit;
     text-decoration: none;

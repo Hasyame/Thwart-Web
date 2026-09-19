@@ -20,12 +20,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-09-19',
     en: [
+      'Tap an achievement or scenario sticker for its progress, milestones and victory details. Mobile navigation adds a central Play shield, a Progress tab and grouped shortcuts.',
       'Clearer setup links, compact mobile filters, encounter controls before the timer, and installation help for iPhone and iPad.',
       'Sync preserves conflict copies and BGG reporting, reports failed uploads, and stays off when switched off. Updates wait for open Thwart tabs to close.',
       'Achievements: a heroes-by-scenarios grid of what you have played and beaten, thirty-one named achievements and a completion rate over your collection, all read from your game history. On the Play hub, from the statistics, and said after a game that earns one.',
       'The card search moved to /cards; the home page took the root.',
     ],
     fr: [
+      'Touchez un succès ou une vignette de scénario pour voir sa progression, ses paliers et ses victoires. La navigation mobile ajoute un bouclier Jouer central, un onglet Succès et des raccourcis regroupés.',
       'Des liens de configuration plus clairs, des filtres compacts sur mobile, les commandes de rencontre avant le chronomètre et une aide à l’installation sur iPhone et iPad.',
       'La synchronisation préserve les copies en conflit et les envois BGG, signale les échecs d’envoi et reste désactivée à votre demande. Les mises à jour attendent la fermeture des onglets Thwart.',
       'Succès : une grille héros par scénarios de ce que vous avez joué et battu, trente et un succès nommés et un taux de complétion sur votre collection, le tout lu dans l’historique de vos parties. Sur l’onglet Jouer, depuis les statistiques, et annoncé après une partie qui en gagne un.',

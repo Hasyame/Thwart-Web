@@ -47,7 +47,9 @@ here.
 - **Navigation model**: `src/lib/nav.ts` (destinations, tab bar of four +
   More sheet, "grouped play" arrangement where one Play tab opens the hub;
   grouped is the default since 2026-09-10, stored per device in
-  `localStorage`).
+  `localStorage`). The grouped bar is Cards, Decks, Play, Progress (achievements),
+  More. More groups library, history/statistics and other destinations. Icons
+  are shared SVGs in `NavIcon.svelte`; achievement details use native dialogs.
 - **Pages** are lazy chunks (`src/lib/lazy.ts`, `lazy()`/`warm()`), strings
   are split per locale (`src/lib/strings/en.ts`, `fr.ts`, interface in
   `src/lib/i18n.ts`). Every user-facing string must exist in both.
@@ -244,8 +246,8 @@ and version verification. A failed restart is retried on the next release run.
 `update.sh` also gates publication on a healthy compatible API and defaults to
 `release`, including direct manual runs. `release.sh` pins both builds to the
 resolved commits. There is no automatic rollback or alerting (see §8).
-These repository changes require deployment before they describe the host's
-running scripts; no production rollout was performed during the local review.
+These deployment safeguards were published and verified on the host at
+`3947f04` on 2026-09-19; the API binary remained at `4565551f930c`.
 
 ---
 
@@ -390,6 +392,13 @@ devices with `last_seen`: `device`, timestamps in ms). Probe accounts
 ---
 
 ## 8. Known issues and technical debt
+
+- BGG networking was corrected on the host on 2026-09-19 with owner approval:
+  `deploy/thwart-api-bgg.conf` was installed as
+  `/etc/systemd/system/thwart-api.service.d/bgg.conf`, clearing the obsolete
+  loopback-only IP filter that blocked outbound login requests. The API was
+  restarted, health/version verified, and its listener remains 127.0.0.1:8787.
+  No real account was used to verify BGG authentication.
 
 - The nginx route regex is duplicated (repo conf vs live file) and must be
   edited by hand on the host for each new route.

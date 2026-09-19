@@ -79,7 +79,7 @@ MemoryHigh=384M
 MemoryMax=512M
 
 # ---- hardening -------------------------------------------------------------
-# It needs to write exactly one directory and open exactly one socket.
+# It writes one directory, listens on loopback and connects to BGG over HTTPS.
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
@@ -100,10 +100,10 @@ MemoryDenyWriteExecute=true
 # The database, the WAL and the shared-memory file all live here.
 ReadWritePaths=/srv/thwart/db
 
-# Loopback only, so no need for anything but IPv4 and IPv6.
+# The listener is bound to 127.0.0.1 above. Outbound HTTPS is required by the
+# BGG relay; IPAddressDeny=any blocks outgoing traffic as well as incoming.
+# Do not pin BGG's CDN addresses: they change independently of a release.
 RestrictAddressFamilies=AF_INET AF_INET6
-IPAddressAllow=localhost
-IPAddressDeny=any
 
 CapabilityBoundingSet=
 AmbientCapabilities=

@@ -61,7 +61,7 @@ body {
  */
 @media (max-width: 84.999rem) {
   body {
-    padding-bottom: calc(var(--tap-min) + var(--space-4) + var(--safe-bottom));
+    padding-bottom: calc(4rem + var(--space-2) + var(--safe-bottom));
   }
 }
 

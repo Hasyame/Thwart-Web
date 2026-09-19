@@ -128,6 +128,12 @@ export interface Strings {
     readonly progress: (current: number, target: number) => string;
     readonly unlockedOn: (date: string) => string;
     readonly count: (unlocked: number, total: number) => string;
+    readonly detailTiers: string;
+    readonly detailUnlockPlay: string;
+    readonly detailDerived: string;
+    readonly detailFilters: string;
+    readonly detailFirstWin: (date: string) => string;
+    readonly detailLastPlay: (date: string) => string;
     readonly recentTitle: string;
     readonly recentEmpty: string;
     readonly toastOne: (title: string) => string;
@@ -533,6 +539,10 @@ export interface Strings {
   /** The Play tab's label, which has about six characters of room. */
   readonly navPlayShort: string;
   readonly navMore: string;
+  readonly navProgress: string;
+  readonly navLibrary: string;
+  readonly navJourney: string;
+  readonly navExplore: string;
 
   /*
    * The Play hub, when the ways of playing share one tab.
