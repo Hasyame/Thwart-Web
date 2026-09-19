@@ -576,17 +576,14 @@
     border: 1px solid var(--hairline);
   }
 
-  .never,
   .swatch.never {
     background: var(--surface-2);
   }
 
-  .played,
   .swatch.played {
     background: var(--warn-soft, #f0d9a8);
   }
 
-  .won,
   .swatch.won {
     background: var(--accent);
   }
