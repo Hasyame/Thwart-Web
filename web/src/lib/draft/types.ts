@@ -25,6 +25,7 @@ export type DraftPhase =
   | 'finish';
 
 export interface DraftSettings {
+  readonly format?: 'draft' | 'sealed';
   readonly players: number;
   /** Leave out cards the identity cannot play: the phase 1 rule. */
   readonly synergyOnly: boolean;
@@ -51,6 +52,12 @@ export interface DraftPlayer {
 }
 
 export interface DraftState {
+  /** Session-only collection snapshot; never changes ownedPacks. */
+  readonly collection?: Readonly<Record<string, number>>;
+  readonly sealedPools?: readonly (readonly string[])[];
+  /** Opened boosters per seat; absent on older sessions whose pool was already visible. */
+  readonly sealedOpened?: readonly number[];
+  readonly sealedBuilding?: readonly boolean[];
   readonly settings: DraftSettings;
   readonly players: readonly DraftPlayer[];
   readonly phase: DraftPhase;

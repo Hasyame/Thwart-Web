@@ -205,12 +205,21 @@ bump).
     `minDifficulty`: the run's difficulty level (§2 applied to the run's
     `difficulty` string)
 
-{ kind: 'mode_win',        mode: 'draft' | 'sealed' | 'daily' | 'shared' }
-    a win whose play carries that `mode`
+{ kind: 'mode_win',        mode: 'draft' | 'sealed' | 'daily' | 'shared', n?: number }
+    n wins whose plays carry that mode; n defaults to 1 for schema-1 definitions
+
+{ kind: 'loss_count',      n: number }
+    n completed defeats, across all modes; never count tombstones or unfinished games
 ```
 
 `Level` in predicates is written as the enum name (`"expert"`), never the
 rank.
+
+Schema 2 (2026-09-20) adds positive integer thresholds to mode wins and the
+loss-count predicate. Definitions version 2 keeps `draft_win` as the first draft
+milestone and adds separate named achievements for draft/sealed wins at 1, 5,
+10 and 50, and defeats at 1, 5, 10, 50 and 100. Each play counts once regardless
+of table size. Older Android versions retain their bundled schema-1 catalogue.
 
 ### Catalogue inputs
 

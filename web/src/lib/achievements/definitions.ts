@@ -76,9 +76,12 @@ function predicateOf(raw: unknown): Predicate | null {
           }
         : null;
     case 'mode_win':
+      if (raw['n'] !== undefined && (!Number.isSafeInteger(raw['n']) || (raw['n'] as number) < 1)) return null;
       return typeof raw['mode'] === 'string' && PLAY_MODES.includes(raw['mode'])
-        ? { kind: 'mode_win', mode: raw['mode'] as Predicate extends { mode: infer M } ? M : never }
+        ? { kind: 'mode_win', mode: raw['mode'] as Predicate extends { mode: infer M } ? M : never, ...(raw['n'] === undefined ? {} : { n: raw['n'] as number }) }
         : null;
+    case 'loss_count':
+      return Number.isSafeInteger(raw['n']) && (raw['n'] as number) > 0 ? { kind: 'loss_count', n: raw['n'] as number } : null;
     default:
       return null;
   }

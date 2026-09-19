@@ -73,6 +73,12 @@ given the record, the run and the template.
 
 ## 3. Ordering
 
+Schema-2 milestone predicates count matching facts once per play, cap displayed
+progress at their threshold, and date the unlock from the nth matching fact in
+the ordering below. `mode_win` filters wins by mode; `loss_count` filters defeats
+across every mode. The latter has no game-setup shortcut: it celebrates
+perseverance without proposing an intentional defeat.
+
 Before anything is counted, facts are sorted by `(playedAt ascending, id
 ascending, code points)`; runs by `(id ascending)`. Every "first" below
 means first in this order, which is what makes an unlock date and its

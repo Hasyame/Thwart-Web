@@ -59,7 +59,7 @@
 </script>
 
 <section>
-  <h1>{t.verifyTitle}</h1>
+  <h1 class="comic-title">{t.verifyTitle}</h1>
 
   {#if state.kind === 'working'}
     <div class="notice surface"><p>{t.verifyWorking}</p></div>

@@ -107,7 +107,7 @@
   this adds a way in rather than a layer to get through.
 -->
 <section class="page hub">
-  <h1>{t.hubStart}</h1>
+  <h1 class="comic-title">{t.hubStart}</h1>
 
   {#if achievements.state !== null}
     {@const owned = achievements.state.completion.owned}

@@ -7,6 +7,8 @@
   import { RatingsInView } from '../lib/ratingsView.svelte';
   import { modularSubject, scenarioSubject } from '../lib/ratings';
   import { db } from '../lib/db';
+  import { achievements } from '../lib/achievements/store.svelte';
+  import { pairing, rollUnplayed } from '../lib/unplayed';
   import { loadScenarioRules } from '../lib/data';
   import {
     applyFilters,
@@ -283,9 +285,23 @@
     if (pools === null) {
       return;
     }
-    draw = roll({ pools, previous: draw, locked, playerCount, extraModularSets: extras });
+    const input = { pools, previous: draw, locked, playerCount, extraModularSets: extras };
+    const next = unplayedOnly ? (achievements.loaded ? rollUnplayed(input, played) : null) : roll(input);
+    noUnplayed = next === null;
+    draw = next ?? EMPTY_DRAW;
     saved = false;
   }
+
+  const played = $derived.by(() => {
+    const heroSets = new Map(index.filter((row) => row.typeCode === 'hero').map((row) => [row.code, row.setCode ?? row.code]));
+    const aliases = new Map((ownedPools?.heroes ?? []).map((hero) => [heroSets.get(hero.code) ?? hero.code, hero.code]));
+    return new Set((achievements.lastInput?.facts ?? []).flatMap((fact) => fact.seats.map((seat) =>
+      pairing(aliases.get(heroSets.get(seat.heroCode) ?? seat.heroCode) ?? seat.heroCode, fact.scenarioKey))));
+  });
+  const isUnplayed = $derived(achievements.loaded && draw.scenarioCode !== null && draw.heroes.length === playerCount &&
+    draw.heroes.every((hero) => !played.has(pairing(hero.code, draw.scenarioCode!))));
+  let unplayedOnly = $state(false);
+  let noUnplayed = $state(false);
 
   function toggleIn<T>(set: ReadonlySet<T>, value: T): Set<T> {
     const next = new Set(set);
@@ -477,7 +493,9 @@
 </script>
 
 <section>
-  <h1>{t.randomizerTitle}</h1>
+  <h1 class="comic-title">{t.randomizerTitle}</h1>
+  <label class="tick"><input type="checkbox" checked={unplayedOnly} onchange={(e) => { unplayedOnly = e.currentTarget.checked; doRoll(); }} />{t.draft.unplayedOnly}</label>
+  {#if unplayedOnly && (noUnplayed || !isUnplayed)}<p role="status">{t.draft.noUnplayed}</p>{/if}
 
   {#if !collection.ready || pools === null}
     <p class="notice muted">{t.loading}</p>
@@ -795,7 +813,7 @@
         <!-- First, because it is what a draw is for. The phone has had this
              since its randomiser existed; the web recorded the draw and then
              left the person to rebuild it by hand on the setup screen. -->
-        <button class="btn btn--primary" type="button" onclick={() => onPlay(draw, setNames.get(draw.scenarioCode ?? '') ?? draw.scenarioCode ?? '')}>
+        <button class="btn btn--primary" type="button" disabled={unplayedOnly && !isUnplayed} onclick={() => onPlay(draw, setNames.get(draw.scenarioCode ?? '') ?? draw.scenarioCode ?? '')}>
           {t.playThisDraw}
         </button>
         {#if storageOk}

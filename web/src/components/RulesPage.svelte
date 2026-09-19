@@ -55,7 +55,7 @@
 </script>
 
 <section>
-  <h1>{t.rulesTitle}</h1>
+  <h1 class="comic-title">{t.rulesTitle}</h1>
 
   {#if loadFailed}
     <div class="notice surface"><p>{t.rulesLoadError}</p></div>

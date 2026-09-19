@@ -46,6 +46,9 @@ export function buildCampaignPlay(input: CampaignPlayInput): Play {
   ];
 
   const first = roster[0];
+  const ownerDeck = input.decks.find((deck) => deck.id === input.campaign.heroes[0]?.deckId);
+  const tags = (ownerDeck?.tags ?? '').split(',').map((tag) => tag.trim());
+  const mode = ['draft', 'sealed'].find((tag) => tags.includes(tag));
 
   return {
     id: crypto.randomUUID(),
@@ -73,5 +76,6 @@ export function buildCampaignPlay(input: CampaignPlayInput): Play {
     campaignRunId: input.runId,
     reportedToBgg: false,
     photos: '',
+    ...(mode === undefined ? {} : { mode }),
   };
 }

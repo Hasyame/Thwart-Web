@@ -23,6 +23,7 @@ import { aspectPart, defaultName, fold } from '../src/lib/draft/naming.ts';
 import { seeded, shuffled } from '../src/lib/draft/random.ts';
 import { DEFAULT_SETTINGS, DRAFT_RULES, EMPTY_PLAYER, cardCount, isFull, slotsOf } from '../src/lib/draft/types.ts';
 import { validateDeck } from '../src/lib/deckRules.ts';
+import { dealSealed, selectSealed, openBooster, openAllBoosters, openedBoosters, buildSealedDeck } from '../src/lib/draft/sealed.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -357,5 +358,37 @@ function validate(playerState, context) {
   check('without touching the input', (() => { const x = [1, 2, 3]; shuffled(x, seeded(1)); return x.join() === '1,2,3'; })());
 }
 
+{
+  const players = [player(0, SPIDER, ['justice']), player(1, MAGIK, ['aggression'])];
+  const context = buildContext(index, OWNED, players.map((p) => p.heroCode));
+  const state = { ...fresh(players, { settings: { format: 'sealed', synergyOnly: true } }), stock: Object.fromEntries(context.initialStock) };
+  const dealt = dealSealed(state, context);
+  check('sealed deals exactly sixty cards per player', dealt.sealedPools.every((pool) => pool.length === 60));
+  check('sealed conserves shared physical inventory', [...context.initialStock].every(([code, count]) =>
+    count === (dealt.stock[code] ?? 0) + dealt.sealedPools.flat().filter((c) => c === code).length));
+  check('sealed is deterministic and survives JSON storage', JSON.stringify(dealt) === JSON.stringify(dealSealed(JSON.parse(JSON.stringify(state)), context)));
+  const code = dealt.sealedPools[0][0];
+  check('cannot select before opening boosters', selectSealed(dealt, code, true, context) === dealt);
+  check('cannot build before all boosters are open', buildSealedDeck(dealt) === dealt);
+  let opened = dealt;
+  for (let n = 1; n <= 6; n++) {
+    opened = JSON.parse(JSON.stringify(openBooster(opened)));
+    check(`booster ${n} survives resume with ten cards`, openedBoosters(opened) === n && opened.sealedPools[0].slice((n - 1) * 10, n * 10).length === 10);
+  }
+  check('opening never redraws the pool or another seat', JSON.stringify(opened.sealedPools) === JSON.stringify(dealt.sealedPools) && opened.sealedOpened[1] === 0);
+  const building = buildSealedDeck(opened);
+  check('open all matches individual boosters without redrawing', JSON.stringify(openAllBoosters(dealt)) === JSON.stringify(building));
+  check('older revealed pools stay usable', openedBoosters({ ...dealt, sealedOpened: undefined }) === 6);
+  const picked = selectSealed(building, code, true, context);
+  check('sealed selection can be removed', JSON.stringify(selectSealed(picked, code, false, context)) === JSON.stringify(building));
+  check('sealed cannot select undealt cards', selectSealed(dealt, 'invented', true, context) === dealt);
+  check('sealed selection keeps all pools reserved', JSON.stringify(picked.sealedPools) === JSON.stringify(dealt.sealedPools));
+  const tiny = dealSealed({ ...state, stock: { [code]: 1 } }, context);
+  check('sealed never manufactures cards for a short collection', tiny.sealedPools.flat().length === 1);
+  const adam = player(0, WARLOCK, [...DRAFT_RULES.CLASSIC_ASPECTS]);
+  const adamContext = buildContext(index, OWNED, [WARLOCK]);
+  const adamDeal = dealSealed({ ...fresh([adam], { settings: { format: 'sealed' } }), stock: Object.fromEntries(adamContext.initialStock) }, adamContext);
+  check('sealed respects Adam Warlock single-copy rule', new Set(adamDeal.sealedPools[0]).size === adamDeal.sealedPools[0].length);
+}
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

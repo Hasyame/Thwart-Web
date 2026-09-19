@@ -196,7 +196,7 @@
 </script>
 
 <section>
-  <h1>{t.collectionTitle}</h1>
+  <h1 class="comic-title">{t.collectionTitle}</h1>
 
   {#if !storageOk}
     <div class="notice surface">

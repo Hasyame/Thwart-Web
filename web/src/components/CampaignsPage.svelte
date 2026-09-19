@@ -27,9 +27,23 @@
     index: readonly IndexRow[];
     sets: readonly CardSet[];
     storageOk: boolean;
+    initialDeckIds?: readonly string[];
+    initiallyExpert?: boolean;
+    initialStart?: boolean;
+    onConsumeDecks?: () => void;
   }
 
-  const { t, uiLocale, cardLocale, index, sets, storageOk }: Props = $props();
+  const { t, uiLocale, cardLocale, index, sets, storageOk, initialDeckIds = [], initiallyExpert = false, initialStart = false, onConsumeDecks }: Props = $props();
+  let preparedDeckIds = $state<readonly string[]>([]);
+  let preparedExpert = $state(false);
+  $effect(() => {
+    if (initialDeckIds.length > 0 || initialStart) {
+      preparedDeckIds = [...initialDeckIds];
+      preparedExpert = initiallyExpert;
+      view = { kind: 'start' };
+      onConsumeDecks?.();
+    }
+  });
 
   /** Whether the badge means anything: signed out, everything is local. */
   const signedIn = $derived(session.status === 'signed-in' && storedOnServer.loaded);
@@ -204,7 +218,7 @@
 
 <section>
   {#if view.kind !== 'run'}
-    <h1>{t.campaignsTitle}</h1>
+    <h1 class="comic-title">{t.campaignsTitle}</h1>
   {/if}
 
   {#if storageOk && view.kind === 'list'}
@@ -215,6 +229,8 @@
 
   {#if view.kind === 'start'}
     <StartCampaign
+      initiallyExpert={preparedExpert}
+      initialDeckIds={preparedDeckIds}
       {t}
       {uiLocale}
       decks={decks.saved}

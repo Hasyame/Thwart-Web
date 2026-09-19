@@ -242,7 +242,7 @@
 </script>
 
 <section>
-  <h1>{t.accountTitle}</h1>
+  <h1 class="comic-title">{t.accountTitle}</h1>
 
   {#if !storageOk}
     <div class="panel"><p>{t.storageUnavailable}</p></div>

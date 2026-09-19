@@ -11,7 +11,7 @@ export type DifficultyLevel = 'unknown' | 'standard' | 'expert';
 /** The scale's explicit total order. `difficultyScaleVersion` 1. */
 export const LEVEL_RANK: Readonly<Record<DifficultyLevel, number>> = { unknown: 0, standard: 1, expert: 2 };
 export const DIFFICULTY_SCALE_VERSION = 1;
-export const DEFINITIONS_SCHEMA_VERSION = 1;
+export const DEFINITIONS_SCHEMA_VERSION = 2;
 
 export const CLASSIC_ASPECTS = ['aggression', 'justice', 'leadership', 'protection'] as const;
 
@@ -34,7 +34,8 @@ export type Predicate =
   | { readonly kind: 'count'; readonly what: 'plays' | 'wins' | 'heroes_played' | 'distinct_days' }
   | { readonly kind: 'table_win'; readonly players: 1 | 2 | 3 | 4; readonly distinctAspects?: boolean }
   | { readonly kind: 'campaign'; readonly finished: true; readonly noDefeat?: boolean; readonly minDifficulty?: DifficultyLevel }
-  | { readonly kind: 'mode_win'; readonly mode: PlayMode };
+  | { readonly kind: 'mode_win'; readonly mode: PlayMode; readonly n?: number }
+  | { readonly kind: 'loss_count'; readonly n: number };
 
 export interface AchievementDefinition {
   readonly id: string;

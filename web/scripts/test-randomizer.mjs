@@ -1,3 +1,4 @@
+import { pairing, rollUnplayed } from '../src/lib/unplayed.ts';
 /**
  * The draw, with extra modular sets on top.
  *
@@ -138,5 +139,15 @@ const rollsWith = (extras, locked = new Set(), previous = EMPTY_DRAW, playerCoun
   check('locked modular sets survive a reroll, extras included', again.modularSetCodes.join(',') === first.modularSetCodes.join(','));
 }
 
+{
+  const played = new Set(pools.scenarios.flatMap((s) => pools.heroes.map((h) => pairing(h.code, s.code))));
+  const input = { pools, previous: EMPTY_DRAW, locked: new Set(), playerCount: 1 };
+  check('unplayed reports an exhausted history', rollUnplayed(input, played) === null);
+  played.delete(pairing('h1', 'rhino'));
+  const drawn = rollUnplayed(input, played);
+  check('unplayed finds the only remaining pair', drawn?.scenarioCode === 'rhino' && drawn.heroes[0]?.code === 'h1');
+  check('unplayed requires new pairs for every seat', rollUnplayed({ ...input, playerCount: 2 }, played) === null);
+  check('unplayed respects scenario lock', rollUnplayed({ ...input, previous: { ...EMPTY_DRAW, scenarioCode: 'klaw' }, locked: new Set(['scenario']) }, played) === null);
+}
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

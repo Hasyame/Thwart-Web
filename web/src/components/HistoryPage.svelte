@@ -382,7 +382,7 @@
 </script>
 
 <section class="history">
-  <h1>{t.historyTitle}</h1>
+  <h1 class="comic-title">{t.historyTitle}</h1>
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
