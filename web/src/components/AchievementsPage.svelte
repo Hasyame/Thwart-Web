@@ -292,16 +292,25 @@
     <!-- Completion: wins only, the collection first, the whole game beside
          it, and always the counts, so a new box that lowers the ratio does
          not read as lost ground. -->
+    {@const ownedHeroCount = (catalogue?.heroes ?? []).filter((h) => ownedPacks.has(h.packCode)).length}
+    {@const allHeroCount = (catalogue?.heroes ?? []).length}
     <div class="surface completion">
-      <div class="rate">
+      <!-- Two figures, each said in full: a pairing is one hero having
+           beaten one scenario, and the totals are the products spelled out,
+           so the numbers explain themselves. -->
+      <div class="stat">
+        <p class="stat-title">{t.achievements.pairsTitle}</p>
         <strong class="big">{t.achievements.rate(percent(current.completion.owned.won, current.completion.owned.cells))}</strong>
-        <span class="muted">{t.achievements.completionOwned(current.completion.owned.won, current.completion.owned.cells)}</span>
         <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(current.completion.owned.won, current.completion.owned.cells)}%`}></span></span>
+        <p class="muted small">{t.achievements.pairsOwned(current.completion.owned.won, current.completion.owned.cells, ownedHeroCount, ownedScenarioKeys.size)}</p>
+        <p class="muted small">{t.achievements.pairsGlobal(current.completion.global.won, current.completion.global.cells, allHeroCount, allScenarioKeys.size)}</p>
       </div>
-      <p class="muted small">
-        {t.achievements.completionGlobal(current.completion.global.won, current.completion.global.cells)}
-        · {t.achievements.count(unlockedCount, shown.length)}
-      </p>
+      <div class="stat">
+        <p class="stat-title">{t.achievements.namedTitle}</p>
+        <strong class="big">{t.achievements.rate(percent(unlockedCount, shown.length))}</strong>
+        <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(unlockedCount, shown.length)}%`}></span></span>
+        <p class="muted small">{t.achievements.namedCount(unlockedCount, shown.length)}</p>
+      </div>
     </div>
 
     <h2>{t.achievements.gridTitle}</h2>
@@ -508,12 +517,27 @@
   .completion {
     padding: var(--space-4);
     display: grid;
-    gap: var(--space-2);
+    gap: var(--space-4);
   }
 
-  .rate {
+  @media (min-width: 48rem) {
+    .completion {
+      grid-template-columns: 3fr 2fr;
+    }
+  }
+
+  .stat {
     display: grid;
     gap: var(--space-1);
+    align-content: start;
+  }
+
+  .stat p {
+    margin: 0;
+  }
+
+  .stat-title {
+    font-weight: var(--weight-semibold);
   }
 
   .big {
