@@ -14,7 +14,7 @@
  */
 import { deflateRawSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
-import { readBackupDocument, ArchiveError } from '../src/lib/backupArchive.ts';
+import { readBackupDocument, readBackupArchive, writeBackupArchive, writeBackupDocument, crc32, ArchiveError } from '../src/lib/backupArchive.ts';
 
 let failures = 0;
 
@@ -48,7 +48,7 @@ function makeZip(entries, { zeroLocalSizes = false } = {}) {
     local.writeUInt16LE(20, 4); // version needed
     local.writeUInt16LE(zeroLocalSizes ? 0x08 : 0, 6); // data-descriptor flag
     local.writeUInt16LE(8, 8); // deflate
-    local.writeUInt32LE(0, 14); // crc, unchecked by the reader
+    local.writeUInt32LE(zeroLocalSizes ? 0 : crc32(raw), 14);
     local.writeUInt32LE(zeroLocalSizes ? 0 : data.length, 18);
     local.writeUInt32LE(zeroLocalSizes ? 0 : raw.length, 22);
     local.writeUInt16LE(nameBytes.length, 26);
@@ -61,7 +61,7 @@ function makeZip(entries, { zeroLocalSizes = false } = {}) {
     central.writeUInt16LE(20, 6);
     central.writeUInt16LE(zeroLocalSizes ? 0x08 : 0, 8);
     central.writeUInt16LE(8, 10);
-    central.writeUInt32LE(0, 16);
+    central.writeUInt32LE(crc32(raw), 16);
     central.writeUInt32LE(data.length, 20);
     central.writeUInt32LE(raw.length, 24);
     central.writeUInt16LE(nameBytes.length, 28);
@@ -126,6 +126,26 @@ try {
 } catch (error) {
   check('truncated zip rejected', error instanceof ArchiveError, error.message);
 }
+
+check('CRC reference vector', crc32(new TextEncoder().encode('123456789')) === 0xcbf43926);
+try { writeBackupDocument('x'.repeat(16 * 1024 * 1024 + 1)); check('oversize document export refused', false); }
+catch (error) { check('oversize document export refused', error instanceof ArchiveError); }
+const decoded = await readBackupArchive(new File([archive], 'a.zip'));
+check('photo bytes extracted', new TextDecoder().decode(decoded.photos[0].data) === 'not really a photograph');
+const output = writeBackupArchive(document, decoded.photos);
+const roundtrip = await readBackupArchive(new File([output], 'roundtrip.zip'));
+check('photo export round trip', roundtrip.document === document && Buffer.from(roundtrip.photos[0].data).equals(Buffer.from(decoded.photos[0].data)));
+for (const [label, bytes] of [
+  ['path traversal', makeZip([['backup.json', document], ['photos/../outside.jpg', 'x']])],
+  ['duplicate file', makeZip([['backup.json', document], ['photos/a.jpg', 'a'], ['photos/a.jpg', 'b']])],
+]) {
+  try { await readBackupArchive(new File([bytes], 'bad.zip')); check(label, false); }
+  catch (error) { check(label, error instanceof ArchiveError); }
+}
+const corrupt = new Uint8Array(await output.arrayBuffer());
+corrupt[30 + 'backup.json'.length] ^= 1;
+try { await readBackupArchive(new File([corrupt], 'corrupt.zip')); check('CRC mismatch rejected', false); }
+catch (error) { check('CRC mismatch rejected', error instanceof ArchiveError); }
 
 const real = process.argv.find((arg, i) => i > 1 && !arg.startsWith('-') && arg.endsWith('.zip'));
 if (real !== undefined) {

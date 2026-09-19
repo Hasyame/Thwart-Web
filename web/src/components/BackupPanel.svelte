@@ -4,13 +4,12 @@
   import {
     BackupError,
     downloadBackup,
-    exportBackup,
     importBackup,
     parseBackup,
     summarise,
     type ImportSummary,
   } from '../lib/backup';
-  import { ArchiveError, readBackupDocument } from '../lib/backupArchive';
+  import { ArchiveError, readBackupArchive, type BackupPhoto } from '../lib/backupArchive';
 
   interface Props {
     t: Strings;
@@ -28,7 +27,7 @@
    * honest description: a parsed file is immutable here, replaced wholesale or
    * not at all, and nothing ever reaches into it to change a field.
    */
-  let pending = $state.raw<{ backup: Backup; summary: ImportSummary } | null>(null);
+  let pending = $state.raw<{ backup: Backup; summary: ImportSummary; photos: readonly BackupPhoto[] } | null>(null);
   let done = $state<ImportSummary | null>(null);
   let error = $state<string | null>(null);
   let busy = $state(false);
@@ -48,8 +47,9 @@
     try {
       // Sniffed, not taken from the name: the app writes a file named .zip
       // containing plain JSON whenever photos were asked for and none existed.
-      const backup = parseBackup(await readBackupDocument(file));
-      pending = { backup, summary: summarise(backup) };
+      const archive = await readBackupArchive(file);
+      const backup = parseBackup(archive.document);
+      pending = { backup, summary: summarise(backup), photos: archive.photos.filter(photo => backup.photos.includes(photo.name)) };
     } catch (caught) {
       pending = null;
       error =
@@ -76,7 +76,7 @@
     busy = true;
     error = null;
     try {
-      done = await importBackup(pending.backup, mode);
+      done = await importBackup(pending.backup, mode, pending.photos);
       pending = null;
     } catch {
       error = t.backupImportFailed;
@@ -88,7 +88,10 @@
   async function download(): Promise<void> {
     busy = true;
     try {
-      downloadBackup(await exportBackup());
+      error = null;
+      await downloadBackup();
+    } catch {
+      error = t.backupExportFailed;
     } finally {
       busy = false;
     }
@@ -137,7 +140,7 @@
       {/if}
 
       {#if pending.summary.photos > 0}
-        <p class="muted note">{t.backupPhotosNote(pending.summary.photos)}</p>
+        <p class="muted note">{t.backupPhotosNote(pending.summary.photos, pending.photos.length)}</p>
       {/if}
 
       <div class="actions">

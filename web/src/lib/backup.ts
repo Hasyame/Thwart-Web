@@ -1,4 +1,5 @@
 import { db, SETTINGS_KEY } from './db';
+import { safePhotoName, writeBackupArchive, writeBackupDocument, type BackupPhoto } from './backupArchive';
 import { completePlay, playWire } from './playShape';
 import {
   BACKUP_FORMAT_VERSION,
@@ -42,7 +43,7 @@ export interface ImportSummary {
   readonly campaignRuns: number;
   readonly campaignEvents: number;
   readonly randomizerHistory: number;
-  /** Photographs named in the bundle. The files are not in it; see below. */
+  /** Photographs named in the document; archive bytes are supplied separately. */
   readonly photos: number;
 }
 
@@ -52,6 +53,20 @@ export class BackupError extends Error {}
 
 function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
+}
+
+const BACKUP_KEYS = new Set([
+  'formatVersion', 'createdAt', 'appVersion', 'ownedPacks', 'excludedModularSets',
+  'excludedScenarios', 'decks', 'campaignRuns', 'campaignEvents', 'plays',
+  'randomizerHistory', 'favouriteCards', 'favouritePlays', 'ratings', 'deckFolders',
+  'photos', 'settings',
+]);
+const SETTINGS_KEYS = new Set([
+  'cardLocale', 'themeChoice', 'playLocation', 'trackEncounter', 'dismissedPacks',
+]);
+
+function unknownFields(record: object, known: ReadonlySet<string>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(record).filter(([key]) => !known.has(key)));
 }
 
 /**
@@ -90,6 +105,7 @@ export function parseBackup(text: string): Backup {
   }
 
   return {
+    ...record,
     formatVersion,
     createdAt: typeof record['createdAt'] === 'number' ? record['createdAt'] : 0,
     appVersion: typeof record['appVersion'] === 'string' ? record['appVersion'] : '',
@@ -102,7 +118,7 @@ export function parseBackup(text: string): Backup {
     plays: asArray<Play>(record['plays']),
     randomizerHistory: asArray<RandomizerHistoryRow>(record['randomizerHistory']),
     favouriteCards: asArray<FavouriteCard>(record['favouriteCards']),
-    // Absent from a phone's backup, so an empty list rather than a failure.
+    // Older clients omit this collection.
     favouritePlays: asArray<FavouritePlay>(record['favouritePlays']),
     ratings: asArray<Rating>(record['ratings']),
     deckFolders: asArray<DeckFolder>(record['deckFolders']),
@@ -124,6 +140,7 @@ function asSettings(value: unknown): BackupSettings | null {
   }
   const record = value as Record<string, unknown>;
   return {
+    ...record,
     cardLocale: typeof record['cardLocale'] === 'string' ? record['cardLocale'] : '',
     themeChoice: typeof record['themeChoice'] === 'string' ? record['themeChoice'] : '',
     playLocation: typeof record['playLocation'] === 'string' ? record['playLocation'] : '',
@@ -169,11 +186,25 @@ export function summarise(backup: Backup): ImportSummary {
 export async function importBackup(
   backup: Backup,
   mode: ImportMode,
+  photos: readonly BackupPhoto[] = [],
 ): Promise<ImportSummary> {
   await db.transaction('rw', db.tables, async () => {
     if (mode === 'replace') {
       await Promise.all(db.tables.map((table) => table.clear()));
     }
+
+    const metadata = await db.backupMetadata.get(SETTINGS_KEY);
+    await db.backupMetadata.put({
+      id: SETTINGS_KEY,
+      extra: { ...metadata?.extra, ...unknownFields(backup, BACKUP_KEYS) },
+      settingsExtra: {
+        ...metadata?.settingsExtra,
+        ...(backup.settings == null ? {} : unknownFields(backup.settings, SETTINGS_KEYS)),
+      },
+    });
+
+    const declared = new Set(backup.photos);
+    await db.photos.bulkPut(photos.filter(photo => safePhotoName(photo.name) && declared.has(photo.name)));
 
     await db.ownedPacks.bulkPut([...backup.ownedPacks]);
     await db.excludedModularSets.bulkPut([...backup.excludedModularSets]);
@@ -195,7 +226,8 @@ export async function importBackup(
     // backup would be a surprise. Keeping them is what makes a phone to phone
     // round trip through here lossless.
     if (backup.settings != null) {
-      await db.appSettings.put({ ...backup.settings, id: SETTINGS_KEY });
+      const { cardLocale, themeChoice, playLocation, trackEncounter, dismissedPacks } = backup.settings;
+      await db.appSettings.put({ id: SETTINGS_KEY, cardLocale, themeChoice, playLocation, trackEncounter, dismissedPacks });
     }
   });
 
@@ -209,9 +241,8 @@ export async function importBackup(
  * says the field exists so a confusing restore can be traced — and "the web
  * app" is exactly the sort of provenance worth being able to see.
  *
- * `photos` is always empty. The site has no photographs: they live in the
- * phone's private storage and doc 01 §6 keeps them out of scope. Naming files
- * that are not in the bundle would make a restore report them missing.
+ * Only locally available photos are listed. Play references remain intact when
+ * the source backup or sync supplied no corresponding file.
  */
 export async function exportBackup(): Promise<Backup> {
   const [
@@ -228,6 +259,8 @@ export async function exportBackup(): Promise<Backup> {
     campaignEvents,
     randomizerHistory,
     storedSettings,
+    metadata,
+    photos,
   ] = await Promise.all([
     db.ownedPacks.toArray(),
     db.excludedModularSets.toArray(),
@@ -242,9 +275,12 @@ export async function exportBackup(): Promise<Backup> {
     db.campaignEvents.toArray(),
     db.randomizerHistory.toArray(),
     db.appSettings.get(SETTINGS_KEY),
+    db.backupMetadata.get(SETTINGS_KEY),
+    db.photos.toCollection().primaryKeys(),
   ]);
 
   return {
+    ...metadata?.extra,
     formatVersion: BACKUP_FORMAT_VERSION,
     createdAt: Date.now(),
     appVersion: `web ${__APP_VERSION__}`,
@@ -269,25 +305,37 @@ export async function exportBackup(): Promise<Backup> {
       storedSettings === undefined
         ? null
         : {
+            ...metadata?.settingsExtra,
             cardLocale: storedSettings.cardLocale,
             themeChoice: storedSettings.themeChoice,
             playLocation: storedSettings.playLocation,
             trackEncounter: storedSettings.trackEncounter,
             dismissedPacks: storedSettings.dismissedPacks,
           },
-    photos: [],
+    photos,
   };
 }
 
 /** Offers the bundle as a download, named the way the app names its own. */
-export function downloadBackup(backup: Backup): void {
+export async function backupDownload(): Promise<{ backup: Backup; blob: Blob; extension: string }> {
+  const snapshot = await db.transaction('r', db.tables, async () => ({
+    backup: await exportBackup(), photos: await db.photos.toArray(),
+  }));
+  const document = JSON.stringify(snapshot.backup);
+  return { backup: snapshot.backup,
+    blob: snapshot.photos.length > 0 ? writeBackupArchive(document, snapshot.photos) : writeBackupDocument(document),
+    extension: snapshot.photos.length > 0 ? 'zip' : 'json',
+  };
+}
+
+export async function downloadBackup(): Promise<void> {
+  const { backup, blob, extension } = await backupDownload();
   const stamp = new Date(backup.createdAt).toISOString().slice(0, 10);
-  const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `thwart-backup-${stamp}.json`;
+  anchor.download = `thwart-backup-${stamp}.${extension}`;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();

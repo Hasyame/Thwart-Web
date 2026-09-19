@@ -116,6 +116,7 @@ export interface Strings {
     readonly filterAspect: string;
     readonly filterMinDifficulty: string;
     readonly filterShowLosses: string;
+    readonly filterAnySeat: string;
     readonly filterAll: string;
     readonly filterEveryHero: string;
     readonly heroWon: (won: number, total: number) => string;
@@ -953,7 +954,11 @@ export interface Strings {
   readonly backupReplace: string;
   readonly backupMergeHint: string;
   readonly backupCarriedNote: string;
-  readonly backupPhotosNote: (count: number) => string;
+  readonly backupPhotosNote: (count: number, available: number) => string;
+  readonly backupExportFailed: string;
+  readonly playPhotos: string;
+  readonly playPhoto: (index: number) => string;
+  readonly playPhotosMissing: string;
   readonly backupNotJson: string;
   readonly backupUnreadable: string;
   readonly backupImportFailed: string;

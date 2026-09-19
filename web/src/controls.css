@@ -63,7 +63,7 @@ button {
 
   color: var(--text);
   background: transparent;
-  border: 1px solid var(--border);
+  border: var(--panel-width) solid var(--border);
   border-radius: var(--radius-pill);
   cursor: pointer;
 
@@ -160,7 +160,7 @@ button {
   color: var(--text);
 
   background: var(--surface-1);
-  border: 1px solid var(--border);
+  border: var(--panel-width) solid var(--border);
   border-radius: var(--radius-sm);
 }
 

@@ -1,80 +1,48 @@
-/*
- * The design tokens. One source of truth for colour, type, space, shape,
- * elevation and motion; nothing else in the project may hold a raw value.
- *
- * ## Why this file is written by hand
- *
- * It replaces `scripts/generate-theme.mjs`, which transcribed the Android
- * app's `Color.kt` role for role. That transcription was the right call while
- * the two clients were meant to look alike, and it is recorded here because
- * deleting a deliberate decision without saying so is how the next person
- * repeats the work.
- *
- * It was dropped because the transcribed scheme could not meet the goals set
- * for the web app, measured rather than felt:
- *
- *   - Primary red on a panel was **4.41:1**, under the 4.5 AA floor for body
- *     text, so every link and every counter on a card failed.
- *   - The five-step dark surface ladder measured **1.08:1** between the page
- *     and a panel, which is no step at all; the panels were held apart by a
- *     border that was itself **2.20:1**, under the 3:1 floor for a component
- *     boundary. The screen read flat because it was flat.
- *   - Justice as text was **2.14:1**.
- *
- * Two things are still inherited from the app and are not ours to invent: the
- * faction hues, which carry meaning a player already knows, and the mark in
- * `Logo.svelte`.
- *
- * ## The scheme
- *
- * Warm near-black surfaces, red as an accent only. Red is an action colour
- * here, never a large field: a filled bar across the top of every screen was
- * a third of a phone viewport and made everything under it harder to read.
- *
- * Every pairing the interface produces is checked against WCAG 2.2 AA — 4.5:1
- * for body text, 3:1 for large text and for the boundary of an interactive
- * component. The measured ratios are in the comments beside the tokens that
- * are close to a threshold, so a future edit can see what it is spending.
- *
- * Three blocks, so the scheme survives all three states the reader can be in:
- * an explicit light choice, an explicit dark choice, and the default of
- * following the system. Light is the bare `:root`, so no colour has its only
- * definition inside a media query.
+/* Shared Thwart identity: Android's warm paper, red, ink and night surfaces.
+ * Text accents and aspect text retain accessible variants; printed swatches and
+ * brand colors are not interchangeable with text colors. Native/browser layout
+ * and user theme preferences remain platform-specific. See product spec 001.
  */
 
 :root {
+  --brand-red: #e30022;
+  --heading-fill: #fff8f6;
+  --heading-ink: #1a1113;
+  --heading-hover: #f3dddb;
+  --panel-width: 2px;
+  --dot-ink: rgb(26 17 19 / 4%);
   /* ==== Light ============================================================ */
 
   /* Surfaces. The page is the tinted one and panels are white: raising a
      surface towards the light is what reads as "nearer" on a light ground,
      the opposite of the dark scheme below. */
-  --bg: #f4f1ef;
-  --surface-1: #ffffff;
-  --surface-2: #fbf8f6;
-  --surface-3: #f4efec;
+  --bg: #fff8f6;
+  --surface-1: #fff8f6;
+  --surface-2: #f9ece9;
+  --surface-3: #f3dddb;
 
   /* Ink. */
-  --text: #1b1618;         /* 17.88:1 on surface-1 */
-  --text-muted: #5b5250;   /*  7.59:1 on surface-1 */
-  --text-faint: #776d6a;   /*  5.02:1 on surface-1, large text and icons only */
+  --text: #1a1113;
+  --text-muted: #5b5250;
+  --text-faint: #776d6a;
 
   /* The accent. Darker than the brand red, which measured 4.41:1 on a panel
      and could not carry a link. */
-  --accent: #c4001c;       /*  6.24:1 on surface-1 */
-  --accent-ink: #ffffff;   /*  6.24:1 on accent */
-  --accent-soft: #fbe4e3;  /*  accent on it: 5.15:1 */
+  --accent: #c4001c;
+  --accent-ink: #fff8f6;
+  --accent-soft: #fbe4e3;
 
   /* Lines. `--hairline` separates surfaces and is decorative; `--border` is
      the edge of something you can operate and clears 3:1 for that reason. */
-  --hairline: #e4ddd9;
-  --border: #8c817e;       /*  3.78:1 on surface-1 */
+  --hairline: #534342;
+  --border: #8c817e;
 
-  --gold: #8a6300;         /*  5.43:1 on surface-1 */
+  --gold: #8a6300;
   --danger: #c4001c;
-  --ok: #1f6e45;           /*  6.22:1 on surface-1 */
+  --ok: #1f6e45;
 
   /* Depth, which on a light ground comes from shadow rather than tone. */
-  --shadow-1: 0 1px 2px rgb(60 40 35 / 10%);
+  --shadow-1: 3px 3px 0 #1a1113;
   --shadow-2: 0 8px 24px -8px rgb(60 40 35 / 22%);
   --scrim: rgb(30 20 18 / 45%);
 
@@ -90,7 +58,7 @@
   --faction-basic: #5e5e5e;
   --faction-hero: #5b5250;
   --faction-encounter: #5b5250;
-  --faction-campaign: #766c69;
+  --faction-campaign: #716763;
 
   /* The same colours as printed, for a stripe or a swatch — a block of colour
      large enough that the hue is the message and no text sits on it. */
@@ -158,8 +126,8 @@
   /* ==== Shape ============================================================ */
 
   --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 20px;
   --radius-pill: 999px;
 
@@ -234,27 +202,31 @@
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0d0b0c;
-    --surface-1: #1b1718;
-    --surface-2: #262122;
-    --surface-3: #332c2d;
+    --heading-fill: #120c0d;
+    --heading-ink: #fff8f6;
+    --heading-hover: #241a1a;
+    --bg: #0d0809;
+    --dot-ink: rgb(255 248 246 / 3%);
+    --surface-1: #120c0d;
+    --surface-2: #1a1213;
+    --surface-3: #241a1a;
 
-    --text: #f6f1ee;        /* 15.85:1 on surface-1 */
-    --text-muted: #bcb1ad;  /*  8.48:1 on surface-1 */
-    --text-faint: #8e827e;  /*  4.82:1 on surface-1, large text and icons only */
+    --text: #fff8f6;
+    --text-muted: #bcb1ad;
+    --text-faint: #8e827e;
 
-    --accent: #ff6a57;      /*  6.30:1 on surface-1 */
-    --accent-ink: #2e0703;  /*  6.49:1 on accent */
-    --accent-soft: #48211c; /*  accent on it: 4.94:1 */
+    --accent: #ff5a49;
+    --accent-ink: #2e0703;
+    --accent-soft: #48211c;
 
-    --hairline: #3a3233;
-    --border: #746a68;      /*  3.39:1 on surface-1, 3.03:1 on surface-2 */
+    --hairline: #5a4a48;
+    --border: #746a68;
 
     --gold: #e9bc49;
-    --danger: #ff6a57;
+    --danger: #ff5a49;
     --ok: #5fbe86;
 
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 55%);
+    --shadow-1: 3px 3px 0 #120c0b;
     --shadow-2: 0 6px 20px -6px rgb(0 0 0 / 70%);
     --scrim: rgb(0 0 0 / 60%);
 
@@ -271,27 +243,31 @@
 }
 
 :root[data-theme='dark'] {
-  --bg: #0d0b0c;
-  --surface-1: #1b1718;
-  --surface-2: #262122;
-  --surface-3: #332c2d;
+  --heading-fill: #120c0d;
+  --heading-ink: #fff8f6;
+  --heading-hover: #241a1a;
+  --bg: #0d0809;
+    --dot-ink: rgb(255 248 246 / 3%);
+  --surface-1: #120c0d;
+  --surface-2: #1a1213;
+  --surface-3: #241a1a;
 
-  --text: #f6f1ee;
+  --text: #fff8f6;
   --text-muted: #bcb1ad;
   --text-faint: #8e827e;
 
-  --accent: #ff6a57;
+  --accent: #ff5a49;
   --accent-ink: #2e0703;
   --accent-soft: #48211c;
 
-  --hairline: #3a3233;
+  --hairline: #5a4a48;
   --border: #746a68;
 
   --gold: #e9bc49;
-  --danger: #ff6a57;
+  --danger: #ff5a49;
   --ok: #5fbe86;
 
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 55%);
+  --shadow-1: 3px 3px 0 #120c0b;
   --shadow-2: 0 6px 20px -6px rgb(0 0 0 / 70%);
   --scrim: rgb(0 0 0 / 60%);
 

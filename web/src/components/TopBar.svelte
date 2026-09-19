@@ -40,18 +40,11 @@
 
 </script>
 
-<!--
-  A surface, not a filled red strip.
-
-  The old bar was #E30022 across the full width of every screen. Red at that
-  size is not an accent: it was 268px of a 812px viewport, it dragged every
-  contrast pairing on the page down with it, and long sessions with it are
-  tiring. The red is spent on actions now, where it means something.
--->
+<!-- Android's current bars use warm surfaces; red remains an action accent. -->
 <header>
   <div class="page bar">
     <button class="brand" onclick={onHome} type="button">
-      <Logo size={28} />
+      <Logo size={28} withBackground />
       <span class="wordmark">{t.appName}</span>
     </button>
 
@@ -105,11 +98,19 @@
 
 <style>
   header {
+    --text: var(--heading-ink);
+    --text-muted: var(--heading-ink);
+    --accent: var(--heading-ink);
+    --accent-ink: var(--heading-fill);
+    --accent-soft: var(--heading-hover);
+    --surface-2: var(--heading-hover);
+    --border: var(--heading-ink);
     position: sticky;
     top: 0;
     z-index: 20;
-    background: var(--surface-1);
-    border-bottom: 1px solid var(--hairline);
+    background: var(--heading-fill);
+    color: var(--heading-ink);
+    border-bottom: var(--panel-width) solid var(--hairline);
     /* The status bar sits over this on an installed iOS app, which declares
        `black-translucent` precisely so the bar can extend under it. */
     padding-top: env(safe-area-inset-top);
