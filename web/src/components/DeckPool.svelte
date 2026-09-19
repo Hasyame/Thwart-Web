@@ -4,6 +4,7 @@
   import type { Strings } from '../lib/i18n';
   import { COST_CAP, factionOrder, poolRows, startingFactions, type PoolFilter } from '../lib/deckPool';
   import CardHover from './CardHover.svelte';
+  import ResponsiveFilters from './ResponsiveFilters.svelte';
 
   interface Props {
     t: Strings;
@@ -94,6 +95,7 @@
     />
   </label>
 
+  <ResponsiveFilters label={t.filters} count={Number(factions.size < factionChips.length) + Number(types.size > 0) + Number(cost !== null) + Number(ownedOnly) + Number(synergyOnly)}>
   <div class="chip-row" role="group" aria-label={t.factionLabel}>
     {#each factionChips as chip (chip.code)}
       <button
@@ -143,12 +145,14 @@
     </label>
   </div>
 
+  </ResponsiveFilters>
   <p class="muted small count">{t.resultCount(rows.length, pool.length)}</p>
 
   {#if ownedOnly && ownedPackCodes.size === 0}
     <!-- The tick is on by default, so a first visit with no pack ticked
          would otherwise open on an empty list with no reason given. -->
     <p class="muted">{t.deckOwnedOnlyEmpty}</p>
+    <a class="btn" href="/collection">{t.navCollection}</a>
   {:else if rows.length === 0}
     <p class="muted">{t.noResults} {t.noResultsHint}</p>
   {:else}

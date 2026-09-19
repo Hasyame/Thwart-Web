@@ -69,6 +69,7 @@ class FakeCache {
   }
   async add(request) {
     const url = typeof request === 'string' ? request : request.url;
+    if (url === failPrecache) throw new Error('asset unavailable');
     this.store.set(url, new FakeResponse('precached', { tag: 'precache' }));
   }
   async keys() {
@@ -93,13 +94,15 @@ const caches = {
 };
 
 const listeners = new Map();
+let failPrecache = null;
+let skipWaitingCalls = 0;
 let networkFails = false;
 const networkCalls = [];
 
 const self = {
   location: { origin: 'https://thwart.app' },
   addEventListener: (type, fn) => listeners.set(type, fn),
-  skipWaiting: async () => undefined,
+  skipWaiting: async () => { skipWaitingCalls += 1; },
   clients: { claim: async () => undefined },
 };
 
@@ -133,19 +136,20 @@ vm.runInThisContext(source, { filename: 'sw.js' });
 async function fire(type, event) {
   const handler = listeners.get(type);
   assert.ok(handler, `no ${type} listener registered`);
-  let waited;
+  const waited = [];
   let responded;
   handler({
     ...event,
     waitUntil: (p) => {
-      waited = p;
+      waited.push(p);
     },
     respondWith: (p) => {
       responded = p;
     },
   });
-  await waited;
-  return responded === undefined ? undefined : await responded;
+  const response = responded === undefined ? undefined : await responded;
+  await Promise.all(waited);
+  return response;
 }
 
 const results = [];
@@ -175,6 +179,15 @@ check('precaches the hashed stylesheet', () =>
   assert.ok(precached.some((u) => u.startsWith('/assets/') && u.endsWith('.css'))));
 check('precaches no card data', () =>
   assert.ok(!precached.some((u) => u.startsWith('/data/'))));
+
+check('waits for old clients to close before activating', () => assert.equal(skipWaitingCalls, 0));
+await caches.open('thwart-shell-old-build');
+failPrecache = '/index.html';
+await assert.rejects(fire('install', {}), /asset unavailable/);
+check('failed install retains the old shell', () => assert.ok(cacheStorage.has('thwart-shell-old-build')));
+failPrecache = null;
+await fire('activate', {});
+check('retires the old shell only on activation', () => assert.ok(!cacheStorage.has('thwart-shell-old-build')));
 
 // --- fetch: one rule per kind of thing --------------------------------------
 

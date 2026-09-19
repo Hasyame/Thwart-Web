@@ -5,6 +5,7 @@
   import { CHANGELOG, changelogLines } from '../lib/changelog';
   import { session } from '../lib/sync/session.svelte';
   import AchievementsStrip from './AchievementsStrip.svelte';
+  import InstallGuide from './InstallGuide.svelte';
 
   /**
    * The front door.
@@ -95,6 +96,7 @@
     <h1>{t.home.title}</h1>
     <p class="lead">{t.home.lead}</p>
   </header>
+  <InstallGuide {t} />
 
   {#if session.status === 'signed-in' && session.account !== null}
     <!-- Signed in: a greeting, and nothing to sell. -->

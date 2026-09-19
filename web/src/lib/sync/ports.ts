@@ -5,7 +5,7 @@ import * as api from './api';
 import type { Limits, OutgoingRecord, PullPage, PushResponse, PushResult, ServerRecord } from './api';
 import { COLLECTIONS, collectionByName, type CollectionName } from './collections';
 import { digestForPulled, isUnknown, KNOWN_COLLECTIONS, type LocalRow, type SyncPorts } from './engine';
-import { LOCAL_ONLY_FIELDS } from './merge';
+import { mergeBodies, withLocalOnlyFields } from './merge';
 import { digestOf, SYNC_STATE_KEY, type SyncRecordState } from './state';
 import type { AdoptionPlan } from './adoption';
 
@@ -41,19 +41,7 @@ export const SYNCED_TABLES = () => [
 ];
 
 const TABLES = () => [
-  db.appSettings,
-  db.ownedPacks,
-  db.excludedModularSets,
-  db.excludedScenarios,
-  db.favouriteCards,
-  db.favouritePlays,
-  db.ratings,
-  db.deckFolders,
-  db.decks,
-  db.campaignRuns,
-  db.campaignEvents,
-  db.plays,
-  db.randomizerHistory,
+  ...SYNCED_TABLES(),
   db.syncRecords,
   db.syncState,
 ];
@@ -71,17 +59,7 @@ function keepLocalColumns(
   existing: Record<string, unknown> | undefined,
   incoming: Record<string, unknown>,
 ): Record<string, unknown> {
-  const keep = LOCAL_ONLY_FIELDS[collection];
-  if (keep === undefined || existing === undefined) {
-    return incoming;
-  }
-  const out = { ...incoming };
-  for (const field of keep) {
-    if (field in existing) {
-      out[field] = existing[field];
-    }
-  }
-  return out;
+  return withLocalOnlyFields(collection, existing ?? null, incoming);
 }
 
 export function dexiePorts(token: string, locale: Locale): SyncPorts {
@@ -124,6 +102,10 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             continue;
           }
           const table = mapping.table();
+          const known = await db.syncRecords.get([record.collection, record.id]);
+          if (known !== undefined && known.revision >= record.revision) {
+            continue;
+          }
 
           if (record.deleted || record.body === null) {
             await table.delete(record.id);
@@ -133,27 +115,26 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             continue;
           }
 
-          /*
-            Already applied at this revision or a later one: nothing to do.
-
-            A pull from zero on a browser that has data — the set of
-            collections it reads has grown — sends every record again. Without
-            this, a row edited here since would be put back to the server's
-            older body and the edit lost, whereas an ordinary pull would never
-            have re-sent a revision below the cursor.
-          */
-          const known = await db.syncRecords.get([record.collection, record.id]);
-          if (known !== undefined && known.revision >= record.revision) {
-            continue;
-          }
-
+          // New revisions use the same per-collection rules as adoption.
           const existing = (await table.get(record.id)) as Record<string, unknown> | undefined;
+          const localBody = existing === undefined ? null : mapping.bodyOf(existing);
+          // Fork only a locally dirty deck. A clean deck changing on another
+          // device is an ordinary update, not two concurrent edits.
+          const decision = localBody === null ? { kind: 'take' as const, body: record.body }
+            : mergeBodies(record.collection,
+              record.collection === 'saved_decks' && known?.digest === digestOf(localBody)
+                ? { ...localBody, locallyEdited: false } : localBody,
+              record.body,
+              { forkSuffix: locale === 'fr' ? ' (cet appareil)' : ' (this device)' });
           const row = keepLocalColumns(
             record.collection,
             existing,
-            mapping.rowOf(record.id, record.body) as Record<string, unknown>,
+            mapping.rowOf(record.id, decision.body) as Record<string, unknown>,
           );
           await table.put(row);
+          if (decision.kind === 'fork') {
+            await table.put(mapping.rowOf(decision.forkedId, decision.forkedBody));
+          }
           await db.syncRecords.put({
             collection: record.collection,
             id: record.id,
@@ -161,6 +142,8 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             // Of the body after the round trip, not off the wire: this build
             // may drop a field a newer one sent, and recording what the row
             // will actually hash to is what stops it bouncing back stripped.
+            // Keep the server digest: a field preserved by merging is still
+            // owed to the server, as is a newly forked deck.
             digest: digestForPulled(record),
           });
         }
@@ -179,7 +162,7 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
       results: readonly PushResult[],
     ): Promise<void> {
       const sent = new Map(records.map((record) => [`${record.collection} ${record.id}`, record]));
-      await asRemote(() => db.transaction('rw', [...TABLES(), db.syncRecords], async () => {
+      await asRemote(() => db.transaction('rw', TABLES(), async () => {
         for (const result of results) {
           const key = `${result.collection} ${result.id}`;
           const record = sent.get(key);
@@ -224,15 +207,9 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
     },
 
     async writeCursor(cursor: number): Promise<void> {
-      const state = await db.syncState.get(SYNC_STATE_KEY);
-      if (state === undefined) {
-        return;
-      }
-      await db.syncState.put({
-        ...state,
+      await db.syncState.update(SYNC_STATE_KEY, {
         cursor,
         collections: DECLARED_COLLECTIONS,
-        lastSyncedAt: Date.now(),
       });
     },
 

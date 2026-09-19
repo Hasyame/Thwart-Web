@@ -54,17 +54,14 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL_CACHE);
-      // Individually rather than addAll, so one missing file cannot fail the
-      // whole install and leave the site with no worker at all.
+      // An incomplete shell must not replace the previous offline-ready build.
       await Promise.all(
         SHELL.map((url) =>
-          cache.add(new Request(url, { cache: 'reload' })).catch(() => undefined),
+          cache.add(new Request(url, { cache: 'reload' })),
         ),
       );
-      // Safe here: the build emits a single script and a single stylesheet, so
-      // there are no lazily-loaded chunks for an open page to ask for after the
-      // new worker has taken over.
-      await self.skipWaiting();
+      // Wait for old tabs to close. They may still import lazy chunks from
+      // the previous build, which their existing worker has precached.
     })(),
   );
 });
@@ -84,14 +81,14 @@ self.addEventListener('activate', (event) => {
 });
 
 /** Serve from cache at once, and refresh the cache behind the reader's back. */
-async function staleWhileRevalidate(request) {
+async function staleWhileRevalidate(request, event) {
   const cache = await caches.open(DATA_CACHE);
   const cached = await cache.match(request);
 
   const network = fetch(request)
-    .then((response) => {
+    .then(async (response) => {
       if (response.ok && mayStore(response)) {
-        cache.put(request, response.clone());
+        await cache.put(request, response.clone()).catch(() => undefined);
       }
       return response;
     })
@@ -99,7 +96,7 @@ async function staleWhileRevalidate(request) {
 
   if (cached !== undefined) {
     // Deliberately not awaited: the point is to answer now.
-    void network;
+    event.waitUntil(network);
     return cached;
   }
   const fresh = await network;
@@ -117,7 +114,7 @@ async function cacheFirst(request) {
   }
   const response = await fetch(request);
   if (response.ok && mayStore(response)) {
-    cache.put(request, response.clone());
+    await cache.put(request, response.clone()).catch(() => undefined);
   }
   return response;
 }
@@ -184,7 +181,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith('/data/')) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(staleWhileRevalidate(request, event));
     return;
   }
 

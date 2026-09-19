@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { liveQuery } from 'dexie';
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale } from '../lib/types';
@@ -471,10 +472,22 @@
     const i = draft?.players.findIndex((p, n) => p.heroCode === code && n !== draft?.current) ?? -1;
     return i < 0 ? null : i + 1;
   };
+  let heading = $state.raw<HTMLHeadingElement | null>(null);
+  const stepKey = $derived(`${draft?.phase ?? 'setup'}:${draft?.current ?? 0}:${draft?.pickCount ?? 0}:${handedOver}`);
+  $effect(() => {
+    void stepKey;
+    let cancelled = false;
+    void tick().then(() => {
+      if (cancelled) return;
+      heading?.focus({ preventScroll: true });
+      heading?.scrollIntoView({ block: 'start' });
+    });
+    return () => { cancelled = true; };
+  });
 </script>
 
 <section class="draft">
-  <h1>{t.draft.title}</h1>
+  <h1 bind:this={heading} tabindex="-1">{t.draft.title}</h1>
 
   {#if !storageOk}
     <div class="notice surface"><p>{t.storageUnavailable}</p></div>
@@ -484,7 +497,7 @@
     <!-- Page 1: the settings. -->
     <p class="muted intro">{t.draft.intro}</p>
     {#if heroes.length === 0}
-      <div class="notice surface"><p>{t.draft.noHeroes}</p></div>
+      <div class="notice surface"><p>{t.draft.noHeroes}</p><a class="btn btn--primary" href="/collection">{t.navCollection}</a></div>
     {:else}
       <div class="setup">
       <div class="surface panel">
@@ -773,6 +786,7 @@
 
 <style>
   h1 {
+    scroll-margin-top: calc(5rem + env(safe-area-inset-top));
     font-size: var(--text-2xl);
     margin: var(--space-5) 0 var(--space-3);
   }

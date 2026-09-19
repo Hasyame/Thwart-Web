@@ -33,14 +33,14 @@
 
   const token = $derived(session.account?.token ?? null);
   const busy = $derived(sync.phase.kind === 'staging' || sync.phase.kind === 'working');
-  const on = $derived(sync.phase.kind === 'on');
+  const on = $derived(sync.enabled);
 
   async function toggle(): Promise<void> {
     if (token === null) {
       return;
     }
     if (on) {
-      turnOff();
+      await turnOff();
       return;
     }
     await turnOn(token, uiLocale);
@@ -87,11 +87,11 @@
     case — a browser on a shared machine should not start reaching for the
     account because a phone was told to.
   -->
-  <label class="tick" class:unavailable={!sync.adopted}>
+  <label class="tick" class:unavailable={!sync.enabled}>
     <input
       type="checkbox"
-      checked={autoSync.enabled}
-      disabled={!sync.adopted}
+      checked={sync.enabled && autoSync.enabled}
+      disabled={!sync.enabled}
       onchange={(event) => setAutoSync(event.currentTarget.checked)}
     />
     <span>{t.autoSyncSwitch}</span>
@@ -103,7 +103,8 @@
   {:else if sync.phase.kind === 'working'}
     <p class="notice">{t.syncWorking}</p>
   {:else if sync.phase.kind === 'failed'}
-    <p class="warning" role="alert">{t.accountError(sync.phase.code)}</p>
+    <p class="warning" role="alert">{sync.phase.code === 'push_failed' ? t.syncStopped : t.accountError(sync.phase.code)}</p>
+    <button class="btn" type="button" onclick={() => void (sync.enabled ? runSync(token ?? '', uiLocale) : turnOn(token ?? '', uiLocale))}>{t.retry}</button>
   {:else if sync.phase.kind === 'asking'}
     {@const plan = sync.phase.summary}
     <!--

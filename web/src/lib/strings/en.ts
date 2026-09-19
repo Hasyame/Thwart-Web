@@ -63,14 +63,25 @@ export const en: Strings = {
     'Every card of Marvel Champions: The Card Game, in English or French, searchable below. Tick the packs you own, and the site knows which decks you can build, which games you can draw and which campaigns you can play.',
   homeIntroNote:
     'Free, works offline, nothing to install and no account needed. Also on Android. Unofficial: card data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.',
+  install: {
+    title: 'Install on iPhone or iPad',
+    intro: 'Use Thwart from your Home Screen, like an app.',
+    safari: 'Open thwart.app in Safari.',
+    share: 'Open the Share menu, then choose Add to Home Screen. You may need to open the More menu first.',
+    add: 'If offered, enable Open as Web App, then tap Add. Launch Thwart using its new icon.',
+    offline:
+      'Open Thwart online first. Downloaded card data and your saved collection, decks and games are available offline. Card images and pages you have not loaded may need a connection. Account sync and BoardGameGeek need internet access.',
+    updates:
+      'To finish installing an update, close all Thwart tabs and the installed app, then reopen. If card data is still old, open Thwart online again after it finishes downloading.',
+  },
   home: {
     title: 'Thwart, the Marvel Champions companion',
     lead:
-      'Every card of Marvel Champions: The Card Game in English or French, your collection, a deck builder that knows the rules, a random game generator, a draft, the nine campaigns with their setup and tracker, and the history and statistics of your games. Free, offline, in the browser and on Android.',
+      'Your Marvel Champions collection, decks, campaigns and games, in English or French. Free in your browser, or installed on iPhone and iPad.',
     readyToPlay: (name) => `Ready to play, ${name}`,
     accountTitle: 'Keep your games, wherever you play',
     accountBody:
-      'Without an account, everything lives in this browser alone: clearing its data, or changing device, loses your collection, decks, campaigns and games. An account keeps them safe and in sync between browsers and the Android app, and logs your games on BoardGameGeek if you like.',
+      'Enable account sync to keep your collection, decks and games across devices. Without sync, keep a backup before clearing browser data.',
     accountNote: 'Everything works without one, on this device. An address, a password, nothing else asked.',
     signIn: 'Sign in or create an account',
     whereTo: 'Where to',
@@ -249,8 +260,7 @@ export const en: Strings = {
   navCampaigns: 'Campaigns',
   campaignsTitle: 'Campaigns',
   campaignsEmpty: 'No campaigns here.',
-  campaignsEmptyHint:
-    'Import a backup from the Android app on the Collection page and your campaigns will show up.',
+  campaignsEmptyHint: 'Start a new campaign, enable account sync, or import an Android backup on the Collection page.',
   campaignProgress: (done, total) => `${done} of ${total} scenarios beaten`,
   campaignConceded: 'conceded',
   campaignFinished: 'finished',
@@ -295,8 +305,7 @@ export const en: Strings = {
   seats: 'Decks & players',
   addDeck: 'Add a deck',
   noSeatsYet: 'Add at least one deck.',
-  noDecksForPlay:
-    'A player is a deck, so there is nothing to add yet. Import one on the Decks page and it will appear here.',
+  noDecksForPlay: 'Each player needs a deck. Create or import one on the Decks page, then return here.',
   modularChooseNote:
     'Whatever you actually shuffled in. Only sets from packs you own are listed.',
   startGame: 'Start the game',
@@ -344,7 +353,7 @@ export const en: Strings = {
   deckSave: 'Save',
   deckContents: 'In the deck',
   deckAddCards: 'Add cards',
-  deckEmpty: 'Nothing in it yet. Search on the right and press the plus.',
+  deckEmpty: 'No cards yet. Open Cards, find a card and press its plus button.',
   deckHeroCards: 'Hero cards',
   deckTabDeck: 'Deck',
   deckTabPool: 'Cards',
@@ -658,10 +667,10 @@ export const en: Strings = {
   accountLeaving: 'Signing out',
   accountSignOut: 'Sign out',
   accountSignOutKeeps:
-    'Everything on this browser stays exactly where it is. Signing out forgets the account, not your collection, decks, plays or campaigns.',
+    'Signing out removes local copies already saved to your account. Unsynced changes stay on this device. Sign in and enable sync to restore your account data.',
   accountWhy: 'What an account is for',
   accountWhyBody:
-    'One place your collection, decks, plays and campaigns live, so the same data is on your phone and in this browser. Until then, the backup file on the Collection page is how it travels.',
+    'Sign in and enable sync to share your collection, decks, games and campaigns between devices. You can also transfer them using a backup from the Collection page.',
   accountPrivacy:
     'The server stores your records without reading them: it does not know what a card is. Your address is kept to sign you in and for nothing else. You can export everything or delete the account outright, and neither needs anybody\u2019s permission.',
   accountError: (code) =>
@@ -711,7 +720,7 @@ export const en: Strings = {
     `This forgets all ${owned} packs, quantities included. It does not come back.`,
   bulkClearYes: 'Clear it',
   collectionIntro:
-    'Tick the packs you own. This is stored in this browser only; nothing is sent anywhere, and there is no account. Use the export below to carry it to another device.',
+    'Tick the packs you own. Changes stay on this device unless you enable account sync. Export a backup to keep a separate copy.',
   collectionOwned: (owned, total) => `${owned} of ${total} packs owned`,
   storageUnavailable:
     'This browser will not let the site store data, so the collection cannot be saved. A private window or blocked site data is the usual cause.',
@@ -870,7 +879,7 @@ export const en: Strings = {
     'Signing in only said who you are. This is what moves your collection, decks, games and campaigns between your devices.',
   autoSyncSwitch: 'Sync on its own',
   autoSyncNote:
-    'Every change made here goes to the account within a couple of seconds, and changes made elsewhere arrive here as they happen. This choice stays on this browser and is never carried to your other devices, so each one decides for itself.',
+    'While sync is enabled, this option sends local changes automatically. Changes from other devices arrive through live sync. These controls apply to this browser only.',
   autoSyncScenario: 'When a scenario ends, in a campaign or not',
   autoSyncCampaign: 'When a campaign ends',
   autoSyncBreak: 'When you put a game away for a long break',
@@ -1062,7 +1071,7 @@ export const en: Strings = {
   unfavourite: 'Remove from favourites',
   backupTitle: 'Backup file',
   backupIntro:
-    'The same file the Android app reads and writes. Until there is an account to sync with, this is how data moves between your phone and this browser.',
+    'Save a copy of your data or transfer it between Thwart Web and Android. Backups also work without an account.',
   backupImport: 'Import a backup…',
   backupExport: 'Export a backup',
   backupAboutToImport: 'This file contains:',

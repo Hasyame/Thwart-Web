@@ -181,6 +181,7 @@ function ready(): boolean {
     autoSync.enabled &&
     session.account !== null &&
     sync.adopted &&
+    sync.enabled &&
     (typeof navigator === 'undefined' || navigator.onLine !== false)
   );
 }
@@ -209,12 +210,14 @@ async function flush(): Promise<void> {
     running = false;
   }
 
-  if (sync.phase.kind === 'failed' && !retried) {
-    retried = true;
+  if (sync.phase.kind === 'failed') {
     owed = true;
     rememberOwed(true);
-    schedule(RETRY_MS);
-  } else if (sync.phase.kind !== 'failed') {
+    if (!retried) {
+      retried = true;
+      schedule(RETRY_MS);
+    }
+  } else {
     retried = false;
   }
 }

@@ -1,9 +1,8 @@
 #!/bin/sh
 #
-# Builds the account server and restarts it.
+# Builds the approved account server binary. release.sh restarts and verifies it.
 #
-#   sudo -H -u thwart /srv/thwart/repo/deploy/update-api.sh
-#   sudo systemctl restart thwart-api
+#   sudo -H -u thwart /srv/thwart/repo/deploy/release.sh
 #
 # Deliberately separate from update.sh, and deliberately not on the nightly
 # timer. update.sh refreshes card data every night and swaps a directory of
@@ -19,10 +18,8 @@ set -eu
 REPO="${REPO:-/srv/thwart/repo}"
 BIN="${BIN:-/srv/thwart/bin}"
 DATA="${DATA:-/srv/thwart/db}"
-# Which branch to build. `main` by default, so running this by hand does what
-# it always did; release.sh passes `api-release`, which moves only when a
-# person presses the button.
-REF="${REF:-main}"
+# Only the pointer approved using Release the API is built by default.
+REF="${REF:-api-release}"
 
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
@@ -46,8 +43,10 @@ export GODEBUG=netdns=cgo
 # — which does not include /usr/local/go/bin. The symptom is a deploy that
 # fetches, then fails on `go: not found` while `go` works perfectly well when
 # you ssh in and type it, which is a confusing ten minutes at the wrong moment.
-PATH="/usr/local/go/bin:$PATH"
-export PATH
+if ! command -v go >/dev/null 2>&1; then
+    PATH="/usr/local/go/bin:$PATH"
+    export PATH
+fi
 
 cd "$REPO"
 
@@ -57,7 +56,7 @@ git fetch --quiet origin "$REF"
 # main, and resetting would drag the local main pointer to whichever ref
 # was deployed last. Untracked files are left alone deliberately, because
 # node_modules and the card data live there and both are expensive.
-git checkout --quiet --force --detach "origin/$REF"
+git checkout --quiet --force --detach "${COMMIT:-origin/$REF}"
 
 mkdir -p "$BIN" "$DATA"
 
@@ -77,12 +76,11 @@ CGO_ENABLED=0 go build -trimpath -o "$BIN/thwart-api.new" .
 
 mv -f "$BIN/thwart-api.new" "$BIN/thwart-api"
 
-# What the binary was built from, recorded where a script can read it without
-# the service being up. release.sh compares the site against this to refuse
-# publishing a front end that expects a newer server than the one running.
-git rev-parse HEAD > "$BIN/thwart-api.commit"
+# This describes the binary on disk, not the running service. release.sh
+# writes thwart-api.commit only after health and version checks pass.
+git rev-parse HEAD > "$BIN/thwart-api.built"
 
 log "built $(git rev-parse --short HEAD)"
-log "now run: sudo systemctl restart thwart-api"
+log "binary ready; release.sh must restart and verify it before site publication"
 # The running build is reported by GET /api/v1/version, so the restart can be
 # confirmed from outside rather than taken on trust.

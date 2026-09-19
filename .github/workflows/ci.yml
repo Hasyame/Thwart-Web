@@ -88,6 +88,14 @@ jobs:
         working-directory: web
         run: npm run test:engine-sync
 
+      - name: Sync storage and lifecycle
+        working-directory: web
+        run: npm run test:sync-integration
+
+      - name: Release failure handling
+        working-directory: web
+        run: npm run test:release
+
       # A play can be set aside: kept, and left out of the numbers. The failure
       # is silent — a filter applied to the headline and not to the tables
       # gives a page whose rows do not add up to their own heading, and nobody

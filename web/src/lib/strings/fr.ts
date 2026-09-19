@@ -63,14 +63,27 @@ export const fr: Strings = {
     'Toutes les cartes de Marvel Champions : Le Jeu de Cartes, en français ou en anglais, à chercher ci-dessous. Cochez les extensions que vous possédez, et le site sait quels decks vous pouvez construire, quelles parties vous pouvez tirer et quelles campagnes vous pouvez jouer.',
   homeIntroNote:
     'Gratuit, hors ligne, rien à installer et sans compte. Aussi sur Android. Non officiel : données des cartes de MarvelCDB ; Marvel Champions appartient à Fantasy Flight Games et Marvel.',
+  install: {
+    title: 'Installer sur iPhone ou iPad',
+    intro: 'Utilisez Thwart depuis l’écran d’accueil, comme une application.',
+    safari: 'Ouvrez thwart.app dans Safari.',
+    share:
+      'Ouvrez le menu Partager, puis choisissez Sur l’écran d’accueil. Il peut être nécessaire d’ouvrir d’abord le menu Plus.',
+    add:
+      'Si l’option est proposée, activez Ouvrir comme app web, puis touchez Ajouter. Lancez Thwart avec sa nouvelle icône.',
+    offline:
+      'Ouvrez d’abord Thwart en ligne. Les données de cartes téléchargées ainsi que votre collection, vos decks et vos parties enregistrés restent disponibles hors ligne. Les images et les pages jamais chargées peuvent nécessiter une connexion. La synchronisation du compte et BoardGameGeek nécessitent Internet.',
+    updates:
+      'Pour terminer une mise à jour, fermez tous les onglets Thwart et l’application installée, puis rouvrez-la. Si les données des cartes restent anciennes, rouvrez Thwart en ligne après leur téléchargement.',
+  },
   home: {
     title: 'Thwart, le compagnon Marvel Champions',
     lead:
-      'Toutes les cartes de Marvel Champions : Le Jeu de Cartes en français ou en anglais, votre collection, un constructeur de decks qui connaît les règles, un générateur de partie aléatoire, un draft, les neuf campagnes avec leur mise en place et leur suivi, et l’historique et les statistiques de vos parties. Gratuit, hors ligne, dans le navigateur et sur Android.',
+      'Votre collection, vos decks, vos campagnes et vos parties de Marvel Champions, en français ou en anglais. Gratuit dans le navigateur ou installé sur iPhone et iPad.',
     readyToPlay: (name) => `Prêt à jouer, ${name}`,
     accountTitle: 'Gardez vos parties, où que vous jouiez',
     accountBody:
-      'Sans compte, tout vit dans ce seul navigateur : effacer ses données, ou changer d’appareil, perd votre collection, vos decks, vos campagnes et vos parties. Un compte les garde en sûreté et synchronisées entre navigateurs et l’application Android, et enregistre vos parties sur BoardGameGeek si vous le souhaitez.',
+      'Activez la synchronisation du compte pour retrouver votre collection, vos decks et vos parties sur vos appareils. Sans synchronisation, gardez une sauvegarde avant d’effacer les données du navigateur.',
     accountNote: 'Tout fonctionne sans, sur cet appareil. Une adresse, un mot de passe, rien d’autre.',
     signIn: 'Se connecter ou créer un compte',
     whereTo: 'Où aller',
@@ -252,7 +265,7 @@ export const fr: Strings = {
   campaignsTitle: 'Campagnes',
   campaignsEmpty: 'Aucune campagne ici.',
   campaignsEmptyHint:
-    "Importez une sauvegarde de l'application Android sur la page Collection et vos campagnes apparaîtront.",
+    'Commencez une nouvelle campagne, activez la synchronisation du compte ou importez une sauvegarde Android sur la page Collection.',
   campaignProgress: (done, total) =>
     done === 1 ? `1 scénario battu sur ${total}` : `${done} scénarios battus sur ${total}`,
   campaignConceded: 'abandonnée',
@@ -299,8 +312,7 @@ export const fr: Strings = {
   seats: 'Decks & nombre de joueurs',
   addDeck: 'Ajouter un deck',
   noSeatsYet: 'Ajoutez au moins un deck.',
-  noDecksForPlay:
-    "Un joueur est un deck, il n'y a donc rien à ajouter pour le moment. Importez-en un sur la page Decks et il apparaîtra ici.",
+  noDecksForPlay: 'Chaque joueur a besoin d’un deck. Créez-en un ou importez-en un sur la page Decks, puis revenez ici.',
   modularChooseNote:
     'Ce que vous avez réellement mélangé. Seuls les sets modulaires des paquets que vous possédez sont listés.',
   startGame: 'Commencer la partie',
@@ -346,7 +358,7 @@ export const fr: Strings = {
   deckSave: 'Enregistrer',
   deckContents: 'Dans le deck',
   deckAddCards: 'Ajouter des cartes',
-  deckEmpty: 'Encore vide. Cherchez \u00e0 droite et appuyez sur le plus.',
+  deckEmpty: 'Aucune carte pour le moment. Ouvrez Cartes, trouvez une carte et appuyez sur son bouton plus.',
   deckHeroCards: 'Cartes du h\u00e9ros',
   deckTabDeck: 'Deck',
   deckTabPool: 'Cartes',
@@ -667,10 +679,10 @@ export const fr: Strings = {
   accountLeaving: 'D\u00e9connexion',
   accountSignOut: 'Se d\u00e9connecter',
   accountSignOutKeeps:
-    'Tout ce qui est sur ce navigateur reste exactement o\u00f9 c\u2019est. Se d\u00e9connecter oublie le compte, pas votre collection, vos decks, vos parties ni vos campagnes.',
+    'La déconnexion retire les copies locales déjà enregistrées dans votre compte. Les changements non synchronisés restent sur cet appareil. Reconnectez-vous et activez la synchronisation pour retrouver les données du compte.',
   accountWhy: '\u00c0 quoi sert un compte',
   accountWhyBody:
-    'Un seul endroit pour votre collection, vos decks, vos parties et vos campagnes, afin que les m\u00eames donn\u00e9es soient sur votre t\u00e9l\u00e9phone et dans ce navigateur. En attendant, le fichier de sauvegarde de la page Collection est la fa\u00e7on de les d\u00e9placer.',
+    'Connectez-vous et activez la synchronisation pour partager votre collection, vos decks, vos parties et vos campagnes entre appareils. Vous pouvez aussi les transférer avec une sauvegarde depuis la page Collection.',
   accountPrivacy:
     'Le serveur conserve vos enregistrements sans les lire : il ne sait pas ce qu\u2019est une carte. Votre adresse sert \u00e0 vous connecter et \u00e0 rien d\u2019autre. Vous pouvez tout exporter ou supprimer le compte, sans demander la permission \u00e0 personne.',
   accountError: (code) =>
@@ -720,7 +732,7 @@ export const fr: Strings = {
     `Ceci oublie les ${owned} paquets, quantit\u00e9s comprises. C\u2019est d\u00e9finitif.`,
   bulkClearYes: 'Vider',
   collectionIntro:
-    "Cochez les paquets que vous possédez. Tout est enregistré dans ce navigateur uniquement : rien n'est envoyé nulle part et il n'y a pas de compte. Utilisez l'export ci-dessous pour emporter vos données ailleurs.",
+    'Cochez les paquets que vous possédez. Les changements restent sur cet appareil sauf si vous activez la synchronisation du compte. Exportez une sauvegarde pour garder une copie séparée.',
   collectionOwned: (owned, total) => `${owned} paquets sur ${total} possédés`,
   storageUnavailable:
     "Ce navigateur refuse d'enregistrer les données du site, la collection ne peut donc pas être sauvegardée. Une fenêtre privée ou des données de site bloquées en sont la cause habituelle.",
@@ -879,7 +891,7 @@ export const fr: Strings = {
     'Se connecter n\u2019a fait que dire qui vous \u00eates. Ceci d\u00e9place votre collection, vos decks, vos parties et vos campagnes entre vos appareils.',
   autoSyncSwitch: 'Synchroniser tout seul',
   autoSyncNote:
-    "Chaque changement fait ici part vers le compte en quelques secondes, et ceux faits ailleurs arrivent ici au fur et à mesure. Ce choix reste sur ce navigateur et n'est jamais transmis à vos autres appareils : chacun décide pour lui-même.",
+    'Lorsque la synchronisation est activée, cette option envoie automatiquement les changements locaux. Ceux des autres appareils arrivent par la synchronisation en direct. Ces réglages concernent uniquement ce navigateur.',
   autoSyncScenario: "À la fin d'un scénario, en campagne ou non",
   autoSyncCampaign: "À la fin d'une campagne",
   autoSyncBreak: 'Quand vous rangez une partie pour une longue pause',
@@ -1074,7 +1086,7 @@ export const fr: Strings = {
   unfavourite: 'Retirer des favoris',
   backupTitle: 'Fichier de sauvegarde',
   backupIntro:
-    "Le même fichier que l'application Android lit et écrit. En attendant un compte à synchroniser, c'est ainsi que les données circulent entre votre téléphone et ce navigateur.",
+    'Gardez une copie de vos données ou transférez-les entre Thwart Web et Android. Les sauvegardes fonctionnent aussi sans compte.',
   backupImport: 'Importer une sauvegarde…',
   backupExport: 'Exporter une sauvegarde',
   backupAboutToImport: 'Ce fichier contient :',

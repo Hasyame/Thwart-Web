@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const { version } = createRequire(import.meta.url)('./package.json') as {
@@ -38,14 +39,19 @@ function serviceWorker(): Plugin {
         ...assets,
       ];
 
-      const source = readFileSync(
+      const worker = readFileSync(
         fileURLToPath(new URL('./src/sw.js', import.meta.url)),
         'utf8',
-      )
+      );
+      const identity = createHash('sha256').update(worker).update([...assets].sort().join('|'));
+      for (const file of ['index.html', 'public/manifest.webmanifest', 'public/icon.svg', 'public/icon-512.png', 'public/apple-touch-icon.png']) {
+        identity.update(readFileSync(fileURLToPath(new URL(file, import.meta.url))));
+      }
+      const source = worker
         .replace('__PRECACHE_MANIFEST__', JSON.stringify(shell, null, 2))
         // Derived from the asset hashes, so it changes exactly when the shell
         // does and not on every rebuild of identical code.
-        .replace('__BUILD_ID__', assets.join('|').replace(/[^a-zA-Z0-9]/g, '').slice(-16));
+        .replace('__BUILD_ID__', identity.digest('hex').slice(0, 16));
 
       this.emitFile({ type: 'asset', fileName: 'sw.js', source });
     },

@@ -46,6 +46,8 @@ export interface StoredSyncState {
   readonly collections?: string;
   readonly recoveryCodeIssuedAt: string;
   readonly lastSyncedAt: number | null;
+  /** Device-local switch; never included in sync bodies or backups. */
+  readonly syncEnabled?: boolean;
   /**
    * The name this browser registered itself under, so the device list is
    * readable rather than a column of identical rows.
@@ -70,13 +72,16 @@ export interface SyncRecordState {
 
 export const SYNC_STATE_KEY = 'current';
 
+export function hasAdopted(state: StoredSyncState | undefined): boolean {
+  return state !== undefined && (state.cursor > 0 || state.lastSyncedAt != null);
+}
+
 /**
  * A stable digest of a record body.
  *
  * FNV-1a over the body's canonical JSON. Not a cryptographic hash and not
- * trying to be: it decides whether to re-send a record, so a collision costs
- * one unnecessary upload of a row the server already has, keyed by id, which
- * is a no-op.
+ * trying to be: it decides whether to re-send a record. A collision can hide
+ * an edit, so this compact digest is change detection, not proof of equality.
  *
  * The canonical part matters more than the hash. `JSON.stringify` preserves
  * insertion order, so two objects with the same fields written in a different

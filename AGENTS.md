@@ -25,7 +25,7 @@ here.
 | `web/` | The site: Vite 7 + Svelte 5 (runes) + TypeScript (strict, no `any`), Dexie (IndexedDB). Static output, PWA with a hand-written service worker. |
 | `server/` | The account + sync API: Go 1.25, single binary, one SQLite file (`modernc.org/sqlite`, pure Go, no cgo needed except for `-race`). |
 | `deploy/` | Everything that runs on the VPS: nginx configs, systemd units and timers, the release/update/backup scripts, hardening script, fail2ban jail, a live probe. These are **references**; the host's live copies are hand-carried (see §5). |
-| `docs/deployment.md` | The operator's guide to the VPS. Partly stale (see §8). |
+| `docs/deployment.md` | The operator's guide to the VPS, including the release handshake and backup timer. |
 | `docs/design/*.md` | Design records (01 data audit, 02 sync protocol, 03 stack ADRs, 04 roadmap, 05 operations, 06/08 Android briefs, 07 live sync). 02 is the sync contract with Android. |
 | `docs/spec/*.md`, `docs/spec/achievements/` | Feature specifications shared with the Android app: statistics, campaigns, ratings and modular sets, synergy + draft, Fear No Evil one-off, achievements (five files incl. `test-vectors.json`). |
 | `.github/workflows/ci.yml`, `release-api.yml` | CI and the release handshake (§3). |
@@ -72,9 +72,12 @@ here.
 - **Sync**: `src/lib/sync/` implements docs/design/02. Collections are
   listed in `collections.ts` (owned_packs, excluded sets/scenarios,
   favourites, deck folders, ratings, saved decks, campaign runs/events,
-  plays, settings, randomizer history); bodies are opaque JSON, merge is
-  last-write by `updatedAt`, tombstones are kept. `live.svelte.ts` uses SSE
-  (`/api/v1/sync/stream`). Sync runs after writes (`auto.svelte.ts`).
+  plays, settings, randomizer history); bodies are opaque JSON. Whole-record
+  order uses server revisions, not client `updatedAt`, with per-collection
+  refinements from docs/design/02. Tombstones are kept on the server.
+  `live.svelte.ts` uses SSE (`/api/v1/sync/stream`). Sync runs after writes
+  (`auto.svelte.ts`) when enabled; the device-local `syncEnabled` switch
+  persists in syncState. First adoption requires confirmation.
 - **Feature engines** (all pure, all tested by scripts): campaigns
   (`src/lib/campaign/`: template types, condition evaluator, engine fold,
   dealing, text), draft (`src/lib/draft/`), achievements
@@ -84,7 +87,9 @@ here.
 - **Service worker**: `src/sw.js`, emitted by a Vite plugin that injects the
   hashed asset list and a build id. Shell is precached; `/data/` is
   stale-while-revalidate; `/api/` is never cached. Consequence: after a
-  release users need two loads to see fresh data.
+  release users may need two loads to see fresh data. New workers wait for old
+  tabs to close before deleting their cached lazy chunks; incomplete precaches
+  fail installation. Home and More explain installation, offline use and updates.
 
 ### 1.3 The server
 
@@ -137,6 +142,11 @@ instead):
 ```bash
 for t in $(node -e "console.log(Object.keys(require('./package.json').scripts).filter(k=>k.startsWith('test:')).join(' '))"); do npm run --silent $t || echo "$t FAILED"; done
 ```
+
+`test:sync-integration` exercises Dexie with fake-indexeddb and the sync
+lifecycle. `test:release` runs the real deploy scripts in a temporary directory
+with fake external commands; Windows requires Git Bash. Both run in CI before
+card data is fetched and never contact production.
 
 Most tests need `public/data/` (run `npm run data` first) and some need
 `public/data/campaigns/`.
@@ -228,8 +238,14 @@ than its API broke registration on 2026-09-04 (new field refused by
 site until someone presses "Release the API"**; say so when you make one.
 
 Failure handling: each half builds into a temporary name and swaps; a failed
-build leaves the previous binary/site serving. There is no automatic
-rollback and no alerting (see §8).
+build leaves the previous binary/site serving. The binary-on-disk stamp is
+`thwart-api.built`; `thwart-api.commit` is written only after restart, health
+and version verification. A failed restart is retried on the next release run.
+`update.sh` also gates publication on a healthy compatible API and defaults to
+`release`, including direct manual runs. `release.sh` pins both builds to the
+resolved commits. There is no automatic rollback or alerting (see §8).
+These repository changes require deployment before they describe the host's
+running scripts; no production rollout was performed during the local review.
 
 ---
 
@@ -375,15 +391,12 @@ devices with `last_seen`: `device`, timestamps in ms). Probe accounts
 
 ## 8. Known issues and technical debt
 
-- `docs/deployment.md` opens with "the account API does not exist yet" and
-  lists "no automatic backups": both stale; the sections on nginx, TLS,
-  release flow and rollback are still right.
 - The nginx route regex is duplicated (repo conf vs live file) and must be
   edited by hand on the host for each new route.
 - No monitoring/alerting: a failed nightly build or a stuck release is only
   visible in `journalctl`.
 - The service worker needs two loads after a release to show new data
-  (stale-while-revalidate). Nothing tells the user; the owner knows.
+  (stale-while-revalidate). The installation help now explains this.
 - The API has never been load-tested; Argon2 costs 64 MiB per login.
 - The card-data cache in CI is keyed on the fetch scripts only; a MarvelCDB
   data change is picked up only when the cache is evicted (≈7 days) or via
@@ -394,10 +407,6 @@ devices with `last_seen`: `device`, timestamps in ms). Probe accounts
   to a blank tile rather than a broken image.
 - `web/src/lib/changelog.ts` is hand-maintained; add an entry per release.
 - Password SSH auth on the VPS: status **Unknown / requires confirmation**.
-- `.gitignore` says a real `.env` "holds the session signing key" and that
-  `.env.example` is shipped. Neither is true today: the server reads no
-  environment variable and no `.env.example` exists. Whether a signing key
-  was ever planned: **Unknown / requires confirmation**.
 - "No em dash" rule: check both the literal character and the `\u2014`
   escape when adding strings; the sweep missed the escape once.
 
@@ -460,7 +469,6 @@ Speculative improvements (not requested):
 - Reduce TBT of the first load (Svelte/Dexie/sync in the entry chunk).
 - Fetch achievement definitions over the network as an override (v2 idea).
 - Feats achievements needing duration/end-state fields (parked in the spec).
-- Fix `docs/deployment.md`'s stale intro and "not here yet" list.
 
 ---
 

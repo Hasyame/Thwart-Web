@@ -484,6 +484,7 @@
   {:else if collection.owned.size === 0}
     <div class="notice surface">
       <p>{t.randomizerNoCollection}</p>
+      <a class="btn btn--primary" href="/collection">{t.navCollection}</a>
     </div>
   {:else}
     <div class="controls surface">

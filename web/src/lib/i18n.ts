@@ -490,6 +490,15 @@ export interface Strings {
   readonly versusAgain: string;
   readonly versusTiebreakTitle: string;
   readonly versusTiebreaks: readonly string[];
+  readonly install: {
+    readonly title: string;
+    readonly intro: string;
+    readonly safari: string;
+    readonly share: string;
+    readonly add: string;
+    readonly offline: string;
+    readonly updates: string;
+  };
   readonly filters: string;
   readonly filtersNote: string;
   readonly aspects: string;

@@ -38,7 +38,7 @@
   import { loadCard, loadIndex, loadMeta, loadPacks, loadSets } from './lib/data';
   import { db, storageAvailable, toggleFavourite as writeFavourite } from './lib/db';
   import { liveQuery } from 'dexie';
-  import { activeFilterCount, NO_FILTERS, searchCards, type Filters } from './lib/search';
+  import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
   import { applyHead, headFor } from './lib/head';
   import { configureCardViewer } from './lib/cardViewer.svelte';
@@ -950,6 +950,7 @@
       {/await}
     {/key}
   {:else}
+    <h1 class="search-title">{t.navCards}</h1>
     <SearchControls
       {t}
       {query}
@@ -965,19 +966,6 @@
         resultLimit = RESULT_PAGE;
       }}
     />
-
-    {#if query.trim() === '' && activeFilterCount(filters) === 0}
-      <!--
-        The search page's own words, for whoever indexes it: what this is.
-        The home page now carries the introduction; this is the card search
-        and says so. Gone as soon as a search begins, because then the
-        results are the page.
-      -->
-      <section class="intro">
-        <h1>{t.homeIntroTitle}</h1>
-        <p>{t.homeIntro}</p>
-      </section>
-    {/if}
 
     <p class="count muted" aria-live="polite">
       {t.resultCount(results.rows.length, results.total)}
@@ -1137,19 +1125,9 @@
   }
 
   /* Small and out of the way: a line of welcome, not a landing page. */
-  .intro {
-    max-width: var(--prose-max);
-    margin: 0 0 var(--space-4);
-  }
-
-  .intro h1 {
-    font-size: var(--text-lg);
-    margin: 0 0 var(--space-1);
-  }
-
-  .intro p {
-    margin: 0 0 var(--space-2);
-    font-size: var(--text-sm);
+  .search-title {
+    font-size: var(--text-2xl);
+    margin: var(--space-5) 0 var(--space-2);
   }
 
   /*

@@ -173,7 +173,7 @@ export function batchesOf(
   let bytes = 0;
 
   for (const record of records) {
-    const size = JSON.stringify(record).length;
+    const size = new TextEncoder().encode(JSON.stringify(record)).byteLength;
     const full = batch.length >= limits.batchRecords || (batch.length > 0 && bytes + size > limits.batchBytes);
     if (full) {
       batches.push(batch);
@@ -313,9 +313,8 @@ export async function syncOnce(ports: SyncPorts): Promise<SyncOutcome> {
    * an order this browser did not intend. And a batch that fails stops the
    * run: the next batch may depend on it, and the commonest real failure is
    * not a refusal but a lost response on a flaky connection — where the write
-   * did land. The batch id is what makes the retry safe, so it is generated
-   * per batch and the same one goes back on a retry; the server keeps the
-   * answer for a day and replays it rather than applying twice.
+   * did land. A failed run leaves records dirty. The next run pulls first to
+   * discover accepted writes, then builds new batches for what remains.
    */
   for (const batch of batchesOf(owed, limits)) {
     const batchId = ports.newBatchId();

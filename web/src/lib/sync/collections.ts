@@ -26,11 +26,8 @@ import type {
  * spelled differently here would not fail — it would quietly create a second
  * set of records that the phone never sees.
  *
- * Two local tables are deliberately absent:
- *
- *   `appSettings` — the Android app does not sync it either. Its enum has nine
- *   collections and settings is not one of them, so syncing it here would push
- *   rows no other client reads.
+ * appSettings travels as the five-key `settings` record defined in doc 02.
+ * Device-only preferences are kept outside that record.
  *
  *   `pausedGames` — a game put down mid-play describes the table in front of
  *   one person. Doc 01 keeps it out of sync for exactly that reason, and a
