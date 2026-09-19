@@ -814,17 +814,19 @@
   }
 
   /* Five cards fanned as a hand, each turned a little more than the last. */
+  /* Tall enough for the outer cards, which the turn drops below the middle
+     one: the box is the fan's whole outline, so nothing under it is covered. */
   .fan {
     position: relative;
     width: 100%;
     max-width: 26rem;
-    aspect-ratio: 26 / 15;
+    aspect-ratio: 26 / 18;
   }
 
   .fan-card {
     position: absolute;
     left: 50%;
-    bottom: 0;
+    top: 0;
     width: 32%;
     aspect-ratio: 5 / 7;
     object-fit: cover;
