@@ -40,6 +40,15 @@
  *   outside it, the comparison fails, and the inset is kept.
  *
  * So the failure mode is the old behaviour, never a tab bar under a system bar.
+ *
+ * # Since 2026-09-19
+ *
+ * The stylesheet asks for the inset only when the page is installed
+ * (`display-mode: standalone` or `fullscreen`, tokens.css): a browser tab is
+ * drawn by the browser, which keeps the system bar off the page, and Chrome
+ * on Android moves the value as its toolbar hides and shows during a scroll.
+ * This file is then the second guard, for an installed app on a browser that
+ * still reports an inset it has already withheld.
  */
 
 /** How much bigger the outside chrome must be than the inset to count. */

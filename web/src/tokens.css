@@ -187,8 +187,16 @@
    *
    * `watchSafeArea()` overwrites this with 0px once it has proved that is what
    * is happening. See web/src/lib/safeArea.ts for the proof it requires.
+   *
+   * And in a browser tab it is not asked at all. A tab is drawn by the
+   * browser, which keeps its own controls and the system bar off the page;
+   * the inset only ever describes what the *page* runs under, which is an
+   * installed app's situation, not a tab's. Chrome on Android changes the
+   * value as its toolbar hides and shows during a scroll, so a tab that
+   * trusted it had a tab bar growing and shrinking under the thumb. So: nothing
+   * in a tab, the inset when installed, and the proof above on top of that.
    */
-  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-bottom: 0px;
 
   /* ==== Motion =========================================================== */
 
@@ -205,6 +213,13 @@
   --page-max: 92rem;
   --prose-max: 46rem;
   --column-max: 56rem;
+}
+
+/* Installed: the page runs under the home indicator, and the inset says by how much. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /*
