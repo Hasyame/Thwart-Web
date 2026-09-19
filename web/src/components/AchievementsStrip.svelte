@@ -70,6 +70,15 @@
     return definition === undefined ? null : achievementArt(definition, index, achievements.catalogue);
   };
 
+  /*
+   * What the badge under the pointer is, said in one line under the rows
+   * rather than in a box beside the badge: a box positioned next to the
+   * last badge of a row ran past the right edge of a phone, widened the
+   * page, and the fixed tab bar went with the layout viewport. A line in
+   * the flow cannot overflow anything.
+   */
+  let hint = $state('');
+
   function go(event: MouseEvent): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
       return;
@@ -82,13 +91,20 @@
 {#snippet badge(status: AchievementStatus, dim: boolean)}
   {@const art = artOf(status)}
   <li class="badge" class:dim>
-    <a href={hrefFor({ name: 'achievements' })} onclick={go} aria-label={tipOf(status)}>
+    <a
+      href={hrefFor({ name: 'achievements' })}
+      onclick={go}
+      aria-label={tipOf(status)}
+      onmouseenter={() => (hint = tipOf(status))}
+      onmouseleave={() => (hint = '')}
+      onfocus={() => (hint = tipOf(status))}
+      onblur={() => (hint = '')}
+    >
       {#if art !== null}
         <img src={art} alt="" loading="lazy" />
       {:else}
         <span class="blank" aria-hidden="true">★</span>
       {/if}
-      <span class="tip" role="tooltip">{tipOf(status)}</span>
     </a>
   </li>
 {/snippet}
@@ -137,6 +153,7 @@
       </ul>
     {/if}
 
+    <p class="hint muted small" aria-live="polite">{hint}</p>
     <p class="see"><a href={hrefFor({ name: 'achievements' })} onclick={go}>{t.achievements.seeMine}</a></p>
   </section>
 {/if}
@@ -147,6 +164,8 @@
     padding: var(--space-3) var(--space-4);
     display: grid;
     gap: var(--space-2);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .count {
@@ -210,16 +229,12 @@
     list-style: none;
   }
 
-  .badge {
-    position: relative;
-  }
-
   .badge a {
     display: block;
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 50%;
-    overflow: visible;
+    overflow: hidden;
     border: 2px solid var(--accent);
     background: var(--surface-2);
   }
@@ -246,29 +261,10 @@
     filter: grayscale(1);
   }
 
-  /* What the badge is, under the pointer or the focus. */
-  .tip {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 6px);
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: 18rem;
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    background: var(--text);
-    color: var(--surface-1);
-    font-size: var(--text-xs);
-    line-height: 1.3;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--motion-fast) var(--ease-out);
-    z-index: 3;
-  }
-
-  .badge a:hover .tip,
-  .badge a:focus-visible .tip {
-    opacity: 1;
+  /* What the badge under the pointer is; the space is kept so nothing jumps. */
+  .hint {
+    margin: 0;
+    min-height: 1.4em;
   }
 
   .more a {

@@ -9,7 +9,7 @@
  *
  *   npm run test:safe-area
  */
-import { insetIsDoubled } from '../src/lib/safeArea.ts';
+import { decide, insetIsDoubled, verdictFor } from '../src/lib/safeArea.ts';
 
 let failures = 0;
 function check(label, ok, detail = '') {
@@ -85,6 +85,22 @@ function browser({ screenHeight, outerHeight, innerHeight }) {
   // the gap is enormous, but the inset is zero, so there is nothing to drop.
   browser({ screenHeight: 1440, outerHeight: 900, innerHeight: 800 });
   check('a small window on a big screen changes nothing', insetIsDoubled(0) === false);
+}
+
+{
+  // Chrome on Android hides its toolbar on the way down and shows it on the
+  // way up; each time outerHeight flips between meaningful and not. The
+  // verdict reached with the toolbar shown must survive the toolbar hiding,
+  // or the tab bar doubles under the thumb on every scroll.
+  browser({ screenHeight: 929, outerHeight: 823, innerHeight: 758 });
+  check('with the toolbar shown, the inset is judged doubled', verdictFor(48.3) === 'doubled');
+  browser({ screenHeight: 929, outerHeight: 758, innerHeight: 758 });
+  check('with it hidden, the browser cannot tell', verdictFor(48.3) === 'unknown');
+  check('and the earlier verdict stands', decide('unknown', 'doubled') === 'doubled');
+  check('as a kept one would', decide('unknown', 'kept') === 'kept');
+  check('a confident reading overturns the memory', decide('kept', 'doubled') === 'kept');
+  check('no inset is no question', verdictFor(0) === 'kept');
+  check('with nothing remembered, unknown stays unknown, which keeps the padding', decide('unknown', null) === 'unknown');
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

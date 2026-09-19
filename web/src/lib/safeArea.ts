@@ -88,21 +88,66 @@ function measureInsetBottom(): number {
   return height;
 }
 
+/**
+ * What one measurement says: the inset is doubled, it is not, or the browser
+ * cannot tell (outerHeight carries nothing).
+ */
+export type InsetVerdict = 'doubled' | 'kept' | 'unknown';
+
+export function verdictFor(inset: number): InsetVerdict {
+  if (inset <= 0) {
+    return 'kept';
+  }
+  if (!outerHeightIsMeaningful()) {
+    return 'unknown';
+  }
+  return insetIsDoubled(inset) ? 'doubled' : 'kept';
+}
+
+/**
+ * The verdict to apply, given this measurement and the last confident one.
+ *
+ * Chrome on Android hides its toolbar as the page scrolls down and shows it
+ * again on the way up, and each time the window resizes. With the toolbar
+ * hidden `outerHeight` equals `innerHeight` and says nothing; treating that
+ * as "keep the inset" put the padding back on every scroll up and took it
+ * off on every scroll down — a tab bar that doubled in height under the
+ * thumb. An "unknown" reading never overturns a confident one; only a
+ * confident reading does, and rotating the phone starts over.
+ */
+export function decide(current: InsetVerdict, previous: InsetVerdict | null): InsetVerdict {
+  if (current !== 'unknown') {
+    return current;
+  }
+  return previous ?? 'unknown';
+}
+
+let previous: InsetVerdict | null = null;
+
 function apply(): void {
   try {
-    const inset = measureInsetBottom();
-    if (insetIsDoubled(inset)) {
+    const verdict = decide(verdictFor(measureInsetBottom()), previous);
+    if (verdict !== 'unknown') {
+      previous = verdict;
+    }
+    if (verdict === 'doubled') {
       document.documentElement.style.setProperty('--safe-bottom', '0px');
     } else {
       // Back to the stylesheet's own value rather than to a number of our own:
-      // the situation can change under us when a phone is rotated, or when
-      // Android switches between gesture and button navigation.
+      // the situation can change under us when Android switches between
+      // gesture and button navigation.
       document.documentElement.style.removeProperty('--safe-bottom');
     }
   } catch {
     // Whatever went wrong, the stylesheet default is already correct.
     document.documentElement.style.removeProperty('--safe-bottom');
   }
+}
+
+/** A rotation changes which edge the system bar is on: the memory starts over. */
+function reset(): void {
+  previous = null;
+  apply();
 }
 
 /**
@@ -120,12 +165,12 @@ export function watchSafeArea(): () => void {
   apply();
 
   window.addEventListener('resize', apply);
-  window.addEventListener('orientationchange', apply);
+  window.addEventListener('orientationchange', reset);
   window.visualViewport?.addEventListener('resize', apply);
 
   return () => {
     window.removeEventListener('resize', apply);
-    window.removeEventListener('orientationchange', apply);
+    window.removeEventListener('orientationchange', reset);
     window.visualViewport?.removeEventListener('resize', apply);
   };
 }
