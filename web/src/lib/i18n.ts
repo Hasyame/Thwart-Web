@@ -99,8 +99,7 @@ export interface Strings {
     readonly completionOwned: (won: number, cells: number) => string;
     /** The three figures at the top, each said in full. */
     readonly pairsTitle: string;
-    readonly pairsOwned: (won: number, cells: number, heroes: number, scenarios: number) => string;
-    readonly pairsGlobal: (won: number, cells: number, heroes: number, scenarios: number) => string;
+    readonly pairsOwned: (won: number, cells: number) => string;
     readonly namedTitle: string;
     readonly namedCount: (unlocked: number, total: number) => string;
     readonly completionGlobal: (won: number, cells: number) => string;
