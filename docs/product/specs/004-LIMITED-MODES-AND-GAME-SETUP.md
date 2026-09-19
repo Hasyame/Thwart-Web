@@ -1,6 +1,6 @@
 # Limited formats and game preparation
 
-Status: implementation in progress, 2026-09-19. Applies to Android and Web.
+Status: implemented, 2026-09-20. Applies to Android and Web.
 
 The owner requested these five capabilities after the 1.57.0 release:
 
@@ -32,7 +32,7 @@ Existing sessions default to draft. Save ordinary decks with the existing option
 `sealed` tag and record the already-defined `sealed` play mode. No new sync
 collection, backup field, card database or permanent collection mutation is needed.
 
-Verification will cover shared-stock conservation, deterministic resume, legal
+Verification covers shared-stock conservation, deterministic resume, legal
 selection and removal, old sessions, novelty exhaustion and locks, achievement
 targets, saved-deck hand-off, and the affected UI flows on both platforms.
 
