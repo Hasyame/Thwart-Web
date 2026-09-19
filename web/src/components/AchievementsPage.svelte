@@ -36,7 +36,13 @@
   let scenarioPack = $state('');
   let aspect = $state('');
   let minLevel = $state<DifficultyLevel>('unknown');
-  let anySeat = $state(false);
+  /*
+   * Every seat at the table by default. Most of this history is one person
+   * playing two hands, and a hero they played is a hero they played; the
+   * statistics credit every seat the same way. The named achievements keep
+   * the owner's seat, as the specification says.
+   */
+  let anySeat = $state(true);
   let showLosses = $state(true);
 
   const current = $derived(achievements.state);
@@ -790,12 +796,15 @@
     opacity: 0.35;
   }
 
+  /* Played and not beaten: still mostly grey, with the gold frame saying
+     "met" — clearly short of the full colour a win brings. */
   .sticker.played .frame {
     border-color: var(--gold);
   }
 
   .sticker.played .frame img {
-    opacity: 0.75;
+    filter: grayscale(0.7);
+    opacity: 0.8;
   }
 
   .sticker.won .frame {
