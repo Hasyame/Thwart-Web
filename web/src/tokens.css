@@ -211,7 +211,7 @@
      narrower where it appears, since a short measure is an argument about
      prose, not about a results grid. */
   --page-max: 92rem;
-  --prose-max: 46rem;
+  --prose-max: 60rem;
   --column-max: 56rem;
 }
 
