@@ -5,6 +5,7 @@
   import { derive } from '../lib/achievements/derive';
   import { CLASSIC_ASPECTS, LEVEL_RANK, type AchievementDefinition, type AchievementStatus, type Cell, type DifficultyLevel, type Tally } from '../lib/achievements/types';
   import { FNE_PREFIX, loadFneBox } from '../lib/fearNoEvil';
+  import { cardImageUrl } from '../lib/data';
 
   /**
    * The achievements: the grid, the named ones, the recent unlocks.
@@ -106,13 +107,6 @@
       }));
   };
 
-  const heroGroups = $derived(
-    groupBy(
-      (catalogue?.heroes ?? []).filter((h) => heroPack === '' || h.packCode === heroPack),
-      (h) => h.packCode,
-      (h) => heroName.get(h.code) ?? h.code,
-    ),
-  );
   const scenarioGroups = $derived(
     groupBy(
       (catalogue?.scenarios ?? []).filter((s) => scenarioPack === '' || s.packCode === scenarioPack),
@@ -122,6 +116,108 @@
   );
   const heroPacks = $derived([...new Set((catalogue?.heroes ?? []).map((h) => h.packCode))]);
   const scenarioPacks = $derived([...new Set((catalogue?.scenarios ?? []).map((s) => s.packCode))]);
+  const ownedPacks = $derived(new Set(achievements.lastInput?.ownedPacks ?? []));
+  /** The scenarios a hero's bar counts against: the collection's, or the whole game's. */
+  const ownedScenarioKeys = $derived(new Set((catalogue?.scenarios ?? []).filter((s) => ownedPacks.has(s.packCode)).map((s) => s.key)));
+  const allScenarioKeys = $derived(new Set((catalogue?.scenarios ?? []).map((s) => s.key)));
+
+  /*
+   * One row per hero with a bar: scenarios beaten out of the collection's.
+   * The heroes shown are the collection's and any hero ever played; a hero
+   * from a box you do not own and never played is a row of nothing, and
+   * seventy of those hide the ones that matter. A tick shows them all.
+   */
+  let everyHero = $state(false);
+  interface HeroRow {
+    readonly code: string;
+    readonly name: string;
+    readonly packCode: string;
+    readonly won: number;
+    readonly total: number;
+    readonly wonGlobal: number;
+    readonly totalGlobal: number;
+    readonly played: number;
+  }
+  const heroRows = $derived.by((): HeroRow[] => {
+    const played = new Map<string, { won: Set<string>; wonGlobal: Set<string>; played: Set<string> }>();
+    for (const cell of gridState?.cells ?? []) {
+      const tally = anySeat ? cell.anySeat : cell;
+      if (tally.attempts === 0) {
+        continue;
+      }
+      const entry = played.get(cell.heroCode) ?? { won: new Set(), wonGlobal: new Set(), played: new Set() };
+      entry.played.add(cell.scenarioKey);
+      if (tally.wins > 0) {
+        if (allScenarioKeys.has(cell.scenarioKey)) {
+          entry.wonGlobal.add(cell.scenarioKey);
+        }
+        if (ownedScenarioKeys.has(cell.scenarioKey)) {
+          entry.won.add(cell.scenarioKey);
+        }
+      }
+      played.set(cell.heroCode, entry);
+    }
+    const rows: HeroRow[] = [];
+    for (const hero of catalogue?.heroes ?? []) {
+      const entry = played.get(hero.code);
+      const shownHero = everyHero || ownedPacks.has(hero.packCode) || entry !== undefined;
+      if (!shownHero || (heroPack !== '' && hero.packCode !== heroPack)) {
+        continue;
+      }
+      rows.push({
+        code: hero.code,
+        name: heroName.get(hero.code) ?? hero.code,
+        packCode: hero.packCode,
+        won: entry?.won.size ?? 0,
+        total: ownedScenarioKeys.size,
+        wonGlobal: entry?.wonGlobal.size ?? 0,
+        totalGlobal: allScenarioKeys.size,
+        played: entry?.played.size ?? 0,
+      });
+    }
+    return rows.sort((a, b) => b.won - a.won || b.played - a.played || a.name.localeCompare(b.name, uiLocale));
+  });
+
+  /** The hero opened by hand, else the one last played, else the first of the list. */
+  let chosenHero = $state<string | null>(null);
+  const lastPlayedHero = $derived.by((): string | null => {
+    const facts = achievements.lastInput?.facts ?? [];
+    let latest: { playedAt: number; hero: string } | null = null;
+    for (const fact of facts) {
+      const hero = anySeat ? fact.seats[0]?.heroCode : (fact.seats.find((seat) => seat.isOwner)?.heroCode ?? fact.seats[0]?.heroCode);
+      if (hero !== undefined && (latest === null || fact.playedAt > latest.playedAt)) {
+        latest = { playedAt: fact.playedAt, hero };
+      }
+    }
+    return latest?.hero ?? null;
+  });
+  const selectedHero = $derived.by((): HeroRow | null => {
+    const wanted = chosenHero ?? lastPlayedHero;
+    return heroRows.find((row) => row.code === wanted) ?? heroRows[0] ?? null;
+  });
+
+  /** The chosen hero's scenarios, by pack, with each cell's state. */
+  interface ScenarioLine {
+    readonly key: string;
+    readonly name: string;
+    readonly kind: 'never' | 'played' | 'won';
+    readonly tally: Tally | null;
+    readonly owned: boolean;
+  }
+  const heroScenarios = $derived.by((): Group<ScenarioLine>[] => {
+    const hero = selectedHero;
+    if (hero === null) {
+      return [];
+    }
+    return scenarioGroups.map((group) => ({
+      pack: group.pack,
+      name: group.name,
+      items: group.items.map((scenario) => {
+        const tally = tallyOf(scenario.key, hero.code);
+        return { key: scenario.key, name: scenarioName(scenario.key), kind: stateOf(tally), tally, owned: ownedPacks.has(scenario.packCode) };
+      }),
+    }));
+  });
 
   const cellMap = $derived(new Map((gridState?.cells ?? []).map((c) => [`${c.scenarioKey}\u0000${c.heroCode}`, c] as const)));
   const tallyOf = (key: string, hero: string): Tally | null => {
@@ -241,54 +337,72 @@
       </label>
       <label class="tick"><input type="checkbox" bind:checked={anySeat} /><span>{anySeat ? t.achievements.filterAnySeat : t.achievements.filterOwnerSeat}</span></label>
       <label class="tick"><input type="checkbox" bind:checked={showLosses} /><span>{t.achievements.filterShowLosses}</span></label>
+      <label class="tick"><input type="checkbox" bind:checked={everyHero} /><span>{t.achievements.filterEveryHero}</span></label>
     </div>
 
-    <p class="legend muted small">
-      <span class="swatch never" aria-hidden="true"></span>{t.achievements.legendNever}
-      <span class="swatch played" aria-hidden="true"></span>{t.achievements.legendPlayed}
-      <span class="swatch won" aria-hidden="true"></span>{t.achievements.legendWon}
-    </p>
+    <!-- A bar per hero, and the chosen hero's scenarios beside it: the
+         last hero played opens by default, since that is the one whose
+         next game is being decided. -->
+    <div class="heroes">
+      <ol class="hero-list" aria-label={t.achievements.gridTitle}>
+        {#each heroRows as row (row.code)}
+          <li>
+            <button
+              type="button"
+              class="hero-row"
+              class:chosen={selectedHero?.code === row.code}
+              aria-pressed={selectedHero?.code === row.code}
+              onclick={() => (chosenHero = row.code)}
+            >
+              <span class="hero-name">{row.name}</span>
+              <span class="hero-count muted small">{t.achievements.progress(row.won, row.total)}</span>
+              <span class="bar hero-bar" aria-hidden="true"><span class="fill" style:width={`${percent(row.won, row.total)}%`}></span></span>
+            </button>
+          </li>
+        {/each}
+      </ol>
+      {#if heroRows.length === 0}
+        <p class="muted">{t.achievements.recentEmpty}</p>
+      {/if}
 
-    <!-- Rows are scenarios grouped by their pack, columns heroes grouped by
-         theirs: two facets, two filters, never one dropdown. -->
-    <div class="grid-scroll">
-      <table class="grid">
-        <thead>
-          <tr>
-            <th class="corner"></th>
-            {#each heroGroups as group (group.pack)}
-              <th class="pack-head" colspan={group.items.length} scope="colgroup">{group.name}</th>
-            {/each}
-          </tr>
-          <tr>
-            <th class="corner"></th>
-            {#each heroGroups as group (group.pack)}
-              {#each group.items as hero (hero.code)}
-                <th class="hero-head" scope="col"><span>{heroName.get(hero.code) ?? hero.code}</span></th>
+      {#if selectedHero !== null}
+        {@const hero = selectedHero}
+        {@const art = cardImageUrl(index.find((r) => r.code === hero.code)?.img)}
+        <section class="surface hero-detail" aria-live="polite">
+          <header class="hero-head">
+            {#if art !== null}<img class="hero-art" src={art} alt="" loading="lazy" />{/if}
+            <div>
+              <h3>{hero.name}</h3>
+              <p class="muted small">
+                {t.achievements.heroWon(hero.won, hero.total)} · {t.achievements.completionGlobal(hero.wonGlobal, hero.totalGlobal)}
+              </p>
+            </div>
+          </header>
+          <p class="legend muted small">
+            <span class="swatch never" aria-hidden="true"></span>{t.achievements.legendNever}
+            <span class="swatch played" aria-hidden="true"></span>{t.achievements.legendPlayed}
+            <span class="swatch won" aria-hidden="true"></span>{t.achievements.legendWon}
+          </p>
+          {#each heroScenarios as group (group.pack)}
+            <p class="group-title muted small">{group.name}</p>
+            <ul class="scenarios">
+              {#each group.items as line (line.key)}
+                <li class="scenario-line" class:dim={!line.owned} title={t.achievements.cell(hero.name, line.name, line.tally?.attempts ?? 0, line.tally?.wins ?? 0)}>
+                  <span class="swatch {line.kind}" aria-hidden="true">{#if line.kind === 'won'}<span class="mark">{levelMark(line.tally?.bestLevelWon ?? null)}</span>{/if}</span>
+                  <span class="scenario-name">{line.name}</span>
+                  <span class="muted small">
+                    {#if line.tally !== null && line.tally.attempts > 0}
+                      {t.achievements.cellShort(line.tally.attempts, line.tally.wins)}{#if line.tally.lastPlayedAt !== null} · {dayOf(line.tally.lastPlayedAt)}{/if}
+                    {:else}
+                      {t.achievements.legendNever}
+                    {/if}
+                  </span>
+                </li>
               {/each}
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each scenarioGroups as group (group.pack)}
-            <tr class="pack-row"><th colspan={1 + heroGroups.reduce((n, g) => n + g.items.length, 0)} scope="rowgroup">{group.name}</th></tr>
-            {#each group.items as scenario (scenario.key)}
-              <tr>
-                <th class="scenario-head" scope="row">{scenarioName(scenario.key)}</th>
-                {#each heroGroups as hg (hg.pack)}
-                  {#each hg.items as hero (hero.code)}
-                    {@const tally = tallyOf(scenario.key, hero.code)}
-                    {@const kind = stateOf(tally)}
-                    <td class="cell {kind}" title={t.achievements.cell(heroName.get(hero.code) ?? hero.code, scenarioName(scenario.key), tally?.attempts ?? 0, tally?.wins ?? 0) + (tally?.bestLevelWon ? ` · ${t.achievements.bestLevel(t.achievements.level(tally.bestLevelWon))}` : '')}>
-                      {#if kind === 'won'}<span class="mark">{levelMark(tally?.bestLevelWon ?? null)}</span>{/if}
-                    </td>
-                  {/each}
-                {/each}
-              </tr>
-            {/each}
+            </ul>
           {/each}
-        </tbody>
-      </table>
+        </section>
+      {/if}
     </div>
 
     <h2>{t.achievements.listTitle}</h2>
@@ -453,86 +567,138 @@
     background: var(--accent);
   }
 
-  /* The grid scrolls in both directions inside the page; the scenario
-     names stay put on the left and the hero names on top. */
-  .grid-scroll {
-    overflow: auto;
+  .heroes {
+    display: grid;
+    gap: var(--space-3);
+    align-items: start;
+  }
+
+  @media (min-width: 56rem) {
+    .heroes {
+      grid-template-columns: minmax(16rem, 1fr) 2fr;
+    }
+  }
+
+  .hero-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
     max-height: 70vh;
-    border: 1px solid var(--hairline);
-    border-radius: var(--radius-md);
+    overflow: auto;
   }
 
-  .grid {
-    border-collapse: separate;
-    border-spacing: 2px;
-    font-size: var(--text-xs);
-  }
-
-  .grid th {
-    font-weight: var(--weight-semibold);
+  .hero-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
     text-align: start;
+    cursor: pointer;
+  }
+
+  .hero-row:hover {
+    background: var(--surface-2);
+  }
+
+  .hero-row.chosen {
+    border-color: var(--accent);
     background: var(--surface-1);
-    position: sticky;
-    z-index: 1;
   }
 
-  .corner {
-    left: 0;
-    top: 0;
-    z-index: 3 !important;
+  .hero-name {
+    font-weight: var(--weight-semibold);
   }
 
-  .pack-head {
-    top: 0;
-    padding: 2px var(--space-2);
-    white-space: nowrap;
-    color: var(--text-muted);
+  .hero-bar {
+    grid-column: 1 / -1;
+    margin-top: var(--space-1);
+    height: 5px;
+  }
+
+  .hero-detail {
+    padding: var(--space-4);
+    display: grid;
+    gap: var(--space-2);
   }
 
   .hero-head {
-    top: 1.5rem;
-    height: 7rem;
-    vertical-align: bottom;
-    padding: 0 2px;
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
   }
 
-  .hero-head span {
-    display: block;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    white-space: nowrap;
-    max-height: 6.8rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .hero-head h3 {
+    margin: 0;
+    font-size: var(--text-lg);
   }
 
-  .pack-row th {
-    left: 0;
-    padding: var(--space-1) var(--space-2);
-    color: var(--text-muted);
+  .hero-head p {
+    margin: 2px 0 0;
+  }
+
+  .hero-art {
+    flex: none;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: 50% 15%;
+    border: 2px solid var(--accent);
+  }
+
+  .group-title {
+    margin: var(--space-2) 0 0;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
-  .scenario-head {
-    left: 0;
-    padding: 0 var(--space-2);
+  .scenarios {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .scenario-line {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-2);
+    align-items: center;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-xs);
+  }
+
+  .scenario-line.dim {
+    opacity: 0.55;
+  }
+
+  .scenario-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .cell {
-    width: 1.4rem;
-    height: 1.4rem;
-    min-width: 1.4rem;
-    border-radius: var(--radius-xs);
-    text-align: center;
+  .scenario-line .swatch {
+    display: grid;
+    place-items: center;
+    width: 1.1rem;
+    height: 1.1rem;
     color: var(--on-accent, #fff);
     font-weight: var(--weight-bold);
-    line-height: 1.4rem;
   }
 
   .mark {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
   }
 
   .named {

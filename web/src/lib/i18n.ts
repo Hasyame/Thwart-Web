@@ -113,6 +113,9 @@ export interface Strings {
     readonly filterOwnerSeat: string;
     readonly filterShowLosses: string;
     readonly filterAll: string;
+    readonly filterEveryHero: string;
+    readonly heroWon: (won: number, total: number) => string;
+    readonly cellShort: (attempts: number, wins: number) => string;
     readonly listTitle: string;
     readonly unlocked: string;
     readonly locked: string;
