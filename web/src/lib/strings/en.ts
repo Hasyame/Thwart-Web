@@ -88,7 +88,7 @@ export const en: Strings = {
     cardsDetail: 'Every card, searchable by name, text, trait, type, aspect or pack.',
     rulesDetail: 'The rules reference, for the question that comes up mid-game.',
     collectionDetail: 'Tick the packs you own; the rest of the site follows.',
-    playDetail: 'A campaign, your own setup, a random game or a draft, with the clock and the encounter tracker.',
+    playDetail: 'A campaign, a custom game, a random game or a draft, with the clock and the encounter tracker.',
     randomCard: 'A random card',
     randomCardDetail: 'One card from the whole game, for the fun of it. Reload for another.',
     historyDetail: 'Every game you recorded, with its villain, heroes, rounds and time.',
@@ -254,6 +254,7 @@ export const en: Strings = {
   resultCount: (shown: number, total: number) =>
     shown === total ? `${total} cards` : `${shown} of ${total} cards`,
   showMore: (n) => `Show ${n} more`,
+  navigateBack: 'Back',
   back: 'Back to search',
   cardNotFound: 'That card is not in the database.',
   traits: 'Traits',
@@ -311,7 +312,7 @@ export const en: Strings = {
       ? "1 event in this campaign's log is not read by this page."
       : `${n} events in this campaign's log are not read by this page.`,
   attempts: (n) => `${n} attempts`,
-  navPlay: 'My own setup',
+  navPlay: 'Custom game',
   navHistory: 'History',
   statsRecord: 'Record',
   statsSeeHistory: (games) => `See all ${games} games in the history`,
@@ -329,14 +330,14 @@ export const en: Strings = {
     shown === total ? `${total} games` : `${shown} of ${total} games`,
   historyEmpty: 'No games recorded yet.',
   historyEmptyHint:
-    'Record one from Your own game, or import a backup from the Android app on the Collection page. Everything you play shows up here.',
+    'Record one from Custom game, or import a backup from the Android app on the Collection page. Everything you play shows up here.',
   historyNoMatches: 'No game matches these filters.',
   historyNoMatchesHint: 'Widen the range, or clear them and start again.',
   historyRunEmpty: 'No scenario recorded against this campaign yet.',
   historyDeleteConfirm:
     'This removes the game from every device and from your statistics. It is kept as a deleted row so the removal can travel, and so it can be undone.',
   navStats: 'Stats',
-  playTitle: 'My own setup',
+  playTitle: 'Custom game',
   playSetupNote: 'Choose everything yourself. The clock runs while you play.',
   choose: 'Choose…',
   standardSetWith: 'Standard set played with it',
@@ -363,7 +364,7 @@ export const en: Strings = {
   statsTitle: 'Statistics',
   statsEmpty: 'No games recorded yet.',
   statsEmptyHint:
-    'Record one from My own setup, or import a backup from the Android app on the Collection page.',
+    'Record one from Custom game, or import a backup from the Android app on the Collection page.',
   statsNote:
     'Counted per seat, so a four-player game credits all four heroes rather than only the first.',
   winRateOf: (won, total) => `${won} won of ${total} ${total === 1 ? 'game' : 'games'}`,
@@ -450,7 +451,7 @@ export const en: Strings = {
     prepareAchievement: 'Prepare a game for this achievement',
     playNext: 'Decks saved. What would you like to play?',
     randomGame: 'Random game',
-    ownGame: 'Choose my own game',
+    ownGame: 'Custom game',
     campaign: 'Campaign',
     later: 'Play later',
     unplayedOnly: 'Only unplayed hero and scenario pairings',
@@ -664,7 +665,7 @@ export const en: Strings = {
   hubPaused: 'A game is waiting',
   settingsGroupedPlay: 'One Play tab',
   settingsGroupedPlayHint:
-    'Puts the random game, your own setup, the draft, the campaigns and versus behind a single Play tab, the way the Android app does.',
+    'Puts the random game, a custom game, the draft, the campaigns and versus behind a single Play tab, the way the Android app does.',
   navMoreTitle: 'Everything else',
   settingsTitle: 'Settings',
   close: 'Close',

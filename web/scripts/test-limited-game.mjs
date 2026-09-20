@@ -1,7 +1,9 @@
 import 'fake-indexeddb/auto';
 import assert from 'node:assert/strict';
 import { db } from '../src/lib/db.ts';
-import { limitedGame } from '../src/lib/limitedGame.ts';
+import { limitedDestination, limitedRollInput, limitedGame } from '../src/lib/limitedGame.ts';
+import { roll, EMPTY_DRAW } from '../src/lib/randomizer.ts';
+import { rollUnplayed, pairing } from '../src/lib/unplayed.ts';
 import { buildCampaignPlay } from '../src/lib/campaign/play.ts';
 import { saveDraft, loadDraft, clearDraft } from '../src/lib/draft/store.ts';
 import { DEFAULT_SETTINGS, EMPTY_PLAYER } from '../src/lib/draft/types.ts';
@@ -16,6 +18,19 @@ try {
   assert.deepEqual(setup.seats.map((s) => [s.deckId, s.deckName, s.aspect]), [
     ['sealed-one', 'My sealed deck', 'justice,protection'], ['draft-two', 'My draft deck', 'leadership'],
   ]);
+  assert.equal(limitedDestination('random').name, 'randomizer');
+  assert.equal(limitedDestination('campaign').name, 'campaigns');
+  assert.equal(limitedDestination('own').name, 'play');
+  const pools = { scenarios: [{ code: 'rhino', modularCount: 0, mandatoryModulars: [] }], heroes: [], modularSets: [],
+    aspects: ['justice'], difficulties: ['STANDARD_I'], ownedDifficulties: ['STANDARD_I'], villainChoices: {} };
+  const input = limitedRollInput({ pools, previous: EMPTY_DRAW, locked: new Set(), playerCount: 1 }, setup.seats);
+  for (let i = 0; i < 20; i++) {
+    const result = roll(input);
+    assert.equal(result.playerCount, 2);
+    assert.deepEqual(result.heroes.map((h) => [h.code, h.aspect]), [['hero-one', 'justice,protection'], ['hero-two', 'leadership']]);
+  }
+  assert.equal(rollUnplayed(input, new Set([pairing('hero-one', 'rhino')])), null);
+  assert.equal(rollUnplayed(input, new Set()).heroes.length, 2);
   await assert.rejects(limitedGame(['missing-deck'], false, [], []));
   for (const deck of decks) {
     const play = buildCampaignPlay({

@@ -53,8 +53,9 @@
   import { watchSafeArea } from './lib/safeArea';
   import PlayHub from './components/PlayHub.svelte';
   import { replayOf } from './lib/replay';
+  import type { Seat } from './lib/session.svelte';
   import type { Draw } from './lib/randomizer';
-  import { limitedGame, challengeGame } from './lib/limitedGame';
+  import { limitedDestination, limitedGame, challengeGame } from './lib/limitedGame';
   import type { AchievementChallenge } from './lib/achievements/challenge';
   let campaignExpert = $state(false);
   let campaignStartPending = $state(false);
@@ -73,15 +74,25 @@
       navigate({ name: 'play' });
     }
   }
+  let pageContext = $state<{ depth?: number; completedDeckIds?: string[]; sealed?: boolean; seats?: Seat[] }>(window.history.state ?? {});
+  function rememberDecks(ids: string[], sealed: boolean): void {
+    pageContext = { ...pageContext, completedDeckIds: ids, sealed };
+    window.history.replaceState($state.snapshot(pageContext), '');
+  }
   let campaignDeckIds = $state<readonly string[]>([]);
   async function playLimited(ids: readonly string[], mode: 'random' | 'campaign' | 'own'): Promise<void> {
     if (gameSession.current.phase !== 'setup') throw new Error(t.draft.activeGame);
     if (mode === 'campaign') {
       campaignDeckIds = [...ids];
-      navigate({ name: 'campaigns' });
+      navigate(limitedDestination(mode));
     } else {
-      prepareSession(await limitedGame(ids, mode === 'random', sets, index));
-      navigate({ name: 'play' });
+      const prepared = await limitedGame(ids, false, sets, index);
+      if (mode === 'random') {
+        navigate(limitedDestination(mode), { seats: prepared.seats });
+      } else {
+        prepareSession(prepared);
+        navigate(limitedDestination(mode));
+      }
     }
   }
   import { campaignLayoutOf, subjectsOfPlay, type CampaignLayout, type RatingSubject } from './lib/ratings';
@@ -434,13 +445,15 @@
     };
   });
 
-  function navigate(next: Route): void {
+  function navigate(next: Route, context: { seats?: Seat[] } = {}): void {
+    pageContext = { ...context, depth: (pageContext.depth ?? 0) + 1 };
     route = next;
-    window.history.pushState({}, '', pathForRoute(next, BASE));
+    window.history.pushState($state.snapshot(pageContext), '', pathForRoute(next, BASE));
     window.scrollTo({ top: 0 });
   }
 
   function onPopState(): void {
+    pageContext = window.history.state ?? {};
     route = routeFromPath(window.location.pathname, BASE, window.location.search);
   }
 
@@ -576,7 +589,7 @@
       scenarioName: scenarioName === '' ? draw.scenarioCode : scenarioName,
       difficulty: draw.difficulty ?? 'STANDARD_I',
       standardSet: draw.standardSet,
-      seats: draw.heroes.map((hero) => ({
+      seats: pageContext.seats ?? draw.heroes.map((hero) => ({
         deckId: hero.code,
         deckName: hero.name,
         heroCode: hero.code,
@@ -658,6 +671,9 @@
 />
 
 <main class="page">
+  {#if route.name !== 'home' && route.name !== 'card'}
+    <button class="btn btn--quiet" type="button" onclick={() => (pageContext.depth ?? 0) > 0 ? window.history.back() : navigate({ name: 'home' })}>← {t.navigateBack}</button>
+  {/if}
   {#if loading}
     <p class="notice muted">{t.loading}</p>
   {:else if loadError !== null}
@@ -718,7 +734,7 @@
     {#await RandomizerPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {sets} {index} {cardLocale} {storageOk} onPlay={playDraw} />
+      <Page {t} {sets} {index} {cardLocale} {storageOk} fixedSeats={pageContext.seats ?? []} onPlay={playDraw} />
     {:catch}
       <!-- The chunk did not arrive: a connection that dropped, or a tab
            open across a release whose files it was built against are
@@ -922,7 +938,7 @@
     {#await DraftPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {uiLocale} {cardLocale} {index} {packs} {storageOk} initiallySealed={draftSealed} onDone={() => navigate({ name: 'decks' })} onPlay={playLimited} />
+      <Page {t} {uiLocale} {cardLocale} {index} {packs} {storageOk} initiallySealed={pageContext.sealed ?? draftSealed} completedDeckIds={pageContext.completedDeckIds ?? []} onSaved={rememberDecks} onDone={() => navigate({ name: 'decks' })} onPlay={playLimited} />
     {:catch}
       <div class="notice surface">
         <p>{t.pageLoadError}</p>

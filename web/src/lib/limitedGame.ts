@@ -3,6 +3,9 @@ import { loadScenarioRules } from './data';
 import { loadFneBox } from './fearNoEvil';
 import { buildPools, EMPTY_DRAW, roll } from './randomizer';
 import type { CardSet, IndexRow } from './types';
+import type { RollInput, Aspect, DrawField } from './randomizer';
+import type { Seat } from './session.svelte';
+import type { Route } from './router';
 import type { Session } from './session.svelte';
 import type { AchievementChallenge } from './achievements/challenge';
 import { ownedHeroes, rulesFor } from './draft/context';
@@ -52,4 +55,21 @@ export async function limitedGame(ids: readonly string[], random: boolean, sets:
   const draw = roll({ pools, previous: EMPTY_DRAW, locked: new Set(), playerCount: seats.length });
   return { seats, scenarioCode: draw.scenarioCode ?? '', scenarioName: sets.find((s) => s.code === draw.scenarioCode)?.name ?? draw.scenarioCode ?? '',
     difficulty: draw.difficulty ?? 'STANDARD_I', standardSet: draw.standardSet, modularSetCodes: [...draw.mandatoryModularCodes, ...draw.modularSetCodes] };
+}
+
+export function limitedDestination(mode: 'random' | 'campaign' | 'own'): Route {
+  return { name: mode === 'random' ? 'randomizer' : mode === 'campaign' ? 'campaigns' : 'play' };
+}
+
+/** Saved decks fix the entire roster, including heroes with multiple aspects. */
+export function limitedRollInput(input: RollInput, seats: readonly Seat[]): RollInput {
+  if (seats.length === 0) return input;
+  return {
+    ...input,
+    playerCount: seats.length,
+    previous: { ...input.previous, playerCount: seats.length, heroes: seats.map((seat) => ({
+      code: seat.heroCode, name: seat.heroName, aspect: seat.aspect as Aspect,
+    })) },
+    locked: new Set<DrawField>([...input.locked, 'heroes']),
+  };
 }

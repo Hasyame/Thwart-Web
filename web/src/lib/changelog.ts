@@ -18,6 +18,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-09-20',
+    en: [
+      'After draft or sealed, Random game opens the randomizer with your saved decks, heroes and aspects preserved.',
+      'A Back button and browser history let you return to the saved-deck game choices, including after reloading the page.',
+      'Own setup is now called Custom game throughout the interface.',
+    ],
+    fr: [
+      'Après un draft ou un scellé, Partie aléatoire ouvre le générateur en conservant vos decks, héros et affinités.',
+      'Le bouton Retour et le retour du navigateur retrouvent les choix de partie après les decks enregistrés, même après rechargement.',
+      'Ma propre partie devient Partie personnalisée dans toute l’interface.',
+    ],
+  },
+  {
     date: '2026-09-19',
     en: [
       'A shared Thwart look with warm surfaces and clearer contrast. Filter the achievement album to your own seat without changing unlocks.',
