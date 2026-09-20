@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { limitedRollInput } from '../lib/limitedGame';
+  import type { Seat } from '../lib/session.svelte';
   import { liveQuery } from 'dexie';
   import type { CardSet, IndexRow, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
@@ -39,6 +41,7 @@
     /** The language the scenarios are named in, which is the cards'. */
     cardLocale: Locale;
     storageOk: boolean;
+    fixedSeats?: readonly Seat[];
     /**
      * Lays the draw out on the setup screen, as the phone's "play this game".
      * The name goes with it: Fear No Evil's pairings are named by no card
@@ -51,7 +54,7 @@
     onPlay: (draw: Draw, scenarioName: string) => void;
   }
 
-  const { t, sets, index, cardLocale, storageOk, onPlay }: Props = $props();
+  const { t, sets, index, cardLocale, storageOk, onPlay, fixedSeats = [] }: Props = $props();
 
   /*
    * Fear No Evil's box, from its campaign template: on no card database, so
@@ -184,7 +187,8 @@
 
   let filters = $state.raw<DrawFilters | null>(null);
   let showFilters = $state(false);
-  let playerCount = $state(1);
+  let selectedPlayerCount = $state(1);
+  const playerCount = $derived(fixedSeats.length || selectedPlayerCount);
   let draw = $state.raw<Draw>(EMPTY_DRAW);
   let locked = $state.raw<ReadonlySet<DrawField>>(new Set());
   let saved = $state(false);
@@ -276,7 +280,7 @@
   const canRoll = $derived(
     pools !== null &&
       pools.scenarios.length > 0 &&
-      pools.heroes.length >= playerCount &&
+      (fixedSeats.length > 0 || pools.heroes.length >= playerCount) &&
       !nothingCanTakeExtras &&
       lockedShortBy === 0,
   );
@@ -285,7 +289,7 @@
     if (pools === null) {
       return;
     }
-    const input = { pools, previous: draw, locked, playerCount, extraModularSets: extras };
+    const input = limitedRollInput({ pools, previous: draw, locked, playerCount, extraModularSets: extras }, fixedSeats);
     const next = unplayedOnly ? (achievements.loaded ? rollUnplayed(input, played) : null) : roll(input);
     noUnplayed = next === null;
     draw = next ?? EMPTY_DRAW;
@@ -510,7 +514,8 @@
         <span class="muted">{t.players}</span>
         <select class="field"
           value={playerCount}
-          onchange={(e) => (playerCount = Number.parseInt(e.currentTarget.value, 10))}
+          disabled={fixedSeats.length > 0}
+          onchange={(e) => (selectedPlayerCount = Number.parseInt(e.currentTarget.value, 10))}
         >
           {#each [1, 2, 3, 4] as n (n)}
             <option value={n}>{n}</option>
@@ -730,15 +735,21 @@
             <button
               type="button"
               class="lock"
-              class:on={locked.has('heroes')}
-              aria-pressed={locked.has('heroes')}
+              class:on={(fixedSeats.length > 0 || locked.has('heroes'))}
+              aria-pressed={(fixedSeats.length > 0 || locked.has('heroes'))}
+              disabled={fixedSeats.length > 0}
               onclick={() => toggleLock('heroes')}
             >
-              {locked.has('heroes') ? '🔒' : '🔓'}
+              {(fixedSeats.length > 0 || locked.has('heroes')) ? '🔒' : '🔓'}
               <span class="visually-hidden">{t.lockField}</span>
             </button>
           </div>
           <ul class="drawn-list">
+            {#if fixedSeats.length > 0}
+              {#each fixedSeats as seat (seat.deckId)}
+                <li class="drawn">{seat.deckName} · {seat.heroName} ({seat.aspect.split(',').map((a) => t.aspect(a)).join(', ')})</li>
+              {/each}
+            {:else}
             {#each draw.heroes as hero, position (position)}
               <li class="drawn picker" data-faction={hero.aspect}>
                 <select class="field"
@@ -759,6 +770,7 @@
                 </select>
               </li>
             {/each}
+            {/if}
           </ul>
         </div>
 

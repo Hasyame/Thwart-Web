@@ -90,7 +90,7 @@ export const fr: Strings = {
     cardsDetail: 'Toutes les cartes, par nom, texte, trait, type, affinité ou extension.',
     rulesDetail: 'La référence des règles, pour la question qui arrive en pleine partie.',
     collectionDetail: 'Cochez les extensions que vous possédez ; le reste du site suit.',
-    playDetail: 'Une campagne, votre propre partie, une partie aléatoire ou un draft, avec le chrono et le suivi de la rencontre.',
+    playDetail: 'Une campagne, une partie personnalisée, une partie aléatoire ou un draft, avec le chrono et le suivi de la rencontre.',
     randomCard: 'Une carte au hasard',
     randomCardDetail: 'Une carte parmi tout le jeu, pour le plaisir. Rechargez pour une autre.',
     historyDetail: 'Toutes vos parties enregistrées, avec leur méchant, leurs héros, leurs tours et leur durée.',
@@ -256,6 +256,7 @@ export const fr: Strings = {
   resultCount: (shown: number, total: number) =>
     shown === total ? `${total} cartes` : `${shown} cartes sur ${total}`,
   showMore: (n) => `Afficher ${n} de plus`,
+  navigateBack: 'Retour',
   back: 'Retour à la recherche',
   cardNotFound: "Cette carte n'est pas dans la base.",
   traits: 'Traits',
@@ -317,7 +318,7 @@ export const fr: Strings = {
       ? "1 événement du journal de cette campagne n'est pas lu par cette page."
       : `${n} événements du journal de cette campagne ne sont pas lus par cette page.`,
   attempts: (n) => `${n} tentatives`,
-  navPlay: 'Ma propre partie',
+  navPlay: 'Partie personnalisée',
   navHistory: 'Historique',
   statsRecord: 'Bilan',
   statsSeeHistory: (games) =>
@@ -336,14 +337,14 @@ export const fr: Strings = {
     shown === total ? `${total} parties` : `${shown} parties sur ${total}`,
   historyEmpty: 'Aucune partie enregistrée pour le moment.',
   historyEmptyHint:
-    "Enregistrez-en une depuis Ma propre partie, ou importez une sauvegarde de l'application Android sur la page Ma collection. Tout ce que vous jouez apparaît ici.",
+    "Enregistrez-en une depuis Partie personnalisée, ou importez une sauvegarde de l'application Android sur la page Ma collection. Tout ce que vous jouez apparaît ici.",
   historyNoMatches: 'Aucune partie ne correspond à ces filtres.',
   historyNoMatchesHint: 'Élargissez la période, ou effacez-les pour recommencer.',
   historyRunEmpty: 'Aucun scénario enregistré pour cette campagne.',
   historyDeleteConfirm:
     'Ceci retire la partie de tous vos appareils et de vos statistiques. Elle est conservée comme ligne supprimée, pour que la suppression circule et puisse être annulée.',
   navStats: 'Stats',
-  playTitle: 'Ma propre partie',
+  playTitle: 'Partie personnalisée',
   playSetupNote: 'Choisissez tout vous-même. Le chronomètre tourne pendant la partie.',
   choose: 'Choisir…',
   standardSetWith: 'Set Standard joué avec',
@@ -370,7 +371,7 @@ export const fr: Strings = {
   statsTitle: 'Statistiques',
   statsEmpty: 'Aucune partie enregistrée pour le moment.',
   statsEmptyHint:
-    "Enregistrez-en une depuis Ma propre partie, ou importez une sauvegarde de l'application Android sur la page Collection.",
+    "Enregistrez-en une depuis Partie personnalisée, ou importez une sauvegarde de l'application Android sur la page Collection.",
   statsNote:
     'Compté par siège : une partie à quatre crédite les quatre héros et non le premier seulement.',
   winRateOf: (won, total) =>
@@ -457,7 +458,7 @@ export const fr: Strings = {
     prepareAchievement: 'Préparer une partie pour ce succès',
     playNext: 'Decks enregistrés. Que souhaitez-vous jouer ?',
     randomGame: 'Partie aléatoire',
-    ownGame: 'Choisir ma partie',
+    ownGame: 'Partie personnalisée',
     campaign: 'Campagne',
     later: 'Jouer plus tard',
     unplayedOnly: 'Uniquement des combinaisons héros et scénario jamais jouées',
@@ -675,7 +676,7 @@ export const fr: Strings = {
   hubPaused: 'Une partie vous attend',
   settingsGroupedPlay: 'Un seul onglet Jouer',
   settingsGroupedPlayHint:
-    'Regroupe la partie aléatoire, votre propre partie, le draft, les campagnes et le compétitif derrière un seul onglet Jouer, comme l’application Android.',
+    'Regroupe la partie aléatoire, une partie personnalisée, le draft, les campagnes et le compétitif derrière un seul onglet Jouer, comme l’application Android.',
   navMoreTitle: 'Tout le reste',
   settingsTitle: 'Paramètres',
   close: 'Fermer',

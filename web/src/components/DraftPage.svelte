@@ -58,14 +58,16 @@
     index: readonly IndexRow[];
     packs: readonly Pack[];
     initiallySealed?: boolean;
+    completedDeckIds?: string[];
+    onSaved: (ids: string[], sealed: boolean) => void;
     storageOk: boolean;
     /** Opens a deck's page, once the decks are on the shelf. */
     onDone: () => void;
     onPlay: (ids: readonly string[], mode: 'random' | 'campaign' | 'own') => Promise<void>;
   }
 
-  const { t, index, packs, storageOk, onDone, onPlay, initiallySealed = false }: Props = $props();
-  let savedDeckIds = $state<string[]>([]);
+  const { t, index, packs, storageOk, onDone, onPlay, onSaved, completedDeckIds = [], initiallySealed = false }: Props = $props();
+  let savedDeckIds = $derived(completedDeckIds);
 
   // --- the collection -----------------------------------------------------------
 
@@ -492,8 +494,8 @@
         await clearDraft();
       });
       syncAfter('edit');
+      onSaved(ids, draft?.settings.format === 'sealed');
       draft = null;
-      savedDeckIds = ids;
     } catch {
       finishError = t.storageUnavailable;
     } finally {
@@ -548,8 +550,8 @@
 
 <section class="draft">
   <h1 class="limited-title" bind:this={heading} tabindex="-1">
-    <span class="title-burst">{draft?.settings.format === 'sealed' ? t.draft.sealed : 'Draft'}</span>
-    {#if draft === null}<span class="title-divider" aria-hidden="true">/</span><span class="title-secondary">{t.draft.sealed}</span>{/if}
+    <span class="title-burst">{(draft?.settings.format === 'sealed' || (savedDeckIds.length > 0 && initiallySealed)) ? t.draft.sealed : 'Draft'}</span>
+    {#if draft === null && savedDeckIds.length === 0}<span class="title-divider" aria-hidden="true">/</span><span class="title-secondary">{t.draft.sealed}</span>{/if}
   </h1>
 
   {#if savedDeckIds.length > 0}
