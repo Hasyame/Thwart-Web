@@ -1,7 +1,13 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import { liveQuery } from 'dexie';
   import type { Play } from '../lib/records';
-  import type { Locale } from '../lib/types';
+  import type { IndexRow, Locale } from '../lib/types';
+  import { db } from '../lib/db';
+  import { trackedSetCode } from '../lib/campaign/encounter';
+  import { scenarioSubject } from '../lib/ratings';
+  import { summariesFor, type RatingSummary } from '../lib/ratingsApi';
+  import RatingBadge from './RatingBadge.svelte';
   import type { Strings } from '../lib/i18n';
   import type { CampaignProgress } from '../lib/campaigns';
   import type { CampaignTemplate } from '../lib/campaign/types';
@@ -26,6 +32,9 @@
   interface Props {
     t: Strings;
     uiLocale: Locale;
+    /** To resolve each scenario to its card set, which is what is rated. */
+    index: readonly IndexRow[];
+    storageOk: boolean;
     campaign: CampaignProgress;
     tile: CampaignTile | undefined;
     template: CampaignTemplate | null;
@@ -42,13 +51,36 @@
     onDelete: () => Promise<void>;
   }
 
-  const { t, uiLocale, campaign, tile, template, art, boxArt, plays, eventCount, storageNote, onContinue, onBack, onDelete }: Props = $props();
+  const { t, uiLocale, index, storageOk, campaign, tile, template, art, boxArt, plays, eventCount, storageNote, onContinue, onBack, onDelete }: Props = $props();
 
   const status = $derived(tile?.status ?? 'not-started');
   const live = $derived(status === 'not-started' || status === 'in-progress');
   const folded = $derived(tile?.state ?? null);
   /** The scenario the next step belongs to, while the campaign is going. */
   const currentId = $derived(live ? (folded?.currentScenarioId ?? null) : null);
+
+  /*
+   * Per scenario, from the results the log holds: how many times it was
+   * played and the time spent on it, losses included. A lost scenario that
+   * was then beaten took both games, and the card says so.
+   */
+  const played = $derived.by(() => {
+    const out = new Map<string, { tries: number; millis: number; vp: number }>();
+    for (const result of folded?.completedScenarios ?? []) {
+      const seen = out.get(result.scenarioId) ?? { tries: 0, millis: 0, vp: 0 };
+      out.set(result.scenarioId, {
+        tries: seen.tries + 1,
+        millis: seen.millis + Math.max(0, result.elapsedMillis),
+        // The post-game question "how many victory points", as recorded.
+        vp: seen.vp + Math.max(0, result.answers.numbers?.['vp'] ?? 0),
+      });
+    }
+    return out;
+  });
+  /** The whole campaign: every game's time and victory points, losses included. */
+  const totals = $derived(
+    [...played.values()].reduce((sum, p) => ({ millis: sum.millis + p.millis, vp: sum.vp + p.vp }), { millis: 0, vp: 0 }),
+  );
 
   type Step = 'won' | 'current' | 'lost' | 'later';
   const steps = $derived(
@@ -61,7 +93,19 @@
             ? 'lost'
             : 'later';
       const source = template?.scenarios?.find((s) => s.id === scenario.id);
-      return { ...scenario, n: i + 1, step, face: source === undefined ? null : scenarioFaceOf(source) };
+      const record = played.get(scenario.id) ?? { tries: 0, millis: 0, vp: 0 };
+      // The set the scenario is played as, which is what the community rates.
+      const setCode = source === undefined || folded === null ? null : trackedSetCode(source, folded, index);
+      return {
+        ...scenario,
+        n: i + 1,
+        step,
+        face: source === undefined ? null : scenarioFaceOf(source),
+        tries: record.tries,
+        millis: record.millis,
+        vp: record.vp,
+        ratingKey: setCode === null ? null : scenarioSubject(setCode).key,
+      };
     }),
   );
 
@@ -89,6 +133,36 @@
     };
   });
 
+  /*
+   * How hard each scenario is, by the community's votes (the same summary
+   * the random game shows, from the server), and the player's own vote
+   * beside it. A scenario nobody has rated shows nothing.
+   */
+  let ratings = $state.raw<ReadonlyMap<string, RatingSummary>>(new Map());
+  let ownRatings = $state.raw<ReadonlyMap<string, number>>(new Map());
+  const ratingKeys = $derived([...new Set(steps.map((s) => s.ratingKey).filter((k): k is string => k !== null))]);
+  $effect(() => {
+    const keys = ratingKeys;
+    if (keys.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    void summariesFor(keys).then((found) => {
+      if (!cancelled) {
+        ratings = found;
+      }
+    }).catch(() => undefined);
+    const sub = storageOk
+      ? liveQuery(() => db.ratings.bulkGet(keys)).subscribe((rows) => {
+          ownRatings = new Map(rows.flatMap((row, i) => (row === undefined ? [] : [[keys[i] as string, row.score] as const])));
+        })
+      : null;
+    return () => {
+      cancelled = true;
+      sub?.unsubscribe();
+    };
+  });
+
   // The strip opens on the scenario being played, not on the first one.
   let strip = $state.raw<HTMLOListElement | null>(null);
   $effect(() => {
@@ -101,13 +175,13 @@
     });
   });
 
-  const stepWord = (step: Step, attempts: number): string =>
+  const stepWord = (step: Step): string =>
     step === 'won'
       ? t.campaignScenarioBeaten
       : step === 'current'
         ? t.campaignScenarioNext
         : step === 'lost'
-          ? t.attempts(attempts)
+          ? t.campaignScenarioNotBeaten
           : t.campaignScenarioLater;
   const stepGlyph = (step: Step): string => ({ won: '✓', current: '▶', lost: '✗', later: '·' })[step];
 
@@ -140,6 +214,13 @@
         {#if !live}<span class="level over">{t.campaignOver}</span>{/if}
         <span class="progress-words">{t.campaignProgress(tile?.beaten ?? campaign.completed, tile?.total ?? campaign.scenarios.length)}</span>
       </p>
+      {#if played.size > 0}
+        <!-- The campaign so far, in two figures. -->
+        <p class="totals">
+          <span><strong>{formatElapsed(totals.millis)}</strong> {t.timePlayedLabel.toLowerCase()}</span>
+          <span><strong>{totals.vp}</strong> {t.victoryPointsTotal(totals.vp)}</span>
+        </p>
+      {/if}
       {#if (folded?.heroes.length ?? 0) > 0}
         <ul class="faces">
           {#each folded?.heroes ?? [] as hero (hero.id)}
@@ -176,7 +257,30 @@
           <div class="scenario-body">
             <span class="muted small">{t.campaignScenarioN(scenario.n)}</span>
             <strong class="scenario-name">{scenario.name}</strong>
-            <span class="step-word">{stepWord(scenario.step, scenario.attempts)}</span>
+            <span class="step-word">{stepWord(scenario.step)}</span>
+            <!-- Only once the server has answered: offline says nothing
+                 rather than "no votes", which would not be true. -->
+            {#if scenario.ratingKey !== null && (ratings.has(scenario.ratingKey) || ownRatings.has(scenario.ratingKey))}
+              {@const summary = ratings.get(scenario.ratingKey)}
+              {@const own = ownRatings.get(scenario.ratingKey) ?? null}
+              <span class="rating">
+                <span class="rating-label">{t.campaignScenarioDifficulty}</span>
+                {#if (summary?.count ?? 0) > 0 || own !== null}
+                  <RatingBadge {t} {summary} {own} />
+                {:else}
+                  <span class="muted no-votes">{t.campaignScenarioNoVotes}</span>
+                {/if}
+              </span>
+            {/if}
+            {#if scenario.tries > 0}
+              <span class="played">
+                <span>{t.timePlayed(formatElapsed(scenario.millis))}</span>
+                <span aria-hidden="true">·</span>
+                <span>{t.attempts(scenario.tries)}</span>
+                <span aria-hidden="true">·</span>
+                <span>{t.victoryPointsShort(scenario.vp)}</span>
+              </span>
+            {/if}
             {#if scenario.step === 'current'}
               <button class="btn btn--primary" type="button" onclick={onContinue}>
                 {status === 'not-started' ? t.campaignStart : t.campaignContinue}
@@ -338,6 +442,18 @@
     font-weight: var(--weight-semibold);
   }
 
+  .totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    font-size: var(--text-sm);
+  }
+
+  .totals strong {
+    font-size: var(--text-lg);
+    font-variant-numeric: tabular-nums;
+  }
+
   .level.over {
     background: var(--accent);
     border-color: transparent;
@@ -493,6 +609,33 @@
 
   [data-step='lost'] .step-word {
     color: var(--danger);
+  }
+
+  .rating {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-2);
+  }
+
+  .no-votes {
+    font-size: var(--text-sm);
+  }
+
+  .rating-label {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-muted);
+  }
+
+  .played {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
   }
 
   .scenario-body .btn {

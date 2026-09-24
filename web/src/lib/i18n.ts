@@ -1003,6 +1003,14 @@ export interface Strings {
   readonly campaignScenarioBeaten: string;
   readonly campaignScenarioNext: string;
   readonly campaignScenarioLater: string;
+  readonly campaignScenarioNotBeaten: string;
+  /** Beside the community's votes on a scenario card. */
+  readonly campaignScenarioDifficulty: string;
+  readonly campaignScenarioNoVotes: string;
+  /** On a scenario card: "3 VP". */
+  readonly victoryPointsShort: (n: number) => string;
+  /** After the campaign's total, the number shown bold before it. */
+  readonly victoryPointsTotal: (n: number) => string;
   readonly campaignStart: string;
   readonly campaignHeroesTitle: (n: number) => string;
   readonly campaignInfoTitle: string;

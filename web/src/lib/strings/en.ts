@@ -332,7 +332,7 @@ export const en: Strings = {
     n === 1
       ? "1 event in this campaign's log is not read by this page."
       : `${n} events in this campaign's log are not read by this page.`,
-  attempts: (n) => `${n} attempts`,
+  attempts: (n) => `${n} attempt${n === 1 ? '' : 's'}`,
   navPlay: 'Custom game',
   navHistory: 'History',
   statsRecord: 'Record',
@@ -1148,6 +1148,11 @@ export const en: Strings = {
   campaignScenarioBeaten: 'Beaten',
   campaignScenarioNext: 'Up next',
   campaignScenarioLater: 'To come',
+  campaignScenarioNotBeaten: 'Not beaten yet',
+  campaignScenarioDifficulty: 'Difficulty',
+  campaignScenarioNoVotes: 'No votes yet',
+  victoryPointsShort: (n) => `${n} VP`,
+  victoryPointsTotal: (n) => `victory point${n === 1 ? '' : 's'}`,
   campaignStart: 'Start',
   campaignHeroesTitle: (n) => `Heroes · ${n}`,
   campaignInfoTitle: 'Information',

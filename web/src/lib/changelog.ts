@@ -21,7 +21,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-09-24',
     en: [
       'Campaigns, redrawn after ArkhamCards’ campaign screens: each campaign is a card with the box’s picture, the heroes, the scenario to play, its difficulty and when it was last played.',
-      'A page for each campaign: its scenarios as a strip of cards (beaten, to play, to come), the heroes, the information and the settings.',
+      'A page for each campaign: its scenarios as a strip of cards (beaten, to play, to come) with the time played, attempts, victory points and the community’s difficulty votes, the campaign’s totals, the heroes, the information and the settings.',
       'The scenario briefing reads as a guide, with the way in and the end of the scenario as comic panels.',
       'A recorded game no longer comes back when you return to Play: the game ends as soon as it is saved, and the Play tab offers a new one.',
       'Play again at the end of a game lays out the same scenario, difficulty, decks and modular sets, ready to change before you start.',
@@ -36,7 +36,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     ],
     fr: [
       'Les campagnes, redessinées d’après les écrans de campagne d’ArkhamCards : chaque campagne est une carte avec l’image de la boîte, les héros, le scénario à jouer, sa difficulté et la date de la dernière partie.',
-      'Une page par campagne : ses scénarios en bande de cartes (battus, à jouer, à venir), les héros, les informations et les paramètres.',
+      'Une page par campagne : ses scénarios en bande de cartes (battus, à jouer, à venir) avec le temps de jeu, les tentatives, les points de victoire et la difficulté votée par la communauté, les totaux de la campagne, les héros, les informations et les paramètres.',
       'Le briefing d’un scénario se lit comme un guide, avec l’entrée et la fin du scénario en cases de bande dessinée.',
       'Une partie enregistrée ne revient plus quand vous retournez sur Jouer : la partie se termine dès qu’elle est enregistrée, et l’onglet Jouer en propose une nouvelle.',
       'Rejouer, à la fin d’une partie, remet en place le même scénario, la même difficulté, les mêmes decks et les mêmes sets modulaires, modifiables avant de commencer.',

@@ -338,7 +338,7 @@ export const fr: Strings = {
     n === 1
       ? "1 événement du journal de cette campagne n'est pas lu par cette page."
       : `${n} événements du journal de cette campagne ne sont pas lus par cette page.`,
-  attempts: (n) => `${n} tentatives`,
+  attempts: (n) => `${n} tentative${n > 1 ? 's' : ''}`,
   navPlay: 'Partie personnalisée',
   navHistory: 'Historique',
   statsRecord: 'Bilan',
@@ -1161,6 +1161,11 @@ export const fr: Strings = {
   campaignScenarioBeaten: 'Battu',
   campaignScenarioNext: 'À jouer',
   campaignScenarioLater: 'À venir',
+  campaignScenarioNotBeaten: 'Pas encore battu',
+  campaignScenarioDifficulty: 'Difficulté',
+  campaignScenarioNoVotes: 'Pas encore de note',
+  victoryPointsShort: (n) => `${n} PV`,
+  victoryPointsTotal: (n) => `point${n > 1 ? 's' : ''} de victoire`,
   campaignStart: 'Démarrer',
   campaignHeroesTitle: (n) => `Héros · ${n}`,
   campaignInfoTitle: 'Informations',

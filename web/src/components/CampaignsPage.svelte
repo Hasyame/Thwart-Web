@@ -263,6 +263,8 @@
     <CampaignHub
       {t}
       {uiLocale}
+      {index}
+      {storageOk}
       campaign={openCampaign}
       {tile}
       template={templateOf(openRun)}
