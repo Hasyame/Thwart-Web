@@ -51,10 +51,14 @@
 </div>
 
 <style>
+  /* In the page's column, like the buttons above and below it: it used to
+     overhang both sides by a step, which put its edges out of line with
+     the back buttons. */
   .banner {
     position: relative;
     min-height: 9rem;
-    margin: 0 calc(var(--space-4) * -1);
+    margin: 0;
+    border-radius: var(--radius-lg);
     padding: var(--space-4);
     color: #fff;
     background: #2a2224;
