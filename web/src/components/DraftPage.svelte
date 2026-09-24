@@ -689,10 +689,15 @@
          numbered steps, the identities as their cards. -->
     <div class="steps">
       <!-- The collection for this session, before the identity, because
-           it decides which identities there are. Folded unless opened. -->
+           it decides which identities there are. A step heading like the
+           ones below, so it is not missed; the packs stay folded. -->
+      <section class="step">
+      <header class="step-head">
+        <h2>{t.draft.sessionCollection}</h2>
+      </header>
       <details class="surface session-packs">
         <summary>
-          <span class="label">{t.draft.sessionCollection}</span>
+          <span class="label">{t.draft.sessionAdjust}</span>
           <span class="muted small">{t.draft.sessionSummary(sessionPackCount, sessionChanges)}</span>
         </summary>
         <div class="session-body">
@@ -729,6 +734,7 @@
           {/each}
         </div>
       </details>
+      </section>
 
       <section class="step">
         <header class="step-head">

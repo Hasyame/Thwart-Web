@@ -28,6 +28,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'On the achievements page, tap the Achievements or Completion card to show only that part.',
       'Install Thwart as an app on Android too: an Install button where Chrome, Edge or Samsung Internet allows it, and the menu steps for the other browsers.',
       'Ask to join the alpha of the Android app, from the home page or the More menu.',
+      'A deck page remembers whether you read decks as a list or as a grid.',
+      'The draft session collection has its own heading, so it is easier to find.',
     ],
     fr: [
       'Une partie enregistrée ne revient plus quand vous retournez sur Jouer : la partie se termine dès qu’elle est enregistrée, et l’onglet Jouer en propose une nouvelle.',
@@ -38,6 +40,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Sur la page des succès, touchez la carte Succès ou Complétion pour n’afficher que cette partie.',
       'Installez Thwart comme une application sur Android aussi : un bouton Installer là où Chrome, Edge ou Samsung Internet le permettent, et les étapes par le menu pour les autres navigateurs.',
       'Demandez à participer à l’alpha de l’application Android, depuis l’accueil ou le menu Plus.',
+      'La page d’un deck se souvient si vous lisez les decks en liste ou en grille.',
+      'La collection de la session de draft a son propre titre, pour la trouver plus facilement.',
     ],
   },
   {

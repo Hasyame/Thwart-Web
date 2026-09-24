@@ -21,6 +21,7 @@ const KEY_THEME = 'thwart.theme';
 const KEY_GROUPED_PLAY = 'thwart.groupedPlay';
 const KEY_DECK_OWNED_ONLY = 'thwart.deckOwnedOnly';
 const KEY_FOLDED_FOLDERS = 'thwart.foldedFolders';
+const KEY_DECK_VIEW = 'thwart.deckView';
 
 function read(key: string): string | null {
   try {
@@ -141,6 +142,22 @@ export function loadFoldedFolders(): Set<string> {
 
 export function saveFoldedFolders(ids: ReadonlySet<string>): void {
   write(KEY_FOLDED_FOLDERS, JSON.stringify([...ids]));
+}
+
+/**
+ * How a deck's cards are shown: names in a list, or pictures in a grid.
+ *
+ * Remembered per browser, for every deck: somebody who reads decks by their
+ * pictures wants pictures on the next deck too. List until chosen otherwise.
+ */
+export type DeckView = 'list' | 'grid';
+
+export function loadDeckView(): DeckView {
+  return read(KEY_DECK_VIEW) === 'grid' ? 'grid' : 'list';
+}
+
+export function saveDeckView(view: DeckView): void {
+  write(KEY_DECK_VIEW, view);
 }
 
 /**

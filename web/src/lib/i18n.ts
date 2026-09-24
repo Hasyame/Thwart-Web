@@ -347,6 +347,8 @@ export interface Strings {
     readonly openAllBoosters: string;
     readonly sessionCollection: string;
     readonly sessionCollectionHint: string;
+    /** The folded panel's own line, under the sessionCollection heading. */
+    readonly sessionAdjust: string;
     /** The folded panel's line: packs in play for this session, and how many differ from the saved collection. */
     readonly sessionSummary: (packs: number, changes: number) => string;
     readonly searchPacks: string;

@@ -495,6 +495,7 @@ export const en: Strings = {
     openAllBoosters: 'Open all boosters',
     sealedDescription: 'Open 6 boosters of 10 cards, then build your deck from the 60 cards revealed. Signature cards are added separately. Unselected cards stay reserved to this player.',
     sessionCollection: 'Collection for this session',
+    sessionAdjust: 'Adjust the packs',
     sessionCollectionHint: 'Add a box somebody brought, or leave one out, for this draft only. Your saved collection does not change.',
     sessionSummary: (packs, changes) =>
       `${packs} pack${packs === 1 ? '' : 's'}${changes === 0 ? ', as in your collection' : `, ${changes} changed for this draft`}`,

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { loadDeckView, saveDeckView, type DeckView } from '../lib/preferences';
   import CardHover from './CardHover.svelte';
   import DeckBanner from './DeckBanner.svelte';
   import CardPanel from './CardPanel.svelte';
@@ -42,12 +43,17 @@
 
   /*
    * The toolbar: a word to find a card in this deck, an order, and whether
-   * the list is names or pictures. Page state, not remembered: a question
-   * about this deck, not a preference.
+   * the list is names or pictures. The search and the order are questions
+   * about this deck and are forgotten; names or pictures is a way of reading
+   * decks, so it is remembered for the next one (lib/preferences).
    */
   let search = $state('');
   let sort = $state<'name' | 'cost'>('name');
-  let view = $state<'list' | 'grid'>('list');
+  let view = $state<DeckView>(loadDeckView());
+  function setView(next: DeckView): void {
+    view = next;
+    saveDeckView(next);
+  }
   let confirming = $state(false);
   let copied = $state(false);
 
@@ -270,8 +276,8 @@
       </select>
     </label>
     <div class="segments" role="group">
-      <button type="button" class="segment" aria-pressed={view === 'list'} onclick={() => (view = 'list')}>{t.viewList}</button>
-      <button type="button" class="segment" aria-pressed={view === 'grid'} onclick={() => (view = 'grid')}>{t.viewGrid}</button>
+      <button type="button" class="segment" aria-pressed={view === 'list'} onclick={() => setView('list')}>{t.viewList}</button>
+      <button type="button" class="segment" aria-pressed={view === 'grid'} onclick={() => setView('grid')}>{t.viewGrid}</button>
     </div>
   </div>
 
