@@ -3,6 +3,7 @@ import './app.css';
 import App from './App.svelte';
 import { loadStrings } from './lib/i18n';
 import { loadUiLocale } from './lib/preferences';
+import { listenForInstall } from './lib/install.svelte';
 
 /**
  * Ask the browser to keep what we store.
@@ -52,6 +53,7 @@ function registerServiceWorker(): void {
 }
 
 registerServiceWorker();
+listenForInstall();
 
 const target = document.getElementById('app');
 if (target === null) {

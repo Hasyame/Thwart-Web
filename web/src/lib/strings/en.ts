@@ -64,8 +64,15 @@ export const en: Strings = {
   homeIntroNote:
     'Free, works offline, nothing to install and no account needed. Also on Android. Unofficial: card data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.',
   install: {
-    title: 'Install on iPhone or iPad',
-    intro: 'Use Thwart from your Home Screen, like an app.',
+    title: 'Install Thwart as an app',
+    intro: 'Use Thwart from your home screen, like an app: full screen, and offline once it has been opened online.',
+    button: 'Install Thwart',
+    installed: 'Thwart is installed on this device.',
+    androidTitle: 'Android',
+    androidOpen: 'Open thwart.app in Chrome, Edge or Samsung Internet.',
+    androidMenu: 'Tap Install Thwart above if it appears. Otherwise open the ⋮ menu and choose Install app (on some phones: Add to home screen, then Install).',
+    androidFirefox: 'In Firefox, open the ⋮ menu and choose Add to home screen.',
+    iosTitle: 'iPhone and iPad',
     safari: 'Open thwart.app in Safari.',
     share: 'Open the Share menu, then choose Add to Home Screen. You may need to open the More menu first.',
     add: 'If offered, enable Open as Web App, then tap Add. Launch Thwart using its new icon.',
@@ -77,7 +84,7 @@ export const en: Strings = {
   home: {
     title: 'Thwart, the Marvel Champions companion',
     lead:
-      'Your Marvel Champions collection, decks, campaigns and games, in English or French. Free in your browser, or installed on iPhone and iPad.',
+      'Your Marvel Champions collection, decks, campaigns and games, in English or French. Free in your browser, or installed on your phone like an app.',
     readyToPlay: (name) => `Ready to play, ${name}`,
     accountTitle: 'Keep your games, wherever you play',
     accountBody:

@@ -2,6 +2,7 @@
   "name": "Thwart",
   "short_name": "Thwart",
   "description": "Search cards, track your collection, check decks against what you own, draw a random game and keep your play statistics. Bilingual and offline.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -9,7 +10,10 @@
   "background_color": "#0D0809",
   "theme_color": "#120C0D",
   "lang": "en",
-  "categories": ["games", "utilities"],
+  "categories": [
+    "games",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icon-512.png",
@@ -31,9 +35,21 @@
     }
   ],
   "shortcuts": [
-    { "name": "Cards", "url": "/" },
-    { "name": "Collection", "url": "/collection" },
-    { "name": "Decks", "url": "/decks" },
-    { "name": "Rules", "url": "/rules" }
+    {
+      "name": "Play",
+      "url": "/hub"
+    },
+    {
+      "name": "Cards",
+      "url": "/cards"
+    },
+    {
+      "name": "Collection",
+      "url": "/collection"
+    },
+    {
+      "name": "Decks",
+      "url": "/decks"
+    }
   ]
 }

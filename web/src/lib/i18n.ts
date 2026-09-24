@@ -559,6 +559,14 @@ export interface Strings {
   readonly install: {
     readonly title: string;
     readonly intro: string;
+    /** Shown only where the browser offered to install (Chromium). */
+    readonly button: string;
+    readonly installed: string;
+    readonly androidTitle: string;
+    readonly androidOpen: string;
+    readonly androidMenu: string;
+    readonly androidFirefox: string;
+    readonly iosTitle: string;
     readonly safari: string;
     readonly share: string;
     readonly add: string;
