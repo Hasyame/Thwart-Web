@@ -1,3 +1,12 @@
+<script lang="ts" module>
+  /*
+   * The banner's entrance plays once per visit to the site, not every time
+   * somebody comes back to the home page: the first time it is a welcome,
+   * the fifth time it is in the way.
+   */
+  let bannerPlayed = false;
+</script>
+
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale, Pack } from '../lib/types';
@@ -87,13 +96,16 @@
   const latest = $derived(CHANGELOG[0] ?? null);
   const earlier = $derived(CHANGELOG.slice(1));
 
+  const slam = !bannerPlayed;
+  bannerPlayed = true;
+
   const dayOf = (iso: string): string =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(uiLocale, { year: 'numeric', month: 'long', day: 'numeric' });
 </script>
 
 <section class="home">
   <header class="hero">
-    <h1 class="comic-title">{t.home.title}</h1>
+    <h1 class="comic-title banner" class:slam>{t.home.title}</h1>
     <p class="lead">{t.home.lead}</p>
   </header>
   <InstallGuide {t} />
@@ -202,6 +214,76 @@
   .hero {
     max-width: var(--prose-max);
     margin-bottom: var(--space-4);
+  }
+
+  /*
+   * The banner, as a comic panel lands: it slams in from the left, skewed,
+   * overshoots and settles, then a glint crosses the red the way it crosses
+   * the Marvel Studios logo. Ben-Day dots, the printed comic's halftone, fade
+   * across it. The dots stay for everybody; the movement is off for anybody
+   * whose device asks for reduced motion.
+   */
+  .banner {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .banner::before,
+  .banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .banner::before {
+    background-image: radial-gradient(rgb(255 255 255 / 22%) 1.1px, transparent 1.5px);
+    background-size: 7px 7px;
+    mask-image: linear-gradient(100deg, transparent 35%, black 100%);
+  }
+
+  .banner::after {
+    background: linear-gradient(105deg, transparent 42%, rgb(255 255 255 / 55%) 50%, transparent 58%) no-repeat;
+    background-size: 250% 100%;
+    background-position: 160% 0;
+  }
+
+  .banner.slam {
+    animation: banner-slam 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+
+  .banner.slam::after {
+    animation: banner-glint 0.9s ease-in-out 0.65s both;
+  }
+
+  .banner:hover::after {
+    animation: banner-glint-again 0.9s ease-in-out both;
+  }
+
+  @keyframes banner-slam {
+    0% { transform: translateX(-45%) skewX(-18deg) scale(1.12); opacity: 0; }
+    55% { transform: translateX(2%) skewX(-6deg) scale(1.03); opacity: 1; }
+    75% { transform: translateX(-0.6%) skewX(3deg) scale(0.99); }
+    100% { transform: none; opacity: 1; }
+  }
+
+  @keyframes banner-glint {
+    from { background-position: 160% 0; }
+    to { background-position: -60% 0; }
+  }
+
+  /* The same sweep under another name, so hovering can play it again. */
+  @keyframes banner-glint-again {
+    from { background-position: 160% 0; }
+    to { background-position: -60% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .banner.slam,
+    .banner.slam::after,
+    .banner:hover::after {
+      animation: none;
+    }
   }
 
   h1 {
