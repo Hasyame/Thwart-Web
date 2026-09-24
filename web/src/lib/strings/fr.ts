@@ -287,6 +287,7 @@ export const fr: Strings = {
   ownedNone: 'Aucun',
   ownedCopies: (n) => (n === 1 ? '1 exemplaire' : `${n} exemplaires`),
   viewOnMarvelCdb: 'Voir sur MarvelCDB',
+  viewOnMc4db: 'Voir sur MC4DB',
   resources: 'Ressources',
   cost: 'Coût',
   unique: 'Unique',

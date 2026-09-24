@@ -201,8 +201,13 @@ scenario with no villain at all, or a scheme whose stages come back doubled.
 
   for (const file of readdirSync(DATA)) {
     const cards = JSON.parse(readFileSync(join(DATA, file), 'utf8'));
+    // Fear No Evil's jobs are typed as villain sets but draw their villain
+    // from the underling sets as the campaign goes, so a job set has no
+    // villain card by design; its setup is swept by test:fne and fne-solo.
     const villainSets = new Set(
-      cards.filter((c) => c.card_set_type_name_code === 'villain').map((c) => c.card_set_code),
+      cards
+        .filter((c) => c.card_set_type_name_code === 'villain' && c.pack_code !== 'fne')
+        .map((c) => c.card_set_code),
     );
     for (const setCode of villainSets) {
       const setup = setupFor(cards.filter((c) => c.card_set_code === setCode), 2, false);

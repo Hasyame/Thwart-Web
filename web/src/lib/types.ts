@@ -185,6 +185,8 @@ export interface Card {
    */
   readonly hidden?: boolean;
   readonly url?: string | null;
+  /** `mc4db` for a card MarvelCDB does not carry, taken from MC4DB at build time. */
+  readonly source?: string;
 }
 
 export interface Pack {

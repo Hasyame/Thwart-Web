@@ -179,23 +179,54 @@ async function getJson(url) {
  */
 const MC4DB = 'https://mc4db.merlindumesnil.net';
 
+const isOfficial = (card) =>
+  card.pack_creator === null || card.pack_creator === undefined || card.pack_creator === 'FFG';
+
+/**
+ * MC4DB's official cards, per language, and each one's picture path.
+ *
+ * `paths` is card code to `<box>/<code>`, read from the English list, whose
+ * picture paths are English. `cards` holds the list in each language, for
+ * the cards MarvelCDB does not carry at all (see buildLocale). Either can be
+ * empty: MC4DB is optional.
+ */
 async function loadMc4db() {
-  try {
-    const cards = await getJson(`${MC4DB}/api/public/cards/`);
-    const paths = new Map();
-    for (const card of Array.isArray(cards) ? cards : []) {
-      const official = card.pack_creator === null || card.pack_creator === undefined || card.pack_creator === 'FFG';
-      const match = /^\/bundles\/cards\/EN\/([^/]+\/[^/.]+)\.webp$/.exec(card.imagesrc ?? '');
-      if (official && match && typeof card.code === 'string') {
-        paths.set(card.code, match[1]);
+  const paths = new Map();
+  const cards = new Map();
+  for (const locale of LOCALES) {
+    try {
+      const url = locale.code === 'en' ? `${MC4DB}/api/public/cards/` : `${MC4DB}/api/public/cards/?locale=${locale.code}`;
+      const list = (await getJson(url)).filter?.(isOfficial) ?? [];
+      cards.set(locale.code, list);
+      if (locale.code === 'en') {
+        for (const card of list) {
+          const match = /^\/bundles\/cards\/EN\/([^/]+\/[^/.]+)\.webp$/.exec(card.imagesrc ?? '');
+          if (match && typeof card.code === 'string') {
+            paths.set(card.code, match[1]);
+          }
+        }
       }
+      console.log(`  mc4db ${locale.code}: ${list.length} official cards`);
+    } catch (error) {
+      console.warn(`  mc4db ${locale.code}: unavailable (${error.message}); going on with MarvelCDB alone`);
     }
-    console.log(`  mc4db: ${paths.size} official card pictures`);
-    return paths;
-  } catch (error) {
-    console.warn(`  mc4db: unavailable (${error.message}); going on with MarvelCDB pictures only`);
-    return new Map();
   }
+  return { paths, cards };
+}
+
+/** MC4DB's French text carries a stray U+FFFD before some colons; dropped. */
+const MC4DB_TEXT_FIELDS = ['name', 'subname', 'text', 'flavor', 'back_text', 'back_flavor', 'traits', 'card_set_name', 'pack_name'];
+function cleanMc4dbCard(card) {
+  const out = { ...card };
+  for (const field of MC4DB_TEXT_FIELDS) {
+    if (typeof out[field] === 'string') {
+      out[field] = out[field].replace(/\uFFFD/g, '');
+    }
+  }
+  for (const field of ['pack_id', 'pack_creator', 'pack_visibility', 'pack_confidential']) {
+    delete out[field];
+  }
+  return out;
 }
 
 /**
@@ -322,7 +353,7 @@ async function buildLocale(locale, mc4db) {
   // several hundred cards, the newest boxes and most two-sided encounters.
   let borrowed = 0;
   for (const card of rawCards) {
-    const path = card.imagesrc ? undefined : mc4db.get(card.code);
+    const path = card.imagesrc ? undefined : mc4db.paths.get(card.code);
     if (path !== undefined) {
       card.imagesrc = `${MC4DB}/bundles/cards/EN/${path}.webp`;
       borrowed += 1;
@@ -330,6 +361,47 @@ async function buildLocale(locale, mc4db) {
   }
   if (borrowed > 0) {
     console.log(`  ${locale.code}: ${borrowed} pictures from MC4DB where MarvelCDB has none`);
+  }
+
+  /*
+   * Official cards MarvelCDB does not carry at all: Fear No Evil's
+   * encounter cards (its villains, main schemes, minions...), as of
+   * 2026-09. Taken from MC4DB in this language and filed under MarvelCDB's
+   * own pack and set codes, so nothing else in the site can tell them
+   * apart. The pack is learned from the cards both databases share (MC4DB's
+   * `fear_no_evil_by_ffg` is MarvelCDB's `fne`); MC4DB's set codes carry a
+   * `_by_ffg` suffix MarvelCDB's do not. A card MarvelCDB adds later wins
+   * automatically, since only codes it lacks are taken.
+   */
+  const marvelCdbPack = new Map(rawCards.map((card) => [card.code, card.pack_code]));
+  const packFor = new Map();
+  const mc4dbCards = mc4db.cards.get(locale.code) ?? [];
+  for (const card of mc4dbCards) {
+    const ours = marvelCdbPack.get(card.code);
+    if (ours !== undefined && !packFor.has(card.pack_code)) {
+      packFor.set(card.pack_code, ours);
+    }
+  }
+  const packName = new Map(rawPacks.map((pack) => [pack.code, pack.name]));
+  const imported = mc4dbCards
+    .filter((card) => !marvelCdbPack.has(card.code) && packFor.has(card.pack_code))
+    .map((card) => {
+      const pack = packFor.get(card.pack_code);
+      const path = mc4db.paths.get(card.code);
+      return {
+        ...cleanMc4dbCard(card),
+        pack_code: pack,
+        pack_name: packName.get(pack) ?? card.pack_name,
+        card_set_code: typeof card.card_set_code === 'string' ? card.card_set_code.replace(/_by_ffg$/, '') : null,
+        imagesrc: path === undefined ? null : `${MC4DB}/bundles/cards/EN/${path}.webp`,
+        // Where the card's page is: MarvelCDB has none for it.
+        source: 'mc4db',
+      };
+    });
+  if (imported.length > 0) {
+    rawCards.push(...imported);
+    const packsTaken = [...new Set(imported.map((card) => card.pack_code))].join(', ');
+    console.log(`  ${locale.code}: ${imported.length} cards from MC4DB that MarvelCDB lacks (${packsTaken})`);
   }
 
   const cards = rawCards.map((card) => ({ ...sanitizeCard(card), synergy: synergyOf(card) }));
@@ -489,7 +561,7 @@ async function main() {
 
   // Card code to MC4DB picture path, for the site's French pictures
   // (lib/cardImages.ts): `/bundles/cards/FR/<path>.webp`.
-  writeFileSync(join(OUT_DIR, 'card-images.json'), JSON.stringify(Object.fromEntries(mc4db)), 'utf8');
+  writeFileSync(join(OUT_DIR, 'card-images.json'), JSON.stringify(Object.fromEntries(mc4db.paths)), 'utf8');
 
   const digest = createHash('sha256')
     .update(locales.map((l) => `${l.locale}:${l.digest}`).join('\n'))

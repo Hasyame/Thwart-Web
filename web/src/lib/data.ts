@@ -187,6 +187,11 @@ export function cardImageUrl(imageSrc: string | null | undefined): string | null
   return localisedCardImage(imageSrc);
 }
 
+/** A card's page on MC4DB, for the cards MarvelCDB does not carry. */
+export function mc4dbCardUrl(locale: Locale, code: string): string {
+  return `https://mc4db.merlindumesnil.net/card/${encodeURIComponent(code)}${locale === 'fr' ? '?locale=fr' : ''}`;
+}
+
 export function marvelCdbCardUrl(locale: Locale, code: string): string {
   const host = locale === 'fr' ? 'fr.marvelcdb.com' : 'marvelcdb.com';
   return `https://${host}/card/${encodeURIComponent(code)}`;

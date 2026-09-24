@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Card, Locale } from '../lib/types';
   import type { Strings } from '../lib/i18n';
-  import { cardImageUrl, marvelCdbCardUrl } from '../lib/data';
+  import { cardImageUrl, marvelCdbCardUrl, mc4dbCardUrl } from '../lib/data';
   import { cardHtml } from '../lib/cardText';
   import { viewerIndex, viewerPacks } from '../lib/cardViewer.svelte';
   import { copiesOwned } from '../lib/ownedCopies.svelte';
@@ -169,8 +169,9 @@
     </dl>
 
     <p>
-      <a href={marvelCdbCardUrl(cardLocale, card.code)} target="_blank" rel="noopener">
-        {t.viewOnMarvelCdb} ↗
+      <!-- A card imported from MC4DB has no MarvelCDB page to link to. -->
+      <a href={card.source === 'mc4db' ? mc4dbCardUrl(cardLocale, card.code) : marvelCdbCardUrl(cardLocale, card.code)} target="_blank" rel="noopener">
+        {card.source === 'mc4db' ? t.viewOnMc4db : t.viewOnMarvelCdb} ↗
       </a>
     </p>
   </div>

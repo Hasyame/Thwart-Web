@@ -215,6 +215,7 @@ export interface Strings {
   readonly ownedNone: string;
   readonly ownedCopies: (n: number) => string;
   readonly viewOnMarvelCdb: string;
+  readonly viewOnMc4db: string;
   readonly resources: string;
   readonly cost: string;
   readonly unique: string;

@@ -65,6 +65,40 @@ export function scenarioFaceOf(scenario: ScenarioTemplate): string | null {
   return first !== undefined && first !== '' ? first : null;
 }
 
+/**
+ * A scenario's picture when its template names no villain deck.
+ *
+ * Fear No Evil's jobs draw their villain as the campaign goes, so the
+ * template has no card to show. Its encounter cards (imported from MC4DB,
+ * see scripts/fetch-cards.mjs) are filed in a set named after the job's
+ * English title, `Art Museum Heist` being `art_museum_heist`: the job shows
+ * its villain when the set has one (the Kingpin finale), else its main
+ * scheme's B side, which carries the art in colour (the A side greys it
+ * behind the setup text). A scheme is landscape; the caller crops it so.
+ */
+export function scenarioSetFaceOf(
+  scenario: ScenarioTemplate,
+  index: readonly { code: string; setCode: string | null; typeCode: string }[],
+): string | null {
+  const english = scenario.name?.en;
+  if (typeof english !== 'string' || english === '') {
+    return null;
+  }
+  const set = english
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+  const rows = index.filter((row) => row.setCode === set).sort((a, b) => a.code.localeCompare(b.code));
+  const schemes = rows.filter((row) => row.typeCode === 'main_scheme');
+  return (
+    rows.find((row) => row.typeCode === 'villain') ??
+    schemes.find((row) => row.code.endsWith('b')) ??
+    schemes[0]
+  )?.code ?? null;
+}
+
 /** The last villain the template names, read the way the tracker reads decks. */
 export function faceCardOf(template: CampaignTemplate | null): string | null {
   if (template === null) {

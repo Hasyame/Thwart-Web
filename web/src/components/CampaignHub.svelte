@@ -11,7 +11,7 @@
   import type { Strings } from '../lib/i18n';
   import type { CampaignProgress } from '../lib/campaigns';
   import type { CampaignTemplate } from '../lib/campaign/types';
-  import { fieldHue, scenarioFaceOf, type CampaignTile } from '../lib/campaignTile';
+  import { fieldHue, scenarioFaceOf, scenarioSetFaceOf, type CampaignTile } from '../lib/campaignTile';
   import { fetchCard } from '../lib/cardViewer.svelte';
   import { cardImageUrl } from '../lib/data';
   import { formatElapsed } from '../lib/session.svelte';
@@ -98,6 +98,9 @@
     [...played.values()].reduce((sum, p) => ({ millis: sum.millis + p.millis, vp: sum.vp + p.vp }), { millis: 0, vp: 0 }),
   );
 
+  /** A main scheme is a landscape card, cropped to the art on its right. */
+  const schemeCodes = $derived(new Set(index.filter((row) => row.typeCode === 'main_scheme').map((row) => row.code)));
+
   type Step = 'won' | 'current' | 'lost' | 'later';
   const steps = $derived(
     campaign.scenarios.map((scenario, i) => {
@@ -116,7 +119,7 @@
         ...scenario,
         n: i + 1,
         step,
-        face: source === undefined ? null : scenarioFaceOf(source),
+        face: source === undefined ? null : (scenarioFaceOf(source) ?? scenarioSetFaceOf(source, index)),
         tries: record.tries,
         millis: record.millis,
         vp: record.vp,
@@ -267,7 +270,7 @@
         {@const face = scenario.face === null ? undefined : images.get(scenario.face)}
         <li class="scenario" data-step={scenario.step} style:--field-hue={fieldHue(scenario.id)}>
           <div class="scenario-art">
-            {#if face !== undefined}<img src={face} alt="" loading="lazy" />{/if}
+            {#if face !== undefined}<img src={face} alt="" loading="lazy" class:scheme={scenario.face !== null && schemeCodes.has(scenario.face)} />{/if}
             {#if scenario.step === 'won'}
               <!-- Beaten, said the way a comic says it: a burst stamped
                    across the villain. The words under the card say it too. -->
@@ -596,6 +599,13 @@
     object-position: 75% 22%;
     transform: scale(1.35);
     transform-origin: 75% 22%;
+  }
+
+  /* A landscape main scheme: its text on the left, its art on the right. */
+  .scenario-art img.scheme {
+    object-position: 100% 50%;
+    transform: scale(2.1);
+    transform-origin: 100% 55%;
   }
 
   .mark {
