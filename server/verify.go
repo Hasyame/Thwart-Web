@@ -221,6 +221,11 @@ func (s *Server) handleResendVerification(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if !s.limiter.allow("resend:account:"+account.ID, resendPerAccount) {
+		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
+		return
+	}
+
 	if err := s.sendVerification(r.Context(), account); err != nil {
 		s.fail(w, r, "send verification", err)
 		return

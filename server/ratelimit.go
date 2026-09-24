@@ -75,6 +75,10 @@ var (
 	// Tighter, because this one makes the server send mail. Five is enough for
 	// somebody whose message went to spam and not enough to be a mail cannon.
 	resendPerIP = limitRule{5, time.Hour}
+	// And per account, so the same mailbox cannot be filled from many
+	// addresses either. Counted only once the password has matched, so it
+	// says nothing to a stranger (black-box audit, 2026-09-24).
+	resendPerAccount = limitRule{3, time.Hour}
 )
 
 type counter struct {

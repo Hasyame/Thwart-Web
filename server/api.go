@@ -225,6 +225,26 @@ because it adds issuing, expiry and consumption — three more things to get wro
 — to protect a token that is already confined to one origin and one log line
 that is switched off.
 */
+/*
+The live stream also takes the token from the query string, and keeps doing so
+on purpose (black-box audit, 2026-09-24, item 2).
+
+`EventSource` cannot send an Authorization header, so a browser has no other
+way to present it. A separate short-lived stream token was considered and not
+built: it would add a second credential type and an endpoint to mint it, for a
+risk that is already closed where it lives:
+
+  - nginx writes no access log for /api/v1/sync/stream, and the site's log
+    format drops every query string anyway (deploy/nginx-thwart-limits.conf);
+  - this server never logs a query string, only r.URL.Path;
+  - Referrer-Policy is no-referrer, and an EventSource URL never enters the
+    browser history;
+  - the token is the device token, so signing out (which revokes the device)
+    or changing the password ends the stream's credential too.
+
+Anything that would start logging full request lines in front of this route
+reopens the question, and must not ship without revisiting it.
+*/
 func (s *Server) authenticatedStream(next authedHandler) http.HandlerFunc {
 	return s.authenticatedBy(func(r *http.Request) (string, bool) {
 		if token, ok := bearerToken(r); ok {
