@@ -57,6 +57,23 @@
   let summaries = $state.raw<readonly TemplateSummary[]>([]);
   let loadError = $state(false);
 
+  /*
+   * Only the campaigns whose box is in the collection, since that is what
+   * can be played at this table. A tick shows the rest, for a box somebody
+   * else brought; a template that names no box is always offered.
+   */
+  let ownedPacks = $state.raw<ReadonlySet<string>>(new Set());
+  $effect(() => {
+    const sub = liveQuery(() => db.ownedPacks.toArray()).subscribe((rows) => {
+      ownedPacks = new Set(rows.filter((row) => row.quantity > 0).map((row) => row.packCode));
+    });
+    return () => sub.unsubscribe();
+  });
+  let everyCampaign = $state(false);
+  const owns = (summary: TemplateSummary): boolean => summary.packCode === null || ownedPacks.has(summary.packCode);
+  const offered = $derived(everyCampaign ? summaries : summaries.filter(owns));
+  const hiddenCount = $derived(summaries.length - summaries.filter(owns).length);
+
   $effect(() => {
     let cancelled = false;
     loadTemplateIndex()
@@ -179,11 +196,20 @@
       <span class="field-label">{t.campaign}</span>
       <select class="field" value={templateId} onchange={(e) => (templateId = e.currentTarget.value)}>
         <option value="">{t.choose}</option>
-        {#each summaries as summary (summary.id)}
-          <option value={summary.id}>{textOf(summary.name, uiLocale)}</option>
+        {#each offered as summary (summary.id)}
+          <option value={summary.id}>{textOf(summary.name, uiLocale)}{everyCampaign && !owns(summary) ? ` (${t.campaignNotOwned})` : ''}</option>
         {/each}
       </select>
     </label>
+    {#if offered.length === 0 && !everyCampaign}
+      <p class="muted note">{t.campaignNoneOwned}</p>
+    {/if}
+    {#if hiddenCount > 0}
+      <label class="tick every">
+        <input type="checkbox" bind:checked={everyCampaign} />
+        <span>{t.campaignShowAll(hiddenCount)}</span>
+      </label>
+    {/if}
   {/if}
 
   {#if template !== null}

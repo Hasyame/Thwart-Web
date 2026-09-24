@@ -20,6 +20,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-09-24',
     en: [
+      'Starting a campaign offers the boxes in your collection; a tick shows the others, for a box somebody else brought.',
       'With French cards, the pictures are French too, from the community sites MC4DB and cgbuilder, falling back to the English picture. Some 600 cards MarvelCDB has no picture of, Fear No Evil among them, now have one.',
       'Campaigns, redrawn after ArkhamCards’ campaign screens: each campaign is a card with the box’s picture, the heroes, the scenario to play, its difficulty and when it was last played.',
       'A page for each campaign: its scenarios as a strip of cards (beaten, to play, to come) with the time played, attempts, victory points and the community’s difficulty votes, a comic “Beaten!” burst on every scenario won, the campaign’s totals, the heroes, the information and the settings.',
@@ -36,6 +37,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'The draft session collection has its own heading, so it is easier to find.',
     ],
     fr: [
+      'Pour commencer une campagne, seules les boîtes de votre collection sont proposées ; une case affiche les autres, pour une boîte apportée par quelqu’un.',
       'Avec les cartes en français, les images sont en français aussi, depuis les sites communautaires MC4DB et cgbuilder, avec l’image anglaise en secours. Quelque 600 cartes sans image sur MarvelCDB, dont Peur de Rien, en ont désormais une.',
       'Les campagnes, redessinées d’après les écrans de campagne d’ArkhamCards : chaque campagne est une carte avec l’image de la boîte, les héros, le scénario à jouer, sa difficulté et la date de la dernière partie.',
       'Une page par campagne : ses scénarios en bande de cartes (battus, à jouer, à venir) avec le temps de jeu, les tentatives, les points de victoire et la difficulté votée par la communauté, un tampon « Battu ! » façon BD sur chaque scénario gagné, les totaux de la campagne, les héros, les informations et les paramètres.',
