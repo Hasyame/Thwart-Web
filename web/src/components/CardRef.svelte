@@ -25,8 +25,14 @@
 {/if}
 
 <style>
+  /* A word in a sentence, not a control on its own: the global button
+     height (the 44px touch target) would make its line taller and push the
+     text below the step's marker. Inline targets are exempt (WCAG 2.5.8). */
   .ref {
     display: inline;
+    min-height: 0;
+    line-height: inherit;
+    vertical-align: baseline;
     border: 0;
     background: none;
     padding: 0;
