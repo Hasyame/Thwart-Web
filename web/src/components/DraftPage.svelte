@@ -3,6 +3,7 @@
   import { liveQuery } from 'dexie';
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale, Pack } from '../lib/types';
+  import { normalizeForSearch } from '../lib/normalize';
   import { dealSealed, selectSealed, SEALED_SIZE, BOOSTER_SIZE, BOOSTER_COUNT, openedBoosters, openBooster, openAllBoosters, isBuilding, buildSealedDeck } from '../lib/draft/sealed';
   import { canTake } from '../lib/draft/engine';
   import { db } from '../lib/db';
@@ -88,7 +89,6 @@
     return () => subs.forEach((s) => s.unsubscribe());
   });
 
-  const heroes = $derived(ownedHeroes(index, ownedPacks));
   const rowByCode = $derived(new Map(index.map((row) => [row.code, row] as const)));
 
   /*
@@ -104,7 +104,7 @@
   const showcaseSeed = freshSeed();
   const shelfSize = $derived.by(() => {
     let cards = 0;
-    for (const copies of buildStock(index, ownedPacks).stock.values()) {
+    for (const copies of buildStock(index, sessionPacks).stock.values()) {
       cards += copies;
     }
     return cards;
@@ -115,6 +115,16 @@
 
   let draft = $state.raw<DraftState | null>(null);
   let loaded = $state(false);
+
+  /*
+   * The collection this draft is played from: the saved one, or the one
+   * adjusted for this session once a draft has begun. The identities follow
+   * it too, so a friend's hero pack added for the evening can be drafted.
+   */
+  const sessionPacks = $derived(
+    draft?.collection === undefined ? ownedPacks : new Map(Object.entries(draft.collection)),
+  );
+  const heroes = $derived(ownedHeroes(index, sessionPacks));
   $effect(() => {
     if (!storageOk) {
       loaded = true;
@@ -297,6 +307,48 @@
 
   /** Whether the current player has taken the device; false hides the offer. */
   let handedOver = $state(false);
+
+  // --- the collection for this session ------------------------------------------
+
+  let packQuery = $state('');
+  let everyPack = $state(false);
+  const countIn = (code: string): number => draft?.collection?.[code] ?? ownedPacks.get(code) ?? 0;
+  /** Packs whose count differs from the saved collection. */
+  const sessionChanges = $derived(packs.filter((pack) => countIn(pack.code) !== (ownedPacks.get(pack.code) ?? 0)).length);
+  const sessionPackCount = $derived(packs.filter((pack) => countIn(pack.code) > 0).length);
+  /*
+   * Grouped as the Collection page groups them, each group in release order.
+   * By default only what is on the table: packs in the saved collection and
+   * packs added for this session. A search looks through every pack, since
+   * the point of searching is usually a box somebody else brought.
+   */
+  const PACK_GROUPS = [
+    { type: 'CORE', label: (s: Strings) => s.bulkCore },
+    { type: 'CAMPAIGN_BOX', label: (s: Strings) => s.bulkCampaigns },
+    { type: 'HERO_PACK', label: (s: Strings) => s.bulkHeroes },
+    { type: 'SCENARIO_PACK', label: (s: Strings) => s.bulkScenarios },
+    { type: null, label: (s: Strings) => s.draft.otherPacks },
+  ] as const;
+  const packGroups = $derived.by(() => {
+    const needle = normalizeForSearch(packQuery.trim());
+    const shown = [...packs]
+      .sort((a, b) => a.position - b.position)
+      .filter((pack) =>
+        needle !== ''
+          ? normalizeForSearch(pack.name).includes(needle)
+          : everyPack || countIn(pack.code) > 0 || (ownedPacks.get(pack.code) ?? 0) > 0,
+      );
+    const known = new Set<string>(PACK_GROUPS.flatMap((g) => (g.type === null ? [] : [g.type])));
+    return PACK_GROUPS.map((group) => ({
+      label: group.label(t),
+      packs: shown.filter((pack) => (group.type === null ? pack.type === null || !known.has(pack.type) : pack.type === group.type)),
+    })).filter((group) => group.packs.length > 0);
+  });
+
+  function resetCollection(): void {
+    if (draft === null) return;
+    commit({ ...draft, collection: Object.fromEntries(ownedPacks) });
+  }
 
   function setPack(code: string, value: number): void {
     if (draft === null || !Number.isFinite(value)) return;
@@ -636,6 +688,48 @@
     <!-- Page 2: this player's identity, aspects and deck size, in three
          numbered steps, the identities as their cards. -->
     <div class="steps">
+      <!-- The collection for this session, before the identity, because
+           it decides which identities there are. Folded unless opened. -->
+      <details class="surface session-packs">
+        <summary>
+          <span class="label">{t.draft.sessionCollection}</span>
+          <span class="muted small">{t.draft.sessionSummary(sessionPackCount, sessionChanges)}</span>
+        </summary>
+        <div class="session-body">
+          <p class="muted note">{t.draft.sessionCollectionHint}</p>
+          <div class="session-tools">
+            <input class="field search" type="search" placeholder={t.draft.searchPacks} aria-label={t.draft.searchPacks} bind:value={packQuery} />
+            <label class="tick"><input type="checkbox" bind:checked={everyPack} /><span>{t.draft.everyPack}</span></label>
+            {#if sessionChanges > 0}
+              <button type="button" class="btn btn--quiet small" onclick={resetCollection}>{t.draft.resetCollection}</button>
+            {/if}
+          </div>
+          <p class="muted small">{t.draft.shelf(heroes.length, shelfSize)}</p>
+          {#each packGroups as group (group.label)}
+            <h3 class="pack-group">{group.label}</h3>
+            <ul class="pack-list">
+              {#each group.packs as pack (pack.code)}
+                {@const n = countIn(pack.code)}
+                {@const saved = ownedPacks.get(pack.code) ?? 0}
+                <li class="pack-row" class:changed={n !== saved} class:absent={n === 0}>
+                  <span class="pack-name">
+                    {pack.name}
+                    {#if n !== saved}<span class="muted small was">{t.draft.savedCount(saved)}</span>{/if}
+                  </span>
+                  <span class="stepper">
+                    <button type="button" class="btn small" aria-label={t.draft.fewerCopies(pack.name)} disabled={n === 0} onclick={() => setPack(pack.code, n - 1)}>−</button>
+                    <output class="copies" aria-live="polite">{n}</output>
+                    <button type="button" class="btn small" aria-label={t.draft.moreCopies(pack.name)} disabled={n >= 99} onclick={() => setPack(pack.code, n + 1)}>+</button>
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="muted small">{t.draft.noPackFound}</p>
+          {/each}
+        </div>
+      </details>
+
       <section class="step">
         <header class="step-head">
           <h2>1. {t.draft.identityTitle(draft.current + 1)}</h2>
@@ -697,13 +791,6 @@
           {/if}
         </section>
 
-        <details class="surface panel">
-          <summary>{t.draft.sessionCollection}</summary>
-          <p>{t.draft.sessionCollectionHint}</p>
-          {#each packs as pack (pack.code)}
-            <label class="setting">{pack.name}<input class="field" type="number" min="0" max="99" value={draft.collection?.[pack.code] ?? ownedPacks.get(pack.code) ?? 0} oninput={(e) => setPack(pack.code, Number(e.currentTarget.value))} /></label>
-          {/each}
-        </details>
         <section class="step sliders">
           <label class="slider">
             <span class="slider-head"><span class="label">3. {t.draft.deckSize}</span><strong class="value">{current.deckSize}</strong></span>
@@ -1015,6 +1102,130 @@
     display: grid;
     gap: var(--space-3);
     max-width: 48rem;
+  }
+
+  .session-packs {
+    padding: var(--space-3) var(--space-4);
+    max-width: 48rem;
+  }
+
+  .session-packs summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    min-height: var(--tap-min);
+    align-content: center;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  /* A flex summary loses the browser's own marker, so it gets one back. */
+  .session-packs summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .session-packs summary::before {
+    content: '▸';
+    color: var(--text-muted);
+    transition: transform var(--motion-fast) var(--ease-out);
+  }
+
+  .session-packs[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .session-packs summary::before {
+      transition: none;
+    }
+  }
+
+  .session-body {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+
+  .session-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .session-tools .search {
+    flex: 1 1 14rem;
+    width: auto;
+  }
+
+  .pack-group {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-muted);
+  }
+
+  .pack-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-1) var(--space-4);
+  }
+
+  @media (min-width: 40rem) {
+    .pack-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .pack-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid transparent;
+  }
+
+  /* Changed for this session: marked, with the saved count beside it. */
+  .pack-row.changed {
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .pack-row.absent .pack-name {
+    color: var(--text-muted);
+  }
+
+  .pack-name {
+    min-width: 0;
+  }
+
+  .was {
+    display: block;
+  }
+
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex: none;
+  }
+
+  .stepper .btn {
+    min-width: 2.25rem;
+    padding-inline: 0;
+  }
+
+  .copies {
+    min-width: 2ch;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
   }
 
   /* The settings and the showcase side by side where there is room. */

@@ -18,6 +18,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-09-24',
+    en: [
+      'A recorded game no longer comes back when you return to Play: the game ends as soon as it is saved, and the Play tab offers a new one.',
+      'Play again at the end of a game lays out the same scenario, difficulty, decks and modular sets, ready to change before you start.',
+      'Draft or build a sealed deck straight from the Decks page; a game is offered as soon as the deck is saved.',
+      'Fold deck folders on the Decks page, one at a time or all at once. This browser remembers which ones.',
+      'The collection for a draft session is easier to adjust: grouped by box type, searchable, with plus and minus buttons, changed packs marked and a way back to your own collection. Packs added for the session bring their heroes too.',
+    ],
+    fr: [
+      'Une partie enregistrée ne revient plus quand vous retournez sur Jouer : la partie se termine dès qu’elle est enregistrée, et l’onglet Jouer en propose une nouvelle.',
+      'Rejouer, à la fin d’une partie, remet en place le même scénario, la même difficulté, les mêmes decks et les mêmes sets modulaires, modifiables avant de commencer.',
+      'Draftez ou construisez un deck scellé directement depuis la page Decks ; une partie vous est proposée dès que le deck est enregistré.',
+      'Repliez les dossiers de la page Decks, un par un ou tous à la fois. Ce navigateur s’en souvient.',
+      'La collection d’une session de draft se règle plus facilement : regroupée par type de boîte, avec une recherche, des boutons plus et moins, les packs modifiés signalés et un retour à votre collection. Les packs ajoutés pour la session apportent aussi leurs héros.',
+    ],
+  },
+  {
     date: '2026-09-20',
     en: [
       'After draft or sealed, Random game opens the randomizer with your saved decks, heroes and aspects preserved.',

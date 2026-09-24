@@ -367,7 +367,7 @@ export const fr: Strings = {
   discardNote:
     "Abandonner n'enregistre rien : aucune partie dans votre historique ni dans vos statistiques.",
   playRecorded: 'Enregistrée.',
-  playAnother: 'Rejouer',
+  playAnother: 'Nouvelle partie',
   statsTitle: 'Statistiques',
   statsEmpty: 'Aucune partie enregistrée pour le moment.',
   statsEmptyHint:
@@ -415,6 +415,9 @@ export const fr: Strings = {
   deckCopied: 'Copi\u00e9',
   deckEdit: 'Modifier',
   deckNew: 'Construire un deck',
+  deckDraft: 'Drafter un deck',
+  deckSealed: 'Construire un deck scellé',
+  deckLimitedNote: 'Draft ou scellé\u00a0: le deck se construit à partir de votre collection, carte après carte, et une partie vous est proposée dès qu’il est enregistré.',
   deckPickHero: 'H\u00e9ros',
   deckPickAspect: 'Aspect',
   deckCreate: 'Commencer',
@@ -444,6 +447,8 @@ export const fr: Strings = {
   folderLabel: 'Dossier',
   folderNone: 'Sans dossier',
   folderNew: 'Nouveau dossier',
+  foldersCollapseAll: 'Replier tous les dossiers',
+  foldersExpandAll: 'Déplier tous les dossiers',
   folderNamePlaceholder: 'Nom du dossier',
   folderCreate: 'Cr\u00e9er',
   folderRename: 'Renommer',
@@ -475,7 +480,17 @@ export const fr: Strings = {
     openAllBoosters: 'Ouvrir tous les boosters',
     sealedDescription: 'Ouvrez 6 boosters de 10 cartes, puis construisez votre deck parmi les 60 cartes découvertes. Les cartes signature sont ajoutées séparément. Les cartes non retenues restent réservées à ce joueur.',
     sessionCollection: 'Collection pour cette session',
-    sessionCollectionHint: 'Ajustez les quantités de packs pour cette session uniquement. Votre collection enregistrée restera inchangée.',
+    sessionCollectionHint: 'Ajoutez une boîte apportée par quelqu’un, ou retirez-en une, pour ce draft seulement. Votre collection enregistrée ne change pas.',
+    sessionSummary: (packs, changes) =>
+      `${packs} pack${packs === 1 ? '' : 's'}${changes === 0 ? ', comme dans votre collection' : `, ${changes} modifié${changes === 1 ? '' : 's'} pour ce draft`}`,
+    searchPacks: 'Chercher un pack',
+    everyPack: 'Afficher tous les packs',
+    resetCollection: 'Revenir à ma collection',
+    savedCount: (copies) => `${copies} dans votre collection`,
+    fewerCopies: (pack) => `Un exemplaire de moins de ${pack}`,
+    moreCopies: (pack) => `Un exemplaire de plus de ${pack}`,
+    noPackFound: 'Aucun pack de ce nom.',
+    otherPacks: 'Autres packs',
     title: 'Draft / Scellé',
     intro:
       'Un deck construit un choix \u00e0 la fois, comme un draft de Magic\u00a0: une identit\u00e9, une affinit\u00e9, puis une main de cartes tir\u00e9es au hasard dans votre collection, une gard\u00e9e, et on recommence. De un \u00e0 quatre joueurs sur cet appareil, chacun son tour\u00a0; chaque deck finit l\u00e9gal et arrive sur l\u2019\u00e9tag\u00e8re.',
@@ -1061,6 +1076,8 @@ export const fr: Strings = {
   playAgain: 'Rejouer',
   playAgainModularNote:
     'Même scénario, même difficulté et mêmes héros que cette partie. Les sets modulaires ne sont pas enregistrés sur une partie, choisissez-les à nouveau.',
+  playAgainSameNote:
+    'Même scénario, même difficulté, mêmes decks et mêmes sets modulaires que la partie que vous venez d’enregistrer. Changez ce que vous voulez avant de commencer.',
   favouritePlayAdd: 'Mettre en favori',
   favouritePlayRemove: 'Retirer des favoris',
   historyFavouritesOnly: 'Favoris seulement',

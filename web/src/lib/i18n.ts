@@ -342,6 +342,16 @@ export interface Strings {
     readonly openAllBoosters: string;
     readonly sessionCollection: string;
     readonly sessionCollectionHint: string;
+    /** The folded panel's line: packs in play for this session, and how many differ from the saved collection. */
+    readonly sessionSummary: (packs: number, changes: number) => string;
+    readonly searchPacks: string;
+    readonly everyPack: string;
+    readonly resetCollection: string;
+    readonly savedCount: (copies: number) => string;
+    readonly fewerCopies: (pack: string) => string;
+    readonly moreCopies: (pack: string) => string;
+    readonly noPackFound: string;
+    readonly otherPacks: string;
     readonly title: string;
     readonly intro: string;
     readonly noHeroes: string;
@@ -451,6 +461,10 @@ export interface Strings {
   readonly deckCopied: string;
   readonly deckEdit: string;
   readonly deckNew: string;
+  /** Beside building by hand: opens the draft, or the sealed pool. */
+  readonly deckDraft: string;
+  readonly deckSealed: string;
+  readonly deckLimitedNote: string;
   readonly deckPickHero: string;
   readonly deckPickAspect: string;
   readonly deckCreate: string;
@@ -481,6 +495,8 @@ export interface Strings {
   readonly folderLabel: string;
   readonly folderNone: string;
   readonly folderNew: string;
+  readonly foldersCollapseAll: string;
+  readonly foldersExpandAll: string;
   readonly folderNamePlaceholder: string;
   readonly folderCreate: string;
   readonly folderRename: string;
@@ -902,6 +918,8 @@ export interface Strings {
   readonly playAgain: string;
   /** Shown on setup after a replay whose modular sets could not be recovered. */
   readonly playAgainModularNote: string;
+  /** Shown on setup after "play again" at the end of a game, where nothing was lost. */
+  readonly playAgainSameNote: string;
   readonly favouritePlayAdd: string;
   readonly favouritePlayRemove: string;
   readonly historyFavouritesOnly: string;

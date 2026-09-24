@@ -360,7 +360,7 @@ export const en: Strings = {
   discardNote:
     'Discarding records nothing: no play in your history and nothing in your statistics.',
   playRecorded: 'Recorded.',
-  playAnother: 'Play another',
+  playAnother: 'New game',
   statsTitle: 'Statistics',
   statsEmpty: 'No games recorded yet.',
   statsEmptyHint:
@@ -410,6 +410,9 @@ export const en: Strings = {
   deckCopied: 'Copied',
   deckEdit: 'Edit',
   deckNew: 'Build a deck',
+  deckDraft: 'Draft a deck',
+  deckSealed: 'Build a sealed deck',
+  deckLimitedNote: 'Draft or sealed: the deck is built from your collection a pick at a time, and a game is offered as soon as it is saved.',
   deckPickHero: 'Hero',
   deckPickAspect: 'Aspect',
   deckCreate: 'Start building',
@@ -437,6 +440,8 @@ export const en: Strings = {
   folderLabel: 'Folder',
   folderNone: 'No folder',
   folderNew: 'New folder',
+  foldersCollapseAll: 'Fold every folder',
+  foldersExpandAll: 'Open every folder',
   folderNamePlaceholder: 'Folder name',
   folderCreate: 'Create',
   folderRename: 'Rename',
@@ -468,7 +473,17 @@ export const en: Strings = {
     openAllBoosters: 'Open all boosters',
     sealedDescription: 'Open 6 boosters of 10 cards, then build your deck from the 60 cards revealed. Signature cards are added separately. Unselected cards stay reserved to this player.',
     sessionCollection: 'Collection for this session',
-    sessionCollectionHint: 'Adjust pack quantities for this session only. Your saved collection will stay unchanged.',
+    sessionCollectionHint: 'Add a box somebody brought, or leave one out, for this draft only. Your saved collection does not change.',
+    sessionSummary: (packs, changes) =>
+      `${packs} pack${packs === 1 ? '' : 's'}${changes === 0 ? ', as in your collection' : `, ${changes} changed for this draft`}`,
+    searchPacks: 'Find a pack',
+    everyPack: 'Show every pack',
+    resetCollection: 'Back to my collection',
+    savedCount: (copies) => `${copies} in your collection`,
+    fewerCopies: (pack) => `One copy fewer of ${pack}`,
+    moreCopies: (pack) => `One copy more of ${pack}`,
+    noPackFound: 'No pack by that name.',
+    otherPacks: 'Other packs',
     title: 'Draft / Sealed',
     intro:
       'A deck built one pick at a time, as in a Magic draft: an identity, an aspect, then a hand of random cards from your collection, keep one, again. One to four players on this device, taking turns; every deck ends legal and lands on the shelf.',
@@ -1048,6 +1063,8 @@ export const en: Strings = {
   playAgain: 'Play again',
   playAgainModularNote:
     'Same scenario, difficulty and heroes as that game. The modular sets are not recorded on a game, so choose them again.',
+  playAgainSameNote:
+    'Same scenario, difficulty, decks and modular sets as the game you just recorded. Change anything you like before you start.',
   favouritePlayAdd: 'Star this game',
   favouritePlayRemove: 'Remove the star',
   historyFavouritesOnly: 'Starred only',

@@ -445,7 +445,7 @@
     };
   });
 
-  function navigate(next: Route, context: { seats?: Seat[] } = {}): void {
+  function navigate(next: Route, context: { seats?: Seat[]; sealed?: boolean } = {}): void {
     pageContext = { ...context, depth: (pageContext.depth ?? 0) + 1 };
     route = next;
     window.history.pushState($state.snapshot(pageContext), '', pathForRoute(next, BASE));
@@ -672,7 +672,7 @@
 
 <main class="page">
   {#if route.name !== 'home' && route.name !== 'card'}
-    <button class="btn btn--quiet" type="button" onclick={() => (pageContext.depth ?? 0) > 0 ? window.history.back() : navigate({ name: 'home' })}>← {t.navigateBack}</button>
+    <button class="btn btn--quiet page-back" type="button" onclick={() => (pageContext.depth ?? 0) > 0 ? window.history.back() : navigate({ name: 'home' })}>← {t.navigateBack}</button>
   {/if}
   {#if loading}
     <p class="notice muted">{t.loading}</p>
@@ -956,6 +956,7 @@
         {storageOk}
         onOpen={(id) => navigate({ name: 'deck', id })}
         onEdit={(id) => navigate({ name: 'deck', id, edit: true })}
+        onDraft={(sealed) => navigate({ name: 'draft' }, { sealed })}
       />
     {:catch}
       <!-- The chunk did not arrive: a connection that dropped, or a tab
@@ -1191,6 +1192,11 @@
 
   .back-link {
     margin: var(--space-4) 0;
+  }
+
+  /* Clear of the top bar's rule, as the card page's back link is. */
+  .page-back {
+    margin-top: var(--space-4);
   }
 
   footer {

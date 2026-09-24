@@ -20,6 +20,7 @@ const KEY_CARD_LOCALE = 'thwart.cardLocale';
 const KEY_THEME = 'thwart.theme';
 const KEY_GROUPED_PLAY = 'thwart.groupedPlay';
 const KEY_DECK_OWNED_ONLY = 'thwart.deckOwnedOnly';
+const KEY_FOLDED_FOLDERS = 'thwart.foldedFolders';
 
 function read(key: string): string | null {
   try {
@@ -119,6 +120,27 @@ export function loadDeckOwnedOnly(): boolean {
 
 export function saveDeckOwnedOnly(ownedOnly: boolean): void {
   write(KEY_DECK_OWNED_ONLY, ownedOnly ? 'on' : 'off');
+}
+
+/**
+ * Which deck folders are folded shut on the Decks page.
+ *
+ * Per browser and never synced, like the other toggles here: the folder
+ * record is shared with the phone field for field, and how a shelf is laid
+ * out on one screen is not something the other screen needs to know. Ids of
+ * folders deleted since are harmless and simply never match.
+ */
+export function loadFoldedFolders(): Set<string> {
+  try {
+    const parsed: unknown = JSON.parse(read(KEY_FOLDED_FOLDERS) ?? '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveFoldedFolders(ids: ReadonlySet<string>): void {
+  write(KEY_FOLDED_FOLDERS, JSON.stringify([...ids]));
 }
 
 /**

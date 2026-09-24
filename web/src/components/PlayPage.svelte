@@ -43,7 +43,7 @@
   import type { AchievementState, Unlock } from '../lib/achievements/types';
   import { pathForRoute } from '../lib/router';
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
-  import { resumeSession, setupNotice } from '../lib/session.svelte';
+  import { prepareSession, resumeSession, setupNotice, type Session } from '../lib/session.svelte';
   import { normalizeForSearch } from '../lib/normalize';
   import RatingPanel from './RatingPanel.svelte';
   import RatingBadge from './RatingBadge.svelte';
@@ -388,6 +388,14 @@
   let recorded = $state(false);
   /** The game just recorded, which is what the rating row is about. */
   let lastPlay = $state.raw<Play | null>(null);
+  /**
+   * The table the recorded game was played at, for "play again".
+   *
+   * Kept here because the session itself is ended the moment the game is
+   * written down (see `record`), and the history's replay has to guess the
+   * modular sets from the notes where this knows them exactly.
+   */
+  let lastTable = $state.raw<Partial<Session> | null>(null);
 
   /*
    * BoardGameGeek, after the game: sent on its own when the connection says
@@ -494,6 +502,26 @@
       await db.plays.put(play);
       lastPlay = play;
       /*
+       * Written down, so the game is over. Ending the session here rather
+       * than on "Play another" is what lets somebody walk to the decks and
+       * back without finding the finished game still on the table: the
+       * debrief below lives in this page, not in the session, and leaving
+       * the page is enough to put it away. The draft's and the achievements'
+       * "play now" also refuse while a session is past setup.
+       */
+      const s = session.current;
+      lastTable = {
+        scenarioCode: s.scenarioCode,
+        scenarioName: s.scenarioName,
+        difficulty: s.difficulty,
+        standardSet: s.standardSet,
+        seats: [...s.seats],
+        modularSetCodes: [...s.modularSetCodes],
+      };
+      endGame();
+      // In the same tick, so the setup screen never flashes between the two.
+      recorded = true;
+      /*
        * Where you play is remembered rather than asked every time.
        *
        * It is a preference on both platforms, and this is the only moment the
@@ -512,7 +540,6 @@
        * there when they do.
        */
       syncAfter('scenario-end');
-      recorded = true;
       bggState = 'idle';
       bggFailure = null;
       if (bggCanSend() && bgg.mode === 'always') {
@@ -530,8 +557,22 @@
     outcome = null;
     recorded = false;
     lastPlay = null;
+    lastTable = null;
     bggState = 'idle';
     bggFailure = null;
+  }
+
+  /*
+   * The same game again: scenario, difficulty, decks and modular sets, laid
+   * out on the setup screen rather than started, so a seat can still change.
+   */
+  function playAgain(): void {
+    const table = lastTable;
+    newGame();
+    if (table !== null) {
+      prepareSession(table);
+      setupNotice.text = t.playAgainSameNote;
+    }
   }
 
   const availableScenarios = $derived(
@@ -617,7 +658,12 @@
           <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{t.bggSend}</button>
         {/if}
       {/if}
-      <button type="button" class="btn btn--primary" onclick={newGame}>{t.playAnother}</button>
+      <div class="result-actions">
+        {#if lastTable !== null}
+          <button type="button" class="btn btn--primary" onclick={playAgain}>{t.playAgain}</button>
+        {/if}
+        <button type="button" class="btn" class:btn--primary={lastTable === null} onclick={newGame}>{t.playAnother}</button>
+      </div>
     </div>
     {#if unlocks.length > 0}
       <!-- Said once, here, for what this game earned; the page says the rest. -->

@@ -20,6 +20,7 @@
   import { session } from '../lib/sync/session.svelte';
   import type { DeckFolder } from '../lib/records';
   import { createFolder, deleteFolder, folderOf, inShelfOrder, moveDeck, renameFolder } from '../lib/folders';
+  import { loadFoldedFolders, saveFoldedFolders } from '../lib/preferences';
 
   interface Props {
     t: Strings;
@@ -29,9 +30,11 @@
     /** Opens a deck's page, and its editor. */
     onOpen: (id: string) => void;
     onEdit: (id: string) => void;
+    /** Opens the draft, set to draft or to sealed; it offers a game once the deck is saved. */
+    onDraft: (sealed: boolean) => void;
   }
 
-  const { t, index, cardLocale, storageOk, onOpen, onEdit }: Props = $props();
+  const { t, index, cardLocale, storageOk, onOpen, onEdit, onDraft }: Props = $props();
 
   // Not named `state`: Svelte reads `$name` as a store subscription, so a
   // variable called `state` turns the `$state` rune into a reference to it.
@@ -185,6 +188,29 @@
     const loose = saved.decks.filter((deck) => !placed.has(deck.id));
     return { named, loose };
   });
+
+  /*
+   * Folded folders: the heading stays, with its count, and the tiles go. A
+   * shelf of forty decks in six folders reads as six lines this way. The
+   * decks in no folder fold under their own key, which no folder id can be.
+   */
+  const LOOSE = '(none)';
+  let folded = $state.raw<ReadonlySet<string>>(loadFoldedFolders());
+  function toggleFolded(id: string): void {
+    const next = new Set(folded);
+    if (!next.delete(id)) {
+      next.add(id);
+    }
+    folded = next;
+    saveFoldedFolders(next);
+  }
+  const foldable = $derived([...folders.map((folder) => folder.id), ...(shelves.loose.length > 0 ? [LOOSE] : [])]);
+  const allFolded = $derived(foldable.length > 0 && foldable.every((id) => folded.has(id)));
+  function foldAll(fold: boolean): void {
+    const next = new Set(fold ? [...folded, ...foldable] : [...folded].filter((id) => !foldable.includes(id)));
+    folded = next;
+    saveFoldedFolders(next);
+  }
 
   let newFolderName = $state('');
   let renaming = $state<{ id: string; name: string } | null>(null);
@@ -350,9 +376,14 @@
     <div class="import surface">
       <h2>{t.deckNew}</h2>
       {#if building === null}
-        <button class="btn" type="button" onclick={() => (building = { heroCode: '' })}>
-          {t.deckNew}
-        </button>
+        <div class="new-ways">
+          <button class="btn" type="button" onclick={() => (building = { heroCode: '' })}>
+            {t.deckNew}
+          </button>
+          <button class="btn" type="button" onclick={() => onDraft(false)}>{t.deckDraft}</button>
+          <button class="btn" type="button" onclick={() => onDraft(true)}>{t.deckSealed}</button>
+        </div>
+        <p class="muted note">{t.deckLimitedNote}</p>
       {:else}
         <div class="build-row">
           <label class="field-group grow">
@@ -408,10 +439,17 @@
       {/if}
     </div>
 
-    <form class="new-folder" onsubmit={(e) => { e.preventDefault(); void addFolder(); }}>
-      <input class="field" type="text" placeholder={t.folderNamePlaceholder} aria-label={t.folderNew} value={newFolderName} oninput={(e) => (newFolderName = e.currentTarget.value)} />
-      <button type="submit" class="btn" disabled={newFolderName.trim() === ''}>{t.folderNew}</button>
-    </form>
+    <div class="folder-bar">
+      <form class="new-folder" onsubmit={(e) => { e.preventDefault(); void addFolder(); }}>
+        <input class="field" type="text" placeholder={t.folderNamePlaceholder} aria-label={t.folderNew} value={newFolderName} oninput={(e) => (newFolderName = e.currentTarget.value)} />
+        <button type="submit" class="btn" disabled={newFolderName.trim() === ''}>{t.folderNew}</button>
+      </form>
+      {#if folders.length > 0}
+        <button type="button" class="btn btn--quiet small" onclick={() => foldAll(!allFolded)}>
+          {allFolded ? t.foldersExpandAll : t.foldersCollapseAll}
+        </button>
+      {/if}
+    </div>
 
     {#if saved.decks.length === 0 && folders.length === 0}
       <p class="muted empty">{t.noDecks}</p>
@@ -492,7 +530,11 @@
                 <button type="button" class="btn btn--quiet" onclick={() => (renaming = null)}>{t.cancel}</button>
               </form>
             {:else}
-              <h2>{folder.name} <span class="muted count">{decks.length}</span></h2>
+              <h2>
+                <button type="button" class="fold" aria-expanded={!folded.has(folder.id)} onclick={() => toggleFolded(folder.id)}>
+                  <span class="chevron" aria-hidden="true">▸</span>{folder.name} <span class="muted count">{decks.length}</span>
+                </button>
+              </h2>
               <span class="folder-actions">
                 <button type="button" class="btn btn--quiet small" onclick={() => (renaming = { id: folder.id, name: folder.name })}>{t.folderRename}</button>
                 {#if removingFolder === folder.id}
@@ -505,7 +547,9 @@
               </span>
             {/if}
           </header>
-          {#if decks.length === 0}
+          {#if folded.has(folder.id)}
+            <!-- Folded: the heading above is the whole folder. -->
+          {:else if decks.length === 0}
             <p class="muted small empty">{t.noDecks}</p>
           {:else}
             <ul class="decks">
@@ -519,13 +563,19 @@
 
       {#if shelves.loose.length > 0}
         {#if shelves.named.length > 0}
-          <h2 class="loose-head muted">{t.folderNone}</h2>
+          <h2 class="loose-head muted">
+            <button type="button" class="fold" aria-expanded={!folded.has(LOOSE)} onclick={() => toggleFolded(LOOSE)}>
+              <span class="chevron" aria-hidden="true">▸</span>{t.folderNone} <span class="count">{shelves.loose.length}</span>
+            </button>
+          </h2>
         {/if}
-        <ul class="decks">
-          {#each shelves.loose as deck (deck.id)}
-            {@render tile(deck)}
-          {/each}
-        </ul>
+        {#if shelves.named.length === 0 || !folded.has(LOOSE)}
+          <ul class="decks">
+            {#each shelves.loose as deck (deck.id)}
+              {@render tile(deck)}
+            {/each}
+          </ul>
+        {/if}
       {/if}
     {/if}
 
@@ -640,11 +690,57 @@
     margin-inline-end: var(--space-3);
   }
 
+  .new-ways {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .folder-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+  }
+
   .new-folder {
     display: flex;
     gap: var(--space-2);
-    margin: var(--space-3) 0;
+    flex: 1 1 18rem;
     max-width: 28rem;
+  }
+
+  /* The folder's name is the switch: the whole heading folds it. */
+  .fold {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .chevron {
+    display: inline-block;
+    color: var(--text-muted);
+    transition: transform var(--motion-fast) var(--ease-out);
+  }
+
+  .fold[aria-expanded='true'] .chevron {
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition: none;
+    }
   }
 
   .folder {
