@@ -252,7 +252,13 @@
         <li class="scenario" data-step={scenario.step} style:--field-hue={fieldHue(scenario.id)}>
           <div class="scenario-art">
             {#if face !== undefined}<img src={face} alt="" loading="lazy" />{/if}
-            <span class="mark" aria-hidden="true">{stepGlyph(scenario.step)}</span>
+            {#if scenario.step === 'won'}
+              <!-- Beaten, said the way a comic says it: a burst stamped
+                   across the villain. The words under the card say it too. -->
+              <span class="burst-wrap" aria-hidden="true"><span class="burst">{t.campaignBeatenBurst}</span></span>
+            {:else}
+              <span class="mark" aria-hidden="true">{stepGlyph(scenario.step)}</span>
+            {/if}
           </div>
           <div class="scenario-body">
             <span class="muted small">{t.campaignScenarioN(scenario.n)}</span>
@@ -577,8 +583,60 @@
     font-weight: var(--weight-bold);
   }
 
-  [data-step='won'] .mark {
-    background: var(--ok);
+  /* Beaten: a gold frame with a comic offset shadow, halftone on the art,
+     and the burst. */
+  .scenario[data-step='won'] {
+    border-color: var(--text);
+    box-shadow: 4px 4px 0 var(--burst-fill), 4px 4px 0 2px var(--text);
+  }
+
+  [data-step='won'] .scenario-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgb(255 210 31 / 45%) 1.2px, transparent 1.6px);
+    background-size: 6px 6px;
+    pointer-events: none;
+  }
+
+  .burst-wrap {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    z-index: 1;
+    /* The outline: a drop shadow follows the clipped star, a border would not. */
+    filter: drop-shadow(0 0 0 var(--text)) drop-shadow(2px 0 0 var(--text)) drop-shadow(-2px 0 0 var(--text))
+      drop-shadow(0 2px 0 var(--text)) drop-shadow(0 -2px 0 var(--text)) drop-shadow(4px 4px 0 rgb(0 0 0 / 55%));
+  }
+
+  .burst {
+    display: grid;
+    place-items: center;
+    width: 8.5rem;
+    height: 6rem;
+    background: var(--burst-fill);
+    color: #c4001c;
+    font-size: var(--text-lg);
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    transform: rotate(-12deg);
+    clip-path: polygon(50% 0%, 60% 17%, 78% 6%, 78% 27%, 99% 27%, 86% 45%, 100% 62%, 80% 68%, 88% 91%, 66% 83%, 55% 100%, 44% 83%, 21% 94%, 25% 70%, 1% 67%, 15% 49%, 0% 30%, 22% 28%, 19% 7%, 39% 17%);
+    animation: burst-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.35) both;
+  }
+
+  @keyframes burst-pop {
+    0% { transform: rotate(-40deg) scale(0); }
+    70% { transform: rotate(-8deg) scale(1.15); }
+    100% { transform: rotate(-12deg) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .burst {
+      animation: none;
+    }
   }
 
   [data-step='current'] .mark {

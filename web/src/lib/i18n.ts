@@ -1007,6 +1007,8 @@ export interface Strings {
   /** Beside the community's votes on a scenario card. */
   readonly campaignScenarioDifficulty: string;
   readonly campaignScenarioNoVotes: string;
+  /** The comic burst on a beaten scenario's art. Short: it is a stamp. */
+  readonly campaignBeatenBurst: string;
   /** On a scenario card: "3 VP". */
   readonly victoryPointsShort: (n: number) => string;
   /** After the campaign's total, the number shown bold before it. */

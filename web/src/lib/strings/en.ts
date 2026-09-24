@@ -1151,6 +1151,7 @@ export const en: Strings = {
   campaignScenarioNotBeaten: 'Not beaten yet',
   campaignScenarioDifficulty: 'Difficulty',
   campaignScenarioNoVotes: 'No votes yet',
+  campaignBeatenBurst: 'Beaten!',
   victoryPointsShort: (n) => `${n} VP`,
   victoryPointsTotal: (n) => `victory point${n === 1 ? '' : 's'}`,
   campaignStart: 'Start',

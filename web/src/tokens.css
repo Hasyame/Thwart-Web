@@ -40,6 +40,9 @@
   --gold: #8a6300;
   --danger: #c4001c;
   --ok: #1f6e45;
+  /* The comic burst stamped on a beaten scenario: the same printed yellow in
+     both themes, always with dark ink and a dark outline, never as text. */
+  --burst-fill: #ffd21f;
 
   /* Depth, which on a light ground comes from shadow rather than tone. */
   --shadow-1: 3px 3px 0 #1a1113;
