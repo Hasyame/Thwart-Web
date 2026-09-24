@@ -341,28 +341,27 @@
          not read as lost ground. -->
     <!-- Two figures, each its own card: the achievements unlocked, and the
          completion, one hero having beaten one scenario, over the collection. -->
-    <div class="completion">
+    <!-- What the page shows, said as a switch before anything is tapped.
+         The two cards below do the same, and show which one is chosen. -->
+    <div class="segments" role="group" aria-label={t.achievements.viewLabel}>
+      <button type="button" class="segment" aria-pressed={view === 'all'} onclick={() => (view = 'all')}>{t.achievements.viewAll}</button>
+      <button type="button" class="segment" aria-pressed={view === 'named'} onclick={() => (view = 'named')}>{t.achievements.namedTitle}</button>
+      <button type="button" class="segment" aria-pressed={view === 'grid'} onclick={() => (view = 'grid')}>{t.achievements.pairsTitle}</button>
+    </div>
+    <div class="completion" class:filtered={view !== 'all'}>
       <button type="button" class="surface stat" aria-pressed={view === 'named'} onclick={() => toggleView('named')}>
-        <span class="stat-title">{t.achievements.namedTitle}</span>
+        <span class="stat-title">{t.achievements.namedTitle}{#if view === 'named'}<span class="shown">✓ {t.achievements.viewShown}</span>{/if}</span>
         <strong class="big">{t.achievements.rate(percent(unlockedCount, shown.length))}</strong>
         <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(unlockedCount, shown.length)}%`}></span></span>
         <span class="muted small">{t.achievements.namedCount(unlockedCount, shown.length)}</span>
       </button>
       <button type="button" class="surface stat" aria-pressed={view === 'grid'} onclick={() => toggleView('grid')}>
-        <span class="stat-title">{t.achievements.pairsTitle}</span>
+        <span class="stat-title">{t.achievements.pairsTitle}{#if view === 'grid'}<span class="shown">✓ {t.achievements.viewShown}</span>{/if}</span>
         <strong class="big">{t.achievements.rate(percent(current.completion.owned.won, current.completion.owned.cells))}</strong>
         <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(current.completion.owned.won, current.completion.owned.cells)}%`}></span></span>
         <span class="muted small">{t.achievements.pairsOwned(current.completion.owned.won, current.completion.owned.cells)}</span>
       </button>
     </div>
-    <p class="muted small view-line">
-      {#if view === 'all'}
-        {t.achievements.viewHint}
-      {:else}
-        {view === 'named' ? t.achievements.viewNamed : t.achievements.viewGrid}
-        <button type="button" class="btn btn--quiet small" onclick={() => (view = 'all')}>{t.achievements.viewAll}</button>
-      {/if}
-    </p>
 
     {#if view !== 'named'}
     <h2>{t.achievements.gridTitle}</h2>
@@ -689,18 +688,67 @@
     cursor: pointer;
   }
 
-  /* The chosen half: its card carries the accent. */
+  /* The chosen half: tinted and tagged. The other one steps back. */
   .stat[aria-pressed='true'] {
     border-color: var(--accent);
+    background: var(--accent-soft);
     box-shadow: 0 0 0 2px var(--accent);
   }
 
-  .view-line {
+  .filtered .stat[aria-pressed='false'] {
+    opacity: 0.55;
+  }
+
+  .filtered .stat[aria-pressed='false']:hover,
+  .filtered .stat[aria-pressed='false']:focus-visible {
+    opacity: 1;
+  }
+
+  .stat-title {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: var(--space-2);
-    margin: var(--space-2) 0 0;
+  }
+
+  .shown {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+  }
+
+  /* The same switch as a deck's list and grid. */
+  .segments {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    margin-bottom: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    max-width: 32rem;
+  }
+
+  .segment {
+    flex: 1 1 0;
+    min-height: var(--tap-min);
+    padding-inline: var(--space-3);
+    border: 0;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+
+  .segment[aria-pressed='true'] {
+    background: var(--surface-1);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+    color: var(--accent);
   }
 
   .stat-title {
