@@ -5,6 +5,12 @@ no exploitable vulnerability and listed six items to verify or harden. Each was
 checked against the code and closed as below. Production nginx was updated the
 same day (backups in `/root/nginx-backup-audit-*` on the host).
 
+**What is live, and where.** The nginx changes (headers, log format) have been
+live since 2026-09-24 13:10 UTC. The server change (the per-account resend cap)
+is in commit `34281bb` on `main`, and reaches production when the API is next
+released: `GET /api/v1/version` reports the running commit in `build`. The tests
+are code only and run in CI on every push.
+
 | # | Item | Verdict |
 |---|------|---------|
 | 1 | Rate limiting on auth and mail endpoints | Present everywhere; one cap added, tests added |
@@ -92,3 +98,55 @@ The live site file is certbot-rewritten, so it was edited in place, not copied:
 an `access_log /var/log/nginx/access.log thwart;` line in each of its two server
 blocks, and the three headers in its `/api/` location. `conf.d/thwart-limits.conf`
 and `snippets/thwart-security.conf` are plain copies of the repository files.
+
+## Counter-audit checklist
+
+Each check can be run from outside, without an account, and none of them is
+load or brute force. Expected results are what the site answered on
+2026-09-24 after the changes.
+
+**Headers, pages and API (item 4).**
+
+```bash
+curl -sI https://thwart.app/ | grep -iE 'permissions-policy|cross-origin|content-security|strict-transport|x-frame|referrer|nosniff'
+curl -sI https://thwart.app/api/v1/version | grep -iE 'permissions-policy|cross-origin|content-security'
+```
+
+Expected on both: `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=()`,
+`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`.
+The page keeps its CSP with `script-src 'self'`; the API keeps `default-src 'none'`.
+The same headers should appear on a deep link (`/decks`), a hashed asset
+under `/assets/`, and `/sw.js`.
+
+**No regression from the headers.** Open https://thwart.app in a browser: no
+console errors, card images from marvelcdb.com load on a card page
+(`/card/01001a`), the service worker controls the page after a reload.
+
+**Resend cap (item 1), once `build` reports `34281bb` or later.** Only
+verifiable with an unconfirmed account of your own: after three resends within
+an hour, a fourth with the right password answers `429 rate_limited`. With a
+wrong password or an unknown address the answer stays `202 {"sent":true}` until
+the per-address limit (five an hour). If you do this, use a disposable account
+and address; it sends real mail.
+
+**Unauthenticated sign-up form (added after the audit).** `POST
+/api/v1/alpha/android` exists and relays a name and address to the owner by
+mail. A request with an empty name must answer `400 invalid_name` and send
+nothing:
+
+```bash
+curl -s -X POST https://thwart.app/api/v1/alpha/android -H 'Content-Type: application/json' -d '{"name":"","email":"x@example.com","website":""}'
+```
+
+It is limited to three sends an hour per address and fifty a day in total, has a
+honeypot field (`website`), a fixed subject, and refuses control characters in
+the name (`server/alpha.go`, `server/alpha_test.go`).
+
+**Not checkable from outside, stated for completeness.** That no query string
+reaches the access log (items 2 and 3), that BGG credentials are never logged
+(item 3), and the rate limits other than resend (item 1): see the code and tests
+named above. A reviewer with repository access can run `go test ./...` in
+`server/`.
+
+**Still open, not done by anyone yet.** An SSL Labs run against thwart.app for
+the edge TLS configuration.
