@@ -647,7 +647,8 @@
 </script>
 
 <div class="run">
-  <button class="back" type="button" onclick={onBack}>← {t.campaignsTitle}</button>
+  <!-- Back to the campaign's page, so it carries the campaign's name. -->
+  <button class="back" type="button" onclick={onBack}>← {run.name !== '' ? run.name : run.templateName}</button>
 
   {#if template === null}
     <p class="muted note">{t.campaignsUnavailable}</p>

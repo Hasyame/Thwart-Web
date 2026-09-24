@@ -313,25 +313,52 @@
   </section>
 {/if}
 
+<!-- The way into the scenario, as the last panel of the page: a comic
+     frame to tap, and the quieter way back beneath it. -->
 <div class="ready">
-  <button class="primary big" type="button" onclick={onReady}>{t.campaignImReady}</button>
+  <button class="launch" type="button" onclick={onReady}>
+    <span class="launch-title">{t.campaignImReady}</span>
+    <span class="launch-detail">{t.campaignReadyDetail}</span>
+  </button>
   <button class="big" type="button" onclick={onNotReady}>{t.campaignNotReady}</button>
 </div>
 
 <style>
+  /*
+   * A guide to read down, not a stack of boxes: after ArkhamCards' scenario
+   * guide, at the owner's request. The story in italics on a red rule, each
+   * part under a red comic heading, the steps marked with a diamond, and the
+   * way into the scenario as a comic panel at the foot.
+   */
   .panel {
-    margin: var(--space-3) 0;
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
   }
 
   h3 {
-    font-size: var(--text-lg);
-    font-weight: 700;
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3);
+    color: var(--accent);
+    font-size: var(--text-xl);
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  .story {
+    padding-inline-start: var(--space-4);
+    border-inline-start: 4px solid var(--accent);
   }
 
   .story p {
     font-style: italic;
-    color: var(--text-muted);
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+    color: var(--text);
     max-width: var(--prose-max);
     margin: 0;
   }
@@ -372,12 +399,16 @@
     margin-bottom: 0;
   }
 
+  /* A small red diamond, where a printed guide puts its step mark. */
   .step::before {
-    content: '•';
+    content: '';
     position: absolute;
-    inset-inline-start: 0;
-    color: var(--accent);
-    font-weight: 700;
+    inset-inline-start: 0.1em;
+    top: 0.5em;
+    width: 0.55em;
+    height: 0.55em;
+    background: var(--accent);
+    transform: rotate(45deg);
   }
 
   .line {
@@ -453,8 +484,55 @@
 
   .ready {
     display: grid;
-    gap: var(--space-2);
-    margin: var(--space-5) 0 var(--space-4);
+    gap: var(--space-3);
+    margin: var(--space-6) 0 var(--space-4);
+  }
+
+  /* The comic panel: a heavy frame with an offset shadow, halftone dots. */
+  .launch {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: center;
+    padding: var(--space-5) var(--space-4);
+    border: 3px solid var(--text);
+    border-radius: var(--radius-sm);
+    background:
+      radial-gradient(rgb(255 255 255 / 18%) 1.1px, transparent 1.5px) 0 0 / 7px 7px,
+      var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 6px 6px 0 var(--text);
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: transform var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out);
+  }
+
+  .launch:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 var(--text);
+  }
+
+  .launch:active {
+    transform: translate(3px, 3px);
+    box-shadow: 3px 3px 0 var(--text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .launch {
+      transition: none;
+    }
+  }
+
+  .launch-title {
+    font-size: var(--text-2xl);
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+
+  .launch-detail {
+    font-size: var(--text-sm);
   }
 
   button.big {
@@ -465,12 +543,5 @@
     background: transparent;
     color: inherit;
     cursor: pointer;
-  }
-
-  button.primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: var(--accent);
-    font-weight: 700;
   }
 </style>

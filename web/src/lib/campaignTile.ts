@@ -1,5 +1,5 @@
 import type { CampaignEvent as EventRow, CampaignRun } from './records';
-import type { CampaignEvent, CampaignState, CampaignTemplate } from './campaign/types';
+import type { CampaignEvent, CampaignState, CampaignTemplate, ScenarioTemplate } from './campaign/types';
 import { fold } from './campaign/engine';
 
 /**
@@ -57,20 +57,54 @@ const BOX_ART: Readonly<Record<string, string>> = { fne: '/art/campaigns/fne.jpg
 
 export const boxArtOf = (templateId: string): string | null => BOX_ART[templateId] ?? null;
 
+/** A scenario's villain, the first card of its villain deck, or null. */
+export function scenarioFaceOf(scenario: ScenarioTemplate): string | null {
+  const decks = scenario.baseSetup?.villainDeck ?? {};
+  const codes = decks['standard'] ?? decks['expert'] ?? Object.values(decks)[0] ?? [];
+  const first = codes[0];
+  return first !== undefined && first !== '' ? first : null;
+}
+
 /** The last villain the template names, read the way the tracker reads decks. */
 export function faceCardOf(template: CampaignTemplate | null): string | null {
   if (template === null) {
     return null;
   }
   for (const scenario of [...(template.scenarios ?? [])].reverse()) {
-    const decks = scenario.baseSetup?.villainDeck ?? {};
-    const codes = decks['standard'] ?? decks['expert'] ?? Object.values(decks)[0] ?? [];
-    const first = codes[0];
-    if (first !== undefined && first !== '') {
-      return first;
+    const face = scenarioFaceOf(scenario);
+    if (face !== null) {
+      return face;
     }
   }
   return null;
+}
+
+/**
+ * When a campaign last moved: its latest logged event, or its creation.
+ *
+ * Read from the log rather than stored, so a campaign synced from the phone
+ * says when it was last played there too.
+ */
+export function lastUpdatedOf(run: CampaignRun, events: readonly EventRow[]): number {
+  return events.reduce((latest, event) => Math.max(latest, event.timestamp), run.createdAt);
+}
+
+/**
+ * "today", "yesterday", the weekday within a week, else the date.
+ *
+ * What a shelf of campaigns needs: which one was played last, in words, not
+ * a timestamp to decode.
+ */
+export function updatedWords(at: number, locale: string, now = Date.now()): string {
+  const day = (ms: number): number => Math.floor(new Date(ms).setHours(0, 0, 0, 0) / 86_400_000);
+  const days = day(now) - day(at);
+  if (days <= 1) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-Math.max(0, days), 'day');
+  }
+  if (days < 7) {
+    return new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(at);
+  }
+  return new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(at);
 }
 
 /** Rows as stored, to the events the engine folds. A row it cannot read is skipped. */

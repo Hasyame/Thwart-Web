@@ -825,6 +825,11 @@ export interface Strings {
   readonly campaignMainScheme: string;
   readonly campaignImReady: string;
   readonly campaignNotReady: string;
+  /** Under "I'm ready": what tapping it does. */
+  readonly campaignReadyDetail: string;
+  /** The panel at the end of a campaign scenario in play. */
+  readonly campaignScenarioOver: string;
+  readonly campaignRecordResult: string;
   readonly campaignChooseOne: string;
   readonly campaignNothingRecorded: string;
   readonly campaignNobody: string;
@@ -991,6 +996,18 @@ export interface Strings {
   readonly campaignsInProgress: string;
   readonly campaignsFinished: string;
   readonly campaignDelete: string;
+  /** The campaign page: a card per campaign on the shelf opens it. */
+  readonly campaignUpdated: (when: string) => string;
+  readonly campaignScenariosTitle: string;
+  readonly campaignScenarioN: (n: number) => string;
+  readonly campaignScenarioBeaten: string;
+  readonly campaignScenarioNext: string;
+  readonly campaignScenarioLater: string;
+  readonly campaignStart: string;
+  readonly campaignHeroesTitle: (n: number) => string;
+  readonly campaignInfoTitle: string;
+  readonly campaignSettingsTitle: string;
+  readonly campaignOver: string;
   readonly campaignDeleteConfirm: (plays: number, events: number) => string;
   readonly campaignDeleteYes: string;
   readonly campaignGames: string;

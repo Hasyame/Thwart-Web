@@ -7,16 +7,15 @@
   import { session } from '../lib/sync/session.svelte';
   import { storedOnServer } from '../lib/sync/stored.svelte';
   import { foldCampaign, type CampaignProgress } from '../lib/campaigns';
-  import { fieldHue, parseEventRows, tileOf, type CampaignStatus, type CampaignTile } from '../lib/campaignTile';
+  import { fieldHue, lastUpdatedOf, parseEventRows, tileOf, updatedWords, type CampaignStatus, type CampaignTile } from '../lib/campaignTile';
   import { templateOf } from '../lib/campaign/store';
   import { fetchCard } from '../lib/cardViewer.svelte';
   import { cardImageUrl } from '../lib/data';
-  import { formatElapsed } from '../lib/session.svelte';
   import type { IndexRow } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
   import StartCampaign from './StartCampaign.svelte';
   import CampaignRunView from './CampaignRun.svelte';
-  import PlayRow from './PlayRow.svelte';
+  import CampaignHub from './CampaignHub.svelte';
 
   interface Props {
     t: Strings;
@@ -48,8 +47,13 @@
   /** Whether the badge means anything: signed out, everything is local. */
   const signedIn = $derived(session.status === 'signed-in' && storedOnServer.loaded);
 
-  /** Nothing, the start form, or one run being played. */
-  let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'run'; id: string }>({
+  /**
+   * The shelf, the start form, one campaign's page, or its scenario in play.
+   *
+   * A card on the shelf opens the campaign's page (CampaignHub); the page's
+   * scenario card opens the play, and leaving the play comes back to the page.
+   */
+  let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'hub'; id: string } | { kind: 'run'; id: string }>({
     kind: 'list',
   });
 
@@ -83,7 +87,7 @@
 
   const openRun = $derived.by(() => {
     const current = view;
-    return current.kind === 'run'
+    return current.kind === 'run' || current.kind === 'hub'
       ? (store.runs.find((run) => run.id === current.id) ?? null)
       : null;
   });
@@ -106,6 +110,7 @@
       foldCampaign(run, eventsByRun.get(run.id) ?? [], uiLocale),
     ),
   );
+  const openCampaign = $derived(openRun === null ? null : (campaigns.find((c) => c.run.id === openRun.id) ?? null));
 
   /*
    * What each tile shows, folded by the real engine: the status the log
@@ -127,7 +132,12 @@
    */
   let faces = $state.raw<ReadonlyMap<string, string>>(new Map());
   $effect(() => {
-    const codes = [...new Set([...tiles.values()].map((tile) => tile.faceCode).filter((c): c is string => c !== null))];
+    const codes = [
+      ...new Set([
+        ...[...tiles.values()].map((tile) => tile.faceCode).filter((c): c is string => c !== null),
+        ...[...tiles.values()].flatMap((tile) => tile.state?.heroes.map((hero) => hero.heroCardCode) ?? []),
+      ]),
+    ];
     if (codes.length === 0) {
       return;
     }
@@ -182,10 +192,15 @@
   const inProgress = $derived(campaigns.filter(isLive));
   const finished = $derived(campaigns.filter((campaign) => !isLive(campaign)));
 
-  let openId = $state<string | null>(null);
-  /** The run whose delete has been asked for but not yet confirmed. */
-  let deleting = $state<string | null>(null);
-  let busy = $state(false);
+  /** What a card says it is waiting on: the scenario to play, or its status. */
+  function nextWords(campaign: CampaignProgress, tile: CampaignTile | undefined): string {
+    const status = tile?.status ?? 'not-started';
+    if (status !== 'not-started' && status !== 'in-progress') {
+      return statusLabel(status);
+    }
+    const id = tile?.state?.currentScenarioId ?? null;
+    return campaign.scenarios.find((scenario) => scenario.id === id)?.name ?? statusLabel(status);
+  }
 
   /**
    * Removes a campaign, its log, and the games recorded against it.
@@ -199,25 +214,17 @@
    * or a log with no run.
    */
   async function removeCampaign(runId: string): Promise<void> {
-    busy = true;
-    try {
-      await db.transaction('rw', db.campaignRuns, db.campaignEvents, db.plays, async () => {
-        await db.campaignEvents.where('runId').equals(runId).delete();
-        await db.plays.where('campaignRunId').equals(runId).delete();
-        await db.campaignRuns.delete(runId);
-      });
-      if (openId === runId) {
-        openId = null;
-      }
-    } finally {
-      busy = false;
-      deleting = null;
-    }
+    await db.transaction('rw', db.campaignRuns, db.campaignEvents, db.plays, async () => {
+      await db.campaignEvents.where('runId').equals(runId).delete();
+      await db.plays.where('campaignRunId').equals(runId).delete();
+      await db.campaignRuns.delete(runId);
+    });
+    view = { kind: 'list' };
   }
 </script>
 
 <section>
-  {#if view.kind !== 'run'}
+  {#if view.kind !== 'run' && view.kind !== 'hub'}
     <h1 class="comic-title">{t.campaignsTitle}</h1>
   {/if}
 
@@ -248,7 +255,25 @@
       {storageOk}
       run={openRun}
       decks={decks.saved}
+      onBack={() => (view = { kind: 'hub', id: openRun.id })}
+    />
+  {:else if view.kind === 'hub' && openRun !== null && openCampaign !== null}
+    {@const tile = tiles.get(openRun.id)}
+    {@const face = tile?.faceCode === null || tile?.faceCode === undefined ? undefined : faces.get(tile.faceCode)}
+    <CampaignHub
+      {t}
+      {uiLocale}
+      campaign={openCampaign}
+      {tile}
+      template={templateOf(openRun)}
+      art={tile?.boxArt ?? face}
+      boxArt={tile?.boxArt !== null && tile?.boxArt !== undefined}
+      plays={playsFor(openRun.id)}
+      eventCount={(eventsByRun.get(openRun.id) ?? []).length}
+      storageNote={signedIn ? (storedOnServer.campaigns.has(openRun.id) ? t.savedOnServer : t.savedLocalOnly) : null}
+      onContinue={() => (view = { kind: 'run', id: openRun.id })}
       onBack={() => (view = { kind: 'list' })}
+      onDelete={() => removeCampaign(openRun.id)}
     />
   {:else}
 
@@ -276,61 +301,50 @@
 {#snippet runList(list: readonly CampaignProgress[])}
     <ul class="runs">
       {#each list as campaign (campaign.run.id)}
-        {@const open = openId === campaign.run.id}
-        {@const plays = playsFor(campaign.run.id)}
         {@const tile = tiles.get(campaign.run.id)}
         {@const face = tile?.faceCode === null || tile?.faceCode === undefined ? undefined : faces.get(tile.faceCode)}
         {@const art = tile?.boxArt ?? face}
         {@const status = tile?.status ?? 'not-started'}
-        {@const live = status === 'not-started' || status === 'in-progress'}
+        {@const heroes = tile?.state?.heroes ?? []}
         <!--
-          A tile per campaign, as on the shelf of decks: the final villain's
-          art across the top, and everything written on the opaque band under
-          it. Nothing but the status badge sits on the art: text over a
-          picture is the contrast trap this page is meant to avoid. Fear No
-          Evil shows its bundled key art, already landscape, so it is not
-          cropped the way a card is. With no art -- offline -- the top is a
-          colour field with the campaign's initial, and the tile looks
-          finished all the same.
+          A card per campaign, after ArkhamCards' shelf: the box's picture
+          behind its name, the heroes at the table, what is next and at what
+          difficulty; underneath, how far it has gone and when it was last
+          played. The whole card opens the campaign's page. Text on the art
+          sits on a dark scrim, strongest where the words are. With no art
+          (offline) the top is the campaign's colour field.
         -->
-        <li class="tile" class:open>
+        <li class="card" data-status={status}>
           <button
             type="button"
-            class="tile-head"
+            class="card-top"
             style:--field-hue={fieldHue(campaign.run.templateId)}
-            onclick={() => (view = { kind: 'run', id: campaign.run.id })}
+            onclick={() => (view = { kind: 'hub', id: campaign.run.id })}
           >
             {#if art !== undefined}
               <img class="art" class:box={tile?.boxArt !== null && tile?.boxArt !== undefined} src={art} alt="" loading="lazy" />
-            {:else}
-              <span class="field" aria-hidden="true">{(campaign.run.templateName || campaign.title).slice(0, 1)}</span>
             {/if}
             <span class="scrim" aria-hidden="true"></span>
-            <span class="badge" data-status={status}>
-              <span class="glyph" aria-hidden="true">{statusGlyph(status)}</span>
-              {statusLabel(status)}
+            <span class="card-title">{campaign.title}</span>
+            {#if heroes.length > 0}
+              <span class="faces" aria-hidden="true">
+                {#each heroes.slice(0, 4) as hero (hero.id)}
+                  {@const heroFace = faces.get(hero.heroCardCode)}
+                  <span class="face">{#if heroFace !== undefined}<img src={heroFace} alt="" loading="lazy" />{:else}{hero.name.slice(0, 1)}{/if}</span>
+                {/each}
+              </span>
+            {/if}
+            <span class="card-next">
+              <span class="next-name">{nextWords(campaign, tile)}</span>
+              <span class="level">{t.campaignDifficulty(campaign.run.difficulty)}</span>
             </span>
             <span class="visually-hidden">{t.campaignOpen}</span>
           </button>
 
-          <div class="band">
-            <span class="run-name">{campaign.title}</span>
-            <span class="muted run-sub">
-              <!-- A campaign's difficulty is its own word -- `standard` or
-                   `expert` -- so it reads through the campaign's own labels. -->
-              {campaign.run.templateName} · {t.campaignDifficulty(campaign.run.difficulty)}
-              {#if signedIn}
-                · {storedOnServer.campaigns.has(campaign.run.id) ? t.savedOnServer : t.savedLocalOnly}
-              {/if}
-            </span>
-
-            <!--
-              How far: scenarios beaten out of those the box holds, the bar,
-              and every game's result in the order it was played, so a
-              campaign that lost twice on the way reads as one that did.
-            -->
-            <span class="score">
-              <span class="score-text">{t.campaignProgress(tile?.beaten ?? campaign.completed, tile?.total ?? campaign.scenarios.length)}</span>
+          <div class="card-foot">
+            <span class="foot-line">
+              <span class="badge" data-status={status}><span class="glyph" aria-hidden="true">{statusGlyph(status)}</span>{statusLabel(status)}</span>
+              <span class="muted">{t.campaignProgress(tile?.beaten ?? campaign.completed, tile?.total ?? campaign.scenarios.length)}</span>
               {#if (tile?.results.length ?? 0) > 0}
                 <span class="results" role="img" aria-label={t.campaignResultsLabel(tile?.results.filter(Boolean).length ?? 0, tile?.results.length ?? 0)}>
                   {#each tile?.results ?? [] as won, i (i)}
@@ -339,114 +353,12 @@
                 </span>
               {/if}
             </span>
-            <span class="progress" aria-hidden="true">
-              <span
-                class="fill"
-                data-status={status}
-                style:width={`${(tile?.total ?? 0) === 0 ? 0 : Math.round(((tile?.beaten ?? 0) / (tile?.total ?? 1)) * 100)}%`}
-              ></span>
-            </span>
-
-            <span class="tile-actions">
-              {#if live}
-                <button class="btn btn--primary small" type="button" onclick={() => (view = { kind: 'run', id: campaign.run.id })}>
-                  {t.campaignContinue}
-                </button>
-              {/if}
-              <button
-                class="btn btn--quiet small"
-                type="button"
-                aria-expanded={open}
-                onclick={() => (openId = open ? null : campaign.run.id)}
-              >
-                {open ? t.campaignHideDetails : t.campaignDetails}
-              </button>
+            <span class="muted small updated">
+              {t.campaignUpdated(updatedWords(lastUpdatedOf(campaign.run, eventsByRun.get(campaign.run.id) ?? []), uiLocale))}
+              {#if signedIn}· {storedOnServer.campaigns.has(campaign.run.id) ? t.savedOnServer : t.savedLocalOnly}{/if}
             </span>
           </div>
         </li>
-
-        {#if open}
-          <!-- The detail spans the row under its tile: the scenarios, the
-               games, the clock, and the way to delete the lot. -->
-          <li class="detail surface">
-            {#if campaign.notice !== ''}
-              <p class="muted note">{campaign.notice}</p>
-            {/if}
-
-            <ol class="scenarios">
-              {#each campaign.scenarios as scenario (scenario.id)}
-                <li class:won={scenario.won} class:attempted={scenario.attempts > 0}>
-                  <span class="mark" aria-hidden="true">
-                    {scenario.won ? '✓' : scenario.attempts > 0 ? '✗' : '·'}
-                  </span>
-                  <span class="scenario-name">{scenario.name}</span>
-                  {#if scenario.attempts > 1}
-                    <span class="muted attempts">{t.attempts(scenario.attempts)}</span>
-                  {/if}
-                </li>
-              {/each}
-            </ol>
-
-            {#if campaign.run.timerAccumulatedMillis > 0}
-              <p class="muted">
-                {t.timePlayed(formatElapsed(campaign.run.timerAccumulatedMillis))}
-              </p>
-            {/if}
-
-            {#if plays.length > 0}
-              <h3 class="games-title">{t.campaignGames}</h3>
-              <ul class="games">
-                {#each plays as play (play.id)}
-                  <PlayRow {t} {uiLocale} {play} />
-                {/each}
-              </ul>
-            {/if}
-
-            {#if deleting === campaign.run.id}
-              <div class="confirm">
-                <p class="note">
-                  {t.campaignDeleteConfirm(
-                    plays.length,
-                    (eventsByRun.get(campaign.run.id) ?? []).length,
-                  )}
-                </p>
-                <div class="confirm-actions">
-                  <button
-                    class="btn btn--quiet danger"
-                    type="button"
-                    disabled={busy}
-                    onclick={() => void removeCampaign(campaign.run.id)}
-                  >
-                    {t.campaignDeleteYes}
-                  </button>
-                  <button
-                    class="btn btn--quiet"
-                    type="button"
-                    disabled={busy}
-                    onclick={() => (deleting = null)}
-                  >
-                    {t.cancel}
-                  </button>
-                </div>
-              </div>
-            {:else}
-              <button
-                class="btn btn--quiet danger delete-run"
-                type="button"
-                onclick={() => (deleting = campaign.run.id)}
-              >
-                {t.campaignDelete}
-              </button>
-            {/if}
-
-            {#if campaign.unreadEvents > 0}
-              <!-- Counted rather than hidden: the log holds more than this
-                   page folds, and pretending otherwise would be a lie about
-                   how complete the view is. -->
-              <p class="muted note">{t.campaignUnread(campaign.unreadEvents)}</p>
-            {/if}
-          </li>
-        {/if}
       {/each}
     </ul>
 {/snippet}
@@ -456,47 +368,6 @@
     font-size: var(--text-lg);
     font-weight: var(--weight-bold);
     margin: var(--space-5) 0 var(--space-2);
-  }
-
-  .games-title {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    color: var(--text-muted);
-    margin: var(--space-3) 0 0;
-  }
-
-  .games {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .confirm {
-    display: grid;
-    gap: var(--space-2);
-    padding: var(--space-3);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    border-inline-start: 3px solid var(--danger);
-  }
-
-  .confirm .note {
-    font-size: var(--text-sm);
-    margin: 0;
-  }
-
-  .confirm-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .danger {
-    color: var(--danger);
-  }
-
-  .delete-run {
-    justify-self: start;
   }
 
   .start-button {
@@ -522,172 +393,177 @@
     max-width: var(--prose-max);
   }
 
-  .note {
-    font-size: var(--text-sm);
-    max-width: var(--prose-max);
-  }
-
   .runs {
     list-style: none;
     padding: 0;
     margin: var(--space-3) 0 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
     gap: var(--space-3);
   }
 
-  /*
-   * The tile, held apart from the page by a hairline and a step of surface
-   * rather than a shadow, as the reference does it; it lifts a little under
-   * the pointer and nothing else moves.
-   */
-  .tile {
-    display: flex;
-    flex-direction: column;
-    border-radius: var(--radius-md);
+  .card {
+    display: grid;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--surface-1);
-    border: 1px solid var(--hairline);
-    transition: border-color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+    box-shadow: var(--shadow-1);
   }
 
-  .tile:hover,
-  .tile.open {
-    border-color: var(--accent);
+  .card:hover {
+    box-shadow: var(--shadow-2);
   }
 
-  .tile-head {
+  /* The top: the box's picture behind its name, the heroes, what is next. */
+  .card-top {
     position: relative;
-    display: block;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+    min-height: 10rem;
+    padding: var(--space-3) var(--space-4);
     border: 0;
-    background: var(--surface-2);
+    background: hsl(var(--field-hue) 45% 28%);
+    color: #fff;
+    font: inherit;
     text-align: start;
     cursor: pointer;
+    align-content: space-between;
     overflow: hidden;
   }
 
-  /*
-   * A villain card is a portrait frame with the art in its upper half and the
-   * scheme and attack boxes down its left edge. Drawn wider than the tile and
-   * pushed left so those boxes fall outside it, and placed so the face sits
-   * where the eye lands.
-   */
-  .art {
-    position: absolute;
-    left: -26%;
-    top: -12%;
-    width: 152%;
-    height: 124%;
-    object-fit: cover;
-    object-position: 50% 18%;
-    transition: transform var(--motion-base) var(--ease-out);
+  .card-top > :not(.art, .scrim) {
+    position: relative;
   }
 
-  /* Key art is drawn for a wide frame; show it whole, the villain and the
-     heroes both, rather than the crop that lifts a face out of a card. */
-  .art.box {
+  .art {
+    position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    object-fit: cover;
+    object-position: 50% 20%;
+    transition: transform var(--motion-base) var(--ease-out);
+  }
+
+  /* A card's art is on its right, its stats down the left: zoom to the art. */
+  .art:not(.box) {
+    object-position: 75% 22%;
+    transform: scale(1.35);
+    transform-origin: 75% 22%;
+  }
+
+  .art.box {
     object-position: 50% 50%;
   }
 
-  .tile-head:hover .art {
+  .card-top:hover .art.box {
     transform: scale(1.03);
   }
 
-  /* No art: the campaign's own colour, and its initial, large and quiet. */
-  .field {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background: hsl(var(--field-hue) 32% 24%);
-    color: hsl(var(--field-hue) 40% 60% / 55%);
-    font-size: 4.5rem;
-    font-weight: var(--weight-bold);
-    letter-spacing: -0.04em;
-  }
-
-  /* Darkens the art's foot so the badge and the band's edge sit on something
-     even, whatever the picture does there. */
   .scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgb(0 0 0 / 55%) 0%, rgb(0 0 0 / 0%) 45%);
+    background: linear-gradient(to bottom, rgb(0 0 0 / 70%) 0%, rgb(0 0 0 / 25%) 45%, rgb(0 0 0 / 80%) 100%);
   }
 
-  /*
-   * The status, on the art's corner: a glyph and a word, then a colour --
-   * never the colour alone. Opaque, so it reads over any picture.
-   */
+  .card-title {
+    font-size: var(--text-xl);
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-shadow: 0 2px 3px rgb(0 0 0 / 70%);
+  }
+
+  .faces {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .face {
+    width: 2.6rem;
+    height: 2.6rem;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    border: 2px solid rgb(255 255 255 / 85%);
+    background: rgb(0 0 0 / 40%);
+    display: grid;
+    place-items: center;
+    font-weight: var(--weight-bold);
+  }
+
+  .face img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 72% 22%;
+    transform: scale(2);
+    transform-origin: 72% 22%;
+  }
+
+  .card-next {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .next-name {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 70%);
+  }
+
+  .level {
+    padding: var(--space-0-5) var(--space-2);
+    background: rgb(0 0 0 / 75%);
+    border: 1px solid rgb(255 255 255 / 45%);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+  }
+
+  /* The foot: how far, and when it was last played. */
+  .card-foot {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-4) var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .foot-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+  }
+
   .badge {
-    position: absolute;
-    top: var(--space-2);
-    left: var(--space-2);
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
-    padding: 2px var(--space-2) 2px var(--space-1);
-    border-radius: var(--radius-pill);
-    background: var(--surface-1);
-    color: var(--text);
-    border: 1px solid var(--hairline);
-    font-size: var(--text-xs);
     font-weight: var(--weight-semibold);
-    line-height: 1.5;
   }
 
   .badge .glyph {
     display: inline-grid;
     place-items: center;
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1.3rem;
+    height: 1.3rem;
     border-radius: 50%;
-    font-size: 0.7rem;
-    color: var(--surface-1);
-    background: var(--text-muted);
+    background: var(--surface-3);
+    font-size: var(--text-xs);
   }
 
-  .badge[data-status='won'] .glyph { background: var(--ok); }
+  .badge[data-status='won'] .glyph { background: var(--ok); color: #fff; }
   .badge[data-status='lost'] .glyph,
-  .badge[data-status='conceded'] .glyph { background: var(--danger); }
+  .badge[data-status='conceded'] .glyph { background: var(--danger); color: #fff; }
   .badge[data-status='in-progress'] .glyph { background: var(--accent); color: var(--accent-ink); }
 
-  .band {
-    display: grid;
-    gap: var(--space-1);
-    padding: var(--space-3);
-  }
-
-  .run-name {
-    font-weight: var(--weight-bold);
-    font-size: var(--text-lg);
-    line-height: var(--leading-snug);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .run-sub {
-    font-size: var(--text-sm);
-  }
-
-  .score {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-1) var(--space-2);
-    margin-top: var(--space-1);
-    font-size: var(--text-sm);
-  }
-
-  /* Every game in order, a tick or a cross each; a defeat on the way to a
-     won campaign stays visible, because it happened. */
   .results {
     display: inline-flex;
     gap: 2px;
@@ -698,84 +574,21 @@
     place-items: center;
     width: 1.1rem;
     height: 1.1rem;
-    border-radius: var(--radius-xs);
+    border-radius: 3px;
     font-size: 0.7rem;
-    font-weight: var(--weight-bold);
-    color: var(--surface-1);
+    color: #fff;
   }
 
   .result.won { background: var(--ok); }
   .result.lost { background: var(--danger); }
 
-  .progress {
-    display: block;
-    height: 0.375rem;
-    border-radius: var(--radius-pill);
-    background: var(--surface-2);
-    overflow: hidden;
-  }
-
-  .fill {
-    display: block;
-    height: 100%;
-    background: var(--accent);
-  }
-
-  .fill[data-status='won'] { background: var(--ok); }
-  .fill[data-status='lost'],
-  .fill[data-status='conceded'] { background: var(--danger); }
-
-  .tile-actions {
+  .updated {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
-    margin-top: var(--space-2);
-  }
-
-  .small {
-    min-height: 2.25rem;
-    padding-block: var(--space-1);
-    font-size: var(--text-sm);
-  }
-
-  /* The opened tile's detail, across the whole row beneath it. */
-  .detail {
-    grid-column: 1 / -1;
-    padding: var(--space-3) var(--space-4);
-  }
-
-  .scenarios {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 var(--space-3);
-    display: grid;
     gap: var(--space-1);
   }
 
-  .scenarios li {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-  }
-
-  .mark {
-    width: 1rem;
-    color: var(--text-muted);
-  }
-
-  .scenarios li.won .mark {
-    color: var(--accent);
-  }
-
-  .scenarios li.attempted:not(.won) .mark {
-    color: var(--danger);
-  }
-
-  .scenarios li:not(.attempted) .scenario-name {
-    color: var(--text-muted);
-  }
-
-  .attempts {
-    font-size: var(--text-sm);
+  .small {
+    font-size: var(--text-xs);
   }
 </style>

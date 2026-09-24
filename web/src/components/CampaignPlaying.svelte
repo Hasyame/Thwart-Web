@@ -128,10 +128,16 @@
   <input type="checkbox" checked={wake.on} onchange={(e) => void wake.set(e.currentTarget.checked)} />
 </label>
 
-<div class="ending">
-  <button class="btn btn--primary big" type="button" onclick={onVictory}>{t.won}</button>
-  <button class="btn big" type="button" onclick={onDefeat}>{t.lost}</button>
-</div>
+<!-- The end of the scenario, as the guide's last panel, after ArkhamCards'
+     "scenario completed": one comic frame, the two ways it can end inside. -->
+<section class="ending">
+  <h2 class="ending-title">{t.campaignScenarioOver}</h2>
+  <p class="ending-detail">{t.campaignRecordResult}</p>
+  <div class="ending-actions">
+    <button class="btn btn--primary big" type="button" onclick={onVictory}>{t.won}</button>
+    <button class="btn big" type="button" onclick={onDefeat}>{t.lost}</button>
+  </div>
+</section>
 
 <style>
   .running {
@@ -213,11 +219,43 @@
     margin: var(--space-3) 0;
   }
 
+  /* A comic panel: heavy frame, offset shadow, halftone on the surface. */
   .ending {
+    display: grid;
+    gap: var(--space-2);
+    justify-items: center;
+    margin: var(--space-6) 0 var(--space-4);
+    padding: var(--space-5) var(--space-4);
+    border: 3px solid var(--text);
+    border-radius: var(--radius-sm);
+    background:
+      radial-gradient(color-mix(in srgb, var(--accent) 18%, transparent) 1.1px, transparent 1.5px) 0 0 / 7px 7px,
+      var(--surface-1);
+    box-shadow: 6px 6px 0 var(--text);
+    text-align: center;
+  }
+
+  .ending-title {
+    margin: 0;
+    color: var(--accent);
+    font-size: var(--text-2xl);
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+
+  .ending-detail {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  .ending-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
-    margin-top: var(--space-4);
+    justify-content: center;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
   }
 
   .ending .big {
