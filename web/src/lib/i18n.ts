@@ -219,6 +219,8 @@ export interface Strings {
   readonly cost: string;
   readonly unique: string;
   readonly dataFrom: string;
+  /** The footer's credit for the French and complementary card pictures. */
+  readonly imagesFrom: string;
   readonly dataUpdated: string;
   readonly legal: string;
   /** The three links in the footer: funding, the phone, the source. */

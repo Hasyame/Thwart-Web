@@ -1096,6 +1096,12 @@
       {new Date(meta.fetchedAt).toLocaleDateString(uiLocale)}
     {/if}
   </p>
+  <!-- The French scans, and the pictures MarvelCDB lacks, come from these
+       two community sites (lib/cardImages.ts), credited and linked. -->
+  <p class="muted">
+    {t.imagesFrom}
+    <a href="https://mc4db.merlindumesnil.net" target="_blank" rel="noopener">MC4DB</a>{' · '}<a href="https://mc.cgbuilder.fr" target="_blank" rel="noopener">cgbuilder</a>
+  </p>
   <p class="muted legal">{t.legal}</p>
   <!--
     Where the project lives: the community funding it, the phone it started

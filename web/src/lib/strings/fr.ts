@@ -291,6 +291,7 @@ export const fr: Strings = {
   cost: 'Coût',
   unique: 'Unique',
   dataFrom: 'Données des cartes :',
+  imagesFrom: 'Images françaises des cartes, et celles absentes de MarvelCDB :',
   dataUpdated: 'Mise à jour',
   legal:
     'Le texte et les images des cartes Marvel Champions appartiennent à Fantasy Flight Games et à Marvel. Projet de fan non officiel.',

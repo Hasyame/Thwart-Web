@@ -289,6 +289,7 @@ export const en: Strings = {
   cost: 'Cost',
   unique: 'Unique',
   dataFrom: 'Card data from',
+  imagesFrom: 'French card pictures, and those MarvelCDB lacks, from',
   dataUpdated: 'Updated',
   legal:
     'Marvel Champions card text and images are the property of Fantasy Flight Games and Marvel. This is an unofficial fan project.',
