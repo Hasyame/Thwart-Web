@@ -134,6 +134,12 @@ jobs:
         working-directory: web
         run: npm run test:sw
 
+      # Which site a card's picture comes from, in which order: MarvelCDB,
+      # MC4DB and cgbuilder, French and English. No network, no card data.
+      - name: Card pictures
+        working-directory: web
+        run: npm run test:card-images
+
       # Both shapes the Android app exports: plain JSON, and a zip holding
       # backup.json. The archive fixture is built by the test, so no binary
       # lives in the repository.

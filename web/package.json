@@ -16,6 +16,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test:contrast": "node scripts/test-contrast.mjs",
     "test:sw": "node scripts/test-sw.mjs",
+    "test:card-images": "vite-node scripts/test-card-images.mjs",
     "test:backup": "node --experimental-strip-types scripts/test-backup-archive.mjs",
     "test:settings": "vite-node scripts/test-backup-settings.mjs",
     "test:encounter": "node --experimental-strip-types scripts/test-encounter.mjs",

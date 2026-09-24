@@ -1,3 +1,4 @@
+import { localisedCardImage } from './cardImages';
 import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './types';
 import type { ScenarioRulesFile } from './randomizer';
 
@@ -170,22 +171,20 @@ export function loadMeta(): Promise<DataMeta> {
 }
 
 /**
- * Absolute URL for a card image on MarvelCDB.
+ * Absolute URL for a card image.
  *
  * The API returns a host-relative path such as `/bundles/cards/01001a.png`.
- * Images are always taken from the canonical host — they are language-neutral
- * artwork, and the locale subdomains serve the same files. Referenced, never
- * copied: the artwork belongs to Fantasy Flight Games and to Marvel, and
- * nothing in this project re-hosts it.
+ * In English that is MarvelCDB's picture; MarvelCDB's locale subdomains serve
+ * the same English files. With French cards the picture is a French scan
+ * from the community sites, falling back to MarvelCDB (lib/cardImages).
+ * Referenced, never copied: the artwork belongs to Fantasy Flight Games and
+ * to Marvel, and nothing in this project re-hosts it.
  */
 export function cardImageUrl(imageSrc: string | null | undefined): string | null {
   if (imageSrc === null || imageSrc === undefined || imageSrc.trim() === '') {
     return null;
   }
-  if (imageSrc.startsWith('http')) {
-    return imageSrc;
-  }
-  return `https://marvelcdb.com/${imageSrc.replace(/^\/+/, '')}`;
+  return localisedCardImage(imageSrc);
 }
 
 export function marvelCdbCardUrl(locale: Locale, code: string): string {

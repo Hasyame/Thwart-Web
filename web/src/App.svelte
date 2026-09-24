@@ -40,6 +40,7 @@
   import { liveQuery } from 'dexie';
   import { NO_FILTERS, searchCards, type Filters } from './lib/search';
   import { pathForRoute, routeFromPath, type Route } from './lib/router';
+  import { configureCardImages } from './lib/cardImages';
   import { applyHead, headFor } from './lib/head';
   import { configureCardViewer } from './lib/cardViewer.svelte';
   import HomePage from './components/HomePage.svelte';
@@ -498,6 +499,8 @@
 
   $effect(() => {
     configureCardViewer(index, cardLocale, packs);
+    // French card language, French pictures where the community has them.
+    configureCardImages(index, cardLocale);
   });
 
   // Once the shell is up, the rest in idle time, so a tap a few seconds in

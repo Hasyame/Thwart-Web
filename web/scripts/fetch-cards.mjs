@@ -166,6 +166,38 @@ async function getJson(url) {
   return response.json();
 }
 
+/*
+ * MC4DB (mc4db.merlindumesnil.net), a MarvelCDB fork that holds pictures
+ * MarvelCDB lacks and the French scans MarvelCDB never had.
+ *
+ * Its card list names each card's picture by a folder that is the box the
+ * picture was first printed in, not the card's pack (a reprint lives under
+ * `core`), so it is read here rather than guessed in the browser. Only
+ * official cards: the list also carries fan-made sets, which Thwart is not
+ * about. Optional by design: if MC4DB cannot be reached the build goes on
+ * with MarvelCDB alone, and the site simply shows fewer pictures.
+ */
+const MC4DB = 'https://mc4db.merlindumesnil.net';
+
+async function loadMc4db() {
+  try {
+    const cards = await getJson(`${MC4DB}/api/public/cards/`);
+    const paths = new Map();
+    for (const card of Array.isArray(cards) ? cards : []) {
+      const official = card.pack_creator === null || card.pack_creator === undefined || card.pack_creator === 'FFG';
+      const match = /^\/bundles\/cards\/EN\/([^/]+\/[^/.]+)\.webp$/.exec(card.imagesrc ?? '');
+      if (official && match && typeof card.code === 'string') {
+        paths.set(card.code, match[1]);
+      }
+    }
+    console.log(`  mc4db: ${paths.size} official card pictures`);
+    return paths;
+  } catch (error) {
+    console.warn(`  mc4db: unavailable (${error.message}); going on with MarvelCDB pictures only`);
+    return new Map();
+  }
+}
+
 /**
  * The fields a deck's rules read, on the rows that have them. `res` is the
  * resources as letters -- "PP" for two physical, "W" for a wild -- since the
@@ -267,7 +299,7 @@ function sanitizeCard(card) {
   return out;
 }
 
-async function buildLocale(locale) {
+async function buildLocale(locale, mc4db) {
   const cardsUrl = `https://${locale.host}/api/public/cards/?encounter=1`;
   const packsUrl = `https://${locale.host}/api/public/packs/`;
 
@@ -285,6 +317,20 @@ async function buildLocale(locale) {
   process.stdout.write(`${rawCards.length} cards, packs… `);
   const rawPacks = await getJson(packsUrl);
   process.stdout.write(`${rawPacks.length} packs\n`);
+
+  // A card MarvelCDB has no picture for gets MC4DB's, when MC4DB has one:
+  // several hundred cards, the newest boxes and most two-sided encounters.
+  let borrowed = 0;
+  for (const card of rawCards) {
+    const path = card.imagesrc ? undefined : mc4db.get(card.code);
+    if (path !== undefined) {
+      card.imagesrc = `${MC4DB}/bundles/cards/EN/${path}.webp`;
+      borrowed += 1;
+    }
+  }
+  if (borrowed > 0) {
+    console.log(`  ${locale.code}: ${borrowed} pictures from MC4DB where MarvelCDB has none`);
+  }
 
   const cards = rawCards.map((card) => ({ ...sanitizeCard(card), synergy: synergyOf(card) }));
   const index = rawCards.map(toIndexRow);
@@ -432,11 +478,18 @@ async function main() {
     ? JSON.parse(readFileSync(metaPath, 'utf8'))
     : null;
 
+  console.log('Fetching card pictures from MC4DB');
+  const mc4db = await loadMc4db();
+
   console.log('Fetching card data from MarvelCDB');
   const locales = [];
   for (const locale of LOCALES) {
-    locales.push(await buildLocale(locale));
+    locales.push(await buildLocale(locale, mc4db));
   }
+
+  // Card code to MC4DB picture path, for the site's French pictures
+  // (lib/cardImages.ts): `/bundles/cards/FR/<path>.webp`.
+  writeFileSync(join(OUT_DIR, 'card-images.json'), JSON.stringify(Object.fromEntries(mc4db)), 'utf8');
 
   const digest = createHash('sha256')
     .update(locales.map((l) => `${l.locale}:${l.digest}`).join('\n'))
