@@ -21,6 +21,7 @@
     trackerSetupFor,
   } from '../lib/campaign/encounter';
   import { parseCampaignText, type TextContext } from '../lib/campaign/text';
+  import { FNE_TEMPLATE_ID } from '../lib/fearNoEvil';
   import {
     counterOf,
     heroCounterOf,
@@ -187,12 +188,38 @@
    * is current while its outcome is on screen, and the message's `{villain}`
    * came up empty ("vous a échappé" with nobody named).
    */
+  /*
+   * Fear No Evil quotes its decks by name ("Cambriolage du Musée d'Art",
+   * "Policiers"). A name that is exactly one of the box's cards links to it,
+   * a scheme or villain first; a set's name that is no card stays text.
+   */
+  const FNE_PRIORITY = ['main_scheme', 'villain', 'environment'];
+  const fneByName = $derived.by((): ReadonlyMap<string, string> => {
+    const out = new Map<string, string>();
+    if (run.templateId !== FNE_TEMPLATE_ID) {
+      return out;
+    }
+    const rows = index
+      .filter((row) => row.packCode === 'fne')
+      .sort((a, b) => {
+        const rank = (type: string): number => (FNE_PRIORITY.indexOf(type) + 4) % 4;
+        return rank(a.typeCode) - rank(b.typeCode) || a.code.localeCompare(b.code);
+      });
+    for (const row of rows) {
+      if (!out.has(row.name)) {
+        out.set(row.name, row.code);
+      }
+    }
+    return out;
+  });
+
   const text = $derived<TextContext>({
     cardName,
     drawnFor: (drawId) => {
       const about = scenario?.id ?? campaign?.completedScenarios.at(-1)?.scenarioId ?? null;
       return about === null || campaign === null ? [] : (campaign.draws[about]?.[drawId] ?? []);
     },
+    ...(run.templateId === FNE_TEMPLATE_ID ? { cardNamed: (name: string) => fneByName.get(name) ?? null } : {}),
   });
 
   // --- the app's own draws --------------------------------------------------

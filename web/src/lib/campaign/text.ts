@@ -24,6 +24,13 @@ export interface TextContext {
   readonly cardName: (code: string) => string;
   /** What a draw came up with, by draw id. Empty when nothing was dealt. */
   readonly drawnFor: (drawId: string) => readonly string[];
+  /**
+   * The card a quoted name in the text stands for, or null.
+   *
+   * Optional: only a campaign whose template quotes card names instead of
+   * coding them (Fear No Evil) supplies it, and only exact names match.
+   */
+  readonly cardNamed?: (name: string) => string | null;
 }
 
 /**
@@ -114,10 +121,28 @@ export function parseCampaignText(
   }
 
   const out: TextSegment[] = [];
-  const pushText = (raw: string): void => {
+  const pushPlain = (raw: string): void => {
     for (const segment of keywordSegments(tidy(raw))) {
       out.push(segment);
     }
+  };
+  // A quoted name that is a card becomes a reference, the rest stays prose.
+  const pushText = (raw: string): void => {
+    if (context.cardNamed === undefined) {
+      pushPlain(raw);
+      return;
+    }
+    let from = 0;
+    for (const quoted of raw.matchAll(/"([^"]+)"/g)) {
+      const code = context.cardNamed(quoted[1] ?? '');
+      if (code === null) {
+        continue;
+      }
+      pushPlain(raw.slice(from, quoted.index));
+      out.push({ kind: 'card', code, name: quoted[1] ?? '' });
+      from = quoted.index + quoted[0].length;
+    }
+    pushPlain(raw.slice(from));
   };
 
   let index = 0;

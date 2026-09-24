@@ -280,3 +280,4 @@ export function loadFneBox(): Promise<FearNoEvilBox | null> {
     });
   return boxPromise;
 }
+

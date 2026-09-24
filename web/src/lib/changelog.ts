@@ -20,7 +20,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-09-24',
     en: [
-      'Fear No Evil’s encounter cards (villains, main schemes, minions and the rest, 171 cards MarvelCDB does not have) are now in the card search, in English and French, and its campaign shows each job’s picture.',
+      'Fear No Evil’s encounter cards (villains, main schemes, minions and the rest, 171 cards MarvelCDB does not have) are now in the card search, in English and French, and its campaign shows each job’s picture; in its briefings, the villain, the environment and the decks named are cards to open.',
       'Starting a campaign offers the boxes in your collection; a tick shows the others, for a box somebody else brought.',
       'With French cards, the pictures are French too, from the community sites MC4DB and cgbuilder, falling back to the English picture. Some 600 cards MarvelCDB has no picture of, Fear No Evil among them, now have one.',
       'Campaigns, redrawn after ArkhamCards’ campaign screens: each campaign is a card with the box’s picture, the heroes, the scenario to play, its difficulty and when it was last played.',
@@ -38,7 +38,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'The draft session collection has its own heading, so it is easier to find.',
     ],
     fr: [
-      'Les cartes rencontre de Peur de Rien (méchants, manigances principales, sbires et le reste, 171 cartes absentes de MarvelCDB) sont maintenant dans la recherche, en français et en anglais, et sa campagne montre l’image de chaque mission.',
+      'Les cartes rencontre de Peur de Rien (méchants, manigances principales, sbires et le reste, 171 cartes absentes de MarvelCDB) sont maintenant dans la recherche, en français et en anglais, et sa campagne montre l’image de chaque mission ; dans ses briefings, le méchant, l’environnement et les decks nommés sont des cartes à ouvrir.',
       'Pour commencer une campagne, seules les boîtes de votre collection sont proposées ; une case affiche les autres, pour une boîte apportée par quelqu’un.',
       'Avec les cartes en français, les images sont en français aussi, depuis les sites communautaires MC4DB et cgbuilder, avec l’image anglaise en secours. Quelque 600 cartes sans image sur MarvelCDB, dont Peur de Rien, en ont désormais une.',
       'Les campagnes, redessinées d’après les écrans de campagne d’ArkhamCards : chaque campagne est une carte avec l’image de la boîte, les héros, le scénario à jouer, sa difficulté et la date de la dernière partie.',

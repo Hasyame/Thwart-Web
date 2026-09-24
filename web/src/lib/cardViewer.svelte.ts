@@ -1,4 +1,5 @@
 import { loadCard } from './data';
+import { fneCardAliases } from './fneCards';
 import type { Card, IndexRow, Locale, Pack } from './types';
 
 /**
@@ -21,12 +22,16 @@ interface Config {
 }
 
 const config = $state<Config>({ index: [], cardLocale: 'en', packs: [] });
+/** A campaign's own card ids to the real cards (Fear No Evil's, see fearNoEvil.ts). */
+let aliases: ReadonlyMap<string, string> = new Map();
+const real = (code: string): string => aliases.get(code) ?? code;
 
 /** Told once, by the root, since only it knows which language the cards are in. */
 export function configureCardViewer(index: readonly IndexRow[], cardLocale: Locale, packs: readonly Pack[] = []): void {
   config.index = index;
   config.cardLocale = cardLocale;
   config.packs = packs;
+  aliases = fneCardAliases(index);
 }
 
 /** The index and the packs as the root gave them, for what a card detail counts from them. */
@@ -36,7 +41,7 @@ export const viewerPacks = (): readonly Pack[] => config.packs;
 export const viewer = $state<{ code: string | null }>({ code: null });
 
 export const showCard = (code: string): void => {
-  viewer.code = code;
+  viewer.code = real(code);
 };
 
 export const hideCard = (): void => {
@@ -51,12 +56,13 @@ export const hideCard = (): void => {
  * text rather than pretending to be openable and then failing.
  */
 export const isKnownCard = (code: string): boolean =>
-  config.index.some((row) => row.code === code);
+  config.index.some((row) => row.code === real(code));
 
 const cache = new Map<string, Promise<Card | null>>();
 
 /** One card, cached, so hovering the same reference twice costs one fetch. */
-export function fetchCard(code: string): Promise<Card | null> {
+export function fetchCard(given: string): Promise<Card | null> {
+  const code = real(given);
   const key = `${config.cardLocale}/${code}`;
   const cached = cache.get(key);
   if (cached !== undefined) {
