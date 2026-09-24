@@ -1009,6 +1009,8 @@ export interface Strings {
   readonly campaignScenarioNoVotes: string;
   /** The comic burst on a beaten scenario's art. Short: it is a stamp. */
   readonly campaignBeatenBurst: string;
+  /** Under a hero on a campaign's page whose deck is not on this shelf. */
+  readonly campaignNoDeck: string;
   /** On a scenario card: "3 VP". */
   readonly victoryPointsShort: (n: number) => string;
   /** After the campaign's total, the number shown bold before it. */

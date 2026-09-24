@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { liveQuery } from 'dexie';
-  import type { Play } from '../lib/records';
+  import type { Play, SavedDeck } from '../lib/records';
   import type { IndexRow, Locale } from '../lib/types';
   import { db } from '../lib/db';
   import { trackedSetCode } from '../lib/campaign/encounter';
@@ -49,9 +49,25 @@
     onContinue: () => void;
     onBack: () => void;
     onDelete: () => Promise<void>;
+    deckById: ReadonlyMap<string, SavedDeck>;
+    deckHref?: (id: string, edit: boolean) => string;
+    onOpenDeck?: (id: string, edit: boolean) => void;
   }
 
-  const { t, uiLocale, index, storageOk, campaign, tile, template, art, boxArt, plays, eventCount, storageNote, onContinue, onBack, onDelete }: Props = $props();
+  const { t, uiLocale, index, storageOk, campaign, tile, template, art, boxArt, plays, eventCount, storageNote, onContinue, onBack, onDelete, deckById, deckHref, onOpenDeck }: Props = $props();
+
+  /** The saved deck a hero was played with, when it is still on the shelf. */
+  const deckOf = (hero: { id: string; deckId?: string | null }): SavedDeck | undefined =>
+    deckById.get(hero.deckId ?? hero.id);
+
+  function openDeck(event: MouseEvent, id: string, edit: boolean): void {
+    // A modified click opens a new tab, as a link should.
+    if (onOpenDeck === undefined || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    onOpenDeck(id, edit);
+  }
 
   const status = $derived(tile?.status ?? 'not-started');
   const live = $derived(status === 'not-started' || status === 'in-progress');
@@ -304,11 +320,24 @@
       <ul class="heroes">
         {#each folded?.heroes ?? [] as hero (hero.id)}
           {@const face = images.get(hero.heroCardCode)}
+          {@const deck = deckOf(hero)}
           <li class="hero surface">
             <span class="hero-face" aria-hidden="true">
               {#if face !== undefined}<img src={face} alt="" loading="lazy" />{/if}
             </span>
-            <span class="hero-name">{hero.name}</span>
+            {#if deck !== undefined && deckHref !== undefined}
+              <!-- The deck this hero plays, one tap away, and its editor. -->
+              <a class="hero-link" href={deckHref(deck.id, false)} onclick={(e) => openDeck(e, deck.id, false)}>
+                <span class="hero-name">{hero.name}</span>
+                <span class="muted small deck-name">{deck.name}</span>
+              </a>
+              <a class="btn btn--quiet small" href={deckHref(deck.id, true)} onclick={(e) => openDeck(e, deck.id, true)}>{t.deckEdit}</a>
+            {:else}
+              <span class="hero-link">
+                <span class="hero-name">{hero.name}</span>
+                <span class="muted small deck-name">{t.campaignNoDeck}</span>
+              </span>
+            {/if}
           </li>
         {/each}
       </ul>
@@ -720,8 +749,27 @@
     border-color: var(--border);
   }
 
+  .hero-link {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a.hero-link:hover .hero-name {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
   .hero-name {
     font-weight: var(--weight-semibold);
+  }
+
+  .deck-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .info {

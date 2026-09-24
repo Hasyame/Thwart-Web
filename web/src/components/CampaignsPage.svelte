@@ -30,9 +30,12 @@
     initiallyExpert?: boolean;
     initialStart?: boolean;
     onConsumeDecks?: () => void;
+    /** A deck's page, or its editor, for the heroes on a campaign's page. */
+    deckHref?: (id: string, edit: boolean) => string;
+    onOpenDeck?: (id: string, edit: boolean) => void;
   }
 
-  const { t, uiLocale, cardLocale, index, sets, storageOk, initialDeckIds = [], initiallyExpert = false, initialStart = false, onConsumeDecks }: Props = $props();
+  const { t, uiLocale, cardLocale, index, sets, storageOk, initialDeckIds = [], initiallyExpert = false, initialStart = false, onConsumeDecks, deckHref, onOpenDeck }: Props = $props();
   let preparedDeckIds = $state<readonly string[]>([]);
   let preparedExpert = $state(false);
   $effect(() => {
@@ -53,11 +56,37 @@
    * A card on the shelf opens the campaign's page (CampaignHub); the page's
    * scenario card opens the play, and leaving the play comes back to the page.
    */
-  let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'hub'; id: string } | { kind: 'run'; id: string }>({
-    kind: 'list',
+  /*
+   * A campaign's page is not an address of its own, so the one open is
+   * written into this history entry: opening a hero's deck and coming back
+   * lands on the campaign again, not on the shelf.
+   */
+  const HUB_KEY = 'campaignHub';
+  function restoredHub(): string | null {
+    const saved: unknown = (window.history.state as Record<string, unknown> | null)?.[HUB_KEY];
+    return typeof saved === 'string' ? saved : null;
+  }
+  let view = $state<{ kind: 'list' } | { kind: 'start' } | { kind: 'hub'; id: string } | { kind: 'run'; id: string }>(
+    restoredHub() === null ? { kind: 'list' } : { kind: 'hub', id: restoredHub() ?? '' },
+  );
+  $effect(() => {
+    const hub = view.kind === 'hub' ? view.id : null;
+    const state = { ...((window.history.state as Record<string, unknown> | null) ?? {}) };
+    if ((state[HUB_KEY] ?? null) === hub) {
+      return;
+    }
+    if (hub === null) {
+      delete state[HUB_KEY];
+    } else {
+      state[HUB_KEY] = hub;
+    }
+    window.history.replaceState(state, '');
   });
 
+
   const decks = $state<{ saved: readonly SavedDeck[] }>({ saved: [] });
+  /** Saved decks by id, for the heroes' links; a deck since deleted has none. */
+  const deckById = $derived(new Map(decks.saved.map((deck) => [deck.id, deck] as const)));
 
   const cardNames = $derived(new Map(index.map((row) => [row.code, row.name] as const)));
   const setNames = $derived(new Map(sets.map((set) => [set.code, set.name] as const)));
@@ -224,11 +253,12 @@
 </script>
 
 <section>
-  {#if view.kind !== 'run' && view.kind !== 'hub'}
+  <!-- A remembered campaign that is gone shows the shelf, title and all. -->
+  {#if view.kind !== 'run' && !(view.kind === 'hub' && openRun !== null)}
     <h1 class="comic-title">{t.campaignsTitle}</h1>
   {/if}
 
-  {#if storageOk && view.kind === 'list'}
+  {#if storageOk && (view.kind === 'list' || (view.kind === 'hub' && openRun === null))}
     <button class="start-button" type="button" onclick={() => (view = { kind: 'start' })}>
       {t.startCampaign}
     </button>
@@ -276,6 +306,9 @@
       onContinue={() => (view = { kind: 'run', id: openRun.id })}
       onBack={() => (view = { kind: 'list' })}
       onDelete={() => removeCampaign(openRun.id)}
+      {deckById}
+      {deckHref}
+      {onOpenDeck}
     />
   {:else}
 

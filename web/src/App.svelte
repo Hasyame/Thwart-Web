@@ -833,7 +833,7 @@
     {#await CampaignsPage()}
       <p class="notice muted">{t.loading}</p>
     {:then { default: Page }}
-      <Page {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} initialDeckIds={campaignDeckIds} initiallyExpert={campaignExpert} initialStart={campaignStartPending} onConsumeDecks={() => { campaignDeckIds = []; campaignStartPending = false; campaignExpert = false; }} />
+      <Page {t} {uiLocale} {cardLocale} {index} {sets} {storageOk} initialDeckIds={campaignDeckIds} initiallyExpert={campaignExpert} initialStart={campaignStartPending} onConsumeDecks={() => { campaignDeckIds = []; campaignStartPending = false; campaignExpert = false; }} deckHref={(id, edit) => pathForRoute({ name: 'deck', id, edit }, BASE)} onOpenDeck={(id, edit) => navigate({ name: 'deck', id, edit })} />
     {:catch}
       <!-- The chunk did not arrive: a connection that dropped, or a tab
            open across a release whose files it was built against are
