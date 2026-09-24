@@ -816,7 +816,8 @@
         </div>
       {/if}
 
-      <!-- The way on, pinned to the foot so it is never below a long grid. -->
+      <!-- The way on, at the end of the page. It used to be pinned above the
+           tab bar, and it floated over the packs and the identities. -->
       <div class="foot surface">
         <span class="muted small">
           {#if current.heroCode === null}
@@ -1478,15 +1479,12 @@
 
   /* The way on, pinned above the bottom bar so it never scrolls away. */
   .foot {
-    position: sticky;
-    bottom: calc(var(--safe-bottom, 0px) + 4.25rem);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
-    z-index: 2;
   }
 
   /* The five aspects as wide buttons with their colour, as on a card. */
