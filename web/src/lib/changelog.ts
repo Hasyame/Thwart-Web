@@ -25,6 +25,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Draft or build a sealed deck straight from the Decks page; a game is offered as soon as the deck is saved.',
       'Fold deck folders on the Decks page, one at a time or all at once. This browser remembers which ones.',
       'The collection for a draft session is easier to adjust: grouped by box type, searchable, with plus and minus buttons, changed packs marked and a way back to your own collection. Packs added for the session bring their heroes too.',
+      'On the achievements page, tap the Achievements or Completion card to show only that part.',
     ],
     fr: [
       'Une partie enregistrée ne revient plus quand vous retournez sur Jouer : la partie se termine dès qu’elle est enregistrée, et l’onglet Jouer en propose une nouvelle.',
@@ -32,6 +33,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Draftez ou construisez un deck scellé directement depuis la page Decks ; une partie vous est proposée dès que le deck est enregistré.',
       'Repliez les dossiers de la page Decks, un par un ou tous à la fois. Ce navigateur s’en souvient.',
       'La collection d’une session de draft se règle plus facilement : regroupée par type de boîte, avec une recherche, des boutons plus et moins, les packs modifiés signalés et un retour à votre collection. Les packs ajoutés pour la session apportent aussi leurs héros.',
+      'Sur la page des succès, touchez la carte Succès ou Complétion pour n’afficher que cette partie.',
     ],
   },
   {
