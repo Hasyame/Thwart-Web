@@ -101,6 +101,11 @@ export interface Strings {
     readonly pairsTitle: string;
     readonly pairsOwned: (won: number, cells: number) => string;
     readonly namedTitle: string;
+    /** Under the two figures, which also switch the page to one half. */
+    readonly viewHint: string;
+    readonly viewNamed: string;
+    readonly viewGrid: string;
+    readonly viewAll: string;
     readonly namedCount: (unlocked: number, total: number) => string;
     readonly completionGlobal: (won: number, cells: number) => string;
     readonly rate: (percent: number) => string;

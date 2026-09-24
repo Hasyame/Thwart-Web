@@ -36,6 +36,15 @@
 
   const { t, uiLocale, cardLocale, index, sets, packs, storageOk, onPrepare }: Props = $props();
   let preparationError = $state<string | null>(null);
+  /*
+   * Which half of the page is shown: both, or only the one whose card was
+   * tapped. The two figures at the top are the switches, and tapping the
+   * chosen one again brings the other half back.
+   */
+  let view = $state<'all' | 'named' | 'grid'>('all');
+  const toggleView = (half: 'named' | 'grid'): void => {
+    view = view === half ? 'all' : half;
+  };
   let preparing = $state(false);
   async function prepare(challenge: AchievementChallenge): Promise<void> {
     if (preparing) return;
@@ -333,20 +342,29 @@
     <!-- Two figures, each its own card: the achievements unlocked, and the
          completion, one hero having beaten one scenario, over the collection. -->
     <div class="completion">
-      <div class="surface stat">
-        <p class="stat-title">{t.achievements.namedTitle}</p>
+      <button type="button" class="surface stat" aria-pressed={view === 'named'} onclick={() => toggleView('named')}>
+        <span class="stat-title">{t.achievements.namedTitle}</span>
         <strong class="big">{t.achievements.rate(percent(unlockedCount, shown.length))}</strong>
         <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(unlockedCount, shown.length)}%`}></span></span>
-        <p class="muted small">{t.achievements.namedCount(unlockedCount, shown.length)}</p>
-      </div>
-      <div class="surface stat">
-        <p class="stat-title">{t.achievements.pairsTitle}</p>
+        <span class="muted small">{t.achievements.namedCount(unlockedCount, shown.length)}</span>
+      </button>
+      <button type="button" class="surface stat" aria-pressed={view === 'grid'} onclick={() => toggleView('grid')}>
+        <span class="stat-title">{t.achievements.pairsTitle}</span>
         <strong class="big">{t.achievements.rate(percent(current.completion.owned.won, current.completion.owned.cells))}</strong>
         <span class="bar" aria-hidden="true"><span class="fill" style:width={`${percent(current.completion.owned.won, current.completion.owned.cells)}%`}></span></span>
-        <p class="muted small">{t.achievements.pairsOwned(current.completion.owned.won, current.completion.owned.cells)}</p>
-      </div>
+        <span class="muted small">{t.achievements.pairsOwned(current.completion.owned.won, current.completion.owned.cells)}</span>
+      </button>
     </div>
+    <p class="muted small view-line">
+      {#if view === 'all'}
+        {t.achievements.viewHint}
+      {:else}
+        {view === 'named' ? t.achievements.viewNamed : t.achievements.viewGrid}
+        <button type="button" class="btn btn--quiet small" onclick={() => (view = 'all')}>{t.achievements.viewAll}</button>
+      {/if}
+    </p>
 
+    {#if view !== 'named'}
     <h2>{t.achievements.gridTitle}</h2>
     <p class="muted intro">{t.achievements.gridIntro}</p>
     <div class="filters" role="group" aria-label={t.achievements.gridTitle}>
@@ -473,6 +491,9 @@
       {/if}
     </div>
 
+    {/if}
+
+    {#if view !== 'grid'}
     <h2>{t.achievements.listTitle}</h2>
     {#each categories as [category, list] (category)}
       <h3>{t.achievements.category(category)}</h3>
@@ -524,6 +545,7 @@
           <li><button type="button" class="recent-link" aria-haspopup="dialog" onclick={() => (detail = { kind: 'named', id: unlock.id })}><span class="muted small">{dayOf(unlock.unlockedAt)}</span> {definition === undefined ? unlock.id : wordsOf(definition).title}</button></li>
         {/each}
       </ol>
+    {/if}
     {/if}
   {/if}
 </section>
@@ -660,10 +682,25 @@
     display: grid;
     gap: var(--space-1);
     align-content: start;
+    width: 100%;
+    text-align: start;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
   }
 
-  .stat p {
-    margin: 0;
+  /* The chosen half: its card carries the accent. */
+  .stat[aria-pressed='true'] {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .view-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
   }
 
   .stat-title {
