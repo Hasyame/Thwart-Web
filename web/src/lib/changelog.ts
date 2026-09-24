@@ -27,6 +27,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'The collection for a draft session is easier to adjust: grouped by box type, searchable, with plus and minus buttons, changed packs marked and a way back to your own collection. Packs added for the session bring their heroes too.',
       'On the achievements page, tap the Achievements or Completion card to show only that part.',
       'Install Thwart as an app on Android too: an Install button where Chrome, Edge or Samsung Internet allows it, and the menu steps for the other browsers.',
+      'Ask to join the alpha of the Android app, from the home page or the More menu.',
     ],
     fr: [
       'Une partie enregistrée ne revient plus quand vous retournez sur Jouer : la partie se termine dès qu’elle est enregistrée, et l’onglet Jouer en propose une nouvelle.',
@@ -36,6 +37,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'La collection d’une session de draft se règle plus facilement : regroupée par type de boîte, avec une recherche, des boutons plus et moins, les packs modifiés signalés et un retour à votre collection. Les packs ajoutés pour la session apportent aussi leurs héros.',
       'Sur la page des succès, touchez la carte Succès ou Complétion pour n’afficher que cette partie.',
       'Installez Thwart comme une application sur Android aussi : un bouton Installer là où Chrome, Edge ou Samsung Internet le permettent, et les étapes par le menu pour les autres navigateurs.',
+      'Demandez à participer à l’alpha de l’application Android, depuis l’accueil ou le menu Plus.',
     ],
   },
   {

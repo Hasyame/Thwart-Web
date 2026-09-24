@@ -43,7 +43,8 @@ ExecStart=/srv/thwart/bin/thwart-api \
   -registration=true \
   -mail-from "Thwart <no-reply@thwart.app>" \
   -smtp 127.0.0.1:25 \
-  -site https://thwart.app
+  -site https://thwart.app \
+  -alpha-to marvelchampcompanion@proton.me
 
 # The binary handles SIGTERM by draining in-flight requests, which for a
 # password change is the difference between a clear outcome and one nobody can

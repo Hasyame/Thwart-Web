@@ -63,6 +63,17 @@ export const en: Strings = {
     'Every card of Marvel Champions: The Card Game, in English or French, searchable below. Tick the packs you own, and the site knows which decks you can build, which games you can draw and which campaigns you can play.',
   homeIntroNote:
     'Free, works offline, nothing to install and no account needed. Also on Android. Unofficial: card data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.',
+  alpha: {
+    title: 'Join the Android app alpha',
+    intro: 'Thwart also exists as a native Android app. Its alpha is an official closed test on Google Play: leave your name and the email address of your Google account, and you will be added to the testers.',
+    name: 'Name',
+    email: 'Email of your Google account',
+    privacy: 'Your name and address are sent by email to the Thwart developer, only to add you to the alpha. Nothing is stored on the server.',
+    submit: 'Ask to join',
+    sending: 'Sending…',
+    sent: 'Thank you. Your request has been sent; you will receive the Google Play invitation by email.',
+    failed: 'The request could not be sent. Check your connection and try again.',
+  },
   install: {
     title: 'Install Thwart as an app',
     intro: 'Use Thwart from your home screen, like an app: full screen, and offline once it has been opened online.',
@@ -687,6 +698,7 @@ export const en: Strings = {
   hubRandomDetail: 'Let the app pick a scenario, heroes and aspects from what you own.',
   hubOwnDetail: 'Choose everything yourself. The app times the game.',
   hubCampaignDetail: 'Start a campaign, or open one you have finished.',
+  hubDraftTitle: 'Draft / Sealed and play!',
   hubDraftDetail: 'Build a deck one pick at a time from cards drawn out of your collection.',
   hubPaused: 'A game is waiting',
   settingsGroupedPlay: 'One Play tab',

@@ -63,6 +63,17 @@ export const fr: Strings = {
     'Toutes les cartes de Marvel Champions : Le Jeu de Cartes, en français ou en anglais, à chercher ci-dessous. Cochez les extensions que vous possédez, et le site sait quels decks vous pouvez construire, quelles parties vous pouvez tirer et quelles campagnes vous pouvez jouer.',
   homeIntroNote:
     'Gratuit, hors ligne, rien à installer et sans compte. Aussi sur Android. Non officiel : données des cartes de MarvelCDB ; Marvel Champions appartient à Fantasy Flight Games et Marvel.',
+  alpha: {
+    title: 'Participer à l’alpha de la version Android',
+    intro: 'Thwart existe aussi en application Android native. Son alpha est un test fermé officiel sur Google Play : laissez votre nom et l’adresse e-mail de votre compte Google, et vous serez ajouté aux testeurs.',
+    name: 'Nom',
+    email: 'E-mail de votre compte Google',
+    privacy: 'Votre nom et votre adresse sont envoyés par e-mail au développeur de Thwart, uniquement pour vous ajouter à l’alpha. Rien n’est conservé sur le serveur.',
+    submit: 'Demander à participer',
+    sending: 'Envoi…',
+    sent: 'Merci. Votre demande a été envoyée ; vous recevrez l’invitation Google Play par e-mail.',
+    failed: 'La demande n’a pas pu être envoyée. Vérifiez votre connexion et réessayez.',
+  },
   install: {
     title: 'Installer Thwart comme une application',
     intro: 'Utilisez Thwart depuis l’écran d’accueil, comme une application : en plein écran, et hors ligne une fois ouvert en ligne.',
@@ -698,6 +709,7 @@ export const fr: Strings = {
     'Laissez l’application choisir un scénario, des héros et des affinités parmi ce que vous possédez.',
   hubOwnDetail: 'Choisissez tout vous-même. L’application chronomètre la partie.',
   hubCampaignDetail: 'Démarrez une campagne, ou ouvrez-en une terminée.',
+  hubDraftTitle: 'Draft / Scellé et jouez !',
   hubDraftDetail: 'Construisez un deck un choix à la fois, à partir de cartes tirées de votre collection.',
   hubPaused: 'Une partie vous attend',
   settingsGroupedPlay: 'Un seul onglet Jouer',

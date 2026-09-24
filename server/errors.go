@@ -47,6 +47,14 @@ var errorMessages = map[string]struct{ en, fr string }{
 		"That does not look like an email address.",
 		"Cela ne ressemble pas à une adresse e-mail.",
 	},
+	"invalid_name": {
+		"Please give a name of up to eighty characters.",
+		"Indiquez un nom de quatre-vingts caractères au plus.",
+	},
+	"alpha_closed": {
+		"Sign-ups for the Android alpha are closed for now.",
+		"Les inscriptions à l’alpha Android sont fermées pour le moment.",
+	},
 	"handle_taken": {
 		"That handle is already in use on this instance.",
 		"Cet identifiant est déjà utilisé sur cette instance.",

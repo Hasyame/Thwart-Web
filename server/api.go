@@ -112,6 +112,10 @@ type Server struct {
 		hold.
 	*/
 	bgg *bggRelay
+
+	// Where Android alpha sign-ups are sent, or empty when the form is closed.
+	// See alpha.go.
+	alphaTo string
 }
 
 /** UseBggRelay switches the BoardGameGeek relay on, against this base URL. */
@@ -172,6 +176,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/bgg/verify", s.authenticated(s.handleBggVerify))
 	mux.HandleFunc("POST /v1/bgg/plays", s.authenticated(s.handleBggPlay))
 	mux.HandleFunc("DELETE /v1/account", s.authenticated(s.handleDeleteAccount))
+	// No auth: the form is for people who may have no account. alpha.go.
+	mux.HandleFunc("POST /v1/alpha/android", s.handleAlphaSignup)
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
 	mux.HandleFunc("GET /v1/version", s.handleVersion)
 

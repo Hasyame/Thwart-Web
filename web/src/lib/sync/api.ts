@@ -53,6 +53,9 @@ export type ApiErrorCode =
   | 'bgg_rejected'
   | 'bgg_unreachable'
   | 'bgg_disabled'
+  /** The Android alpha sign-up, server/alpha.go: a name out of bounds, or the form closed. */
+  | 'invalid_name'
+  | 'alpha_closed'
   /** Not the server's: the request never arrived. */
   | 'offline';
 
@@ -326,6 +329,22 @@ export const resendVerification = (
   call('/auth/verify/resend', {
     method: 'POST',
     body: { handle: identifier, email: identifier, password },
+    locale,
+  });
+
+/**
+ * Asks to join the Android alpha. No account needed; the server relays the
+ * name and address to the owner by mail and keeps nothing (server/alpha.go).
+ */
+export const joinAndroidAlpha = (
+  name: string,
+  email: string,
+  website: string,
+  locale?: Locale,
+): Promise<{ sent: boolean }> =>
+  call('/alpha/android', {
+    method: 'POST',
+    body: { name, email, website },
     locale,
   });
 

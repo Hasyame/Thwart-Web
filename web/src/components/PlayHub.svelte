@@ -71,7 +71,7 @@
       },
       {
         id: 'draft' as const,
-        title: t.navDraft,
+        title: t.hubDraftTitle,
         detail: t.hubDraftDetail,
         glyph: '⇶',
       },

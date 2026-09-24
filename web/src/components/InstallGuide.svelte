@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
   import { install, installer } from '../lib/install.svelte';
+  import AlphaSignup from './AlphaSignup.svelte';
   const { t }: { t: Strings } = $props();
 </script>
 
@@ -34,6 +35,7 @@
   <p>{t.install.offline}</p>
   <p>{t.install.updates}</p>
 </details>
+<AlphaSignup {t} />
 
 <style>
   .install { max-width: var(--prose-max); margin-block: var(--space-3); }

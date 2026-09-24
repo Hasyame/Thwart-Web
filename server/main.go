@@ -86,6 +86,15 @@ func main() {
 	*/
 	bggRelay := flag.Bool("bgg-relay", true,
 		"relay plays to BoardGameGeek for signed-in accounts; nothing is stored, see bgg.go")
+	/*
+		The mailbox that receives Android alpha sign-ups from the web page.
+
+		Empty by default, which keeps the form closed: a self-hosted instance
+		has no Android alpha to offer, and the owner's address has no business
+		being a default in code. Needs -mail-from as well. See alpha.go.
+	*/
+	alphaTo := flag.String("alpha-to", "",
+		"mailbox that receives Android alpha sign-ups from the web page; empty keeps the form closed")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -99,7 +108,7 @@ func main() {
 		return
 	}
 
-	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, *ratingThreshold, *bggRelay, log); err != nil {
+	if err := run(*addr, *dbPath, *openRegistration, *mailFrom, *smtpAddr, *siteURL, *ratingThreshold, *bggRelay, *alphaTo, log); err != nil {
 		log.Error("fatal", "error", err)
 		os.Exit(1)
 	}
@@ -130,7 +139,7 @@ func backup(dbPath, to string) error {
 	return store.Backup(context.Background(), to)
 }
 
-func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, ratingThreshold int, bggRelay bool, log *slog.Logger) error {
+func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL string, ratingThreshold int, bggRelay bool, alphaTo string, log *slog.Logger) error {
 	store, err := OpenStore(dbPath)
 	if err != nil {
 		return err
@@ -158,6 +167,13 @@ func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL
 		}
 		server.UseMailer(mailer, siteURL)
 		log.Info("mail configured", "smtp", smtpAddr, "from", mailFrom, "site", siteURL)
+		if alphaTo != "" {
+			if !validEmail(alphaTo) {
+				return fmt.Errorf("alpha-to %q is not an address", alphaTo)
+			}
+			server.UseAlphaSignup(alphaTo)
+		}
+		log.Info("android alpha sign-up", "open", alphaTo != "")
 	} else {
 		log.Info("no mail configured", "addresses", "not confirmed")
 	}

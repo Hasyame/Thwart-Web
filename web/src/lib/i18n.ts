@@ -556,6 +556,18 @@ export interface Strings {
   readonly versusAgain: string;
   readonly versusTiebreakTitle: string;
   readonly versusTiebreaks: readonly string[];
+  /** The Android alpha sign-up, just after the install guide. */
+  readonly alpha: {
+    readonly title: string;
+    readonly intro: string;
+    readonly name: string;
+    readonly email: string;
+    readonly privacy: string;
+    readonly submit: string;
+    readonly sending: string;
+    readonly sent: string;
+    readonly failed: string;
+  };
   readonly install: {
     readonly title: string;
     readonly intro: string;
@@ -623,6 +635,8 @@ export interface Strings {
   readonly hubRandomDetail: string;
   readonly hubOwnDetail: string;
   readonly hubCampaignDetail: string;
+  /** The Play hub's card; the menus keep the shorter navDraft. */
+  readonly hubDraftTitle: string;
   readonly hubDraftDetail: string;
   readonly hubPaused: string;
   readonly settingsGroupedPlay: string;

@@ -15,8 +15,9 @@ import (
 /*
 Sending mail, which this server does exactly once per account.
 
-There is one message in the whole system: the one that asks somebody to confirm
-the address they registered with. No newsletters, no notifications, no digests.
+There is one message sent to users in the whole system: the one that asks
+somebody to confirm the address they registered with. (The other, alpha.go,
+goes to the owner's own mailbox and to nobody else.) No newsletters, no notifications, no digests.
 That is not a starting point to build on — it is the design. An account here
 exists so that two devices can hold the same data, and nothing about that needs
 a mailbox except proving once that the address belongs to the person who typed
