@@ -57,6 +57,7 @@ const AMOUNT_PLACEHOLDER = '{value}';
  * apart the way the printed material sets them.
  */
 const KEYWORDS = [
+  'HIÉRARQUE',
   'MISSION',
   'OVERSEER',
   'PRELATE',

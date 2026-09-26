@@ -1,3 +1,4 @@
+import { parseEncounterProgress, recoveredEncounter } from './encounterProgress';
 import { db } from './db';
 import type { PausedGame, PausedPhase, VillainStep } from './records';
 import type { Seat, Session } from './session.svelte';
@@ -86,6 +87,7 @@ export function buildPausedGame(
 ): PausedGame {
   return {
     id: ONLY_ROW,
+    encounterProgress: session.encounter === null ? '' : JSON.stringify(session.encounter.progress),
     savedAt: now,
     scenarioCode: session.scenarioCode,
     scenarioName: session.scenarioName,
@@ -149,6 +151,8 @@ export const splitLives = (packed: string): Record<string, string> => {
  * tracker already does for a scenario it cannot read.
  */
 export function restoreEncounter(setup: EncounterSetup, game: PausedGame): Encounter {
+  const saved = parseEncounterProgress(game.encounterProgress ?? '');
+  if (saved) return recoveredEncounter(setup, saved);
   const index = Math.min(Math.max(0, game.villainStage - 1), Math.max(0, setup.villain.length - 1));
   const side = setup.villain[index];
   const printed = side === undefined ? null : totalFor(side, setup.players);

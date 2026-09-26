@@ -15,6 +15,86 @@ import type { Locale } from './types';
  * stated requirement, not an accident.
  */
 export interface Strings {
+  readonly campaignClockHours: string;
+  readonly campaignClockMinutes: string;
+  readonly campaignClockSeconds: string;
+
+  readonly campaignGuideTitle: string;
+  readonly campaignGuidePrevious: string;
+  readonly campaignGuideNext: string;
+  readonly campaignGuideStory: string;
+  readonly campaignGuideHeroes: string;
+  readonly campaignGuideGather: string;
+  readonly campaignGuideScenario: string;
+  readonly campaignGuideCampaign: string;
+  readonly campaignGuideReady: string;
+  readonly campaignGuideHeroesText: string;
+  readonly campaignGuideScenarioText: string;
+  readonly campaignGuideHandText: string;
+  readonly campaignAnswerNo: string;
+
+  readonly campaignRecoverReward: string;
+  readonly campaignRecoverRewardHint: string;
+  readonly campaignTrackerReview: string;
+  readonly campaignRejoinRequired: string;
+  readonly campaignHealthUnavailable: string;
+  readonly apocalypseWorthy: string;
+  readonly missionMissionArea: string;
+  readonly missionPrepareMission: string;
+  readonly missionOverseerHP: string;
+  readonly missionOtherMinions: string;
+  readonly missionAttempts: string;
+  readonly missionMissionAccomplishedResolveTheCardS: string;
+  readonly missionFourAttemptsRemoveMissionTeamAnd: string;
+  readonly missionDamageToAllocate: string;
+  readonly missionThreatToRemoveNext: string;
+  readonly missionDamageToAnotherMinion: string;
+  readonly missionDamageToOverseer: string;
+  readonly missionApplyDamageToOneMinionAt: string;
+  readonly missionRemoveThreatAndFinish: string;
+  readonly missionDiscardOneCardPerAllyResolve: string;
+  readonly missionAlly: string;
+  readonly missionName: string;
+  readonly missionAllyResources: string;
+  readonly missionAssignedCardResources: string;
+  readonly missionPhysical: string;
+  readonly missionEnergy: string;
+  readonly missionMental: string;
+  readonly missionWild: string;
+  readonly missionTHW: string;
+  readonly missionRemoveAlly: string;
+  readonly missionAddAlly: string;
+  readonly missionMissionTeamIsUsableThisPhase: string;
+  readonly missionCalculateAndAllocateAttack: string;
+  readonly missionAfterEachAttemptNotEndedBy: string;
+
+  readonly campaignCardOptional: string;
+  readonly campaignCardRequired: string;
+  readonly campaignDeckCards: string;
+  readonly campaignDeckCardsHint: string;
+  missionThreat: string;
+  genePoolOptional: string;
+  genePoolExtra: string;
+  genePoolTriggers: string;
+  genePoolThree: string;
+  genePoolSix: string;
+  genePoolNine: string;
+  campaignSettingTitle: string;
+  campaignEnvironmentHint: string;
+
+  campaignOpeningAlly: string;
+  campaignOpeningAllyHint: string;
+  campaignOpeningAllyFallback: string;
+
+  readonly regenerateVillain: string;
+  readonly currentErrata: string;
+  readonly scenarioDifficulty: string;
+  readonly activeVillain: string;
+  readonly chooseActiveVillain: string;
+  readonly villainForm: string;
+  readonly formResponseReminder: string;
+  readonly regenerationStage: string;
+  readonly regenerationReminder: string;
   readonly appName: string;
   readonly tagline: string;
   /**
@@ -742,6 +822,10 @@ export interface Strings {
   readonly tracker: string;
   readonly trackerLoading: string;
   readonly trackerUnavailable: string;
+  readonly trackerHealthMaximum: string;
+  readonly trackerThreatMaximum: string;
+  readonly trackerPrintedMaximum: string;
+  readonly trackerMaximumHint: string;
   readonly trackerStarred: string;
   readonly trackerStarredAcceleration: string;
   readonly trackerNote: string;

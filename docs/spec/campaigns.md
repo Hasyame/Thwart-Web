@@ -116,7 +116,54 @@ resolve it through the run's template (`web/src/lib/ratings.ts`
 
 ---
 
-## 4. Tests
+## 4. Age of Apocalypse and Rules Reference v1.8
+
+The accepted shared behavior is in
+[005-CAMPAIGN-RULES-AND-TABLE](../product/specs/005-CAMPAIGN-RULES-AND-TABLE.md).
+AoA uses a pinned mechanics template under `web/src/lib/campaign/templates`;
+the data-fetch script prefers that file to the older public Android mirror.
+The Android asset and the pinned Web file must remain byte-identical.
+
+The optional schema additions preserve defaults for other campaigns:
+
+- Conditions may read `scenarioDifficulty`, independently of campaign
+  `difficulty`. Overrides use the existing manual event's
+  `scenarioExpert.<scenarioId>` flag. Selected encounter-set versions use
+  `standardSet.<scenarioId>` and `expertSet.<scenarioId>` counters.
+- `Effect.valueFrom: "heroCard.health"` resolves actual hero health before
+  applying an atomic setup action. Missing statistics reject the action.
+  `CounterDefinition.resetAfterScenario` resets attempt-local counters on a
+  result. Taken setup actions reset at the same boundary.
+- Card prompts may specify `cardType` (`upgrade` or `support`) and
+  `excludeEliminated`. Choices belong to individual heroes and remain campaign
+  overlays, separate from ordinary deck slots and minimum deck size.
+- A hero card list may define `recoveryFlag` plus exactly one of
+  `recoveryCardType` or `recoveryCards`. An explicit `setup_choice` named
+  `<listId>|<heroId>` may recover a missing earned reward once. A hero who was
+  eliminated when that flag was earned is ineligible. Do not infer a choice
+  from the current deck or replace an existing choice.
+- `victoryEpilogue` and `defeatEpilogue` are original localized summaries.
+
+The recognized original AoA snapshot is corrected at read time, preserving the
+original JSON and event log. Match defaults omitted by Android serialization,
+including `difficulties`. Preserve custom templates. Unknown historical choices
+and simultaneous tracker counts cannot be reconstructed and require player input.
+
+Encounter progress remains separate from campaign events. Existing
+`manualVillainHealth`, `manualSchemeLimit` and secondary track `manual` fields
+now override printed totals. A null override restores the printed value. This
+JSON travels in the existing `PausedGame.encounterProgress` field. Device-local
+recovery also retains the table for the current campaign attempt. Missing
+`layoutVersion` identifies older sequential AoA trackers; migration preserves
+known damage and requests review of unavailable counts.
+
+AoA encounter shaping is a small catalogue adapter for the three unusual
+layouts: simultaneous Horsemen, Apocalypse's regeneration stages and En Sabah
+Nur's forms. Campaign effects and rewards remain declarative. The mission
+calculator is Android-free domain logic based on reported physical cards;
+it does not infer unrevealed cards or resolve every card response.
+
+## 5. Tests
 
 - `npm run test:engine` — the fold on a hand-built template: `end`, `lose`, a
   guarded `lose` that does not hold, a `choose` defeat that leaves the table

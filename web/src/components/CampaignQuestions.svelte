@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import type { Locale } from '../lib/types';
+  import type { Locale, IndexRow } from '../lib/types';
   import { evaluate } from '../lib/campaign/conditions';
   import { formatElapsed } from '../lib/session.svelte';
   import { parseCampaignText, type TextContext } from '../lib/campaign/text';
@@ -17,6 +17,7 @@
   import CardRef from './CardRef.svelte';
 
   interface Props {
+    index: readonly IndexRow[];
     t: Strings;
     uiLocale: Locale;
     campaign: CampaignState;
@@ -33,6 +34,7 @@
   }
 
   const {
+    index,
     t,
     uiLocale,
     campaign,
@@ -93,7 +95,11 @@
 
   /** The cards a question offers: its own list, or the players' decks. */
   const cardsFor = (prompt: Prompt): readonly string[] =>
-    promptTypeOf(prompt) === 'deckcardselect' ? deckCardCodes : (prompt.cards ?? []);
+    prompt.cardType != null ? index.filter(card => card.typeCode === prompt.cardType && ['aggression','justice','leadership','protection','basic','pool'].includes(card.factionCode)).map(card => card.code)
+      : promptTypeOf(prompt) === 'deckcardselect' ? deckCardCodes : (prompt.cards ?? []);
+
+  const heroesFor = (prompt: Prompt) => campaign.heroes.filter(hero => !prompt.excludeEliminated || answers.perHeroBooleans.eliminated?.[hero.id] !== true);
+  let rewardSearch = $state('');
 
   /**
    * A choice left open blocks recording.
@@ -105,7 +111,13 @@
   const missing = $derived(
     prompts.filter(
       (prompt) =>
-        promptTypeOf(prompt) === 'choice' && (answers.choices[prompt.id] ?? '') === '',
+        (campaign.templateId === 'aoa' && promptTypeOf(prompt) === 'boolean' && answers.booleans[prompt.id] === undefined) ||
+        (campaign.templateId === 'aoa' && promptTypeOf(prompt) === 'perheroboolean' && campaign.heroes.some(hero => answers.perHeroBooleans[prompt.id]?.[hero.id] === undefined)) ||
+        (promptTypeOf(prompt) === 'choice' && (answers.choices[prompt.id] ?? '') === '') ||
+        (promptTypeOf(prompt) === 'perherocardselect' && heroesFor(prompt).some(hero => {
+          const count = answers.perHeroCards[prompt.id]?.[hero.id]?.length ?? 0;
+          return count < (prompt.min ?? 0) || count > (prompt.max ?? Infinity);
+        })),
     ),
   );
 
@@ -206,6 +218,11 @@
           oninput={(e) => setNumber(prompt.id, Number.parseInt(e.currentTarget.value, 10) || 0)}
         />
       {:else if kind === 'boolean'}
+        {#if campaign.templateId === 'aoa'}
+          <div class="binary-answer" role="group" aria-label={label(prompt.label) || prompt.id}>
+            {#each [true, false] as value}<label class="binary-option" class:selected={answers.booleans[prompt.id] === value}><input type="radio" name={`answer-${prompt.id}`} checked={answers.booleans[prompt.id] === value} onchange={() => setBoolean(prompt.id, value)} /><span>{value ? t.yes : t.campaignAnswerNo}</span></label>{/each}
+          </div>
+        {:else}
         <label class="tick">
           <input
             type="checkbox"
@@ -214,6 +231,7 @@
           />
           <span>{t.yes}</span>
         </label>
+        {/if}
       {:else if kind === 'choice'}
         <select class="field"
           value={answers.choices[prompt.id] ?? ''}
@@ -240,6 +258,11 @@
         {/each}
       {:else if kind === 'perheroboolean'}
         {#each campaign.heroes as hero (hero.id)}
+          {#if campaign.templateId === 'aoa'}
+            <p>{hero.name}</p><div class="binary-answer" role="group" aria-label={`${hero.name}: ${label(prompt.label) || prompt.id}`}>
+              {#each [true, false] as value}<label class="binary-option" class:selected={answers.perHeroBooleans[prompt.id]?.[hero.id] === value}><input type="radio" name={`answer-${prompt.id}-${hero.id}`} checked={answers.perHeroBooleans[prompt.id]?.[hero.id] === value} onchange={() => setHeroBoolean(prompt.id, hero.id, value)} /><span>{value ? t.yes : t.campaignAnswerNo}</span></label>{/each}
+            </div>
+          {:else}
           <label class="tick">
             <input
               type="checkbox"
@@ -248,6 +271,7 @@
             />
             <span>{hero.name}</span>
           </label>
+          {/if}
         {/each}
       {:else if kind === 'cardselect' || kind === 'deckcardselect'}
         {@const codes = cardsFor(prompt)}
@@ -273,10 +297,11 @@
         <!-- One answer per player, not one set for the table: two players may
              well pick the same card, and a shared set cannot hold it twice nor
              say who took it. -->
-        {#each campaign.heroes as hero (hero.id)}
+        {#if prompt.cardType}<input class="field" type="search" aria-label={label(prompt.label)} bind:value={rewardSearch} />{/if}
+        {#each heroesFor(prompt) as hero (hero.id)}
           <p class="who muted">{hero.name}</p>
           <div class="picks">
-            {#each cardsFor(prompt) as code (code)}
+            {#each cardsFor(prompt).filter(code => !prompt.cardType || cardName(code).toLocaleLowerCase().includes(rewardSearch.toLocaleLowerCase()) || (answers.perHeroCards[prompt.id]?.[hero.id] ?? []).includes(code)) as code (code)}
               <label class="tick">
                 <input
                   type="checkbox"
@@ -322,6 +347,12 @@
 </section>
 
 <style>
+  .binary-answer { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-block: var(--space-3); }
+  .binary-option { min-height: 56px; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 2px solid var(--border); cursor: pointer; font-weight: 700; }
+  .binary-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .binary-option input { width: 22px; height: 22px; accent-color: var(--accent); }
+  .binary-option:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
+
   .panel {
     margin: var(--space-3) 0;
   }

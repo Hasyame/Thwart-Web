@@ -27,6 +27,8 @@ import type { Card } from './types';
  * people turned up.
  */
 export interface EncounterSide {
+  readonly code?: string;
+  readonly form?: string;
   readonly name: string;
   readonly stage: string;
   /** Villain health, or a main scheme's threat limit. Null when starred. */
@@ -82,6 +84,12 @@ export interface SchemeStage {
 }
 
 export interface EncounterSetup {
+  readonly startingVillainIndex?: number;
+  readonly moreVillains?: readonly (readonly EncounterSide[])[];
+  readonly villainsLinked?: boolean;
+  readonly activeVillainMarker?: boolean;
+  readonly villainForms?: readonly (readonly EncounterSide[])[];
+  readonly regeneration?: boolean;
   readonly villain: readonly EncounterSide[];
   readonly scheme: readonly SchemeStage[];
   readonly players: number;
@@ -98,6 +106,15 @@ export interface EncounterSetup {
 }
 
 export interface EncounterProgress {
+  readonly layoutVersion?: number;
+  readonly needsReview?: boolean;
+  readonly noLongerWorthy?: boolean;
+  readonly mission?: import('./campaign/mission').MissionProgress;
+  readonly genePool?: number;
+  readonly environment?: string;
+  readonly moreVillains?: readonly { readonly index: number; readonly value: number; readonly manual: number | null }[];
+  readonly activeVillain?: number;
+  readonly villainForm?: number;
   readonly villainIndex: number;
   readonly damage: number;
   readonly schemeIndex: number;
@@ -145,7 +162,76 @@ export const schemeStageOf = (e: Encounter): SchemeStage | null =>
   e.setup.scheme[e.progress.schemeIndex] ?? null;
 
 export const villainSideOf = (e: Encounter): EncounterSide | null =>
+  e.setup.villainForms?.[e.progress.villainIndex]?.[e.progress.villainForm ?? 0] ??
   e.setup.villain[e.progress.villainIndex] ?? null;
+
+export const villainTracks = (e: Encounter): readonly (readonly EncounterSide[])[] =>
+  [e.setup.villain, ...(e.setup.moreVillains ?? [])];
+
+export const villainDamageAt = (e: Encounter, track: number): number =>
+  track === 0 ? e.progress.damage : (e.progress.moreVillains?.[track - 1]?.value ?? 0);
+
+export const villainSideAt = (e: Encounter, track: number): EncounterSide | null =>
+  track === 0 ? villainSideOf(e) : (e.setup.moreVillains?.[track - 1]?.[e.progress.moreVillains?.[track - 1]?.index ?? 0] ?? null);
+
+export function villainHealthAt(e: Encounter, track: number): number | null {
+  if (track === 0) return villainHealth(e);
+  const side = villainSideAt(e, track);
+  return e.progress.moreVillains?.[track - 1]?.manual ?? (side === null ? null : totalFor(side, e.setup.players));
+}
+
+export function withVillainMaximum(e: Encounter, track: number, maximum: number | null): Encounter {
+  if (villainSideAt(e, track) === null || (maximum !== null && (!Number.isSafeInteger(maximum) || maximum < 1))) return e;
+  if (track === 0) return withProgress(e, {manualVillainHealth: maximum});
+  const more = [...(e.progress.moreVillains ?? [])];
+  while (more.length < track) more.push({index: 0, value: 0, manual: null});
+  more[track - 1] = {...more[track - 1]!, manual: maximum};
+  return withProgress(e, {moreVillains: more});
+}
+
+export function damagedAt(e: Encounter, track: number, amount: number): Encounter {
+  if (track === 0) return damaged(e, amount);
+  const side = villainSideAt(e, track);
+  if (side === null) return e;
+  const more = [...(e.progress.moreVillains ?? [])];
+  while (more.length < track) more.push({index: 0, value: 0, manual: null});
+  const health = villainHealthAt(e, track);
+  const previous = more[track - 1] ?? {index: 0, value: 0, manual: null};
+  more[track - 1] = {...previous, value: Math.max(0, Math.min(health ?? Infinity, previous.value + amount))};
+  return withProgress(e, {moreVillains: more});
+}
+
+export function withActiveVillain(e: Encounter, track: number): Encounter {
+  return e.setup.activeVillainMarker && track >= 0 && track < villainTracks(e).length
+    ? withProgress(e, {activeVillain: track}) : e;
+}
+
+/** Reuse the campaign's logged shuffle, matching identity across A/B faces. */
+export function withVillainOrder(setup: EncounterSetup, codes: readonly string[]): EncounterSetup {
+  if (!setup.activeVillainMarker || codes.length === 0) return setup;
+  const tracks = [setup.villain, ...(setup.moreVillains ?? [])];
+  const order = codes.map(code => code.replace(/[abc]$/, ''));
+  if (new Set(order).size !== tracks.length || tracks.some(track => !order.includes((track[0]?.code ?? '').replace(/[abc]$/, '')))) return setup;
+  const sorted = [...tracks].sort((a,b) => order.indexOf((a[0]?.code ?? '').replace(/[abc]$/, '')) - order.indexOf((b[0]?.code ?? '').replace(/[abc]$/, '')));
+  return {...setup, villain: sorted[0] ?? [], moreVillains: sorted.slice(1)};
+}
+
+/** A form change preserves damage. Its printed response remains a table action. */
+export function withVillainForm(e: Encounter, form: number): Encounter {
+  return e.setup.villainForms?.[e.progress.villainIndex]?.[form] === undefined
+    ? e : withProgress(e, {villainForm: form});
+}
+
+export function withVillainStage(e: Encounter, stage: number): Encounter {
+  return e.setup.regeneration && e.setup.villain[stage] !== undefined
+    ? withProgress(e, {villainIndex: stage, damage: 0, threat: 0, manualVillainHealth: null}) : e;
+}
+
+/** Apocalypse regenerates at the same stage and removes the printed numeral, not HP per player. */
+export function regenerated(e: Encounter): Encounter {
+  if (!e.setup.regeneration) return e;
+  return withProgress(e, {damage: 0, threat: Math.max(0, e.progress.threat - (villainSideOf(e)?.value ?? 0))});
+}
 
 export function schemeSideOf(e: Encounter): EncounterSide | null {
   const stage = schemeStageOf(e);
@@ -158,16 +244,22 @@ export function schemeSideOf(e: Encounter): EncounterSide | null {
 /** The villain's health at this stage, or what the player typed for a star. */
 export function villainHealth(e: Encounter): number | null {
   const side = villainSideOf(e);
-  return (side === null ? null : totalFor(side, e.setup.players)) ?? e.progress.manualVillainHealth;
+  return e.progress.manualVillainHealth ?? (side === null ? null : totalFor(side, e.setup.players));
 }
 
 /** The threat this scheme advances at, or what the player typed for a star. */
 export function schemeLimit(e: Encounter): number | null {
   const side = schemeSideOf(e);
-  return (side === null ? null : totalFor(side, e.setup.players)) ?? e.progress.manualSchemeLimit;
+  return e.progress.manualSchemeLimit ?? (side === null ? null : totalFor(side, e.setup.players));
 }
 
 export const villainDefeated = (e: Encounter): boolean => {
+  if (e.setup.villainsLinked) {
+    return villainTracks(e).every((_, track) => {
+      const health = villainHealthAt(e, track);
+      return health !== null && villainDamageAt(e, track) >= health;
+    });
+  }
   const health = villainHealth(e);
   return health !== null && e.progress.damage >= health;
 };
@@ -268,6 +360,7 @@ export function villainAdvanced(e: Encounter): Encounter {
   }
   return withProgress(e, {
     villainIndex: e.progress.villainIndex + 1,
+    villainForm: 0,
     damage: 0,
     manualVillainHealth: null,
   });
@@ -311,10 +404,10 @@ export function roundEnded(e: Encounter): Encounter {
 }
 
 export const withManualVillainHealth = (e: Encounter, health: number | null): Encounter =>
-  withProgress(e, { manualVillainHealth: health });
+  withVillainMaximum(e, 0, health);
 
 export const withManualSchemeLimit = (e: Encounter, limit: number | null): Encounter =>
-  withProgress(e, { manualSchemeLimit: limit });
+  limit === null || (Number.isSafeInteger(limit) && limit > 0) ? withProgress(e, { manualSchemeLimit: limit }) : e;
 
 /** A scenario at the start of a game, with the scheme's printed threat on it. */
 export function startOf(setup: EncounterSetup): Encounter {
@@ -324,7 +417,8 @@ export function startOf(setup: EncounterSetup): Encounter {
   return {
     setup,
     progress: {
-      villainIndex: 0,
+        villainIndex: setup.startingVillainIndex ?? 0,
+        layoutVersion: 2,
       damage: 0,
       schemeIndex: 0,
       schemeOption: 0,
@@ -396,6 +490,8 @@ const flag = (value: unknown): boolean => value === true;
 
 function villainSide(card: Card): EncounterSide {
   return {
+    code: card.code,
+    form: (card.traits ?? '').split('.').map(s => s.trim()).filter(Boolean).at(-1),
     name: card.name,
     stage: card.stage ?? '',
     value: numberOrNull(card.health),
@@ -457,13 +553,28 @@ export function setupFor(
   const villains = cards.filter(
     (card) => VILLAIN_TYPES.has(card.type_code) && !flag(card.double_sided),
   );
-  return {
-    villain: selectVillainStages(
+  const selected = selectVillainStages(
       villains,
       expert,
       (card) => card.name,
       (card) => card.stage ?? null,
-    ).map(villainSide),
+    );
+  const set = villains[0]?.card_set_code;
+  const horsemen = set === 'four_horsemen';
+  const forms = set === 'en_sabah_nur'
+    ? [...new Set(selected.map(card => card.stage))].map(stage => selected.filter(card => card.stage === stage).map(villainSide))
+    : undefined;
+  const chosen = horsemen ? villains.filter(card => card.stage === (expert ? 'B' : 'A'))
+    : set === 'apocalypse' ? villains
+    : selected;
+  return {
+    villain: forms?.flatMap(sides => sides.slice(0,1)) ?? (horsemen ? chosen.slice(0,1) : chosen).map(villainSide),
+    moreVillains: horsemen ? chosen.slice(1).map(card => [villainSide(card)]) : undefined,
+    villainsLinked: horsemen,
+    activeVillainMarker: horsemen,
+    villainForms: forms,
+    regeneration: set === 'apocalypse',
+    startingVillainIndex: set === 'apocalypse' ? (expert ? 2 : 1) : 0,
     scheme: groupByStage(
       cards.filter((card) => card.type_code === MAIN_SCHEME && isNumbersSide(card)).map(schemeSide),
     ),

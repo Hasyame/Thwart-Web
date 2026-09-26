@@ -293,6 +293,10 @@ jobs:
         working-directory: web
         run: npm run test:engine
 
+      - name: Age of Apocalypse rules and saved tables
+        working-directory: web
+        run: npm run test:aoa
+
       # A placeholder that does not resolve prints a card code in the middle of
       # a sentence, and nothing errors. So this sweeps every one in all nine
       # templates rather than only checking the parser.

@@ -125,6 +125,7 @@
       </p>
     {/if}
 
+    {#if card.rules_reference}<p class="muted">{t.currentErrata}</p>{/if}
     {#if card.text !== null && card.text !== undefined && card.text !== ''}
       <!-- Sanitised at build time in scripts/fetch-cards.mjs, which strips
            every tag outside a small allow-list. This is the only place the

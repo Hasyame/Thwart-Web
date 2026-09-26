@@ -1,0 +1,2452 @@
+{
+ "_note": "Mechanics only, written for this app: no rules text and no text from the campaign book. Card codes are MarvelCDB codes for pack 'aoa'; names are resolved from the card database at runtime so they appear in the player's language.",
+ "id": "aoa",
+ "schemaVersion": 1,
+ "name": {
+  "fr": "L'Ère d'Apocalypse",
+  "en": "Age of Apocalypse"
+ },
+ "notice": {
+  "fr": "Campagne non officielle, reconstituée pour l'application : le livret et les cartes de la boîte L'Ère d'Apocalypse restent nécessaires pour jouer.\n\nL'application tire pour vous l'ordre des Quatre Cavaliers et le sbire HIÉRARQUE de chaque partie, retient les manigances annexes MISSION déjà jouées et les HIÉRARQUES vaincus, et tient le registre : points de victoire, sort du Professeur, et en campagne experte les points de vie de chaque identité entre les parties.",
+  "en": "Unofficial, reconstructed for the app: the rulebook and cards from the Age of Apocalypse box are still needed to play.\n\nThe app draws the order of the four Horsemen and each game's OVERSEER for you, remembers which MISSIONS have been played and which OVERSEERS were defeated, and keeps the log: victory points, what became of the Professor, and in an expert campaign each hero's hit points between games."
+ },
+ "packCode": "aoa",
+ "difficulties": [
+  "standard",
+  "expert"
+ ],
+ "counters": [
+  {
+   "id": "hp",
+   "scope": "hero",
+   "initial": 0,
+   "maxFrom": "heroCard.health",
+   "activeWhen": {
+    "difficulty": "expert"
+   }
+  },
+  {
+   "id": "missionThreat",
+   "scope": "campaign",
+   "initial": 0,
+   "min": 0,
+   "resetAfterScenario": true
+  }
+ ],
+ "flagSets": [
+  {
+   "id": "professorSaved",
+   "scope": "campaign"
+  },
+  {
+   "id": "seattleWon"
+  },
+  {
+   "id": "seattleLost"
+  },
+  {
+   "id": "evacuateWon"
+  },
+  {
+   "id": "evacuateLost"
+  },
+  {
+   "id": "seawallWon"
+  },
+  {
+   "id": "seawallLost"
+  },
+  {
+   "id": "lostmutantsWon"
+  },
+  {
+   "id": "lostmutantsLost"
+  }
+ ],
+ "cardLists": [
+  {
+   "id": "missionsUsed",
+   "scope": "campaign"
+  },
+  {
+   "id": "overseersDefeated",
+   "scope": "campaign"
+  },
+  {
+   "id": "rewardUpgrade",
+   "scope": "hero",
+   "label": {
+    "fr": "Amélioration de campagne",
+    "en": "Campaign upgrade"
+   },
+   "recoveryFlag": "evacuateWon",
+   "recoveryCardType": "upgrade"
+  },
+  {
+   "id": "rewardSupport",
+   "scope": "hero",
+   "label": {
+    "fr": "Soutien de campagne",
+    "en": "Campaign support"
+   },
+   "recoveryFlag": "seawallWon",
+   "recoveryCardType": "support"
+  },
+  {
+   "id": "rewardAlly",
+   "scope": "hero",
+   "label": {
+    "fr": "Allié de campagne",
+    "en": "Campaign ally"
+   },
+   "recoveryFlag": "lostmutantsWon",
+   "recoveryCards": [
+    "45172",
+    "45173",
+    "45174",
+    "45175"
+   ]
+  }
+ ],
+ "setupFragments": {
+  "standardIII": [
+   {
+    "text": {
+     "fr": "Choisissez le set Standard pour cette partie. La difficulté du scénario est indépendante de celle de la campagne.",
+     "en": "Choose the Standard set for this game. Scenario difficulty is independent of campaign difficulty."
+    }
+   }
+  ],
+  "missions": [
+   {
+    "text": {
+     "fr": "Mélangez le set modulaire Ère d'Apocalypse dans le deck Rencontre",
+     "en": "Shuffle the Age of Apocalypse modular set into the encounter deck"
+    }
+   },
+   {
+    "text": {
+     "fr": "",
+     "en": ""
+    },
+    "draw": {
+     "id": "mission",
+     "from": [
+      "45166a",
+      "45167a",
+      "45168a",
+      "45169a"
+     ],
+     "excluding": "missionsUsed"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} : Mettez de côté chaque exemplaire de l'amélioration {card:45176}",
+     "en": "Play with the MISSION {mission}: Set each copy of the {card:45176} upgrade aside"
+    },
+    "cards": [
+     "45176"
+    ],
+    "when": {
+     "drawIs": "mission:45166a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} : Chaque joueur mélange un exemplaire de {card:45178} dans son deck",
+     "en": "Play with the MISSION {mission}: Each player shuffles a copy of {card:45178} into their deck"
+    },
+    "cards": [
+     "45178"
+    ],
+    "when": {
+     "drawIs": "mission:45167a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} : Mélangez {card:45177} dans le deck Rencontre",
+     "en": "Play with the MISSION {mission}: Shuffle the {card:45177} side scheme into the encounter deck"
+    },
+    "cards": [
+     "45177"
+    ],
+    "when": {
+     "drawIs": "mission:45168a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} : Mettez de côté chaque allié de campagne",
+     "en": "Play with the MISSION {mission}: Set each campaign ally aside"
+    },
+    "cards": [
+     "45172",
+     "45173",
+     "45174",
+     "45175"
+    ],
+    "when": {
+     "drawIs": "mission:45169a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur peut mélanger 1 {card:45176} dans son deck, hors taille minimale",
+     "en": "Each player may shuffle 1 {card:45176} into their deck, outside the minimum"
+    },
+    "cards": [
+     "45176"
+    ],
+    "when": {
+     "countTrue": "seattleWon",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Retirez de la campagne chaque exemplaire de {card:45176}",
+     "en": "Remove each copy of {card:45176} from the campaign"
+    },
+    "cards": [
+     "45176"
+    ],
+    "when": {
+     "countTrue": "seattleLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "{card:45178} retirée. Vous pouvez inclure votre amélioration enregistrée, hors taille minimale du deck.",
+     "en": "{card:45178} removed. You may include your recorded upgrade; it does not count toward minimum deck size."
+    },
+    "cards": [
+     "45178"
+    ],
+    "when": {
+     "countTrue": "evacuateWon",
+     "countAtLeast": 1
+    },
+    "showCardList": "rewardUpgrade"
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur mélange un exemplaire de {card:45178} dans son deck",
+     "en": "Each player shuffles a copy of {card:45178} into their deck"
+    },
+    "cards": [
+     "45178"
+    ],
+    "when": {
+     "countTrue": "evacuateLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "{card:45177} retirée. Vous pouvez inclure votre soutien enregistré, hors taille minimale du deck.",
+     "en": "{card:45177} removed. You may include your recorded support; it does not count toward minimum deck size."
+    },
+    "cards": [
+     "45177"
+    ],
+    "when": {
+     "countTrue": "seawallWon",
+     "countAtLeast": 1
+    },
+    "showCardList": "rewardSupport"
+   },
+   {
+    "text": {
+     "fr": "Mélangez {card:45177} dans le deck Rencontre lors de la mise en place",
+     "en": "Shuffle {card:45177} into the encounter deck during setup"
+    },
+    "cards": [
+     "45177"
+    ],
+    "when": {
+     "countTrue": "seawallLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Vous pouvez inclure votre allié de campagne enregistré, hors taille minimale du deck.",
+     "en": "You may include your recorded campaign ally; it does not count toward minimum deck size."
+    },
+    "cards": [
+     "45172",
+     "45173",
+     "45174",
+     "45175"
+    ],
+    "when": {
+     "countTrue": "lostmutantsWon",
+     "countAtLeast": 1
+    },
+    "showCardList": "rewardAlly"
+   },
+   {
+    "text": {
+     "fr": "Retirez de la campagne chaque allié de campagne",
+     "en": "Remove each campaign ally from the campaign"
+    },
+    "cards": [
+     "45172",
+     "45173",
+     "45174",
+     "45175"
+    ],
+    "when": {
+     "countTrue": "lostmutantsLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Ajoutez ce sbire HIÉRARQUE à la zone de mission et placez près de lui la carte Règles de Mission",
+     "en": "Add this OVERSEER minion to the mission area and put Mission Rules beside it"
+    },
+    "draw": {
+     "id": "overseer",
+     "from": [
+      "45179a",
+      "45180a",
+      "45181a",
+      "45182a",
+      "45183a"
+     ],
+     "excluding": "overseersDefeated"
+    }
+   },
+   {
+    "text": {
+     "fr": "Le premier joueur prend le contrôle de ce soutien, face MISSION visible",
+     "en": "First player takes control of this support card, MISSION side faceup"
+    },
+    "cards": [
+     "45171a"
+    ]
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur prend un allié de son deck en main. Cet allié compte dans sa taille de main.",
+     "en": "Each player takes an ally from their deck into hand. It counts toward hand size."
+    },
+    "when": {
+     "difficulty": "standard"
+    },
+    "cards": []
+   },
+   {
+    "text": {
+     "fr": "Prenez un allié de votre deck partageant un trait avec votre héros. Il compte dans votre taille de main.",
+     "en": "Take an ally from your deck sharing a trait with your hero. It counts toward hand size."
+    },
+    "when": {
+     "difficulty": "expert"
+    },
+    "cards": []
+   }
+  ],
+  "expertHp": [
+   {
+    "text": {
+     "fr": "Campagne Experte Uniquement : fixez les points de vie de chaque joueur à la valeur indiquée dans le registre de campagne",
+     "en": "Expert Campaign Only: set each hero's hit points to the value below"
+    },
+    "when": {
+     "difficulty": "expert"
+    },
+    "showCounter": "hp"
+   },
+   {
+    "text": {
+     "fr": "Campagne Experte Uniquement : chaque joueur peut placer 3 menaces sur la MISSION.\nCela soigne son identité jusqu'à sa valeur de points de vie maximale.",
+     "en": "Expert Campaign Only: place 3 threat on the MISSION to heal a hero to full"
+    },
+    "when": {
+     "difficulty": "expert"
+    },
+    "action": {
+     "id": "heal",
+     "label": {
+      "fr": "Soigner",
+      "en": "Heal"
+     },
+     "perHero": true,
+     "effects": [
+      {
+       "op": "setHeroCounter",
+       "counter": "hp",
+       "valueFrom": "heroCard.health"
+      },
+      {
+       "op": "addCounter",
+       "counter": "missionThreat",
+       "value": 3
+      }
+     ]
+    }
+   },
+   {
+    "text": {
+     "fr": "Menaces supplémentaires dues aux soins pour cette partie :",
+     "en": "Extra mission threat from healing for this game:"
+    },
+    "showCounter": "missionThreat",
+    "when": {
+     "difficulty": "expert"
+    }
+   }
+  ]
+ },
+ "startScenarioId": "s1_unus",
+ "scenarios": [
+  {
+   "id": "s1_unus",
+   "name": {
+    "fr": "Unus",
+    "en": "Unus"
+   },
+   "flavour": {
+    "fr": "La X-Force est prise au piège d'une ligne chronologique où règne Apocalypse, et le prélat Unus les a déjà trouvés.",
+    "en": "X-Force is stranded in a timeline ruled by Apocalypse, and the prelate Unus has already found them."
+   },
+   "victoryLabel": {
+    "fr": "Unus est vaincu !",
+    "en": "Unus is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Unus vous a vaincus !",
+    "en": "Unus has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45059",
+      "45060"
+     ],
+     "expert": [
+      "45060",
+      "45061"
+     ]
+    },
+    "mainScheme": [
+     "45062a"
+    ],
+    "encounterSets": [
+     "unus",
+     "infinites",
+     "dystopian_nightmare",
+     "standard",
+     "age_of_apocalypse"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Variante facultative, à décider ensemble : ajoutez sur {card:45071} 0, 1, 2 ou 3 menaces par joueur pour ajuster la difficulté\n(livret p. 8).",
+      "en": "Optional variant, agreed by the group: add 0, 1, 2 or 3 threat per player to {card:45071} to adjust difficulty (booklet p. 8)."
+     },
+     "cards": [
+      "45071"
+     ]
+    },
+    {
+     "include": "missions"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "eliminated",
+      "type": "perHeroBoolean",
+      "when": {
+       "difficulty": "expert"
+      },
+      "label": {
+       "fr": "Identité éliminée pendant cette partie ?",
+       "en": "Was this identity eliminated during this game?"
+      }
+     },
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "id": "rewardUpgrade",
+      "type": "perHeroCardSelect",
+      "cardType": "upgrade",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre amélioration de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign upgrade to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardSupport",
+      "type": "perHeroCardSelect",
+      "cardType": "support",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre soutien de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign support to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardAlly",
+      "type": "perHeroCardSelect",
+      "cardType": null,
+      "cards": [
+       "45172",
+       "45173",
+       "45174",
+       "45175"
+      ],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre allié de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign ally to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardUpgrade",
+      "from": "rewardUpgrade",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardSupport",
+      "from": "rewardSupport",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardAlly",
+      "from": "rewardAlly",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s2_four_horsemen"
+     }
+    ],
+    "message": {
+     "fr": "Les survivants rejoignent les X-Men. Un refuge se dessine, mais les Cavaliers se rapprochent. Livret p. 9–10.",
+     "en": "The survivors join the X-Men. A refuge offers hope, but the Horsemen are closing in. Booklet pp. 9–10."
+    }
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s1_unus"
+     }
+    ]
+   },
+   "information": [
+    {
+     "text": {
+      "fr": "Ordre de préparation : capacités Mise en place des cartes, scénario, campagne, main initiale, mulligan, puis Mise en place du\njoueur (référence 1.8, p. 51).",
+      "en": "Setup order: card Setup abilities, scenario, campaign, opening hand, mulligan, then player Setup (Rules Reference 1.8, p. 51)."
+     }
+    },
+    {
+     "text": {
+      "en": "Mission Rules: booklet pp. 5–6. Use the mission area below to resolve attempts after entering the physical cards.",
+      "fr": "Règles de Mission : livret p. 5–6. Utilisez la zone de mission ci-dessous après avoir saisi les cartes de la table."
+     },
+     "cards": [
+      "45171a"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s2_four_horsemen",
+   "name": {
+    "fr": "Les Quatre Cavaliers",
+    "en": "Four Horsemen"
+   },
+   "flavour": {
+    "fr": "Magnéto accueille la X-Force au quartier général secret des X-Men. Apocalypse les trouve aussitôt et lance ses Quatre Cavaliers.",
+    "en": "Magneto takes X-Force into the X-Men's headquarters. Apocalypse finds it at once and sends his four horsemen."
+   },
+   "victoryLabel": {
+    "fr": "Les cavaliers sont vaincus !",
+    "en": "The horsemen are beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Les cavaliers vous ont vaincus !",
+    "en": "The horsemen have beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45081a",
+      "45082a",
+      "45083a",
+      "45084a"
+     ],
+     "expert": [
+      "45081b",
+      "45082b",
+      "45083b",
+      "45084b"
+     ]
+    },
+    "mainScheme": [
+     "45085a"
+    ],
+    "encounterSets": [
+     "four_horsemen",
+     "hounds",
+     "dystopian_nightmare",
+     "standard",
+     "age_of_apocalypse"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Alignez ces quatre méchants dans cet ordre, chacun avec son compteur de points de vie",
+      "en": "Set these four villains in a row in this order, each with its own hit point dial"
+     },
+     "draw": {
+      "id": "horsemen",
+      "from": [
+       "45081a",
+       "45082a",
+       "45083a",
+       "45084a"
+      ],
+      "count": 4
+     }
+    },
+    {
+     "text": {
+      "fr": "Utilisez les faces A, chacune avec son compteur.",
+      "en": "Use A faces, each with its own counter."
+     },
+     "when": {
+      "scenarioDifficulty": "standard"
+     },
+     "cards": []
+    },
+    {
+     "text": {
+      "fr": "Utilisez les faces B, chacune avec son compteur.",
+      "en": "Use B faces, each with its own counter."
+     },
+     "when": {
+      "scenarioDifficulty": "expert"
+     },
+     "cards": []
+    },
+    {
+     "text": {
+      "fr": "Donnez le marqueur d'activation au méchant le plus à gauche",
+      "en": "Give the active counter to the leftmost villain"
+     }
+    },
+    {
+     "include": "missions"
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "eliminated",
+      "type": "perHeroBoolean",
+      "when": {
+       "difficulty": "expert"
+      },
+      "label": {
+       "fr": "Identité éliminée pendant cette partie ?",
+       "en": "Was this identity eliminated during this game?"
+      }
+     },
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "id": "rewardUpgrade",
+      "type": "perHeroCardSelect",
+      "cardType": "upgrade",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre amélioration de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign upgrade to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardSupport",
+      "type": "perHeroCardSelect",
+      "cardType": "support",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre soutien de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign support to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardAlly",
+      "type": "perHeroCardSelect",
+      "cardType": null,
+      "cards": [
+       "45172",
+       "45173",
+       "45174",
+       "45175"
+      ],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre allié de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign ally to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardUpgrade",
+      "from": "rewardUpgrade",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardSupport",
+      "from": "rewardSupport",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardAlly",
+      "from": "rewardAlly",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s3_apocalypse"
+     }
+    ],
+    "message": {
+     "fr": "Les Cavaliers sont arrêtés. Les X-Men peuvent maintenant porter le combat à la citadelle. Livret p. 13.",
+     "en": "The Horsemen have been stopped. The X-Men can now take the fight to the citadel. Booklet p. 13."
+    }
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s2_four_horsemen"
+     }
+    ]
+   },
+   "information": [
+    {
+     "text": {
+      "fr": "Ordre de préparation : capacités Mise en place des cartes, scénario, campagne, main initiale, mulligan, puis Mise en place du\njoueur (référence 1.8, p. 51).",
+      "en": "Setup order: card Setup abilities, scenario, campaign, opening hand, mulligan, then player Setup (Rules Reference 1.8, p. 51)."
+     }
+    },
+    {
+     "text": {
+      "en": "Mission Rules: booklet pp. 5–6. Use the mission area below to resolve attempts after entering the physical cards.",
+      "fr": "Règles de Mission : livret p. 5–6. Utilisez la zone de mission ci-dessous après avoir saisi les cartes de la table."
+     },
+     "cards": [
+      "45171a"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s3_apocalypse",
+   "name": {
+    "fr": "Apocalypse",
+    "en": "Apocalypse"
+   },
+   "flavour": {
+    "fr": "Les X-Men marchent sur la citadelle d'Apocalypse, à travers le cœur de son empire et ses plus puissants prélats.",
+    "en": "The X-Men march on Apocalypse's citadel, through the heart of his empire and his strongest prelates."
+   },
+   "victoryLabel": {
+    "fr": "Apocalypse est vaincu !",
+    "en": "Apocalypse is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Apocalypse vous a vaincus !",
+    "en": "Apocalypse has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45101b",
+      "45102a",
+      "45102b"
+     ],
+     "expert": [
+      "45102a",
+      "45102b"
+     ]
+    },
+    "mainScheme": [
+     "45103a"
+    ],
+    "encounterSets": [
+     "apocalypse",
+     "prelates",
+     "dark_riders",
+     "infinites",
+     "standard",
+     "age_of_apocalypse"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Commencez au stade II (livret p. 14).",
+      "en": "Start at stage II (booklet p. 14)."
+     },
+     "when": {
+      "scenarioDifficulty": "standard"
+     },
+     "cards": [
+      "45101b"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Commencez au stade III (livret p. 14).",
+      "en": "Start at stage III (booklet p. 14)."
+     },
+     "when": {
+      "scenarioDifficulty": "expert"
+     },
+     "cards": [
+      "45102a"
+     ]
+    },
+    {
+     "include": "missions"
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "eliminated",
+      "type": "perHeroBoolean",
+      "when": {
+       "difficulty": "expert"
+      },
+      "label": {
+       "fr": "Identité éliminée pendant cette partie ?",
+       "en": "Was this identity eliminated during this game?"
+      }
+     },
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "id": "rewardUpgrade",
+      "type": "perHeroCardSelect",
+      "cardType": "upgrade",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre amélioration de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign upgrade to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardSupport",
+      "type": "perHeroCardSelect",
+      "cardType": "support",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre soutien de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign support to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardAlly",
+      "type": "perHeroCardSelect",
+      "cardType": null,
+      "cards": [
+       "45172",
+       "45173",
+       "45174",
+       "45175"
+      ],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre allié de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign ally to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardUpgrade",
+      "from": "rewardUpgrade",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardSupport",
+      "from": "rewardSupport",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardAlly",
+      "from": "rewardAlly",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s4_dark_beast"
+     }
+    ],
+    "message": {
+     "fr": "La victoire ouvre un passage sous la citadelle. Une machine temporelle attend l’équipe. Livret p. 15.",
+     "en": "Victory opens a way beneath the citadel. A time machine awaits the team. Booklet p. 15."
+    }
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s3_apocalypse"
+     }
+    ]
+   },
+   "information": [
+    {
+     "text": {
+      "fr": "La régénération conserve le stade, soigne Apocalypse et retire de la menace. Défaussez ses attachements.\nNo Longer Worthy permet de le vaincre (livret p. 14).",
+      "en": "Regeneration keeps the current stage, heals Apocalypse and removes threat. Discard his attachments.\nNo Longer Worthy allows his defeat (booklet p. 14)."
+     },
+     "cards": [
+      "45105a",
+      "45105b"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Ordre de préparation : capacités Mise en place des cartes, scénario, campagne, main initiale, mulligan, puis Mise en place du\njoueur (référence 1.8, p. 51).",
+      "en": "Setup order: card Setup abilities, scenario, campaign, opening hand, mulligan, then player Setup (Rules Reference 1.8, p. 51)."
+     }
+    },
+    {
+     "text": {
+      "en": "Mission Rules: booklet pp. 5–6. Use the mission area below to resolve attempts after entering the physical cards.",
+      "fr": "Règles de Mission : livret p. 5–6. Utilisez la zone de mission ci-dessous après avoir saisi les cartes de la table."
+     },
+     "cards": [
+      "45171a"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s4_dark_beast",
+   "name": {
+    "fr": "Le Fauve Noir",
+    "en": "Dark Beast"
+   },
+   "flavour": {
+    "fr": "Sous la citadelle se trouve une machine à voyager dans le temps, et le Fauve qui la manœuvre n'est pas le leur : c'est Le Fauve Noir.",
+    "en": "Beneath the citadel is a time machine, and the Beast operating it is not theirs."
+   },
+   "victoryLabel": {
+    "fr": "Le Fauve Noir est vaincu !",
+    "en": "Dark Beast is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Le Fauve Noir vous a vaincus !",
+    "en": "Dark Beast has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45118",
+      "45119"
+     ],
+     "expert": [
+      "45119",
+      "45120"
+     ]
+    },
+    "mainScheme": [
+     "45121a"
+    ],
+    "encounterSets": [
+     "dark_beast",
+     "blue_moon",
+     "genosha",
+     "savage_land",
+     "dystopian_nightmare",
+     "standard",
+     "age_of_apocalypse"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "include": "missions"
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "eliminated",
+      "type": "perHeroBoolean",
+      "when": {
+       "difficulty": "expert"
+      },
+      "label": {
+       "fr": "Identité éliminée pendant cette partie ?",
+       "en": "Was this identity eliminated during this game?"
+      }
+     },
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "id": "rewardUpgrade",
+      "type": "perHeroCardSelect",
+      "cardType": "upgrade",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre amélioration de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign upgrade to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardSupport",
+      "type": "perHeroCardSelect",
+      "cardType": "support",
+      "cards": [],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre soutien de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign support to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "id": "rewardAlly",
+      "type": "perHeroCardSelect",
+      "cardType": null,
+      "cards": [
+       "45172",
+       "45173",
+       "45174",
+       "45175"
+      ],
+      "excludeEliminated": true,
+      "min": 1,
+      "max": 1,
+      "label": {
+       "fr": "Choisissez votre allié de campagne, à conserver pour les prochaines parties.",
+       "en": "Choose your campaign ally to keep for the remaining games."
+      },
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardUpgrade",
+      "from": "rewardUpgrade",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardSupport",
+      "from": "rewardSupport",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addCardsFromAnswer",
+      "cardList": "rewardAlly",
+      "from": "rewardAlly",
+      "perHero": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s5_en_sabah_nur"
+     }
+    ],
+    "message": {
+     "fr": "Le passage temporel ramène l’équipe vers son passé. Le salut du Professeur dépend encore du remède détenu par Apocalypse. Livret p. 17–18.",
+     "en": "The time passage returns the team to its past. Saving the Professor still depends on the cure held by Apocalypse. Booklet pp. 17–18."
+    }
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s4_dark_beast"
+     }
+    ]
+   },
+   "information": [
+    {
+     "text": {
+      "fr": "Ordre de préparation : capacités Mise en place des cartes, scénario, campagne, main initiale, mulligan, puis Mise en place du\njoueur (référence 1.8, p. 51).",
+      "en": "Setup order: card Setup abilities, scenario, campaign, opening hand, mulligan, then player Setup (Rules Reference 1.8, p. 51)."
+     }
+    },
+    {
+     "text": {
+      "fr": "Gardez les trois environnements accessibles. Résolvez leurs changements lorsque les cartes le demandent (livret p. 16).",
+      "en": "Keep all three environments accessible. Resolve their changes when instructed by the cards (booklet p. 16)."
+     },
+     "cards": [
+      "45127",
+      "45133",
+      "45139"
+     ]
+    },
+    {
+     "text": {
+      "en": "Mission Rules: booklet pp. 5–6. Use the mission area below to resolve attempts after entering the physical cards.",
+      "fr": "Règles de Mission : livret p. 5–6. Utilisez la zone de mission ci-dessous après avoir saisi les cartes de la table."
+     },
+     "cards": [
+      "45171a"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s5_en_sabah_nur",
+   "name": {
+    "fr": "En Sabah Nur",
+    "en": "En Sabah Nur"
+   },
+   "flavour": {
+    "fr": "De retour dans leur passé, l'équipe doit arracher à Apocalypse l'antidote qui sauvera le Professeur X.",
+    "en": "Back in their own past, the team must take from Apocalypse the antidote that will save Professor X."
+   },
+   "victoryLabel": {
+    "fr": "Apocalypse est vaincu !",
+    "en": "Apocalypse is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Apocalypse vous a vaincus !",
+    "en": "Apocalypse has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45184a",
+      "45185a"
+     ],
+     "expert": [
+      "45185a",
+      "45186a"
+     ]
+    },
+    "mainScheme": [
+     "45147a",
+     "45148a"
+    ],
+    "encounterSets": [
+     "en_sabah_nur",
+     "celestial_tech",
+     "clan_akkaba",
+     "standard",
+     "age_of_apocalypse"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Mettez {card:45163} en jeu",
+      "en": "Put {card:45163} into play"
+     },
+     "cards": [
+      "45163"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Commencez en forme BIOMORPH, stade I.",
+      "en": "Start in BIOMORPH form, stage I."
+     },
+     "when": {
+      "scenarioDifficulty": "standard"
+     },
+     "cards": [
+      "45184a"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Commencez en forme BIOMORPH, stade II.",
+      "en": "Start in BIOMORPH form, stage II."
+     },
+     "when": {
+      "scenarioDifficulty": "expert"
+     },
+     "cards": [
+      "45185a"
+     ]
+    },
+    {
+     "text": {
+      "en": "{card:32019} cannot enter play this game.",
+      "fr": "{card:32019} ne peut pas entrer en jeu durant cette partie."
+     },
+     "cards": [
+      "32019"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Mélangez le set modulaire Ère d'Apocalypse dans le deck Rencontre",
+      "en": "Shuffle the Age of Apocalypse modular set into the encounter deck"
+     }
+    },
+    {
+     "text": {
+      "fr": "Jouez avec cette MISSION et suivez sa mise en place dans le journal de campagne",
+      "en": "Play with this MISSION side scheme and follow its setup in the campaign log"
+     },
+     "cards": [
+      "45170a"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Ajoutez ce sbire HIÉRARQUE à la zone de mission et placez près de lui la carte Règles de Mission",
+      "en": "Add this OVERSEER minion to the mission area and put Mission Rules beside it"
+     },
+     "draw": {
+      "id": "overseer",
+      "from": [
+       "45179a",
+       "45180a",
+       "45181a",
+       "45182a",
+       "45183a"
+      ],
+      "excluding": "overseersDefeated"
+     }
+    },
+    {
+     "text": {
+      "fr": "Le premier joueur prend le contrôle de ce soutien, face MISSION visible",
+      "en": "First player takes control of this support card, MISSION side faceup"
+     },
+     "cards": [
+      "45171a"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur prend un allié de son deck en main. Cet allié compte dans sa taille de main.",
+      "en": "Each player takes an ally from their deck into hand. It counts toward hand size."
+     },
+     "when": {
+      "difficulty": "standard"
+     },
+     "cards": []
+    },
+    {
+     "text": {
+      "fr": "Prenez un allié de votre deck partageant un trait avec votre héros. Il compte dans votre taille de main.",
+      "en": "Take an ally from your deck sharing a trait with your hero. It counts toward hand size."
+     },
+     "when": {
+      "difficulty": "expert"
+     },
+     "cards": []
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur peut mélanger 1 {card:45176} dans son deck, hors taille minimale",
+      "en": "Each player may shuffle 1 {card:45176} into their deck, outside the minimum"
+     },
+     "cards": [
+      "45176"
+     ],
+     "when": {
+      "countTrue": "seattleWon",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Retirez de la campagne chaque exemplaire de {card:45176}",
+      "en": "Remove each copy of {card:45176} from the campaign"
+     },
+     "cards": [
+      "45176"
+     ],
+     "when": {
+      "countTrue": "seattleLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "{card:45178} retirée. Vous pouvez inclure votre amélioration enregistrée, hors taille minimale du deck.",
+      "en": "{card:45178} removed. You may include your recorded upgrade; it does not count toward minimum deck size."
+     },
+     "cards": [
+      "45178"
+     ],
+     "when": {
+      "countTrue": "evacuateWon",
+      "countAtLeast": 1
+     },
+     "showCardList": "rewardUpgrade"
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur mélange un exemplaire de {card:45178} dans son deck",
+      "en": "Each player shuffles a copy of {card:45178} into their deck"
+     },
+     "cards": [
+      "45178"
+     ],
+     "when": {
+      "countTrue": "evacuateLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "{card:45177} retirée. Vous pouvez inclure votre soutien enregistré, hors taille minimale du deck.",
+      "en": "{card:45177} removed. You may include your recorded support; it does not count toward minimum deck size."
+     },
+     "cards": [
+      "45177"
+     ],
+     "when": {
+      "countTrue": "seawallWon",
+      "countAtLeast": 1
+     },
+     "showCardList": "rewardSupport"
+    },
+    {
+     "text": {
+      "fr": "Mélangez {card:45177} dans le deck Rencontre lors de la mise en place",
+      "en": "Shuffle {card:45177} into the encounter deck during setup"
+     },
+     "cards": [
+      "45177"
+     ],
+     "when": {
+      "countTrue": "seawallLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Vous pouvez inclure votre allié de campagne enregistré, hors taille minimale du deck.",
+      "en": "You may include your recorded campaign ally; it does not count toward minimum deck size."
+     },
+     "cards": [
+      "45172",
+      "45173",
+      "45174",
+      "45175"
+     ],
+     "when": {
+      "countTrue": "lostmutantsWon",
+      "countAtLeast": 1
+     },
+     "showCardList": "rewardAlly"
+    },
+    {
+     "text": {
+      "fr": "Retirez de la campagne chaque allié de campagne",
+      "en": "Remove each campaign ally from the campaign"
+     },
+     "cards": [
+      "45172",
+      "45173",
+      "45174",
+      "45175"
+     ],
+     "when": {
+      "countTrue": "lostmutantsLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "professorSaved",
+      "type": "boolean",
+      "label": {
+       "fr": "La MISSION {card:45170a} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {card:45170a} defeated?"
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "setFlag",
+      "flag": "professorSaved",
+      "from": "professorSaved"
+     }
+    ],
+    "next": [
+     {
+      "when": {
+       "notAnswer": "professorSaved"
+      },
+      "lose": true
+     },
+     {
+      "end": true
+     }
+    ]
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s5_en_sabah_nur"
+     }
+    ]
+   },
+   "information": [
+    {
+     "text": {
+      "fr": "Changer de forme conserve les dégâts et les attachements. Ce n’est ni une défaite ni une révélation du méchant. Résolvez la réponse\nde la nouvelle forme (livret p. 19).",
+      "en": "Changing form preserves damage and attachments. It is neither a villain defeat nor a reveal. Resolve the new form’s response\n(booklet p. 19)."
+     }
+    },
+    {
+     "text": {
+      "fr": "Ordre de préparation : capacités Mise en place des cartes, scénario, campagne, main initiale, mulligan, puis Mise en place du\njoueur (référence 1.8, p. 51).",
+      "en": "Setup order: card Setup abilities, scenario, campaign, opening hand, mulligan, then player Setup (Rules Reference 1.8, p. 51)."
+     }
+    },
+    {
+     "text": {
+      "en": "Mission Rules: booklet pp. 5–6. Use the mission area below to resolve attempts after entering the physical cards.",
+      "fr": "Règles de Mission : livret p. 5–6. Utilisez la zone de mission ci-dessous après avoir saisi les cartes de la table."
+     },
+     "cards": [
+      "45171a"
+     ]
+    }
+   ]
+  }
+ ],
+ "victoryEpilogue": {
+  "fr": "Le remède est récupéré et le Professeur est sauvé. Après ce détour à travers le temps, les X-Men retrouvent enfin leur foyer. Épilogue : livret p. 21.",
+  "en": "The cure is recovered and the Professor is saved. After their journey through time, the X-Men finally return home. Epilogue: booklet p. 21."
+ },
+ "defeatEpilogue": {
+  "fr": "Apocalypse est tombé, mais le Professeur n’a pas pu être sauvé. Cette victoire sur le méchant ne suffit pas : la campagne est perdue. Livret p. 20.",
+  "en": "Apocalypse has fallen, but the Professor could not be saved. Defeating the villain is not enough: the campaign is lost. Booklet p. 20."
+ }
+}

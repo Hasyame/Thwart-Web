@@ -124,6 +124,7 @@
         {#each stats as [label, value] (label)}<span><b>{label}</b> {value}</span>{/each}
         {#each resources as [icon, count] (icon)}<span class="resource">{icon.repeat(count)}</span>{/each}
       </p>
+      {#if card.rules_reference}<p class="muted">{t.currentErrata}</p>{/if}
       {#if card.text !== null && card.text !== undefined && card.text !== ''}
         <!-- Sanitised at build time, as on the card page; see CardDetail. -->
         <div class="card-text small">{@html cardHtml(card.text)}</div>

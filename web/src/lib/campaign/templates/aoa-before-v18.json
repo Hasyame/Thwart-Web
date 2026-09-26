@@ -1,0 +1,1630 @@
+{
+ "_note": "Mechanics only, written for this app: no rules text and no text from the campaign book. Card codes are MarvelCDB codes for pack 'aoa'; names are resolved from the card database at runtime so they appear in the player's language.",
+ "id": "aoa",
+ "schemaVersion": 1,
+ "name": {
+  "fr": "L'Ère d'Apocalypse",
+  "en": "Age of Apocalypse"
+ },
+ "notice": {
+  "fr": "Campagne non officielle, reconstituée pour l'application : le livret et les cartes de la boîte L'Ère d'Apocalypse restent nécessaires pour jouer.\n\nL'application tire pour vous l'ordre des Quatre Cavaliers et le sbire HIÉRARQUE de chaque partie, retient les manigances annexes MISSION déjà jouées et les HIÉRARQUES vaincus, et tient le registre : points de victoire, sort du Professeur, et en campagne experte les points de vie de chaque identité entre les parties.",
+  "en": "Unofficial, reconstructed for the app: the rulebook and cards from the Age of Apocalypse box are still needed to play.\n\nThe app draws the order of the four Horsemen and each game's OVERSEER for you, remembers which MISSIONS have been played and which OVERSEERS were defeated, and keeps the log: victory points, what became of the Professor, and in an expert campaign each hero's hit points between games."
+ },
+ "packCode": "aoa",
+ "difficulties": [
+  "standard",
+  "expert"
+ ],
+ "counters": [
+  {
+   "id": "hp",
+   "scope": "hero",
+   "initial": 0,
+   "maxFrom": "heroCard.health",
+   "activeWhen": {
+    "difficulty": "expert"
+   }
+  }
+ ],
+ "flagSets": [
+  {
+   "id": "professorSaved",
+   "scope": "campaign"
+  },
+  {
+   "id": "seattleWon"
+  },
+  {
+   "id": "seattleLost"
+  },
+  {
+   "id": "evacuateWon"
+  },
+  {
+   "id": "evacuateLost"
+  },
+  {
+   "id": "seawallWon"
+  },
+  {
+   "id": "seawallLost"
+  },
+  {
+   "id": "lostmutantsWon"
+  },
+  {
+   "id": "lostmutantsLost"
+  }
+ ],
+ "cardLists": [
+  {
+   "id": "missionsUsed",
+   "scope": "campaign"
+  },
+  {
+   "id": "overseersDefeated",
+   "scope": "campaign"
+  }
+ ],
+ "setupFragments": {
+  "standardIII": [
+   {
+    "text": {
+     "fr": "Choisissez Standard I ou Standard III (identique pour tous les scénarios)",
+     "en": "Choose Standard I or Standard III (same for every scenario)"
+    }
+   }
+  ],
+  "missions": [
+   {
+    "text": {
+     "fr": "Mélangez le set modulaire Ère d'Apocalypse dans le deck Rencontre",
+     "en": "Shuffle the Age of Apocalypse modular set into the encounter deck"
+    }
+   },
+   {
+    "text": {
+     "fr": "",
+     "en": ""
+    },
+    "draw": {
+     "id": "mission",
+     "from": [
+      "45166a",
+      "45167a",
+      "45168a",
+      "45169a"
+     ],
+     "excluding": "missionsUsed"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} — Mettez de côté chaque exemplaire de l'amélioration {card:45176}",
+     "en": "Play with the MISSION {mission} — Set each copy of the Desperate Measures upgrade aside"
+    },
+    "cards": [
+     "45166a"
+    ],
+    "when": {
+     "drawIs": "mission:45166a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} — Chaque joueur mélange un exemplaire de {card:45178} dans son deck",
+     "en": "Play with the MISSION {mission} — Each player shuffles a copy of Panicked Refugees into their deck"
+    },
+    "cards": [
+     "45167a"
+    ],
+    "when": {
+     "drawIs": "mission:45167a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} — Mélangez {card:45177} dans le deck Rencontre",
+     "en": "Play with the MISSION {mission} — Shuffle the North American Sea Wall side scheme into the encounter deck"
+    },
+    "cards": [
+     "45168a"
+    ],
+    "when": {
+     "drawIs": "mission:45168a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Jouez avec la MISSION {mission} — Mettez de côté chaque allié de campagne",
+     "en": "Play with the MISSION {mission} — Set each campaign ally aside"
+    },
+    "cards": [
+     "45169a"
+    ],
+    "when": {
+     "drawIs": "mission:45169a"
+    }
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur peut mélanger 1 {card:45176} dans son deck, hors taille minimale",
+     "en": "Each player may shuffle 1 Desperate Measures into their deck, outside the minimum"
+    },
+    "cards": [
+     "45166a"
+    ],
+    "when": {
+     "countTrue": "seattleWon",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Retirez de la campagne chaque exemplaire de {card:45176}",
+     "en": "Remove each copy of Desperate Measures from the campaign"
+    },
+    "cards": [
+     "45166a"
+    ],
+    "when": {
+     "countTrue": "seattleLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "{card:45178} retirée. Chaque joueur ajoute 1 amélioration de n'importe quelle affinité, hors taille minimale",
+     "en": "Panicked Refugees removed. Each player adds 1 upgrade of any aspect, outside the minimum"
+    },
+    "cards": [
+     "45167a"
+    ],
+    "when": {
+     "countTrue": "evacuateWon",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur mélange un exemplaire de {card:45178} dans son deck",
+     "en": "Each player shuffles a copy of Panicked Refugees into their deck"
+    },
+    "cards": [
+     "45167a"
+    ],
+    "when": {
+     "countTrue": "evacuateLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "{card:45177} retirée. Chaque joueur ajoute 1 soutien de n'importe quelle affinité, hors taille minimale",
+     "en": "Sea Wall removed. Each player adds 1 support of any aspect, outside the minimum"
+    },
+    "cards": [
+     "45168a"
+    ],
+    "when": {
+     "countTrue": "seawallWon",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Mélangez {card:45177} dans le deck Rencontre lors de la mise en place",
+     "en": "Shuffle North American Sea Wall into the encounter deck during setup"
+    },
+    "cards": [
+     "45168a"
+    ],
+    "when": {
+     "countTrue": "seawallLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur ajoute un allié de campagne à son deck, hors taille minimale",
+     "en": "Each player adds a campaign ally to their deck, outside the minimum"
+    },
+    "cards": [
+     "45169a"
+    ],
+    "when": {
+     "countTrue": "lostmutantsWon",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Retirez de la campagne chaque allié de campagne",
+     "en": "Remove each campaign ally from the campaign"
+    },
+    "cards": [
+     "45169a"
+    ],
+    "when": {
+     "countTrue": "lostmutantsLost",
+     "countAtLeast": 1
+    }
+   },
+   {
+    "text": {
+     "fr": "Ajoutez ce sbire HIÉRARQUE à la zone de mission et placez près de lui la carte Règles de Mission",
+     "en": "Add this OVERSEER minion to the mission area and put Mission Rules beside it"
+    },
+    "draw": {
+     "id": "overseer",
+     "from": [
+      "45179a",
+      "45180a",
+      "45181a",
+      "45182a",
+      "45183a"
+     ],
+     "excluding": "overseersDefeated"
+    }
+   },
+   {
+    "text": {
+     "fr": "Le premier joueur prend le contrôle de ce soutien, face MISSION visible",
+     "en": "First player takes control of this support card, MISSION side faceup"
+    },
+    "cards": [
+     "45171a"
+    ]
+   },
+   {
+    "text": {
+     "fr": "Chaque joueur cherche un allié dans son deck et l'ajoute à sa main",
+     "en": "Each player searches their deck for an ally and takes it into hand"
+    }
+   }
+  ],
+  "expertHp": [
+   {
+    "text": {
+     "fr": "Campagne Experte Uniquement : fixez les points de vie de chaque joueur à la valeur indiquée dans le registre de campagne",
+     "en": "Expert Campaign Only: set each hero's hit points to the value below"
+    },
+    "when": {
+     "difficulty": "expert"
+    },
+    "showCounter": "hp"
+   },
+   {
+    "text": {
+     "fr": "Campagne Experte Uniquement : chaque joueur peut placer 3 menaces sur la MISSION.\nCela soigne son identité jusqu'à sa valeur de points de vie maximale.",
+     "en": "Expert Campaign Only: place 3 threat on the MISSION to heal a hero to full"
+    },
+    "when": {
+     "difficulty": "expert"
+    },
+    "action": {
+     "id": "heal",
+     "label": {
+      "fr": "Soigner",
+      "en": "Heal"
+     },
+     "perHero": true,
+     "effects": [
+      {
+       "op": "setHeroCounter",
+       "counter": "hp",
+       "value": 999
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "startScenarioId": "s1_unus",
+ "scenarios": [
+  {
+   "id": "s1_unus",
+   "name": {
+    "fr": "Unus",
+    "en": "Unus"
+   },
+   "flavour": {
+    "fr": "La X-Force est prise au piège d'une ligne chronologique où règne Apocalypse, et le prélat Unus les a déjà trouvés.",
+    "en": "X-Force is stranded in a timeline ruled by Apocalypse, and the prelate Unus has already found them."
+   },
+   "victoryLabel": {
+    "fr": "Unus est vaincu !",
+    "en": "Unus is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Unus vous a vaincus !",
+    "en": "Unus has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45059",
+      "45060"
+     ],
+     "expert": [
+      "45060",
+      "45061"
+     ]
+    },
+    "mainScheme": [
+     "45062a"
+    ],
+    "encounterSets": [
+     "unus",
+     "infinites",
+     "dystopian_nightmare",
+     "standard"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Mettez {card:45071} en jeu et placez-y la menace de la difficulté choisie :\n  Escarmouche : 0\n  Standard : 1 par joueur\n  Expert : 2 par joueur\n  Héroïque : 3 par joueur",
+      "en": "Put {card:45071} into play and place the threat for your difficulty on it:\n  Skirmish: 0\n  Standard: 1 per player\n  Expert: 2 per player\n  Heroic: 3 per player"
+     },
+     "cards": [
+      "45071"
+     ]
+    },
+    {
+     "include": "missions"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s2_four_horsemen"
+     }
+    ]
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s1_unus"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s2_four_horsemen",
+   "name": {
+    "fr": "Les Quatre Cavaliers",
+    "en": "Four Horsemen"
+   },
+   "flavour": {
+    "fr": "Magnéto accueille la X-Force au quartier général secret des X-Men. Apocalypse les trouve aussitôt et lance ses Quatre Cavaliers.",
+    "en": "Magneto takes X-Force into the X-Men's headquarters. Apocalypse finds it at once and sends his four horsemen."
+   },
+   "victoryLabel": {
+    "fr": "Les cavaliers sont vaincus !",
+    "en": "The horsemen are beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Les cavaliers vous ont vaincus !",
+    "en": "The horsemen have beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45081a",
+      "45082a",
+      "45083a",
+      "45084a"
+     ],
+     "expert": [
+      "45081a",
+      "45082a",
+      "45083a",
+      "45084a"
+     ]
+    },
+    "mainScheme": [
+     "45085a"
+    ],
+    "encounterSets": [
+     "four_horsemen",
+     "hounds",
+     "dystopian_nightmare",
+     "standard"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Alignez ces quatre méchants dans cet ordre, chacun avec son compteur de points de vie",
+      "en": "Set these four villains in a row in this order, each with its own hit point dial"
+     },
+     "draw": {
+      "id": "horsemen",
+      "from": [
+       "45081a",
+       "45082a",
+       "45083a",
+       "45084a"
+      ],
+      "count": 4
+     }
+    },
+    {
+     "text": {
+      "fr": "Utilisez la face A.",
+      "en": "Use side A."
+     },
+     "when": {
+      "difficulty": "standard"
+     }
+    },
+    {
+     "text": {
+      "fr": "Utilisez la face B.",
+      "en": "Use side B."
+     },
+     "when": {
+      "difficulty": "expert"
+     }
+    },
+    {
+     "text": {
+      "fr": "Donnez le marqueur d'activation au méchant le plus à gauche",
+      "en": "Give the active counter to the leftmost villain"
+     }
+    },
+    {
+     "include": "missions"
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s3_apocalypse"
+     }
+    ]
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s2_four_horsemen"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s3_apocalypse",
+   "name": {
+    "fr": "Apocalypse",
+    "en": "Apocalypse"
+   },
+   "flavour": {
+    "fr": "Les X-Men marchent sur la citadelle d'Apocalypse, à travers le cœur de son empire et ses plus puissants prélats.",
+    "en": "The X-Men march on Apocalypse's citadel, through the heart of his empire and his strongest prelates."
+   },
+   "victoryLabel": {
+    "fr": "Apocalypse est vaincu !",
+    "en": "Apocalypse is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Apocalypse vous a vaincus !",
+    "en": "Apocalypse has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45101a",
+      "45102a"
+     ],
+     "expert": [
+      "45102a"
+     ]
+    },
+    "mainScheme": [
+     "45103a"
+    ],
+    "encounterSets": [
+     "apocalypse",
+     "overseer",
+     "dark_riders",
+     "infinites",
+     "standard"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Commencez Apocalypse sur la face (II) — face (I) pour une partie plus facile",
+      "en": "Start Apocalypse on side (II) — side (I) for an easier game"
+     },
+     "cards": [
+      "45101a"
+     ]
+    },
+    {
+     "include": "missions"
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s4_dark_beast"
+     }
+    ]
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s3_apocalypse"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s4_dark_beast",
+   "name": {
+    "fr": "Le Fauve Noir",
+    "en": "Dark Beast"
+   },
+   "flavour": {
+    "fr": "Sous la citadelle se trouve une machine à voyager dans le temps, et le Fauve qui la manœuvre n'est pas le leur : c'est Le Fauve Noir.",
+    "en": "Beneath the citadel is a time machine, and the Beast operating it is not theirs."
+   },
+   "victoryLabel": {
+    "fr": "Le Fauve Noir est vaincu !",
+    "en": "Dark Beast is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Le Fauve Noir vous a vaincus !",
+    "en": "Dark Beast has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45118",
+      "45119"
+     ],
+     "expert": [
+      "45119",
+      "45120"
+     ]
+    },
+    "mainScheme": [
+     "45121a"
+    ],
+    "encounterSets": [
+     "dark_beast",
+     "blue_moon",
+     "genosha",
+     "savage_land",
+     "dystopian_nightmare",
+     "standard"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "include": "missions"
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "missionDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "La manigance annexe MISSION {mission} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {mission} defeated?"
+      }
+     },
+     {
+      "id": "overseerDefeated",
+      "type": "boolean",
+      "label": {
+       "fr": "Le sbire HIÉRARQUE {overseer} a-t-il été vaincu ?",
+       "en": "Was the OVERSEER {overseer} defeated?"
+      }
+     },
+     {
+      "id": "hpPerHero",
+      "type": "perHeroNumber",
+      "label": {
+       "fr": "Points de vie restants",
+       "en": "Remaining hit points"
+      },
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "addDrawnCard",
+      "cardList": "missionsUsed",
+      "from": "mission"
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seattleLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45166a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "evacuateLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45167a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "seawallLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45168a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsWon",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "answer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "setFlag",
+      "flag": "lostmutantsLost",
+      "boolValue": true,
+      "when": {
+       "all": [
+        {
+         "drawIs": "mission:45169a"
+        },
+        {
+         "notAnswer": "missionDefeated"
+        }
+       ]
+      }
+     },
+     {
+      "op": "addDrawnCard",
+      "cardList": "overseersDefeated",
+      "from": "overseer",
+      "when": {
+       "answer": "overseerDefeated"
+      }
+     },
+     {
+      "op": "setHeroCounter",
+      "counter": "hp",
+      "from": "hpPerHero",
+      "when": {
+       "difficulty": "expert"
+      }
+     }
+    ],
+    "next": [
+     {
+      "goto": "s5_en_sabah_nur"
+     }
+    ]
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s4_dark_beast"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s5_en_sabah_nur",
+   "name": {
+    "fr": "En Sabah Nur",
+    "en": "En Sabah Nur"
+   },
+   "flavour": {
+    "fr": "De retour dans leur passé, l'équipe doit arracher à Apocalypse l'antidote qui sauvera le Professeur X.",
+    "en": "Back in their own past, the team must take from Apocalypse the antidote that will save Professor X."
+   },
+   "victoryLabel": {
+    "fr": "Apocalypse est vaincu !",
+    "en": "Apocalypse is beaten!"
+   },
+   "defeatLabel": {
+    "fr": "Apocalypse vous a vaincus !",
+    "en": "Apocalypse has beaten you!"
+   },
+   "baseSetup": {
+    "villainDeck": {
+     "standard": [
+      "45184a",
+      "45185a"
+     ],
+     "expert": [
+      "45185a",
+      "45186a"
+     ]
+    },
+    "mainScheme": [
+     "45147a",
+     "45148a"
+    ],
+    "encounterSets": [
+     "en_sabah_nur",
+     "celestial_tech",
+     "clan_akkaba",
+     "standard"
+    ]
+   },
+   "campaignSetup": [
+    {
+     "include": "standardIII"
+    },
+    {
+     "text": {
+      "fr": "Mettez {card:45163} en jeu",
+      "en": "Put Ancient Ritual into play"
+     },
+     "cards": [
+      "45163"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Commencez Apocalypse sur sa face BIOMORPH",
+      "en": "Start Apocalypse on his BIOMORPH side"
+     },
+     "cards": [
+      "45184a"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Le Professeur X ne peut pas entrer en jeu durant cette partie",
+      "en": "Professor X cannot enter play this game"
+     }
+    },
+    {
+     "text": {
+      "fr": "Mélangez le set modulaire Ère d'Apocalypse dans le deck Rencontre",
+      "en": "Shuffle the Age of Apocalypse modular set into the encounter deck"
+     }
+    },
+    {
+     "text": {
+      "fr": "Jouez avec cette MISSION et suivez sa mise en place dans le journal de campagne",
+      "en": "Play with this MISSION side scheme and follow its setup in the campaign log"
+     },
+     "cards": [
+      "45170a"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Ajoutez ce sbire HIÉRARQUE à la zone de mission et placez près de lui la carte Règles de Mission",
+      "en": "Add this OVERSEER minion to the mission area and put Mission Rules beside it"
+     },
+     "draw": {
+      "id": "overseer",
+      "from": [
+       "45179a",
+       "45180a",
+       "45181a",
+       "45182a",
+       "45183a"
+      ],
+      "excluding": "overseersDefeated"
+     }
+    },
+    {
+     "text": {
+      "fr": "Le premier joueur prend le contrôle de ce soutien, face MISSION visible",
+      "en": "First player takes control of this support card, MISSION side faceup"
+     },
+     "cards": [
+      "45171a"
+     ]
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur cherche un allié dans son deck et l'ajoute à sa main",
+      "en": "Each player searches their deck for an ally and takes it into hand"
+     }
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur peut mélanger 1 {card:45176} dans son deck, hors taille minimale",
+      "en": "Each player may shuffle 1 Desperate Measures into their deck, outside the minimum"
+     },
+     "cards": [
+      "45166a"
+     ],
+     "when": {
+      "countTrue": "seattleWon",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Retirez de la campagne chaque exemplaire de {card:45176}",
+      "en": "Remove each copy of Desperate Measures from the campaign"
+     },
+     "cards": [
+      "45166a"
+     ],
+     "when": {
+      "countTrue": "seattleLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "{card:45178} retirée. Chaque joueur ajoute 1 amélioration de n'importe quelle affinité, hors taille minimale",
+      "en": "Panicked Refugees removed. Each player adds 1 upgrade of any aspect, outside the minimum"
+     },
+     "cards": [
+      "45167a"
+     ],
+     "when": {
+      "countTrue": "evacuateWon",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur mélange un exemplaire de {card:45178} dans son deck",
+      "en": "Each player shuffles a copy of Panicked Refugees into their deck"
+     },
+     "cards": [
+      "45167a"
+     ],
+     "when": {
+      "countTrue": "evacuateLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "{card:45177} retirée. Chaque joueur ajoute 1 soutien de n'importe quelle affinité, hors taille minimale",
+      "en": "Sea Wall removed. Each player adds 1 support of any aspect, outside the minimum"
+     },
+     "cards": [
+      "45168a"
+     ],
+     "when": {
+      "countTrue": "seawallWon",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Mélangez {card:45177} dans le deck Rencontre lors de la mise en place",
+      "en": "Shuffle North American Sea Wall into the encounter deck during setup"
+     },
+     "cards": [
+      "45168a"
+     ],
+     "when": {
+      "countTrue": "seawallLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Chaque joueur ajoute un allié de campagne à son deck, hors taille minimale",
+      "en": "Each player adds a campaign ally to their deck, outside the minimum"
+     },
+     "cards": [
+      "45169a"
+     ],
+     "when": {
+      "countTrue": "lostmutantsWon",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "text": {
+      "fr": "Retirez de la campagne chaque allié de campagne",
+      "en": "Remove each campaign ally from the campaign"
+     },
+     "cards": [
+      "45169a"
+     ],
+     "when": {
+      "countTrue": "lostmutantsLost",
+      "countAtLeast": 1
+     }
+    },
+    {
+     "include": "expertHp"
+    }
+   ],
+   "onVictory": {
+    "prompts": [
+     {
+      "id": "vp",
+      "type": "number",
+      "label": {
+       "fr": "Combien de points de victoire avez-vous accumulés ?",
+       "en": "How many victory points did you accumulate?"
+      }
+     },
+     {
+      "id": "professorSaved",
+      "type": "boolean",
+      "label": {
+       "fr": "La MISSION {card:45170a} a-t-elle été déjouée ?",
+       "en": "Was the MISSION {card:45170a} defeated?"
+      }
+     }
+    ],
+    "effects": [
+     {
+      "op": "setFlag",
+      "flag": "professorSaved",
+      "from": "professorSaved"
+     }
+    ],
+    "next": [
+     {
+      "end": true
+     }
+    ]
+   },
+   "onDefeat": {
+    "next": [
+     {
+      "goto": "s5_en_sabah_nur"
+     }
+    ]
+   }
+  }
+ ]
+}

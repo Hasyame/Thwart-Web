@@ -3,7 +3,7 @@
   import type { Locale } from '../lib/types';
   import { evaluate } from '../lib/campaign/conditions';
   import { heroDrawId } from '../lib/campaign/engine';
-  import { drawnVillainFor, villainStages } from '../lib/campaign/encounter';
+  import { drawnVillainFor, encounterSetsOf, villainStages, scenarioDifficulty, scenarioSet } from '../lib/campaign/encounter';
   import { parseCampaignText, resolveAmount, type TextContext } from '../lib/campaign/text';
   import {
     amountFor,
@@ -18,8 +18,12 @@
   } from '../lib/campaign/types';
   import CampaignText from './CampaignText.svelte';
   import CardRef from './CardRef.svelte';
+  import { openingAllies } from '../lib/campaign/openingAlly';
+  import type { IndexRow } from '../lib/types';
+  import type { SavedDeck } from '../lib/records';
 
   interface Props {
+    runKey: string;
     t: Strings;
     uiLocale: Locale;
     template: CampaignTemplate;
@@ -35,9 +39,17 @@
     onKeep: (drawId: string, cardCode: string) => void;
     onReady: () => void;
     onNotReady: () => void;
+    onDifficulty: (expert: boolean) => void;
+    index: readonly IndexRow[];
+    decks: readonly SavedDeck[];
+    standardSet: string;
+    expertSet: string;
+    onSet: (kind: 'standard' | 'expert', value: number) => void;
+    heroStats: Readonly<Record<string, {printedHealth: number | null}>>;
   }
 
   const {
+    runKey,
     t,
     uiLocale,
     template,
@@ -51,12 +63,20 @@
     onKeep,
     onReady,
     onNotReady,
+    onDifficulty,
+    index,
+    decks,
+    standardSet,
+    expertSet,
+    onSet,
+    heroStats,
   }: Props = $props();
 
   const label = (value: Parameters<typeof textOf>[0]): string => textOf(value, uiLocale);
   const context = $derived({ state: campaign, scenarioId: scenario.id });
   /** The rate a computed amount is paid at: campaigns state two. */
   const expert = $derived(campaign.difficulty.toLowerCase() === 'expert');
+  const rejoinRequired = $derived(template.id === 'aoa' && expert && campaign.completedScenarios.some(r => r.victory) && campaign.heroes.some(h => heroCounterOf(campaign, 'hp', h.id) <= 0));
 
   /**
    * One section's steps, as this run should read them right now.
@@ -93,13 +113,10 @@
 
   /** The villain deck this scenario fields, once the log has settled who it is. */
   const villainDeck = $derived(
-    villainStages(scenario.baseSetup, campaign.difficulty, drawnVillainFor(campaign, scenario.id)),
+    villainStages(scenario.baseSetup, scenarioDifficulty(campaign, scenario.id), drawnVillainFor(campaign, scenario.id)),
   );
   const mainScheme = $derived(scenario.baseSetup?.mainScheme ?? []);
-  const encounterSets = $derived([
-    ...(scenario.baseSetup?.encounterSets ?? []),
-    ...(scenario.baseSetup?.modularSets ?? []),
-  ]);
+  const encounterSets = $derived(encounterSetsOf(scenario, campaign, standardSet, expertSet));
 
   const hasChips = $derived(
     villainDeck.length > 0 || mainScheme.length > 0 || encounterSets.length > 0,
@@ -110,6 +127,12 @@
 
   /** A step can exist only to carry a draw; drawing its empty text is a stray bullet. */
   const hasText = (step: SetupStep): boolean => label(step.text) !== '';
+  const guided = $derived(template.id === 'aoa');
+  const guideKey = $derived(`thwart.campaign-guide.${runKey}.${scenario.id}.${campaign.completedScenarios.length}`);
+  let guideStep = $state(0);
+  const guideTitles = $derived([t.campaignGuideStory, t.campaignGuideHeroes, t.campaignGuideGather, t.campaignGuideScenario, t.campaignGuideCampaign, t.campaignGuideReady]);
+  $effect(() => { const key = guideKey; try { const saved = Number(localStorage.getItem(key)); guideStep = Number.isInteger(saved) && saved >= 0 && saved < 6 ? saved : 0; } catch { guideStep = 0; } });
+  function moveGuide(step: number): void { guideStep = step; try { localStorage.setItem(guideKey, String(step)); } catch { /* Preparation navigation remains usable without storage. */ } }
 </script>
 
 {#snippet drawnCards(drawId: string, offer: number, who: string | null)}
@@ -165,9 +188,16 @@
     {/if}
 
     {#if step.showCardList != null}
+      {#each campaign.heroes.filter(hero => (campaign.heroCardLists[step.showCardList ?? '']?.[hero.id] ?? []).length > 0) as hero (hero.id)}
+        <p class="reading"><strong>{hero.name}: </strong>
+          {#each campaign.heroCardLists[step.showCardList]?.[hero.id] ?? [] as code (code)}
+            <CardRef {code} name={cardName(code)} />
+          {/each}
+        </p>
+      {/each}
       {@const recorded = campaign.cardLists[step.showCardList] ?? []}
       <p class="reading">
-        {#if recorded.length === 0}
+        {#if recorded.length === 0 && Object.keys(campaign.heroCardLists[step.showCardList] ?? {}).length === 0}
           <span class="muted">{t.campaignNothingRecorded}</span>
         {:else}
           {#each recorded as code, i (code + i)}
@@ -218,9 +248,12 @@
       {:else if action.perHero === true}
         <span class="chips">
           {#each campaign.heroes as hero (hero.id)}
-            <button type="button" class="act" disabled={!enabled} onclick={() => onAction(action.id, hero.id)}>
-              {label(action.label)}: {hero.name}
+            {@const heroTaken = (campaign.setupActionsTaken[`${scenario.id}:${hero.id}`] ?? []).includes(action.id)}
+            {@const missingHealth = action.effects?.some(e => e.valueFrom === 'heroCard.health') && !(heroStats[hero.id]?.printedHealth ?? 0)}
+            <button type="button" class="act" disabled={!enabled || missingHealth || (heroTaken && action.repeatable !== true)} onclick={() => onAction(action.id, hero.id)}>
+              {label(action.label)}: {hero.name}{heroTaken ? ' ✓' : ''}
             </button>
+            {#if missingHealth}<span>{t.campaignHealthUnavailable}</span>{/if}
           {/each}
         </span>
       {:else}
@@ -246,6 +279,14 @@
   {/if}
 {/snippet}
 
+{#if guided}
+  <nav class="guide-nav" aria-label={t.campaignGuideTitle}>
+    <h2>{t.campaignGuideTitle}</h2>
+    <label class="field-group"><span>{guideStep + 1} / {guideTitles.length}</span><select class="field" value={guideStep} onchange={e => moveGuide(Number(e.currentTarget.value))}>{#each guideTitles as title, i}<option value={i}>{i + 1}. {title}</option>{/each}</select></label>
+    <progress max={guideTitles.length} value={guideStep + 1} aria-label={t.campaignGuideTitle}></progress>
+  </nav>
+{/if}
+<div hidden={guided && guideStep !== 0}>
 <!-- Four boxes, in the order the table works through them: the story, what to
      fetch, what to lay out, and what to know once it is laid out. -->
 {#if scenario.flavour != null && label(scenario.flavour) !== ''}
@@ -254,8 +295,27 @@
   </section>
 {/if}
 
+</div>
+{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{/if}
+<div hidden={guided && guideStep !== 2}>
 {#if hasChips}
   <section class="panel">
+    <label class="field-group">
+      <span>{t.scenarioDifficulty}</span>
+      <select class="field" value={scenarioDifficulty(campaign, scenario.id)} onchange={e => onDifficulty(e.currentTarget.value === 'expert')}>
+        <option value="standard">Standard</option>
+        <option value="expert">Expert</option>
+      </select>
+    </label>
+    {#each ['standard', 'expert'] as kind}
+      {#if kind === 'standard' || scenarioDifficulty(campaign, scenario.id) === 'expert'}
+        <label class="field-group"><span>{kind === 'standard' ? 'Standard' : 'Expert'}</span>
+          <select class="field" value={scenarioSet(campaign, scenario.id, kind === 'standard' ? 'standard' : 'expert', kind === 'standard' ? standardSet : expertSet)} onchange={e => onSet(kind === 'standard' ? 'standard' : 'expert', ['i','ii','iii'].indexOf(e.currentTarget.value.split('_')[1] ?? 'i') + 1)}>
+            {#each (kind === 'standard' ? ['i','ii','iii'] : ['i','ii']) as numeral}<option value={`${kind}_${numeral}`}>{t.difficulty(`${kind}_${numeral}`.toUpperCase())}</option>{/each}
+          </select>
+        </label>
+      {/if}
+    {/each}
     <h3>{t.campaignPreSetup}</h3>
     <dl class="gather">
       {#if villainDeck.length > 0}
@@ -295,14 +355,10 @@
   {@render panel(t.campaignPreSetup, preSetup)}
 {/if}
 
-{@render panel(t.campaignSetupLabel, setup)}
-{@render panel(t.campaignInformation, information)}
-
+</div><div hidden={guided && guideStep !== 3}>
+{#if guided}<p>{t.campaignGuideScenarioText}</p>{/if}
 {#if schemeSteps.length > 0}
-  <!-- Last, because that is the order it is done in: gather the cards, apply
-       whatever the campaign changes, then follow the setup printed on the
-       scheme itself. Read off the card rather than written into the template,
-       so it arrives in the language the cards are in. -->
+  <!-- Rules Reference 1.8: scenario setup precedes campaign setup. -->
   <section class="panel">
     <h3>{t.schemeSetupTitle}</h3>
     <ul class="steps">
@@ -313,17 +369,67 @@
   </section>
 {/if}
 
+</div><div hidden={guided && guideStep !== 4}>
+{@render panel(t.campaignSetupLabel, setup)}
+{@render panel(t.campaignInformation, information)}
+
+{#each (template.cardLists ?? []).filter(list => list.recoveryFlag) as list (list.id)}
+  {#each campaign.heroes.filter(hero => !(campaign.heroCardLists[list.id]?.[hero.id] ?? []).length && Object.entries(campaign.flags[list.recoveryFlag ?? ''] ?? {}).some(([scenario,won]) => won && !(campaign.eliminatedInScenario[scenario] ?? []).includes(hero.id))) as hero (hero.id)}
+    <section class="panel">
+      <h3>{hero.name} · {t.campaignRecoverReward}</h3>
+      <p>{t.campaignRecoverRewardHint}</p>
+      <select class="field" aria-label={`${hero.name}: ${t.campaignRecoverReward}`} onchange={event => { if (event.currentTarget.value) onKeep(`${list.id}|${hero.id}`, event.currentTarget.value); }}>
+        <option value="">{t.campaignChooseOne}</option>
+        {#each index.filter(card => list.recoveryCards?.includes(card.code) || (list.recoveryCardType && card.typeCode === list.recoveryCardType && ['aggression','justice','leadership','protection','basic','pool'].includes(card.factionCode))) as card (card.code)}
+          <option value={card.code}>{card.name}</option>
+        {/each}
+      </select>
+    </section>
+  {/each}
+{/each}
+
+{#if template.id === 'aoa'}
+  <section class="panel">
+    <h3>{t.campaignOpeningAlly}</h3>
+    <p>{t.campaignOpeningAllyHint}</p>
+    {#each campaign.heroes as hero (hero.id)}
+      {@const eligible = openingAllies(hero, decks, index, expert)}
+      {@const selected = campaign.draws[scenario.id]?.[`openingAlly|${hero.id}`]?.[0] ?? ''}
+      <label class="field-group"><span>{hero.name}</span>
+        <select class="field" value={selected} onchange={e => onKeep(`openingAlly|${hero.id}`, e.currentTarget.value)}>
+          <option value="">{t.campaignChooseOne}</option>
+          {#each eligible as card (card.code)}<option value={card.code}>{card.name}</option>{/each}
+        </select>
+      </label>
+      {#if selected !== ''}<CardRef code={selected} name={cardName(selected)} />{/if}
+      {#if eligible.length === 0}<p class="muted">{t.campaignOpeningAllyFallback}</p>{/if}
+    {/each}
+  </section>
+{/if}
+
+</div><div hidden={guided && guideStep !== 5}>
+{#if guided}<section class="panel"><h3>{t.campaignGuideReady}</h3><p>{t.campaignGuideHandText}</p></section>{/if}
 <!-- The way into the scenario, as the last panel of the page: a comic
      frame to tap, and the quieter way back beneath it. -->
 <div class="ready">
-  <button class="launch" type="button" onclick={onReady}>
+  {#if rejoinRequired}<p>{t.campaignRejoinRequired}</p>{/if}
+  <button class="launch" type="button" disabled={rejoinRequired} onclick={onReady}>
     <span class="launch-title">{t.campaignImReady}</span>
     <span class="launch-detail">{t.campaignReadyDetail}</span>
   </button>
   <button class="big" type="button" onclick={onNotReady}>{t.campaignNotReady}</button>
 </div>
 
+</div>
+{#if guided}<div class="guide-actions"><button class="btn" disabled={guideStep === 0} onclick={() => moveGuide(guideStep - 1)}>{t.campaignGuidePrevious}</button>{#if guideStep < 5}<button class="btn btn--primary" onclick={() => moveGuide(guideStep + 1)}>{t.campaignGuideNext}</button>{/if}</div>{/if}
 <style>
+  [hidden] { display: none !important; }
+  .guide-nav { padding: var(--space-4); border-left: 5px solid var(--accent); background: var(--surface); }
+  .guide-nav h2 { font-weight: 900; font-style: italic; text-transform: uppercase; }
+  .guide-nav progress { width: 100%; accent-color: var(--accent); }
+  .guide-actions { display: flex; justify-content: space-between; gap: var(--space-4); margin-top: var(--space-5); padding-block: var(--space-4); }
+  .guide-actions button { min-height: 48px; }
+
   /*
    * A guide to read down, not a stack of boxes: after ArkhamCards' scenario
    * guide, at the owner's request. The story in italics on a red rule, each

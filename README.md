@@ -85,6 +85,10 @@ behavior. The [statistics contract](docs/spec/statistics.md) and
   only, deliberately; it does not adjudicate rules. A game that has to be
   cleared off the table can be put away with where everything stood, and picked
   up later.
+  Maximum villain HP and main-scheme threat can be adjusted during the game,
+  with a reset to the printed value. The saved table retains those overrides
+  and existing counts. Rules open in a dialog over the game, so closing them
+  returns directly to the table.
 - **Campaigns.** Start one of the nine campaigns, pick who is at the table, read
   each scenario's setup as the campaign changes it, record what happened, spend
   credits in the market, and let the branches decide what comes next. A run is
@@ -99,6 +103,16 @@ behavior. The [statistics contract](docs/spec/statistics.md) and
   play time, victory points and community difficulty ratings. Beaten scenarios
   receive a comic stamp. The briefing guides the setup step by step, and new
   campaigns are offered only for boxes in your collection.
+  Age of Apocalypse follows Rules Reference v1.8, with independent scenario
+  difficulty, four simultaneous Horsemen, regeneration and separate villain
+  forms, a mission calculator, recorded hero rewards and a chapter guide.
+  Its five scenarios use a resumable six-part setup guide, contextual card
+  previews, illustrated HP counters with cumulative damage/healing feedback,
+  explicit touch-friendly outcome answers and an hours/minutes/seconds clock
+  editor. Pausing that clock keeps the current table open. This presentation
+  is limited to Age of Apocalypse; other campaigns retain their existing flow.
+  Recognized original AoA saves are corrected when read; custom templates and
+  the event log are preserved. See the [shared campaign contract](docs/product/specs/005-CAMPAIGN-RULES-AND-TABLE.md).
 - **Versus.** The two-box mode, offered only to people who own a box that
   prints two main schemes — as the app does, because a menu entry that leads to
   an apology is worse than no menu entry.
