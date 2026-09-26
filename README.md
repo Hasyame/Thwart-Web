@@ -7,18 +7,18 @@ browser.
 
 Live at **<https://thwart.app>**.
 
-The Android app is the reference implementation and this is brought to it,
-except in the few places where an audit found Android wrong and recorded it.
-[`docs/spec/statistics.md`](docs/spec/statistics.md) is the shared source of
-truth for what every number means, written to be read by both;
-[`docs/spec/campaigns.md`](docs/spec/campaigns.md) records what a campaign
-template may say and the rulebook readings behind Fear No Evil.
+Shared product decisions are recorded in [docs/product/specs](docs/product/specs).
+Android and Web are independent clients; neither is the authority for every
+behavior. The [statistics contract](docs/spec/statistics.md) and
+[campaign specification](docs/spec/campaigns.md) describe shared rules.
 
 ## What it does
 
 - **Cards.** Search the whole database in either language, with the app's own
   accent- and case-folding, so `crane rouge` finds *Crâne Rouge*. Every card
-  has its own page.
+  has its own page. French artwork is looked up through MC4DB and cgbuilder,
+  with English artwork as a fallback. Supplemental MC4DB encounter data fills
+  gaps including Fear No Evil; named cards in its briefings open their details.
 - **Collection.** Tick the packs you own, grouped by release wave as the app
   groups them, and say which modular sets or scenarios your boxes are actually
   missing.
@@ -50,9 +50,17 @@ template may say and the rulebook readings behind Fear No Evil.
   deck is full — one to four players on one device, each physical copy
   drafted once, every offer legal, every deck saved to the shelf under a
   `DRAFT-HERO-ASPECT-01` name. The state survives a closed tab.
+  **Sealed** opens six boosters of ten cards, individually or all at once,
+  then lets you build from those 60 cards. Both modes support temporary
+  collection settings and hand saved decks to a random game, custom game or
+  campaign. Back navigation retains the completed decks and mode chooser.
+  Start either mode from Play or Decks. Folder collapse and deck list/grid
+  preferences are remembered in this browser.
 - **Achievements**, at `/achievements`: a heroes-by-scenarios grid of what
-  you have played and beaten, thirty-one named achievements, and a
-  completion rate over your collection. Nothing is stored: the state is a
+  you have played and beaten, 43 named achievements, and a
+  completion rate over your collection. Switch between all, achievements and
+  completion; milestones include draft/sealed wins and losses. Eligible
+  achievements can prepare a suitable game. Nothing is stored: the state is a
   pure function of the game history, recomputed live, specified once for
   both clients in [`docs/spec/achievements/`](docs/spec/achievements/)
   with the vectors both must reproduce. The definitions are a versioned
@@ -65,8 +73,10 @@ template may say and the rulebook readings behind Fear No Evil.
   field can be locked and rerolled on its own. Up to five **extra modular
   sets** on top of the scenario's own, from the same pool, and a collection
   that cannot supply them is told so before the roll rather than drawn short.
-  A draw is one tap from the setup screen, as on the phone.
-- **My own setup.** Choose everything yourself — as many modular sets as you
+  An optional filter offers only hero/scenario combinations never played in
+  your history. Decks passed from draft or sealed retain their heroes and
+  aspects through rerolls. A draw is one tap from the game briefing.
+- **Custom game.** Choose everything yourself — as many modular sets as you
   like, through a picker with a search, the count in view and the scenario's
   required sets placed and not removable — read the scenario's own setup
   off its main scheme card, then run the clock and count the villain and the
@@ -84,7 +94,11 @@ template may say and the rulebook readings behind Fear No Evil.
   its final villain's art as the face of the box, a status badge — not
   started, in progress, won, lost, conceded — the scenarios beaten and every
   game's result in order. A campaign is lost only when its rules say so; a
-  lost game on the way does not make a lost campaign.
+  lost game on the way does not make a lost campaign. Each campaign has its own
+  page with scenario cards, heroes linked to their decks, attempt counts,
+  play time, victory points and community difficulty ratings. Beaten scenarios
+  receive a comic stamp. The briefing guides the setup step by step, and new
+  campaigns are offered only for boxes in your collection.
 - **Versus.** The two-box mode, offered only to people who own a box that
   prints two main schemes — as the app does, because a menu entry that leads to
   an apology is worse than no menu entry.
@@ -125,8 +139,12 @@ template may say and the rulebook readings behind Fear No Evil.
   Log Play form with the details on your clipboard.
 
 Optionally, the navigation can be arranged the way the phone arranges it: one
-**Play** tab opening a hub that holds the random draw, your own setup, the
-campaigns and versus. Off by default, under Settings.
+**Play** tab opening a hub that holds the random draw, custom games, the
+campaigns and versus. Configurable under Settings.
+
+The home page offers **Install Thwart** with Android installation help and an
+Android alpha sign-up form. The form relays your name and email to the maintainer
+without retaining a registration database.
 
 ## Where your data lives
 
@@ -174,10 +192,9 @@ stream is an optimisation and never a source of truth. One connection per
 browser rather than per tab, elected with the Web Locks API; the phone holds one
 while it is on screen and closes it when it leaves.
 
-The server holds **no understanding of the data it syncs**. A record is a
-collection name, an id and a JSON body the server never parses, so adding an
-entity to Android needs no server release. Every rule that requires knowing what
-a play or a deck is lives in the client.
+The server validates sync envelopes and collection-specific constraints, including
+ratings. New collections require coordinated backend and client handling; they
+must not be treated as arbitrary data that older clients necessarily understand.
 
 `GET /v1/account/export` emits the app's own `Backup` shape, so an export from
 the server restores through the import path that already exists. That is
@@ -191,12 +208,12 @@ runs the same on Windows as anywhere.
 
 ```bash
 cd web
-npm install
+npm ci
 npm run data
 npm run dev
 ```
 
-`npm run data` fetches the card database from MarvelCDB into
+`npm run data` fetches card data and supplementary sources into
 `web/public/data/`, which takes a minute or so and is never committed. You only
 need to re-run it when you want fresher cards. `npm run dev` then serves the
 site at <http://127.0.0.1:5173>.
@@ -284,7 +301,7 @@ CGO_ENABLED=1 go test -race ./...
 curl -s http://127.0.0.1:8787/v1/health
 ```
 
-Fifteen endpoints under `/v1`, and 83 test functions over them.
+The API exposes account, sync, ratings, BGG relay and Android alpha endpoints under `/v1`.
 
 Mail is only needed for confirmation links, and **an instance with no mailer
 turns verification off** rather than creating accounts nobody could ever
@@ -300,54 +317,18 @@ public endpoint. [`docs/design/`](docs/design/) has the data audit, the sync
 protocol, the stack decision, the roadmap, the operations plan, the Android
 brief and the live-sync design.
 
-## What's coming
+## Development and security
 
-- **A design pass over the whole site.** The deck pages were redrawn in
-  September 2026 against the deck-building sites people already use — tiles
-  with the hero's art, a banner, a card panel pinned beside the list, dense
-  rows — and the rest of the app now looks a generation older beside them.
-  [`docs/design/04-roadmap.md`](docs/design/04-roadmap.md) (W6) says what to
-  take from the reference and in what order.
-- **Making this repository public.** It was kept private until the server ran
-  somewhere other than a laptop, which it now does. The history was written to
-  be read, so it goes public in place rather than being squashed.
-- **Confirming an address from Android.** Since Thwart 1.47.0 the phone knows
-  `email_not_verified` and says, in its own words, that the link is in your
-  inbox — which is the part that was actually missing, because before that it
-  showed a general error and left you guessing. It still does not know
-  `/v1/auth/verify` itself, so the link has to be opened somewhere else and
-  there is no way to ask for another one from the app.
-- **Starred games, ratings and folders on Android.** The web syncs three
-  collections the phone does not have yet: `favourite_plays` — a game somebody
-  starred, to find again and play again — `ratings`, and `deck_folders`. Its sync engine defers a collection it
-  cannot name and holds its cursor short of it, so nothing is lost and nothing
-  breaks; both arrive the moment a build that knows the names pulls. Doc 06 §6
-  has the favourites contract, the same shape as `favourite_cards`, and
-  [`docs/spec/ratings-and-modular-sets.md`](docs/spec/ratings-and-modular-sets.md)
-  has the ratings one. Ratings need one more thing of the phone first: its
-  push loop marks every result synced, and the server answers a rating it
-  refuses with a fourth outcome, `rejected`, which Android must handle by
-  deleting the local record rather than keeping a rating the server never
-  stored.
-- **Extra modular sets on Android.** The randomiser here can add up to five
-  modular sets beyond a scenario's own, and a custom game takes as many as you
-  like; the phone's randomiser draws the scenario's count only.
-- **One correction on Android** that
-  [`docs/spec/statistics.md`](docs/spec/statistics.md) records: `plays_by_scenario`
-  groups by `scenarioCode` while selecting a bare `scenarioName`, so a scenario
-  ever recorded under two spellings gets an undefined label. It should take the
-  name from the most recent play in the group, as the hero labels do.
+See [AGENTS.md](AGENTS.md) for contribution checks and
+[docs/deployment.md](docs/deployment.md) for the pull-based release process.
+Main CI promotes tested site revisions; API publication is separate. Generated
+card data is ignored and must not be committed or uploaded as CI artifacts.
 
-  Two others listed here have been settled. `Play.ignored` is already gone from
-  the phone. The French *affinité* was recorded as a stray word to tidy; it is
-  not one — fifteen Android strings say *affinité* and none say *aspect*, so the
-  apps chose different words rather than one being inconsistent. That is a
-  terminology decision, and until it is made neither client should change.
-
-Known and not planned: on Android, Firefox reports a bottom safe-area inset for
-a navigation bar it has already kept outside the page, and its own toolbar
-overlays the top of a sticky header while scrolling. The first is worked around
-(`web/src/lib/safeArea.ts`); the second has no reliable fix from inside a page.
+The [September 2026 security audit](docs/security/2026-09-24-blackbox-audit.md)
+records endpoint limits, credential handling and deployment hardening, with a
+counter-audit checklist. Consult that report for the exact verification scope.
+Report sensitive issues privately rather than posting credentials or account
+information in an issue.
 
 ## Legal
 
@@ -355,11 +336,15 @@ Licensed under the MIT licence, as Thwart is.
 
 Marvel Champions card text and images belong to Fantasy Flight Games and to
 Marvel. Nothing in this repository bundles or re-hosts them: the card database
-is fetched from MarvelCDB at build time and never committed, and card images
+is fetched from MarvelCDB and supplementary MC4DB sources at build time and never committed, and card images
 are referenced at their canonical URLs rather than copied. What is stored is
 what a player has made (which packs they own, which decks they saved, which
 games they played), and cards are referred to by code, the same way the Android
 app does.
+
+Card data contributors and image providers are credited in the app, including
+[MarvelCDB](https://marvelcdb.com), [MC4DB](https://mc4db.merlindumesnil.net) and
+[cgbuilder](https://mc.cgbuilder.fr).
 
 This is an unofficial fan project, not affiliated with Fantasy Flight Games or
 Marvel.
