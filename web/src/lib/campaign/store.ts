@@ -3,6 +3,7 @@ import type { CampaignEvent as StoredEvent, CampaignRun } from '../records';
 import { environmentOfferFor, setupDrawsFor, villainAssignmentFor } from './deal';
 import { expandTemplate, fold, type HeroCardStats } from './engine';
 import type { AnswerSet, CampaignEvent, CampaignHero, CampaignState, CampaignTemplate } from './types';
+import { aoaRules18, upgradeTemplate } from './templateUpgrade';
 
 /**
  * Campaign runs in the browser, and the log each one is made of.
@@ -46,6 +47,7 @@ export function loadTemplateIndex(): Promise<readonly TemplateSummary[]> {
 const templateCache = new Map<string, Promise<CampaignTemplate>>();
 
 export function loadTemplate(id: string): Promise<CampaignTemplate> {
+  if (id === 'aoa') return Promise.resolve(aoaRules18);
   const cached = templateCache.get(id);
   if (cached !== undefined) {
     return cached;
@@ -82,13 +84,21 @@ export function templateOf(run: CampaignRun): CampaignTemplate | null {
     return null;
   }
   try {
-    return expandTemplate(JSON.parse(run.templateJson) as CampaignTemplate);
+    return upgradeTemplate(expandTemplate(JSON.parse(run.templateJson) as CampaignTemplate));
   } catch {
     return null;
   }
 }
 
 // --- reading ------------------------------------------------------------------
+
+export async function setScenarioDifficulty(run: CampaignRun, scenarioId: string, expert: boolean): Promise<void> {
+  await append(run.id, {id: newId(), timestamp: Date.now(), type: 'manual', flagId: `scenarioExpert.${scenarioId}`, boolValue: expert});
+}
+
+export async function setScenarioSet(run: CampaignRun, scenarioId: string, kind: 'standard' | 'expert', value: number): Promise<void> {
+  await append(run.id, {id: newId(), timestamp: Date.now(), type: 'manual', counterId: `${kind}Set.${scenarioId}`, value});
+}
 
 export const listRuns = (): Promise<CampaignRun[]> => db.campaignRuns.toArray();
 

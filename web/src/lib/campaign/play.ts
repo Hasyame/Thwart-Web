@@ -1,6 +1,7 @@
 import type { Play, PlayHero, SavedDeck } from '../records';
 import type { CampaignState, ScenarioTemplate } from './types';
 import { textOf } from './types';
+import { scenarioDifficulty, scenarioSet } from './encounter';
 import type { Locale } from '../types';
 
 /**
@@ -13,6 +14,8 @@ import type { Locale } from '../types';
  * them apart, and it is what the campaign list reads.
  */
 export interface CampaignPlayInput {
+  readonly standardSet?: string;
+  readonly expertSet?: string;
   readonly runId: string;
   readonly scenario: ScenarioTemplate | null;
   readonly scenarioId: string;
@@ -59,8 +62,9 @@ export function buildCampaignPlay(input: CampaignPlayInput): Play {
     // The campaign's own name for the scenario, resolved now, so the history
     // stays readable if the template later changes.
     scenarioName: textOf(input.scenario?.name, input.locale) || input.scenarioId,
-    difficulty: input.campaign.difficulty,
-    standardSet: '',
+    difficulty: scenarioDifficulty(input.campaign, input.scenarioId) === 'expert'
+      ? scenarioSet(input.campaign, input.scenarioId, 'expert', input.expertSet) : 'standard',
+    standardSet: scenarioSet(input.campaign, input.scenarioId, 'standard', input.standardSet),
     modularSets: '',
     heroCode: first?.code ?? '',
     heroName: first?.name ?? '',

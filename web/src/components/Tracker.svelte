@@ -2,8 +2,21 @@
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale } from '../lib/types';
   import { loadPackCards } from '../lib/data';
+  import CardRef from './CardRef.svelte';
+  import CampaignVitalCard from './CampaignVitalCard.svelte';
+  import MaximumControl from './MaximumControl.svelte';
   import {
     damaged,
+    damagedAt,
+    villainTracks,
+    villainSideAt,
+    villainDamageAt,
+    totalFor,
+    withActiveVillain,
+    withVillainForm,
+    withVillainStage,
+    regenerated,
+    withVillainOrder,
     isFinalSchemeStage,
     isFinalVillainStage,
     isUsable,
@@ -22,6 +35,8 @@
     villainAdvanced,
     villainDefeated,
     villainHealth,
+    villainHealthAt,
+    withVillainMaximum,
     villainSideOf,
     withManualSchemeLimit,
     withManualVillainHealth,
@@ -31,6 +46,7 @@
   import { session, setEncounter, updateEncounter } from '../lib/session.svelte';
 
   interface Props {
+    comic?: boolean;
     t: Strings;
     cardLocale: Locale;
     index: readonly IndexRow[];
@@ -44,9 +60,10 @@
      * everywhere else, and then the cards are read as they always were.
      */
     setup?: EncounterSetup | null;
+    villainOrder?: readonly string[];
   }
 
-  const { t, cardLocale, index, expert, setup = null }: Props = $props();
+  const { comic = false, t, cardLocale, index, expert, setup = null, villainOrder = [] }: Props = $props();
 
   const players = $derived(Math.max(1, session.current.seats.length));
   const scenarioCode = $derived(session.current.scenarioCode);
@@ -115,7 +132,7 @@
         // for the rest of the game.
         loading = false;
         failed = !isUsable(setup);
-        setEncounter(isUsable(setup) ? startOf(setup) : null);
+        setEncounter(isUsable(setup) ? startOf(withVillainOrder(setup, villainOrder)) : null);
       })
       .catch(() => {
         if (!cancelled) {
@@ -151,12 +168,72 @@
   <p class="muted note">{t.trackerUnavailable}</p>
 {:else}
   <div class="tracker surface">
+    {#if encounter.progress.needsReview}
+      <p>{t.campaignTrackerReview}</p>
+      <button class="btn" onclick={() => updateEncounter(e => ({...e,progress:{...e.progress,needsReview:false}}))}>{t.campaignContinue}</button>
+    {/if}
     <h2>{t.round(encounter.progress.round)}</h2>
 
-    {#if villain !== null}
-      <div class="counter">
-        <p class="name">{villain.name} {villain.stage}</p>
+    {#if encounter.setup.activeVillainMarker}
+      <div class="villain-grid">
+        {#each villainTracks(encounter) as _, track (track)}
+          {@const side = villainSideAt(encounter, track)}
+          {#if side !== null}
+            {@const hp = villainHealthAt(encounter, track)}
+            <section class="counter horseman" class:active={(encounter.progress.activeVillain ?? 0) === track}>
+              {#if comic}
+                <CampaignVitalCard {t} locale={cardLocale} code={side.code} name={`${side.name} ${side.stage}`} maximum={hp} damage={villainDamageAt(encounter, track)} onDamage={amount => updateEncounter(c => damagedAt(c, track, amount))} />
+              {:else}
+              <h3>{side.name} {side.stage}</h3>
+              {#if side.code}<CardRef code={side.code} name={side.name} />{/if}
+              <p class="reading"><strong class="big">{hp === null ? '–' : Math.max(0, hp - villainDamageAt(encounter, track))}</strong></p>
+              <div class="steps">
+                {#each STEPS as step (step)}
+                  <button class="btn" type="button" aria-label={`${side.name}: ${t.damageOnVillain} ${step}`} onclick={() => updateEncounter(c => damagedAt(c, track, step))}>{step > 0 ? `+${step}` : `−${-step}`}</button>
+                {/each}
+              </div>
+              {/if}
+              <MaximumControl {t} label={t.trackerHealthMaximum} current={hp} printed={totalFor(side, encounter.setup.players)} onChange={value => updateEncounter(e => withVillainMaximum(e, track, value))} />
+              <button class="btn" type="button" aria-pressed={(encounter.progress.activeVillain ?? 0) === track} onclick={() => updateEncounter(c => withActiveVillain(c, track))}>
+                {(encounter.progress.activeVillain ?? 0) === track ? t.activeVillain : t.chooseActiveVillain}
+              </button>
+            </section>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
+    {#if villain !== null && !encounter.setup.activeVillainMarker}
+      <div class="counter">
+        {#if comic}<CampaignVitalCard {t} locale={cardLocale} code={villain.code} name={`${villain.name} ${villain.stage}`} maximum={health} damage={encounter.progress.damage} onDamage={amount => updateEncounter(c => damaged(c, amount))} />{:else}
+        <p class="name">{villain.name} {villain.stage}</p>
+        {/if}
+        {#if encounter.setup.villainForms}
+          <label class="field-group">
+            <span>{t.villainForm}</span>
+            <select class="field" value={encounter.progress.villainForm ?? 0} onchange={event => updateEncounter(c => withVillainForm(c, Number(event.currentTarget.value)))}>
+              {#each encounter.setup.villainForms[encounter.progress.villainIndex] ?? [] as form, i (i)}
+                <option value={i}>{form.form ?? form.stage}</option>
+              {/each}
+            </select>
+          </label>
+          <p>{t.formResponseReminder}</p>
+          {#if villain.code}<CardRef code={villain.code} name={`${villain.name} ${villain.form ?? ''}`} />{/if}
+        {/if}
+        {#if encounter.setup.regeneration}
+          <p>{t.regenerationReminder}</p>
+          <CardRef code="45105b" name={index.find(c => c.code === '45105b')?.name ?? '45105b'} />
+          <label><input type="checkbox" checked={encounter.progress.noLongerWorthy === true} onchange={event => updateEncounter(e => ({...e,progress:{...e.progress,noLongerWorthy:event.currentTarget.checked}}))} />{t.apocalypseWorthy}</label>
+          <button type="button" class="btn" disabled={encounter.progress.noLongerWorthy === true} onclick={() => updateEncounter(regenerated)}>{t.regenerateVillain}</button>
+          <div class="steps">
+            {#each encounter.setup.villain as side, i (i)}
+              <button type="button" class="btn" onclick={() => updateEncounter(c => withVillainStage(c, i))}>{t.regenerationStage}: {side.stage}</button>
+            {/each}
+          </div>
+        {/if}
+
+        <MaximumControl {t} label={t.trackerHealthMaximum} current={health} printed={totalFor(villain, encounter.setup.players)} onChange={value => updateEncounter(e => withManualVillainHealth(e, value))} />
+        {#if !comic}
         {#if health === null}
           <!-- Five cards print a star instead of a number, so the scenario
                decides it and nobody can look it up. -->
@@ -195,7 +272,8 @@
           </div>
         {/if}
 
-        {#if !isFinalVillainStage(encounter) && villainDefeated(encounter)}
+        {/if}
+        {#if !encounter.setup.regeneration && !isFinalVillainStage(encounter) && villainDefeated(encounter)}
           <!--
             Offered once the stage is down, and not before: until then there is
             nothing to flip and a permanent button is one more thing to read
@@ -215,7 +293,7 @@
 
     {#if scheme !== null && stage !== null}
       <div class="counter">
-        <p class="name">{scheme.name}</p>
+        <p class="name">{#if comic && scheme.code}<CardRef code={scheme.code} name={scheme.name} />{:else}{scheme.name}{/if}</p>
 
         {#if stage.options.length > 1}
           <!-- Mansion Attack draws a room out of four, Kang a realm out of
@@ -237,6 +315,7 @@
           </label>
         {/if}
 
+        <MaximumControl {t} label={t.trackerThreatMaximum} current={limit} printed={totalFor(scheme, encounter.setup.players)} onChange={value => updateEncounter(e => withManualSchemeLimit(e, value))} />
         {#if limit === null}
           <label class="starred">
             <span class="muted">{t.trackerStarred}</span>
@@ -290,6 +369,11 @@
             {t.advanceScheme}
           </button>
         {/if}
+        {#if encounter.setup.regeneration && schemeComplete(encounter)}
+          {#if !isFinalVillainStage(encounter)}
+            <button class="btn advance ready" onclick={() => updateEncounter(e => withVillainStage(e, e.progress.villainIndex + 1))}>{t.regenerationStage}: {encounter.setup.villain[encounter.progress.villainIndex + 1]?.stage}</button>
+          {:else}<p role="status">{t.lost}</p>{/if}
+        {/if}
       </div>
     {/if}
 
@@ -315,6 +399,9 @@
 {/if}
 
 <style>
+  .villain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--space-3); }
+  .horseman { padding: var(--space-3); border: 2px solid var(--border); }
+  .horseman.active { border-color: var(--accent); box-shadow: 4px 4px 0 var(--accent); }
   .tracker {
     padding: var(--space-4);
     margin: var(--space-4) 0;

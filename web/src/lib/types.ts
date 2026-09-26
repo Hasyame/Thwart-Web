@@ -86,6 +86,8 @@ export interface Synergy {
  * this interface never requires re-fetching.
  */
 export interface Card {
+  readonly real_text?: string | null;
+  readonly rules_reference?: string;
   readonly code: string;
   readonly name: string;
   readonly real_name?: string;

@@ -1,4 +1,5 @@
 import { localisedCardImage } from './cardImages';
+import { withCurrentErrata } from './cardErrata';
 import type { Card, CardSet, DataMeta, IndexRow, Locale, Pack } from './types';
 import type { ScenarioRulesFile } from './randomizer';
 
@@ -86,7 +87,7 @@ export function loadPackCards(
   }
   const promise = getJson<Card[]>(
     `${BASE}/cards/${locale}/${encodeURIComponent(packCode)}.json`,
-  ).catch((error: unknown) => {
+  ).then(cards => cards.map(card => withCurrentErrata(card, locale))).catch((error: unknown) => {
     packCardsCache.delete(key);
     throw error;
   });

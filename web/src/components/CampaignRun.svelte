@@ -16,7 +16,7 @@
   import {
     currentScenario,
     encounterSetsOf,
-    isExpertCampaign,
+    isExpertScenario,
     trackedSetCode,
     trackerSetupFor,
   } from '../lib/campaign/encounter';
@@ -43,6 +43,8 @@
     pauseTimer,
     recordResult,
     setTimerElapsed,
+    setScenarioDifficulty,
+    setScenarioSet,
     startTimer,
     takeSetupAction,
     templateOf,
@@ -50,6 +52,7 @@
     timerRunning,
   } from '../lib/campaign/store';
   import CampaignBriefing from './CampaignBriefing.svelte';
+  import CampaignJourney from './CampaignJourney.svelte';
   import RatingPanel from './RatingPanel.svelte';
   import { campaignSubject, ratingOfRun } from '../lib/ratings';
   import CampaignMarket from './CampaignMarket.svelte';
@@ -300,7 +303,7 @@
     if (state.awaitingChoice) {
       return state.environmentOffer.length > 0 ? 'environment' : 'choice';
     }
-    if (timerRunning(run)) {
+    if (timerRunning(run) || (template?.id === 'aoa' && scenario !== null && run.timerScenarioId === scenario.id)) {
       return 'playing';
     }
     return scenario === null ? 'between' : 'briefing';
@@ -336,10 +339,11 @@
       session.current.accumulatedMillis = elapsed;
       return;
     }
-    resumeSession({
+      resumeSession({
+        encounterKey: `${run.id}.${current.id}.${state.completedScenarios.length}`,
       scenarioCode: trackedSetCode(current, state, index) ?? '',
       scenarioName: label(current.name) || current.id,
-      difficulty: isExpertCampaign(state) ? 'EXPERT_I' : 'STANDARD_I',
+      difficulty: isExpertScenario(state) ? 'EXPERT_I' : 'STANDARD_I',
       seats: state.heroes.map((hero) => ({
         deckId: hero.deckId ?? hero.id,
         deckName: hero.name,
@@ -347,7 +351,7 @@
         heroName: hero.name,
         aspect: '',
       })),
-      modularSetCodes: [...encounterSetsOf(current)],
+      modularSetCodes: [...encounterSetsOf(current, campaign ?? undefined, run.standardSet, run.expertSet)],
       accumulatedMillis: elapsed,
     });
     seatedFor = current.id;
@@ -526,6 +530,8 @@
       if (storageOk) {
         const play = buildCampaignPlay({
           runId: run.id,
+          standardSet: run.standardSet,
+          expertSet: run.expertSet,
           scenario: current,
           scenarioId,
           campaign: state,
@@ -644,7 +650,7 @@
   });
 
   const counterName = (counter: { id: string; label?: LocalizedText }): string =>
-    label(counter.label) || counterNames.get(counter.id) || counter.id;
+    label(counter.label) || counterNames.get(counter.id) || (template?.id === 'aoa' && counter.id === 'missionThreat' ? t.missionThreat : counter.id);
 
   /** The counters this campaign has switched on, which is what gets a box. */
   const active = $derived(
@@ -682,7 +688,7 @@
   {:else if campaign === null}
     <p class="muted note">{t.loading}</p>
   {:else}
-    <header class="head">
+    <header class="head" class:comic-head={template.id === 'aoa'}>
       <!-- The scenario just played, while its result is on screen: the campaign
            has already moved on to the next one, and naming that one over a
            result belonging to the last reads as the wrong verdict. -->
@@ -726,9 +732,13 @@
       </div>
     {/if}
 
+    <CampaignJourney {template} {campaign} locale={uiLocale} />
     {#if page === 'lost'}
       <section class="panel">
         <h3>{t.campaignLost}</h3>
+        {#if template.defeatEpilogue && (template.id !== 'aoa' || campaign.completedScenarios.some(result => result.scenarioId === 's5_en_sabah_nur' && result.victory))}
+          <p>{label(template.defeatEpilogue)}</p>
+        {/if}
         <p class="muted note">{t.campaignSummary(
           campaign.completedScenarios.length,
           campaign.completedScenarios.filter((r) => r.victory).length,
@@ -737,6 +747,7 @@
     {:else if page === 'finished'}
       <section class="panel">
         <h3>{t.campaignComplete}</h3>
+        {#if template.victoryEpilogue}<p>{label(template.victoryEpilogue)}</p>{/if}
         <p class="note">{t.campaignFinishedMessage}</p>
         <p class="muted note">{t.campaignSummary(
           campaign.completedScenarios.length,
@@ -757,6 +768,7 @@
       />
     {:else if page === 'questions' && scenario !== null}
       <CampaignQuestions
+        {index}
         {t}
         {uiLocale}
         {campaign}
@@ -868,13 +880,17 @@
       </section>
     {:else if page === 'playing' && scenario !== null}
       <CampaignPlaying
+        guided={template.id === 'aoa'}
         {t}
         {cardLocale}
         {index}
         {storageOk}
-        expert={isExpertCampaign(campaign)}
+        expert={isExpertScenario(campaign)}
+        villainOrder={campaign.draws[scenario.id]?.horsemen ?? []}
+        {cardName}
+        mission={template.id === 'aoa' ? {code: campaign.draws[scenario.id]?.mission?.[0] ?? '45170a', overseer: campaign.draws[scenario.id]?.overseer?.[0] ?? '', threat: 5 * campaign.heroes.length + (campaign.counters.missionThreat ?? 0)} : null}
         scenarioName={label(scenario.name) || scenario.id}
-        encounterSets={encounterSetsOf(scenario).map(setName)}
+        encounterSets={encounterSetsOf(scenario, campaign, run.standardSet, run.expertSet).map(setName)}
         elapsedMillis={elapsed}
         running={timerRunning(run)}
         campaignRunId={run.id}
@@ -891,7 +907,11 @@
       />
     {:else if page === 'briefing' && scenario !== null}
       <CampaignBriefing
+        runKey={run.id}
         {t}
+        {heroStats}
+        {index}
+        {decks}
         {uiLocale}
         {template}
         {campaign}
@@ -904,6 +924,10 @@
         onKeep={keep}
         onReady={begin}
         onNotReady={onBack}
+        onDifficulty={async (expert) => { await setScenarioDifficulty(run, scenario.id, expert); reload(); }}
+        standardSet={run.standardSet}
+        expertSet={run.expertSet ?? ''}
+        onSet={async (kind, value) => { await setScenarioSet(run, scenario.id, kind, value); reload(); }}
       />
       {#if template.market != null}
         <CampaignMarket {t} {uiLocale} {run} {template} {campaign} {cardName} onChanged={reload} />
@@ -929,6 +953,10 @@
 </div>
 
 <style>
+  .comic-head { padding: var(--space-5); background: #191820; color: #fff; border-bottom: 6px solid var(--accent); }
+  .comic-head h2 { font-size: clamp(1.7rem, 4vw, 3rem); font-style: italic; font-weight: 950; text-transform: uppercase; line-height: 1.1; }
+  .comic-head .muted { color: #e3dfe8; }
+
   /*
    * Held to a reading width.
    *

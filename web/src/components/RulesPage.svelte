@@ -15,9 +15,11 @@
     t: Strings;
     /** The rules follow the card language, since that is the game's language. */
     cardLocale: Locale;
+    /** The in-game dialog supplies its own persistent heading. */
+    embedded?: boolean;
   }
 
-  const { t, cardLocale }: Props = $props();
+  const { t, cardLocale, embedded = false }: Props = $props();
 
   let file = $state.raw<RulesFile | null>(null);
   let entries = $state.raw<readonly IdentifiedRule[]>([]);
@@ -55,7 +57,9 @@
 </script>
 
 <section>
-  <h1 class="comic-title">{t.rulesTitle}</h1>
+  {#if !embedded}
+    <h1 class="comic-title">{t.rulesTitle}</h1>
+  {/if}
 
   {#if loadFailed}
     <div class="notice surface"><p>{t.rulesLoadError}</p></div>

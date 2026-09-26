@@ -15,6 +15,8 @@ The local workspace is active. Each application has its own feature branch.
 - [Limited formats and game preparation](004-LIMITED-MODES-AND-GAME-SETUP.md):
   temporary collections, unplayed pairings, achievement setup, sealed boosters
   and the hand-off from saved limited decks into games.
+- [Campaign rules and the current table](005-CAMPAIGN-RULES-AND-TABLE.md): v1.8,
+  Age of Apocalypse corrections, saved table state and editable maxima.
 - [Implementation inventory](IMPLEMENTATION_INVENTORY.md): code-backed baseline,
   instruction conflicts and the scope of the later parity audit.
 - [Visual identity and achievements](001-IDENTITY-AND-ACHIEVEMENTS.md): first feature

@@ -9,6 +9,7 @@
   import { showCard } from '../lib/cardViewer.svelte';
   import DeckContents from './DeckContents.svelte';
   import DeckEditor from './DeckEditor.svelte';
+  import CampaignDeckCards from './CampaignDeckCards.svelte';
 
   interface Props {
     t: Strings;
@@ -109,6 +110,7 @@
 {:else if edit}
   <DeckEditor {t} {cardLocale} {index} {deck} ownedPackCodes={owned} onDone={onView} />
 {:else}
+  <CampaignDeckCards deckId={deck.id} {t} {index} />
   <DeckContents
     {t}
     {deck}

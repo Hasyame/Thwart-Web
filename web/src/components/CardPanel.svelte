@@ -106,6 +106,7 @@
           {#each stats as [label, value] (label)}<span><b>{label}</b> {value}</span>{/each}
         </p>
       {/if}
+      {#if card.rules_reference}<p class="muted">{t.currentErrata}</p>{/if}
       {#if card.text}
         <div class="card-text small">{@html cardHtml(card.text)}</div>
       {/if}

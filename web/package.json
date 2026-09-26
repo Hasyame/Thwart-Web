@@ -24,6 +24,7 @@
     "test:setup": "node --experimental-strip-types scripts/test-scheme-setup.mjs",
     "test:campaign": "vite-node scripts/test-campaign-conditions.mjs",
     "test:engine": "vite-node scripts/test-campaign-engine.mjs",
+    "test:aoa": "vite-node scripts/test-campaign-aoa.mjs",
     "test:text": "vite-node scripts/test-campaign-text.mjs",
     "test:deal": "vite-node scripts/test-campaign-deal.mjs",
     "test:tracker": "vite-node scripts/test-campaign-tracker.mjs",

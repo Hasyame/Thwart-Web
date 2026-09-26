@@ -35,7 +35,7 @@ try {
   for (const deck of decks) {
     const play = buildCampaignPlay({
       runId: 'run', scenarioId: 'rhino', scenario: null,
-      campaign: { difficulty: 'standard', heroes: [{ deckId: deck.id, heroCardCode: deck.heroCode, name: deck.heroName }] },
+      campaign: { difficulty: 'standard', flags: {}, counters: {}, heroes: [{ deckId: deck.id, heroCardCode: deck.heroCode, name: deck.heroName }] },
       decks, locale: 'en', won: true, elapsedMillis: 0, victoryPoints: 0,
     });
     assert.equal(play.mode, deck.tags);

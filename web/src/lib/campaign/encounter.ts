@@ -64,7 +64,7 @@ export function trackedSetCode(
   }
   const drawn = drawnVillainFor(state, scenario.id);
   const villain =
-    villainStages(scenario.baseSetup, state.difficulty, drawn)[0] ?? drawn ?? null;
+    villainStages(scenario.baseSetup, scenarioDifficulty(state, scenario.id), drawn)[0] ?? drawn ?? null;
   if (villain === null) {
     return null;
   }
@@ -72,10 +72,15 @@ export function trackedSetCode(
 }
 
 /** Everything a scenario's encounter deck is built from, encounter sets first. */
-export const encounterSetsOf = (scenario: ScenarioTemplate | null): readonly string[] =>
-  scenario === null
-    ? []
-    : [...(scenario.baseSetup?.encounterSets ?? []), ...(scenario.baseSetup?.modularSets ?? [])];
+export function encounterSetsOf(scenario: ScenarioTemplate | null, state?: CampaignState, standard = '', expert = ''): readonly string[] {
+  if (scenario === null) return [];
+  const sets = [...(scenario.baseSetup?.encounterSets ?? []), ...(scenario.baseSetup?.modularSets ?? [])];
+  if (state === undefined || !sets.some(code => /^standard(?:_|$)/.test(code))) return sets;
+  const selected = [scenarioSet(state, scenario.id, 'standard', standard)];
+  if (scenarioDifficulty(state, scenario.id) === 'expert') selected.push(scenarioSet(state, scenario.id, 'expert', expert));
+  return [...new Set([...sets.filter(code => !/^(standard|expert)(?:_|$)/.test(code)),
+    ...selected.map(code => code === 'standard_i' ? 'standard' : code === 'expert_i' ? 'expert' : code)])];
+}
 
 /**
  * The campaigns' own word for the harder mode.
@@ -85,6 +90,20 @@ export const encounterSetsOf = (scenario: ScenarioTemplate | null): readonly str
  */
 export const isExpertCampaign = (state: CampaignState): boolean =>
   state.difficulty.toLowerCase() === 'expert';
+
+/** Explicit per-scenario choice; legacy runs retain their previous default. */
+export const scenarioDifficulty = (state: CampaignState, id: string | null = state.currentScenarioId): string => {
+  const chosen = state.flags.scenarioExpert?.[id ?? ''];
+  return chosen === undefined ? state.difficulty : chosen ? 'expert' : 'standard';
+};
+
+export const isExpertScenario = (state: CampaignState): boolean => scenarioDifficulty(state) === 'expert';
+
+export function scenarioSet(state: CampaignState, id: string, kind: 'standard' | 'expert', fallback = ''): string {
+  const number = state.counters[`${kind}Set.${id}`];
+  if (number !== undefined) return `${kind}_${['i','ii','iii'][Math.min(kind === 'expert' ? 2 : 3, Math.max(1,number)) - 1]}`;
+  return fallback.toLowerCase().startsWith(`${kind}_`) ? fallback.toLowerCase() : `${kind}_i`;
+}
 
 /** The scenario a run is currently on, or null between them. */
 export const currentScenario = (
@@ -164,7 +183,7 @@ export function trackerSetupFor(
    */
   const played = (tracked: TrackedSide): boolean =>
     tracked.onlyOn == null ||
-    tracked.onlyOn.toLowerCase() === (expert ? 'expert' : 'standard');
+    tracked.onlyOn.toLowerCase() === scenarioDifficulty(state, scenario.id);
 
   return {
     villain: (villains ?? []).filter(played).map(side),

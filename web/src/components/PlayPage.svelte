@@ -5,6 +5,7 @@
   import { appSettings, setAppSettings } from '../lib/appsettings.svelte';
   import Briefing from './Briefing.svelte';
   import LongBreak from './LongBreak.svelte';
+  import GameRules from './GameRules.svelte';
   import type { PausedGame, Play } from '../lib/records';
   import { inCampaign } from '../lib/playQuery';
   import {
@@ -954,6 +955,7 @@
     </div>
     <p class="muted note">{t.clockStartsNote}</p>
   {:else if outcome === null}
+    <GameRules {t} {cardLocale} />
     {#if trackEncounter}
       <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} />
     {/if}

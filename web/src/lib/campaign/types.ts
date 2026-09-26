@@ -26,6 +26,7 @@ export interface LocalizedText {
  * which is what lets a rule say "either of these two things".
  */
 export interface Condition {
+  readonly scenarioDifficulty?: string | null;
   readonly difficulty?: string | null;
 
   /** An answer id that must be true, or must not be. */
@@ -116,6 +117,7 @@ export type EffectOp = (typeof EFFECT_OPS)[number];
  * literal, and `from` takes the number the player answered.
  */
 export interface Effect {
+  readonly valueFrom?: 'heroCard.health' | null;
   readonly op: string;
   readonly when?: Condition | null;
 
@@ -144,6 +146,7 @@ export interface Effect {
 export type CounterScope = 'campaign' | 'hero';
 
 export interface CounterDefinition {
+  readonly resetAfterScenario?: boolean;
   readonly id: string;
   readonly label?: LocalizedText;
   readonly scope?: string;
@@ -162,6 +165,9 @@ export interface FlagSetDefinition {
 }
 
 export interface CardListDefinition {
+  readonly recoveryFlag?: string;
+  readonly recoveryCardType?: 'upgrade' | 'support';
+  readonly recoveryCards?: readonly string[];
   readonly id: string;
   readonly label?: LocalizedText;
   readonly scope?: string;
@@ -292,6 +298,8 @@ export interface PromptOption {
 }
 
 export interface Prompt {
+  readonly cardType?: 'upgrade' | 'support' | null;
+  readonly excludeEliminated?: boolean;
   readonly id: string;
   readonly type: string;
   readonly label?: LocalizedText | null;
@@ -345,6 +353,8 @@ export interface ScenarioTemplate {
 }
 
 export interface CampaignTemplate {
+  readonly victoryEpilogue?: LocalizedText | null;
+  readonly defeatEpilogue?: LocalizedText | null;
   readonly id: string;
   readonly schemaVersion: number;
   readonly name: LocalizedText;

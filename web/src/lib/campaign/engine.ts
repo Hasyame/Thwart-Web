@@ -251,6 +251,9 @@ function applyPerHeroCounter(
         ));
 
   const current: Record<string, number> = { ...(state.heroCounters[counterId] ?? {}) };
+  if (actingHeroId == null && counterDefOf(template, counterId)?.maxFrom === HERO_HEALTH_REFERENCE) {
+    for (const heroId of eliminated) current[heroId] = 0;
+  }
   const op = opOf(effect);
   const setting = op === 'setherocounter' || op === 'setcounter';
 
@@ -259,7 +262,7 @@ function applyPerHeroCounter(
     if (!evaluate(effect.when, context)) {
       continue;
     }
-    const value = perHeroAnswers?.[heroId] ?? literalDelta;
+    const value = effect.valueFrom === 'heroCard.health' ? heroStats[heroId]?.printedHealth : perHeroAnswers?.[heroId] ?? literalDelta;
     if (value == null) {
       continue;
     }
@@ -416,6 +419,15 @@ function applyEffect(
       const fromList = effect.from == null ? [] : (answers.cardLists?.[effect.from] ?? []);
       const perHero =
         effect.from == null ? {} : (answers.perHeroCards?.[effect.from] ?? {});
+      if (effect.perHero === true) {
+        let next = state;
+        for (const hero of state.heroes) {
+          if ((state.eliminatedInScenario[scenarioId ?? ''] ?? []).includes(hero.id)) continue;
+          const cards = perHero[hero.id] ?? [];
+          next = addHeroCards(next, listId, hero.id, cards);
+        }
+        return next;
+      }
       const codes = [
         ...new Set(fromList.length > 0 ? fromList : Object.values(perHero).flat()),
       ];
@@ -617,7 +629,7 @@ function replayedDraws(
       // A per-hero draw files under `drawId|heroId`, so the setup id has to be
       // matched on the prefix as well as whole.
       const base = drawId.includes('|') ? drawId.slice(0, drawId.indexOf('|')) : drawId;
-      return !setupDrawIds.has(base);
+      return base !== 'openingAlly' && !setupDrawIds.has(base);
     }),
   );
   const next = { ...draws };
@@ -674,6 +686,8 @@ function applyScenario(
     ],
     totalPlayTimeMillis: next.totalPlayTimeMillis + elapsed,
     draws: replayedDraws(next.draws, template, event.scenarioId),
+    setupActionsTaken: Object.fromEntries(Object.entries(next.setupActionsTaken).filter(([key]) => !key.startsWith(`${event.scenarioId}:`))),
+    counters: {...next.counters, ...Object.fromEntries((template.counters ?? []).filter(c => c.resetAfterScenario).map(c => [c.id, c.initial ?? 0]))},
     currentScenarioId: advanced.scenarioId,
     finished: advanced.finished,
     campaignLost: next.campaignLost || advanced.lost === true,
@@ -814,6 +828,19 @@ function applySetupAction(
     return state;
   }
 
+  const key = `${event.scenarioId}:${event.heroId ?? ''}`;
+  if (action.repeatable !== true && (state.setupActionsTaken[key] ?? []).includes(action.id)) {
+    return state;
+  }
+  if (!evaluate(action.enabledWhen, { state, scenarioId: event.scenarioId, heroId: event.heroId })) {
+    return state;
+  }
+  if (action.perHero === true && !state.heroes.some((hero) => hero.id === event.heroId)) {
+    return state;
+  }
+  if ((action.effects ?? []).some(effect => effect.valueFrom === 'heroCard.health') &&
+      (event.heroId == null || heroStats[event.heroId]?.printedHealth == null)) return state;
+
   let next = state;
   if (action.cost != null) {
     const { counterId, amount } = action.cost;
@@ -833,7 +860,6 @@ function applySetupAction(
     template, next, action.effects ?? [], event.scenarioId, EMPTY_ANSWERS, heroStats, event.heroId ?? null,
   );
 
-  const key = `${event.scenarioId}:${event.heroId ?? ''}`;
   const taken = next.setupActionsTaken[key] ?? [];
   return {
     ...next,
@@ -920,6 +946,14 @@ export function fold(
         state = applyDraw(template, state, event);
         break;
       case 'setup_choice':
+        {
+          const [listId, heroId] = event.drawId.split('|');
+          const list = (template.cardLists ?? []).find(l => l.id === listId && l.recoveryFlag != null);
+          const earned = list?.recoveryFlag != null && Object.entries(state.flags[list.recoveryFlag] ?? {}).some(([scenario, won]) => won && !(state.eliminatedInScenario[scenario] ?? []).includes(heroId ?? ''));
+          if (list && earned && heroId && state.heroes.some(h => h.id === heroId) && (state.heroCardLists[list.id]?.[heroId] ?? []).length === 0 && event.cardCode !== '' && (!list.recoveryCards?.length || list.recoveryCards.includes(event.cardCode))) {
+            state = addHeroCards(state, list.id, heroId, [event.cardCode]);
+          }
+        }
         // The kept card replaces the offer, so everything downstream reads one
         // card without knowing a choice happened. The cards not kept were never
         // struck, so they are still in the pool.

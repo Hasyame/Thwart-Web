@@ -1,5 +1,6 @@
 import type { DifficultyId } from './randomizer';
 import type { Encounter } from './encounter';
+import { parseEncounterProgress, recoveredEncounter } from './encounterProgress';
 
 /**
  * The game currently on the table.
@@ -37,6 +38,8 @@ export interface Seat {
 export type SessionPhase = 'setup' | 'briefing' | 'playing';
 
 export interface Session {
+  /** Device-local recovery, scoped to a campaign attempt; never synchronized. */
+  encounterKey?: string;
   scenarioCode: string;
   scenarioName: string;
   difficulty: DifficultyId;
@@ -122,6 +125,13 @@ export function resumeGame(): void {
 }
 
 export function setEncounter(encounter: Encounter | null): void {
+  const key = session.current.encounterKey;
+  if (encounter !== null && key) {
+    try {
+      const saved = parseEncounterProgress(localStorage.getItem(`thwart.table.${key}`) ?? '');
+      if (saved) encounter = recoveredEncounter(encounter.setup, saved);
+    } catch { /* A blocked storage area must not prevent local play. */ }
+  }
   session.current.encounter = encounter;
 }
 
@@ -135,6 +145,10 @@ export function updateEncounter(change: (current: Encounter) => Encounter): void
   const current = session.current.encounter;
   if (current !== null) {
     session.current.encounter = change(current);
+    if (session.current.encounterKey) {
+      try { localStorage.setItem(`thwart.table.${session.current.encounterKey}`, JSON.stringify(session.current.encounter.progress)); }
+      catch { /* The explicit long-break save remains available. */ }
+    }
   }
 }
 

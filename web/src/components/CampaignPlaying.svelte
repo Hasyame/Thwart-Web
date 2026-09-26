@@ -6,8 +6,12 @@
   import { ScreenWakeLock } from '../lib/wakeLock.svelte';
   import Tracker from './Tracker.svelte';
   import LongBreak from './LongBreak.svelte';
+  import GameRules from './GameRules.svelte';
+  import CampaignMission from './CampaignMission.svelte';
+  import CampaignTableExtras from './CampaignTableExtras.svelte';
 
   interface Props {
+    guided?: boolean;
     t: Strings;
     cardLocale: Locale;
     index: readonly IndexRow[];
@@ -22,6 +26,9 @@
     campaignRunId: string;
     /** Numbers the campaign carries itself, when it has any. */
     trackerSetup?: EncounterSetup | null;
+    villainOrder?: readonly string[];
+    mission?: {code: string; overseer: string; threat: number} | null;
+    cardName?: (code: string) => string;
     onPause: () => void;
     onResume: () => void;
     onCorrect: (millis: number) => void;
@@ -31,6 +38,7 @@
   }
 
   const {
+    guided = false,
     t,
     cardLocale,
     index,
@@ -42,6 +50,9 @@
     storageOk,
     campaignRunId,
     trackerSetup = null,
+    villainOrder = [],
+    mission = null,
+    cardName = code => code,
     onPause,
     onResume,
     onCorrect,
@@ -52,14 +63,20 @@
 
   let editingClock = $state(false);
   let clockMinutes = $state(0);
+  let clockHours = $state(0);
+  let clockSeconds = $state(0);
+  const clockValid = $derived(Number.isInteger(clockMinutes) && clockMinutes >= 0 && (!guided || (clockMinutes <= 59 && Number.isInteger(clockHours) && clockHours >= 0 && clockHours <= 9999 && Number.isInteger(clockSeconds) && clockSeconds >= 0 && clockSeconds <= 59)));
 
   function openClockEdit(): void {
-    clockMinutes = Math.round(elapsedMillis / 60_000);
+    clockHours = Math.floor(elapsedMillis / 3_600_000);
+    clockMinutes = guided ? Math.floor(elapsedMillis / 60_000) % 60 : Math.round(elapsedMillis / 60_000);
+    clockSeconds = Math.floor(elapsedMillis / 1000) % 60;
     editingClock = true;
   }
 
   function applyClockEdit(): void {
-    onCorrect(Math.max(0, clockMinutes) * 60_000);
+    if (!clockValid) return;
+    onCorrect(clockMinutes * 60_000 + (guided ? clockHours * 3_600_000 + clockSeconds * 1000 : 0));
     editingClock = false;
   }
 
@@ -75,6 +92,8 @@
   });
 </script>
 
+<GameRules {t} {cardLocale} />
+
 <div class="running surface">
   <!-- Name, heroes and encounter deck at the top, as the app has it: the three
        things somebody glances up to check mid-game. -->
@@ -88,6 +107,7 @@
   <p class="muted note tap">{t.tapToCorrect}</p>
 
   {#if editingClock}
+    {#if guided}<div class="clock-parts"><label class="field-group">{t.campaignClockHours}<input class="field" type="number" min="0" max="9999" step="1" inputmode="numeric" bind:value={clockHours} /></label><label class="field-group">{t.campaignClockMinutes}<input class="field" type="number" min="0" max="59" step="1" inputmode="numeric" bind:value={clockMinutes} /></label><label class="field-group">{t.campaignClockSeconds}<input class="field" type="number" min="0" max="59" step="1" inputmode="numeric" bind:value={clockSeconds} /></label></div>{:else}
     <label class="field-group">
       <span class="field-label">{t.correctTheClock}</span>
       <input class="field"
@@ -102,8 +122,9 @@
         }}
       />
     </label>
+    {/if}
     <div class="clock-actions">
-      <button class="btn btn--primary" type="button" onclick={applyClockEdit}>{t.saveResult}</button>
+      <button class="btn btn--primary" type="button" disabled={!clockValid} onclick={applyClockEdit}>{t.saveResult}</button>
       <button class="btn" type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
     </div>
   {/if}
@@ -121,7 +142,11 @@
   <LongBreak {t} {storageOk} {campaignRunId} onSaved={onBreakSaved} />
 </div>
 
-<Tracker {t} {cardLocale} {index} {expert} setup={trackerSetup} />
+<Tracker comic={guided} {t} {cardLocale} {index} {expert} {villainOrder} setup={trackerSetup} />
+<CampaignTableExtras {t} {cardName} />
+{#if mission !== null}
+  <CampaignMission {t} initialThreat={mission.threat} missionCode={mission.code} overseerCode={mission.overseer} {cardName} />
+{/if}
 
 <label class="awake surface">
   <span>{t.keepScreenOn}</span>
@@ -134,12 +159,14 @@
   <h2 class="ending-title">{t.campaignScenarioOver}</h2>
   <p class="ending-detail">{t.campaignRecordResult}</p>
   <div class="ending-actions">
-    <button class="btn btn--primary big" type="button" onclick={onVictory}>{t.won}</button>
+    <button class="btn btn--primary big" type="button" disabled={session.current.encounter?.setup.regeneration === true && session.current.encounter?.progress.noLongerWorthy !== true} onclick={onVictory}>{t.won}</button>
     <button class="btn big" type="button" onclick={onDefeat}>{t.lost}</button>
   </div>
 </section>
 
 <style>
+  .clock-parts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--space-3); }
+  .clock-parts input { width: 100%; min-width: 0; }
   .running {
     padding: var(--space-4);
     margin: var(--space-3) 0;

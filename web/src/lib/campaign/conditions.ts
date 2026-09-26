@@ -56,6 +56,11 @@ export function evaluate(
   }
   const { state } = context;
   const answers = context.answers ?? EMPTY_ANSWERS;
+  if (condition.scenarioDifficulty != null) {
+    const selected = state.flags.scenarioExpert?.[context.scenarioId ?? state.currentScenarioId ?? ''];
+    const difficulty = selected === undefined ? state.difficulty : selected ? 'expert' : 'standard';
+    if (difficulty.toLowerCase() !== condition.scenarioDifficulty.toLowerCase()) return false;
+  }
 
   if (
     condition.difficulty !== null &&

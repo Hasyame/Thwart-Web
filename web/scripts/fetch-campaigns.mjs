@@ -62,7 +62,10 @@ async function main() {
 
   const templates = [];
   for (const file of files) {
-    const raw = await fetch(file.download_url).then((r) => {
+    // AoA is pinned to the audited mechanics shared with Android. Publishing the
+    // public Android mirror must not silently replace it with the old template.
+    const pinned = join(HERE, '..', 'src', 'lib', 'campaign', 'templates', file.name);
+    const raw = existsSync(pinned) ? readFileSync(pinned, 'utf8') : await fetch(file.download_url).then((r) => {
       if (!r.ok) {
         throw new Error(`${r.status} for ${file.name}`);
       }

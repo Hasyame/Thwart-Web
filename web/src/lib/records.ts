@@ -232,6 +232,7 @@ export interface Play {
 
 /** `data/db/entity/CampaignEntity.kt` — CampaignRunEntity. */
 export interface CampaignRun {
+  readonly expertSet?: string;
   readonly id: string;
   readonly templateId: string;
   readonly templateName: string;
@@ -283,6 +284,8 @@ export interface RandomizerHistoryRow {
  * nothing to keep.
  */
 export interface PausedGame {
+  /** Shared with Android; empty on saves made without a tracker. */
+  readonly encounterProgress?: string;
   readonly id: string;
   readonly savedAt: number;
   readonly scenarioCode: string;
