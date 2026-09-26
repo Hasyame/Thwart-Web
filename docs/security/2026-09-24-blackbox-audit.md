@@ -148,5 +148,7 @@ reaches the access log (items 2 and 3), that BGG credentials are never logged
 named above. A reviewer with repository access can run `go test ./...` in
 `server/`.
 
-**Still open, not done by anyone yet.** An SSL Labs run against thwart.app for
-the edge TLS configuration.
+**Verified on 2026-09-26.** SSL Labs completed its assessment of thwart.app
+(92.222.65.177): grade **A+**, no warnings. TLS 1.2 and 1.3 are enabled, and
+the report confirms HSTS. This assesses the public TLS endpoint, not application
+authorization. [SSL Labs report](https://www.ssllabs.com/ssltest/analyze.html?d=thwart.app).
