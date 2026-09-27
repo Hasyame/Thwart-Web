@@ -356,4 +356,18 @@ options and the table says which one it drew.
     check('invalid acceleration rejected', withAcceleration(game, 'accelerationTokens', -1) === game && withAcceleration(game, 'accelerationTokens', 1.5) === game);
   }
 }
+// Apocalypse's threshold follows printed HP through stage changes, not edited HP.
+{
+  for (const players of [1,2,3,4]) for (const expert of [false,true]) {
+    const game = startOf(setupFor(setOf('aoa','apocalypse'),players,expert));
+    const printed = expert ? 10 : 9;
+    check('Apocalypse starts with scaled threat and Heart acceleration', game.progress.threat === players && game.progress.accelerationIcons === 1);
+    check('Apocalypse X threshold is scaled printed HP', schemeLimit(game) === printed * players);
+    const changed = {...game,progress:{...game.progress,manualVillainHealth:99}};
+    check('editing health does not change scheme X', schemeLimit(changed) === printed * players);
+    check('explicit scheme limit still overrides X', schemeLimit({...changed,progress:{...changed.progress,manualSchemeLimit:50}}) === 50);
+    check('advancing updates X', schemeLimit(villainAdvanced(game)) === (printed+1) * players);
+    check('Heart acceleration is added once per phase', roundEnded(game).progress.threat === players*2+1);
+  }
+}
 process.exit(failures === 0 ? 0 : 1);

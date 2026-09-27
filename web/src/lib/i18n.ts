@@ -951,6 +951,10 @@ export interface Strings {
   readonly campaignContinueLeavesOpen: string;
   readonly campaignTakeABreak: string;
   readonly campaignStopCampaign: string;
+  readonly campaignStopConfirm: string;
+  readonly campaignStopExplanation: string;
+  readonly campaignStopYes: string;
+  readonly campaignSkipPreparation: string;
   readonly campaignChooseScenario: string;
   readonly campaignDoneShopping: string;
   readonly campaignWhoIsBuying: string;

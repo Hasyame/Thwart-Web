@@ -252,7 +252,11 @@ export function villainHealth(e: Encounter): number | null {
 /** The threat this scheme advances at, or what the player typed for a star. */
 export function schemeLimit(e: Encounter): number | null {
   const side = schemeSideOf(e);
-  return e.progress.manualSchemeLimit ?? (side === null ? null : totalFor(side, e.setup.players));
+  // Apocalypse's X uses the printed HP numeral, never a manual HP override.
+  const apocalypseLimit = e.setup.regeneration && side !== null && side.value == null
+    ? (villainSideOf(e)?.value ?? null) : null;
+  return e.progress.manualSchemeLimit ?? (apocalypseLimit !== null
+    ? apocalypseLimit * e.setup.players : side === null ? null : totalFor(side, e.setup.players));
 }
 
 export const villainDefeated = (e: Encounter): boolean => {
@@ -424,6 +428,7 @@ export function startOf(setup: EncounterSetup): Encounter {
     progress: {
         villainIndex: setup.startingVillainIndex ?? 0,
         layoutVersion: 2,
+      accelerationIcons: setup.regeneration ? 1 : 0,
       damage: 0,
       schemeIndex: 0,
       schemeOption: 0,
