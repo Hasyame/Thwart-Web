@@ -106,6 +106,8 @@ export interface EncounterSetup {
 }
 
 export interface EncounterProgress {
+  readonly accelerationTokens?: number;
+  readonly accelerationIcons?: number;
   readonly layoutVersion?: number;
   readonly needsReview?: boolean;
   readonly noLongerWorthy?: boolean;
@@ -393,7 +395,7 @@ export function schemeAdvanced(e: Encounter): Encounter {
  */
 export function roundEnded(e: Encounter): Encounter {
   const side = schemeSideOf(e);
-  const escalation = side === null ? 0 : escalationFor(side, e.setup.players);
+  const escalation = side === null ? 0 : escalationFor(side, e.setup.players) + (e.progress.accelerationTokens ?? 0) + (e.progress.accelerationIcons ?? 0);
   // Every copy accelerates, not only the first: a table playing one scheme
   // each is a table where each of them speeds up every round.
   let after = e;
@@ -405,6 +407,9 @@ export function roundEnded(e: Encounter): Encounter {
 
 export const withManualVillainHealth = (e: Encounter, health: number | null): Encounter =>
   withVillainMaximum(e, 0, health);
+
+export const withAcceleration = (e: Encounter, kind: 'accelerationTokens' | 'accelerationIcons', count: number): Encounter =>
+  Number.isSafeInteger(count) && count >= 0 ? withProgress(e, { [kind]: count }) : e;
 
 export const withManualSchemeLimit = (e: Encounter, limit: number | null): Encounter =>
   limit === null || (Number.isSafeInteger(limit) && limit > 0) ? withProgress(e, { manualSchemeLimit: limit }) : e;
@@ -508,6 +513,7 @@ function villainSide(card: Card): EncounterSide {
 function schemeSide(card: Card): EncounterSide {
   const printed = numberOrNull(card.threat);
   return {
+    code: card.code,
     name: card.name,
     stage: card.stage ?? '',
     // A printed limit of zero means this stage has no threat limit at all: it

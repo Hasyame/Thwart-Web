@@ -6,6 +6,22 @@ import type { Strings } from '../i18n';
  * other arrives in idle time, in case they switch.
  */
 export const en: Strings = {
+  schemeLost: 'YOU LOST',
+  schemeThresholdReached: 'Threshold reached: resolve the main scheme.',
+  tableFinish: 'Finish scenario',
+  villainDown: 'DOWN',
+  villainBeaten: 'DEFEATED!',
+
+  tableView: 'Game table',
+  tableOptions: 'Options',
+  villainPhaseStart: 'Start villain phase',
+  acceleration: 'Acceleration',
+  accelerationTokens: 'Tokens',
+  accelerationIcons: 'Icons in play',
+  accelerationHelp: 'Added each phase, without multiplying by player count. Adjust icons when their cards leave play.',
+
+  campaignPause: 'Pause',
+  campaignGuideGatherText: 'Place the indicated villain and main scheme decks in the centre of the table. Set each villain’s hit points to its printed value, multiplied by the number of players if it has the per-player symbol. If there are multiple villains, each has its own dial. Prepare the scenario and its hit points before creating the encounter deck (Rules Reference 1.8, p. 51, steps 8 and 9).',
   campaignClockHours: "Hours",
   campaignClockMinutes: "Minutes",
   campaignClockSeconds: "Seconds",

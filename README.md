@@ -111,6 +111,10 @@ behavior. The [statistics contract](docs/spec/statistics.md) and
   explicit touch-friendly outcome answers and an hours/minutes/seconds clock
   editor. Pausing that clock keeps the current table open. This presentation
   is limited to Age of Apocalypse; other campaigns retain their existing flow.
+  Its phone table keeps scheme threat and simultaneous villain HP together,
+  with persistent acceleration, villain-phase threat placement and a single
+  finish action. Scheme completion offers the next card's instructions or a
+  defeat stamp, respecting Apocalypse's villain-stage interruption.
   Recognized original AoA saves are corrected when read; custom templates and
   the event log are preserved. See the [shared campaign contract](docs/product/specs/005-CAMPAIGN-RULES-AND-TABLE.md).
 - **Versus.** The two-box mode, offered only to people who own a box that

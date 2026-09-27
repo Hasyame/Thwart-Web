@@ -7,7 +7,7 @@ export function parseEncounterProgress(text: string): Partial<EncounterProgress>
   try {
     const p: unknown = JSON.parse(text);
     if (!record(p)) return null;
-    const numbers = ['layoutVersion','villainIndex','damage','schemeIndex','schemeOption','threat','round','activeVillain','villainForm','structureIndex','structureDamage'];
+    const numbers = ['accelerationTokens','accelerationIcons','layoutVersion','villainIndex','damage','schemeIndex','schemeOption','threat','round','activeVillain','villainForm','structureIndex','structureDamage'];
     if (!numbers.every(k => p[k] === undefined || integer(p[k]))) return null;
     if (p.genePool != null && !integer(p.genePool)) return null;
     const maximum = (v: unknown): boolean => v == null || (integer(v) && (v as number) > 0);

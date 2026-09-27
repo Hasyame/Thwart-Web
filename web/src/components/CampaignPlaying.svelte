@@ -9,6 +9,7 @@
   import GameRules from './GameRules.svelte';
   import CampaignMission from './CampaignMission.svelte';
   import CampaignTableExtras from './CampaignTableExtras.svelte';
+  let finishDialog = $state<HTMLDialogElement>();
 
   interface Props {
     guided?: boolean;
@@ -62,6 +63,7 @@
   }: Props = $props();
 
   let editingClock = $state(false);
+  let clockDialog = $state.raw<HTMLDialogElement | null>(null);
   let clockMinutes = $state(0);
   let clockHours = $state(0);
   let clockSeconds = $state(0);
@@ -72,12 +74,14 @@
     clockMinutes = guided ? Math.floor(elapsedMillis / 60_000) % 60 : Math.round(elapsedMillis / 60_000);
     clockSeconds = Math.floor(elapsedMillis / 1000) % 60;
     editingClock = true;
+    if (guided) clockDialog?.showModal();
   }
 
   function applyClockEdit(): void {
     if (!clockValid) return;
     onCorrect(clockMinutes * 60_000 + (guided ? clockHours * 3_600_000 + clockSeconds * 1000 : 0));
     editingClock = false;
+    clockDialog?.close();
   }
 
   const wake = new ScreenWakeLock();
@@ -103,11 +107,10 @@
     <p class="muted sets">{encounterSets.join(', ')}</p>
   {/if}
 
-  <button class="clock" type="button" onclick={openClockEdit}>{formatElapsed(elapsedMillis)}</button>
+  <button class="clock" type="button" aria-haspopup={guided ? 'dialog' : undefined} onclick={openClockEdit}>{formatElapsed(elapsedMillis)}</button>
   <p class="muted note tap">{t.tapToCorrect}</p>
 
-  {#if editingClock}
-    {#if guided}<div class="clock-parts"><label class="field-group">{t.campaignClockHours}<input class="field" type="number" min="0" max="9999" step="1" inputmode="numeric" bind:value={clockHours} /></label><label class="field-group">{t.campaignClockMinutes}<input class="field" type="number" min="0" max="59" step="1" inputmode="numeric" bind:value={clockMinutes} /></label><label class="field-group">{t.campaignClockSeconds}<input class="field" type="number" min="0" max="59" step="1" inputmode="numeric" bind:value={clockSeconds} /></label></div>{:else}
+  {#if editingClock && !guided}
     <label class="field-group">
       <span class="field-label">{t.correctTheClock}</span>
       <input class="field"
@@ -122,7 +125,6 @@
         }}
       />
     </label>
-    {/if}
     <div class="clock-actions">
       <button class="btn btn--primary" type="button" disabled={!clockValid} onclick={applyClockEdit}>{t.saveResult}</button>
       <button class="btn" type="button" onclick={() => (editingClock = false)}>{t.cancel}</button>
@@ -131,7 +133,7 @@
 
   <div class="clock-actions">
     {#if running}
-      <button class="btn" type="button" onclick={onPause}>{t.pauseClock}</button>
+      <button class="btn" type="button" onclick={onPause}>{guided ? t.campaignPause : t.pauseClock}</button>
     {:else}
       <button class="btn" type="button" onclick={onResume}>{t.resumeClock}</button>
     {/if}
@@ -142,7 +144,42 @@
   <LongBreak {t} {storageOk} {campaignRunId} onSaved={onBreakSaved} />
 </div>
 
-<Tracker comic={guided} {t} {cardLocale} {index} {expert} {villainOrder} setup={trackerSetup} />
+{#if guided}
+  <dialog class="clock-dialog" bind:this={clockDialog} aria-label={t.tapToCorrect} onclose={() => (editingClock = false)}>
+    <form onsubmit={(event) => { event.preventDefault(); applyClockEdit(); }}>
+      <h2>{t.tapToCorrect}</h2>
+      <div class="clock-parts">
+        <label class="field-group">{t.campaignClockHours}<input class="field" type="number" min="0" max="9999" step="1" inputmode="numeric" bind:value={clockHours} /></label>
+        <label class="field-group">{t.campaignClockMinutes}<input class="field" type="number" min="0" max="59" step="1" inputmode="numeric" bind:value={clockMinutes} /></label>
+        <label class="field-group">{t.campaignClockSeconds}<input class="field" type="number" min="0" max="59" step="1" inputmode="numeric" bind:value={clockSeconds} /></label>
+      </div>
+      <div class="clock-actions">
+        <button class="btn btn--primary" type="submit" disabled={!clockValid}>{t.saveResult}</button>
+        <button class="btn" type="button" onclick={() => clockDialog?.close()}>{t.cancel}</button>
+      </div>
+    </form>
+  </dialog>
+{/if}
+
+<Tracker comic={guided} {t} {cardLocale} {index} {expert} {villainOrder} setup={trackerSetup}>
+  {#snippet tableClock()}
+    <button class="btn" aria-label={t.tapToCorrect} onclick={openClockEdit}>{formatElapsed(elapsedMillis)}</button>
+    <button class="btn" onclick={running ? onPause : onResume}>{running ? t.campaignPause : t.resumeClock}</button>
+  {/snippet}
+  {#snippet tableFinish()}
+    <button class="btn btn--primary" onclick={() => finishDialog?.showModal()}>{t.tableFinish}</button>
+  {/snippet}
+</Tracker>
+{#if guided}
+  <dialog class="clock-dialog" bind:this={finishDialog} aria-label={t.tableFinish}>
+    <h2>{t.campaignScenarioOver}</h2>
+    <div class="clock-actions">
+      <button class="btn" disabled={session.current.encounter?.setup.regeneration === true && session.current.encounter?.progress.noLongerWorthy !== true} onclick={() => { finishDialog?.close(); onVictory(); }}>{t.won}</button>
+      <button class="btn" onclick={() => { finishDialog?.close(); onDefeat(); }}>{t.lost}</button>
+      <button class="btn" onclick={() => finishDialog?.close()}>{t.cancel}</button>
+    </div>
+  </dialog>
+{/if}
 <CampaignTableExtras {t} {cardName} />
 {#if mission !== null}
   <CampaignMission {t} initialThreat={mission.threat} missionCode={mission.code} overseerCode={mission.overseer} {cardName} />
@@ -159,12 +196,16 @@
   <h2 class="ending-title">{t.campaignScenarioOver}</h2>
   <p class="ending-detail">{t.campaignRecordResult}</p>
   <div class="ending-actions">
-    <button class="btn btn--primary big" type="button" disabled={session.current.encounter?.setup.regeneration === true && session.current.encounter?.progress.noLongerWorthy !== true} onclick={onVictory}>{t.won}</button>
+    <button class="btn big" type="button" disabled={session.current.encounter?.setup.regeneration === true && session.current.encounter?.progress.noLongerWorthy !== true} onclick={onVictory}>{t.won}</button>
     <button class="btn big" type="button" onclick={onDefeat}>{t.lost}</button>
   </div>
 </section>
 
 <style>
+  .clock-dialog { margin: auto; width: min(30rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: var(--space-5); border: 2px solid var(--text); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text); }
+  .clock-dialog::backdrop { background: var(--scrim); }
+  .clock-dialog h2 { margin-top: 0; font-size: var(--text-xl); }
+  .clock-dialog .clock-actions { margin-top: var(--space-4); }
   .clock-parts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--space-3); }
   .clock-parts input { width: 100%; min-width: 0; }
   .running {

@@ -128,6 +128,10 @@
   /** A step can exist only to carry a draw; drawing its empty text is a stray bullet. */
   const hasText = (step: SetupStep): boolean => label(step.text) !== '';
   const guided = $derived(template.id === 'aoa');
+  const isExpertHealthStep = (step: SetupStep): boolean =>
+    step.showCounter === 'hp' || step.showCounter === 'missionThreat' || step.action?.id === 'heal';
+  const campaignSteps = $derived(guided ? setup.filter(step => !isExpertHealthStep(step)) : setup);
+  const expertHealthSteps = $derived(guided ? setup.filter(isExpertHealthStep) : []);
   const guideKey = $derived(`thwart.campaign-guide.${runKey}.${scenario.id}.${campaign.completedScenarios.length}`);
   let guideStep = $state(0);
   const guideTitles = $derived([t.campaignGuideStory, t.campaignGuideHeroes, t.campaignGuideGather, t.campaignGuideScenario, t.campaignGuideCampaign, t.campaignGuideReady]);
@@ -343,6 +347,7 @@
         <dd>{encounterSets.map(setName).join(', ')}</dd>
       {/if}
     </dl>
+    {#if guided}<p>{t.campaignGuideGatherText}</p>{/if}
     {#if preSetup.filter(hasText).length > 0}
       <ul class="steps">
         {#each preSetup.filter(hasText) as step, i (i)}
@@ -370,8 +375,8 @@
 {/if}
 
 </div><div hidden={guided && guideStep !== 4}>
-{@render panel(t.campaignSetupLabel, setup)}
-{@render panel(t.campaignInformation, information)}
+{@render panel(t.campaignSetupLabel, campaignSteps)}
+{#if !guided}{@render panel(t.campaignInformation, information)}{/if}
 
 {#each (template.cardLists ?? []).filter(list => list.recoveryFlag) as list (list.id)}
   {#each campaign.heroes.filter(hero => !(campaign.heroCardLists[list.id]?.[hero.id] ?? []).length && Object.entries(campaign.flags[list.recoveryFlag ?? ''] ?? {}).some(([scenario,won]) => won && !(campaign.eliminatedInScenario[scenario] ?? []).includes(hero.id))) as hero (hero.id)}
@@ -406,6 +411,9 @@
     {/each}
   </section>
 {/if}
+
+{@render panel(t.campaignGuideCampaign, expertHealthSteps)}
+{#if guided}{@render panel(t.campaignInformation, information)}{/if}
 
 </div><div hidden={guided && guideStep !== 5}>
 {#if guided}<section class="panel"><h3>{t.campaignGuideReady}</h3><p>{t.campaignGuideHandText}</p></section>{/if}
