@@ -13,6 +13,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { boxArtOf, faceCardOf, fieldHue, parseEventRows, tileOf } from '../src/lib/campaignTile.ts';
 import { expandTemplate } from '../src/lib/campaign/engine.ts';
+import { foldCampaign } from '../src/lib/campaigns.ts';
 import { scenarioFaceOf } from '../src/lib/scenarioFace.ts';
 
 let failures = 0;
@@ -105,6 +106,22 @@ const run = (templateId, finished = false) => ({ id: 'r', templateId, templateNa
   check('the sixth defeat loses the campaign: lost', lost.status === 'lost', lost.status);
   check('lost outranks the run\'s finished flag reading as won', tileOf(run('fne', true), fne, [...events, ...lose('s6_caid')]).status === 'lost');
   check('the score still counts the five beaten', lost.beaten === 5 && lost.total === 6);
+}
+
+
+{
+  const template = templates.get('aoa');
+  const concession = ev({ type: 'campaign_conceded' });
+  const history = [setup('aoa'), result('s1_unus', true), concession,
+    ev({ type: 'revoke', revokedEventId: concession.id })];
+  const restored = tileOf(run('aoa'), template, history);
+  check('revoked concession reopens the campaign tile', restored.status === 'in-progress');
+  check('restored AoA retains Unus and opens the Horsemen', restored.beaten === 1 && restored.state.currentScenarioId === 's2_four_horsemen');
+  check('fold outranks a stale finished flag after recovery', tileOf(run('aoa', true), template, history).status === 'in-progress');
+  const rows = history.map(event => ({id:event.id,runId:'r',timestamp:event.timestamp,payload:JSON.stringify(event)}));
+  check('campaign summary also ignores revoked concession', !foldCampaign({...run('aoa'),templateJson:JSON.stringify(template)}, rows, 'fr').conceded);
+  const newConcession = ev({type:'campaign_conceded'});
+  check('a later explicit concession still closes the campaign', tileOf(run('aoa'), template, [...history,newConcession]).status === 'conceded');
 }
 
 // --- the rows as stored ---------------------------------------------------------------
