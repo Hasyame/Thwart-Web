@@ -15,6 +15,7 @@
   import { fetchCard } from '../lib/cardViewer.svelte';
   import { cardImageUrl } from '../lib/data';
   import { formatElapsed } from '../lib/session.svelte';
+  import DetailDialog from './DetailDialog.svelte';
   import PlayRow from './PlayRow.svelte';
 
   /**
@@ -372,13 +373,13 @@
   <section class="block">
     <h2>{t.campaignSettingsTitle}</h2>
     {#if deleting}
-      <div class="surface info">
+      <DetailDialog title={t.campaignDelete} closeLabel={t.cancel} onClose={() => { if (!busy) deleting = false; }}>
         <p>{t.campaignDeleteConfirm(plays.length, eventCount)}</p>
         <div class="row">
           <button class="btn btn--quiet danger" type="button" disabled={busy} onclick={() => void remove()}>{t.campaignDeleteYes}</button>
           <button class="btn btn--quiet" type="button" disabled={busy} onclick={() => (deleting = false)}>{t.cancel}</button>
         </div>
-      </div>
+      </DetailDialog>
     {:else}
       <button class="btn btn--quiet danger" type="button" onclick={() => (deleting = true)}>🗑 {t.campaignDelete}</button>
     {/if}

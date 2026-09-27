@@ -51,6 +51,7 @@
     timerElapsed,
     timerRunning,
   } from '../lib/campaign/store';
+  import DetailDialog from './DetailDialog.svelte';
   import CampaignBriefing from './CampaignBriefing.svelte';
   import CampaignJourney from './CampaignJourney.svelte';
   import RatingPanel from './RatingPanel.svelte';
@@ -686,6 +687,14 @@
           (template?.scenarios ?? []).find((s) => s.id === campaign?.currentScenarioId)?.name,
         ),
   );
+  let confirmStop = $state(false);
+  let stopping = $state(false);
+  async function stopCampaign(): Promise<void> {
+    if (stopping) return;
+    stopping = true;
+    try { await pauseTimer(run); await concede(run); confirmStop = false; override = null; reload(); }
+    finally { stopping = false; }
+  }
 </script>
 
 <div class="run">
@@ -957,12 +966,20 @@
     {/if}
 
     {#if !campaign.finished && page !== 'playing' && page !== 'questions'}
-      <button class="forget" type="button" onclick={async () => { await concede(run); override = null; reload(); }}>
+      <button class="forget" type="button" onclick={() => { confirmStop = true; }}>
         {t.campaignStopCampaign}
       </button>
     {/if}
   {/if}
 </div>
+
+{#if confirmStop}
+  <DetailDialog title={t.campaignStopConfirm} closeLabel={t.cancel} onClose={() => { if (!stopping) confirmStop = false; }}>
+    <p><strong>{run.name}</strong></p>
+    <p>{t.campaignStopExplanation}</p>
+    <button class="btn" type="button" disabled={stopping} onclick={() => void stopCampaign()}>{t.campaignStopYes}</button>
+  </DetailDialog>
+{/if}
 
 <style>
   .comic-head { position: relative; isolation: isolate; overflow: hidden; padding: var(--space-5); background: #191820; color: #fff; border-bottom: 6px solid var(--accent); }

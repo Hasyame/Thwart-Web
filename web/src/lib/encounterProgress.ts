@@ -29,7 +29,7 @@ export function parseEncounterProgress(text: string): Partial<EncounterProgress>
 }
 
 export function recoveredEncounter(setup: EncounterSetup, saved: Partial<EncounterProgress>): Encounter {
-  let p = {...startOf(setup).progress, ...saved};
+  let p = {...startOf(setup).progress, ...saved, accelerationIcons: saved.accelerationIcons ?? 0};
   if ((saved.layoutVersion ?? 0) < 2 && setup.villainForms?.length) {
     const old = saved.villainIndex ?? 0;
     p = {...p, villainIndex: Math.floor(old / 3), villainForm: old % 3, needsReview: true};

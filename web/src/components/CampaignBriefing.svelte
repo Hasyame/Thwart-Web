@@ -16,6 +16,7 @@
     type ScenarioTemplate,
     type SetupStep,
   } from '../lib/campaign/types';
+  import ApocalypsePreparation from './ApocalypsePreparation.svelte';
   import CampaignText from './CampaignText.svelte';
   import CardRef from './CardRef.svelte';
   import { openingAllies } from '../lib/campaign/openingAlly';
@@ -127,6 +128,9 @@
 
   /** A step can exist only to carry a draw; drawing its empty text is a stray bullet. */
   const hasText = (step: SetupStep): boolean => label(step.text) !== '';
+  const detailedApocalypse = $derived(template.id === 'aoa' && scenario.id === 's3_apocalypse');
+  const missionStep = (step: SetupStep): boolean => step.when?.drawIs?.startsWith('mission:') === true;
+  const consequenceStep = (step: SetupStep): boolean => step.when?.countTrue != null || step.showCardList != null;
   const guided = $derived(template.id === 'aoa');
   const isExpertHealthStep = (step: SetupStep): boolean =>
     step.showCounter === 'hp' || step.showCounter === 'missionThreat' || step.action?.id === 'heal';
@@ -283,27 +287,7 @@
   {/if}
 {/snippet}
 
-{#if guided}
-  <nav class="guide-nav" aria-label={t.campaignGuideTitle}>
-    <h2>{t.campaignGuideTitle}</h2>
-    <label class="field-group"><span>{guideStep + 1} / {guideTitles.length}</span><select class="field" value={guideStep} onchange={e => moveGuide(Number(e.currentTarget.value))}>{#each guideTitles as title, i}<option value={i}>{i + 1}. {title}</option>{/each}</select></label>
-    <progress max={guideTitles.length} value={guideStep + 1} aria-label={t.campaignGuideTitle}></progress>
-  </nav>
-{/if}
-<div hidden={guided && guideStep !== 0}>
-<!-- Four boxes, in the order the table works through them: the story, what to
-     fetch, what to lay out, and what to know once it is laid out. -->
-{#if scenario.flavour != null && label(scenario.flavour) !== ''}
-  <section class="panel story">
-    <p><CampaignText segments={parseCampaignText(label(scenario.flavour), text)} /></p>
-  </section>
-{/if}
-
-</div>
-{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{/if}
-<div hidden={guided && guideStep !== 2}>
-{#if hasChips}
-  <section class="panel">
+{#snippet setupSettings()}
     <label class="field-group">
       <span>{t.scenarioDifficulty}</span>
       <select class="field" value={scenarioDifficulty(campaign, scenario.id)} onchange={e => onDifficulty(e.currentTarget.value === 'expert')}>
@@ -320,6 +304,82 @@
         </label>
       {/if}
     {/each}
+
+{/snippet}
+{#snippet recoveryPanel()}
+{#each (template.cardLists ?? []).filter(list => list.recoveryFlag) as list (list.id)}
+  {#each campaign.heroes.filter(hero => !(campaign.heroCardLists[list.id]?.[hero.id] ?? []).length && Object.entries(campaign.flags[list.recoveryFlag ?? ''] ?? {}).some(([scenario,won]) => won && !(campaign.eliminatedInScenario[scenario] ?? []).includes(hero.id))) as hero (hero.id)}
+    <section class="panel">
+      <h3>{hero.name} · {t.campaignRecoverReward}</h3>
+      <p>{t.campaignRecoverRewardHint}</p>
+      <select class="field" aria-label={`${hero.name}: ${t.campaignRecoverReward}`} onchange={event => { if (event.currentTarget.value) onKeep(`${list.id}|${hero.id}`, event.currentTarget.value); }}>
+        <option value="">{t.campaignChooseOne}</option>
+        {#each index.filter(card => list.recoveryCards?.includes(card.code) || (list.recoveryCardType && card.typeCode === list.recoveryCardType && ['aggression','justice','leadership','protection','basic','pool'].includes(card.factionCode))) as card (card.code)}
+          <option value={card.code}>{card.name}</option>
+        {/each}
+      </select>
+    </section>
+  {/each}
+{/each}
+
+
+{/snippet}
+{#snippet allyPanel()}
+{#if template.id === 'aoa'}
+  <section class="panel">
+    <h3>{t.campaignOpeningAlly}</h3>
+    <p>{t.campaignOpeningAllyHint}</p>
+    {#each campaign.heroes as hero (hero.id)}
+      {@const eligible = openingAllies(hero, decks, index, expert)}
+      {@const selected = campaign.draws[scenario.id]?.[`openingAlly|${hero.id}`]?.[0] ?? ''}
+      <label class="field-group"><span>{hero.name}</span>
+        <select class="field" value={selected} onchange={e => onKeep(`openingAlly|${hero.id}`, e.currentTarget.value)}>
+          <option value="">{t.campaignChooseOne}</option>
+          {#each eligible as card (card.code)}<option value={card.code}>{card.name}</option>{/each}
+        </select>
+      </label>
+      {#if selected !== ''}<CardRef code={selected} name={cardName(selected)} />{/if}
+      {#if eligible.length === 0}<p class="muted">{t.campaignOpeningAllyFallback}</p>{/if}
+    {/each}
+  </section>
+{/if}
+
+{/snippet}
+{#snippet storyPanel()}<CampaignText segments={parseCampaignText(label(scenario.flavour),text)} />{/snippet}
+{#snippet consequencePanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(consequenceStep))}{/snippet}
+{#snippet missionPanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(missionStep))}{/snippet}
+{#snippet healthPanel()}{@render panel(t.campaignGuideCampaign, expertHealthSteps)}{/snippet}
+{#if detailedApocalypse}
+  <ApocalypsePreparation {t} {uiLocale} {guideKey} {campaign} {expert} {text} {index} {encounterSets} {setName}
+    scenarioExpert={scenarioDifficulty(campaign,scenario.id)==='expert'}
+    settings={setupSettings} storyContent={storyPanel} campaignContent={consequencePanel} missionContent={missionPanel}
+    allyContent={allyPanel} healthContent={healthPanel} recoveryContent={recoveryPanel}
+    {rejoinRequired} {onReady} {onKeep} />
+{:else}
+<div class="skip-preparation"><button class="btn btn--primary" disabled={rejoinRequired} onclick={onReady}>{t.campaignSkipPreparation}</button>{#if rejoinRequired}<p>{t.campaignRejoinRequired}</p>{/if}</div>
+{#if guided}
+  <nav class="guide-nav" aria-label={t.campaignGuideTitle}>
+    <h2>{t.campaignGuideTitle}</h2>
+    <label class="field-group"><span>{guideStep + 1} / {guideTitles.length}</span><select class="field" value={guideStep} onchange={e => moveGuide(Number(e.currentTarget.value))}>{#each guideTitles as title, i}<option value={i}>{i + 1}. {title}</option>{/each}</select></label>
+    <progress max={guideTitles.length} value={guideStep + 1} aria-label={t.campaignGuideTitle}></progress>
+    {#if guideStep < 5}<button class="btn btn--primary" onclick={() => moveGuide(guideStep + 1)}>{t.campaignGuideNext}</button>{/if}
+  </nav>
+{/if}
+<div hidden={guided && guideStep !== 0}>
+<!-- Four boxes, in the order the table works through them: the story, what to
+     fetch, what to lay out, and what to know once it is laid out. -->
+{#if scenario.flavour != null && label(scenario.flavour) !== ''}
+  <section class="panel story">
+    <p><CampaignText segments={parseCampaignText(label(scenario.flavour), text)} /></p>
+  </section>
+{/if}
+
+</div>
+{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{/if}
+<div hidden={guided && guideStep !== 2}>
+{#if hasChips}
+  <section class="panel">
+    {@render setupSettings()}
     <h3>{t.campaignPreSetup}</h3>
     <dl class="gather">
       {#if villainDeck.length > 0}
@@ -378,39 +438,8 @@
 {@render panel(t.campaignSetupLabel, campaignSteps)}
 {#if !guided}{@render panel(t.campaignInformation, information)}{/if}
 
-{#each (template.cardLists ?? []).filter(list => list.recoveryFlag) as list (list.id)}
-  {#each campaign.heroes.filter(hero => !(campaign.heroCardLists[list.id]?.[hero.id] ?? []).length && Object.entries(campaign.flags[list.recoveryFlag ?? ''] ?? {}).some(([scenario,won]) => won && !(campaign.eliminatedInScenario[scenario] ?? []).includes(hero.id))) as hero (hero.id)}
-    <section class="panel">
-      <h3>{hero.name} · {t.campaignRecoverReward}</h3>
-      <p>{t.campaignRecoverRewardHint}</p>
-      <select class="field" aria-label={`${hero.name}: ${t.campaignRecoverReward}`} onchange={event => { if (event.currentTarget.value) onKeep(`${list.id}|${hero.id}`, event.currentTarget.value); }}>
-        <option value="">{t.campaignChooseOne}</option>
-        {#each index.filter(card => list.recoveryCards?.includes(card.code) || (list.recoveryCardType && card.typeCode === list.recoveryCardType && ['aggression','justice','leadership','protection','basic','pool'].includes(card.factionCode))) as card (card.code)}
-          <option value={card.code}>{card.name}</option>
-        {/each}
-      </select>
-    </section>
-  {/each}
-{/each}
-
-{#if template.id === 'aoa'}
-  <section class="panel">
-    <h3>{t.campaignOpeningAlly}</h3>
-    <p>{t.campaignOpeningAllyHint}</p>
-    {#each campaign.heroes as hero (hero.id)}
-      {@const eligible = openingAllies(hero, decks, index, expert)}
-      {@const selected = campaign.draws[scenario.id]?.[`openingAlly|${hero.id}`]?.[0] ?? ''}
-      <label class="field-group"><span>{hero.name}</span>
-        <select class="field" value={selected} onchange={e => onKeep(`openingAlly|${hero.id}`, e.currentTarget.value)}>
-          <option value="">{t.campaignChooseOne}</option>
-          {#each eligible as card (card.code)}<option value={card.code}>{card.name}</option>{/each}
-        </select>
-      </label>
-      {#if selected !== ''}<CardRef code={selected} name={cardName(selected)} />{/if}
-      {#if eligible.length === 0}<p class="muted">{t.campaignOpeningAllyFallback}</p>{/if}
-    {/each}
-  </section>
-{/if}
+{@render recoveryPanel()}
+{@render allyPanel()}
 
 {@render panel(t.campaignGuideCampaign, expertHealthSteps)}
 {#if guided}{@render panel(t.campaignInformation, information)}{/if}
@@ -430,7 +459,10 @@
 
 </div>
 {#if guided}<div class="guide-actions"><button class="btn" disabled={guideStep === 0} onclick={() => moveGuide(guideStep - 1)}>{t.campaignGuidePrevious}</button>{#if guideStep < 5}<button class="btn btn--primary" onclick={() => moveGuide(guideStep + 1)}>{t.campaignGuideNext}</button>{/if}</div>{/if}
+{/if}
 <style>
+  .skip-preparation { position: sticky; top: calc(56px + env(safe-area-inset-top) + var(--space-2)); z-index: 5; padding: var(--space-2); margin-bottom: var(--space-3); background: var(--surface); border: 1px solid var(--border); }
+  .skip-preparation button { width: 100%; min-height: 48px; white-space: normal; }
   [hidden] { display: none !important; }
   .guide-nav { padding: var(--space-4); border-left: 5px solid var(--accent); background: var(--surface); }
   .guide-nav h2 { font-weight: 900; font-style: italic; text-transform: uppercase; }

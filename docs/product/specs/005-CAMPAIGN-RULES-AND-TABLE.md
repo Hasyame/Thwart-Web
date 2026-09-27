@@ -193,3 +193,36 @@ front-side instructions before advancing, or show a defeat stamp for a terminal
 scheme. Apocalypse's villain-stage interruption remains a separate progression.
 Do not automatically record a loss from a counter; accidental entries remain
 correctable. Victory and defeat have equal neutral initial styling.
+
+
+## Detailed setup and accidental campaign actions (27 September 2026)
+
+The owner reconfirmed detailed preparation as a quality requirement for every
+scenario, inside or outside a campaign. Include the setup effects printed on
+villain and scheme cards, in rules order, with calculated quantities and optional
+card previews. This is not certification of the existing catalogue. The current
+Web rollout adds the reviewed 14-step Apocalypse guide; other scenarios retain
+their existing presentation pending individual verification.
+
+Apocalypse preparation uses real mission, Overseer, reward and health records.
+The first Prelate is drawn once and saved as an existing setup-choice event;
+it is visible when gathering the encounter sets and can be corrected to match
+a card already drawn at the table. The other four remain set aside. Revisiting
+steps must not repeat draws, healing or tracker initialization.
+
+A persistent ready-to-play shortcut bypasses explanatory preparation steps.
+Retain required rejoin handling for eliminated expert-campaign heroes. Provide
+a Continue control below the progress indicator as well as at the end of steps.
+New Apocalypse trackers include Heart of the Empire's initial acceleration and
+calculate the main-scheme X threshold from the current villain's printed HP,
+independently of a manually edited HP maximum. Existing saved acceleration is
+preserved rather than reapplying setup.
+
+Stopping a campaign requires a modal confirmation naming the campaign and
+explaining that it will be marked conceded, with history retained. Cancel and
+Escape must not mutate the log. Permanent campaign deletion uses a separate
+confirmation describing the deletion of its log and recorded games. Default
+focus goes to Cancel. A concession can be repaired through an appended revoke
+event without deleting history; do not rewrite immutable campaign events.
+
+Publication authorization remains Web only. Android is not released here.
