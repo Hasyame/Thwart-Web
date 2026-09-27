@@ -3,7 +3,7 @@
   import type { Locale } from '../lib/types';
   import { cardImageUrl, loadPackCards } from '../lib/data';
   import CardRef from './CardRef.svelte';
-  const { t, locale, code, name, maximum, damage, onDamage }: {t: Strings; locale: Locale; code?: string; name: string; maximum: number | null; damage: number; onDamage: (amount: number) => void} = $props();
+  const { t, locale, code, name, maximum, damage, onDamage, defeated = true }: {t: Strings; locale: Locale; code?: string; name: string; maximum: number | null; damage: number; defeated?: boolean; onDamage: (amount: number) => void} = $props();
   let image = $state<string | null>(null);
   let feedback = $state(0);
   let changedAt = 0;
@@ -27,6 +27,7 @@
   <h3>{#if code}<CardRef {code} {name} />{:else}{name}{/if}</h3>
   <p class="hp" aria-live="polite">{maximum === null ? '★' : Math.max(0, maximum - damage)} <small>/ {maximum ?? '★'}</small></p>
   <p>{t.statHealth}</p>
+  {#if maximum !== null && damage >= maximum}<span class="ko-stamp" role="status">{defeated ? t.villainBeaten : t.villainDown}</span>{/if}
   {#if feedback !== 0}<span class="feedback" aria-hidden="true">{feedback > 0 ? '+' : '−'}{Math.abs(feedback)}</span>{/if}
   <div class="controls">
     <button class="btn" disabled={maximum !== null && damage >= maximum} onclick={() => change(1)} aria-label={`${name}: −1 ${t.statHealth}`}>−1</button>
@@ -36,6 +37,8 @@
   </div>
 </section>
 <style>
+  .ko-stamp { position: absolute; right: 8px; top: 42px; transform: rotate(-9deg); background: #ffd84a; color: #191820; border: 3px solid #191820; padding: 2px 6px; font-size: 1rem; font-weight: 950; font-style: italic; pointer-events: none; box-shadow: 3px 3px 0 #cf0028; }
+  @media (prefers-reduced-motion: no-preference) { .ko-stamp { animation: stamp-in .3s ease-out; } @keyframes stamp-in { from { transform: scale(1.7) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(-9deg); opacity: 1; } } }
   .vital-card { position: relative; isolation: isolate; overflow: hidden; padding: var(--space-4); background: #171923; color: white; border: 2px solid #575968; }
   .art { position: absolute; z-index: -2; inset: -25% 0 auto; width: 100%; height: 200%; object-fit: cover; object-position: center 25%; filter: blur(2px); opacity: .8; }
   .vital-card::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(100deg,#10131ded,#10131daa); }

@@ -164,3 +164,31 @@ covered the illustrated tracker and precise clock dialog. A final touch-layout
 adjustment is being verified separately before Android is delivered.
 
 The owner authorized production publication of Web only. Android remains local.
+
+## Compact AoA table (27 September 2026)
+
+The campaign hub owns chapter progress; hide its repeated journey strip during
+play. Keep scenario artwork in the header, a tappable clock with a modal editor,
+and a short Pause label. Setup explicitly places the scenario and villain HP
+before the encounter deck. The opening ally choice precedes expert campaign
+health and paid healing, matching the AoA booklet.
+
+On phones, open a compact table showing the main scheme and all simultaneous
+villains together. Keep 44px counter controls, timer, options and a single finish
+action. Options return to the full rules, mission and saved-break controls.
+Use darkened artwork for the scheme as well as villains. Rapid threat changes
+accumulate just like HP changes. A zero-HP Horseman is Down until all are at zero;
+only then is the defeated stamp appropriate.
+
+Acceleration is an explicit persistent total adjusted with minus/plus one.
+Starting the villain phase adds printed per-player growth plus this total once,
+not once per player. It does not automate villain activations or encounter cards.
+Optional encounter progress fields default to zero and survive local saved tables.
+The Web implementation is limited to AoA presentation; other campaigns retain
+existing controls. Android publication is not authorized for this update.
+
+At a scheme threshold, show its specific consequence: review the next stage's
+front-side instructions before advancing, or show a defeat stamp for a terminal
+scheme. Apocalypse's villain-stage interruption remains a separate progression.
+Do not automatically record a loss from a counter; accidental entries remain
+correctable. Victory and defeat have equal neutral initial styling.

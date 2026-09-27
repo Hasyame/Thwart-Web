@@ -11,6 +11,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  withAcceleration,
   damaged,
   isFinalVillainStage,
   roundEnded,
@@ -339,4 +340,20 @@ options and the table says which one it drew.
   );
 }
 
+// Tokens and icons add once for the table, not once per hero, and survive phases.
+{
+  const cards = JSON.parse(readFileSync(join('public','data','cards','en','aoa.json'), 'utf8'));
+  for (const players of [1,2,3,4]) {
+    let game = startOf(setupFor(cards.filter(c => c.card_set_code === 'four_horsemen'), players, false));
+    game = withAcceleration(withAcceleration(game, 'accelerationTokens', 2), 'accelerationIcons', 1);
+    const initial = game.progress.threat;
+    game = roundEnded(roundEnded(game));
+    check(`Horsemen ${players} players: printed growth plus 3 each phase`, game.progress.threat === initial + 2 * (players + 3));
+    game = withAcceleration(game, 'accelerationIcons', 0);
+    const before = game.progress.threat;
+    game = roundEnded(game);
+    check('removed icons stop contributing; tokens remain', game.progress.threat === before + players + 2);
+    check('invalid acceleration rejected', withAcceleration(game, 'accelerationTokens', -1) === game && withAcceleration(game, 'accelerationTokens', 1.5) === game);
+  }
+}
 process.exit(failures === 0 ? 0 : 1);

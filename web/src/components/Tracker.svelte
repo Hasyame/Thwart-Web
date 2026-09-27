@@ -1,11 +1,14 @@
 <script lang="ts">
+  import { onMount, type Snippet } from 'svelte';
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale } from '../lib/types';
-  import { loadPackCards } from '../lib/data';
+  import { loadPackCards, cardImageUrl } from '../lib/data';
   import CardRef from './CardRef.svelte';
   import CampaignVitalCard from './CampaignVitalCard.svelte';
   import MaximumControl from './MaximumControl.svelte';
   import {
+    escalationFor,
+    withAcceleration,
     damaged,
     damagedAt,
     villainTracks,
@@ -46,6 +49,8 @@
   import { session, setEncounter, updateEncounter } from '../lib/session.svelte';
 
   interface Props {
+    tableClock?: Snippet;
+    tableFinish?: Snippet;
     comic?: boolean;
     t: Strings;
     cardLocale: Locale;
@@ -63,7 +68,9 @@
     villainOrder?: readonly string[];
   }
 
-  const { comic = false, t, cardLocale, index, expert, setup = null, villainOrder = [] }: Props = $props();
+  const { comic = false, tableClock, tableFinish, t, cardLocale, index, expert, setup = null, villainOrder = [] }: Props = $props();
+  let tableFocus = $state(false);
+  onMount(() => { tableFocus = comic && window.matchMedia('(max-width: 700px)').matches; });
 
   const players = $derived(Math.max(1, session.current.seats.length));
   const scenarioCode = $derived(session.current.scenarioCode);
@@ -149,6 +156,22 @@
   const villain = $derived(encounter === null ? null : villainSideOf(encounter));
   const scheme = $derived(encounter === null ? null : schemeSideOf(encounter));
   const stage = $derived(encounter === null ? null : schemeStageOf(encounter));
+  let schemeArt = $state<string | null>(null);
+  let schemeCardCode = $state<string | undefined>();
+  $effect(() => {
+    const code = scheme?.code;
+    const name = scheme?.name;
+    const printedStage = scheme?.stage;
+    const locale = cardLocale;
+    let cancelled = false;
+    schemeArt = null;
+    schemeCardCode = code;
+    if (comic && name) void loadPackCards(locale, 'aoa').then(cards => {
+      const card = cards.find(card => code ? card.code === code : card.name === name && card.stage === printedStage && card.code.endsWith('b'));
+      if (!cancelled) { schemeArt = cardImageUrl(card?.imagesrc); schemeCardCode = card?.code; }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  });
   const health = $derived(encounter === null ? null : villainHealth(encounter));
   const limit = $derived(encounter === null ? null : schemeLimit(encounter));
 
@@ -158,6 +181,50 @@
   );
 
   const STEPS = [-5, -1, 1, 5] as const;
+  let schemeDialog = $state<HTMLDialogElement>();
+  let nextSchemeText = $state('');
+  let nextSchemeCode = $state<string | undefined>();
+  const schemeLost = $derived(encounter !== null && schemeComplete(encounter) && isFinalSchemeStage(encounter) && (!encounter.setup.regeneration || isFinalVillainStage(encounter)));
+  async function reviewNextScheme(): Promise<void> {
+    if (!encounter) return;
+    const next = encounter.setup.scheme[encounter.progress.schemeIndex + 1]?.options[0];
+    if (!next) return;
+    nextSchemeText = t.loading;
+    nextSchemeCode = next.code?.replace(/b$/, 'a');
+    schemeDialog?.showModal();
+    try {
+      const cards = await loadPackCards(cardLocale, 'aoa');
+      const front = cards.find(card => nextSchemeCode ? card.code === nextSchemeCode : card.name === next.name && card.code.endsWith('a'));
+      nextSchemeCode = front?.code;
+      nextSchemeText = new DOMParser().parseFromString(front?.text ?? '', 'text/html').body.textContent ?? '';
+    } catch { nextSchemeText = t.trackerUnavailable; }
+  }
+  let threatFeedback = $state<Record<number, number>>({});
+  const feedbackTimes: Record<number, number> = {};
+  const feedbackTimers: Record<number, ReturnType<typeof setTimeout>> = {};
+  $effect(() => () => Object.values(feedbackTimers).forEach(clearTimeout));
+  function showThreatChange(copy: number, delta: number): void {
+    if (!delta) return;
+    const now = performance.now();
+    const previous = threatFeedback[copy] ?? 0;
+    threatFeedback[copy] = now - (feedbackTimes[copy] ?? 0) < 800 && Math.sign(previous) === Math.sign(delta) ? previous + delta : delta;
+    feedbackTimes[copy] = now;
+    clearTimeout(feedbackTimers[copy]);
+    feedbackTimers[copy] = setTimeout(() => { threatFeedback[copy] = 0; }, 900);
+  }
+  function changeThreat(copy: number, amount: number): void {
+    if (!encounter) return;
+    const applied = threatOn(threatenedOn(encounter, copy, amount), copy) - threatOn(encounter, copy);
+    showThreatChange(copy, applied);
+    updateEncounter(c => threatenedOn(c, copy, amount));
+  }
+  const phaseThreat = $derived(encounter && scheme ? escalationFor(scheme, encounter.setup.players) + (encounter.progress.accelerationTokens ?? 0) + (encounter.progress.accelerationIcons ?? 0) : 0);
+  function beginVillainPhase(): void {
+    if (!encounter) return;
+    const after = roundEnded(encounter);
+    for (const copy of copies) showThreatChange(copy, threatOn(after, copy) - threatOn(encounter, copy));
+    updateEncounter(roundEnded);
+  }
 </script>
 
 {#if loading}
@@ -167,12 +234,17 @@
        as a bug, where "this scenario has no numbers to count" is an answer. -->
   <p class="muted note">{t.trackerUnavailable}</p>
 {:else}
-  <div class="tracker surface">
+  <div class="tracker surface" class:table-focus={comic && tableFocus}>
+    {#if comic}<div class="table-toolbar">
+      {#if tableFocus && tableClock}{@render tableClock()}{/if}
+      <button class="btn" onclick={() => { tableFocus = !tableFocus; }}>{tableFocus ? t.tableOptions : t.tableView}</button>
+    </div>{/if}
     {#if encounter.progress.needsReview}
       <p>{t.campaignTrackerReview}</p>
       <button class="btn" onclick={() => updateEncounter(e => ({...e,progress:{...e.progress,needsReview:false}}))}>{t.campaignContinue}</button>
     {/if}
     <h2>{t.round(encounter.progress.round)}</h2>
+    {#if comic}{@render mainScheme()}{/if}
 
     {#if encounter.setup.activeVillainMarker}
       <div class="villain-grid">
@@ -182,7 +254,7 @@
             {@const hp = villainHealthAt(encounter, track)}
             <section class="counter horseman" class:active={(encounter.progress.activeVillain ?? 0) === track}>
               {#if comic}
-                <CampaignVitalCard {t} locale={cardLocale} code={side.code} name={`${side.name} ${side.stage}`} maximum={hp} damage={villainDamageAt(encounter, track)} onDamage={amount => updateEncounter(c => damagedAt(c, track, amount))} />
+                <CampaignVitalCard {t} locale={cardLocale} code={side.code} name={`${side.name} ${side.stage}`} maximum={hp} damage={villainDamageAt(encounter, track)} defeated={villainTracks(encounter).every((_, i) => villainHealthAt(encounter!, i) !== null && villainDamageAt(encounter!, i) >= villainHealthAt(encounter!, i)!)} onDamage={amount => updateEncounter(c => damagedAt(c, track, amount))} />
               {:else}
               <h3>{side.name} {side.stage}</h3>
               {#if side.code}<CardRef code={side.code} name={side.name} />{/if}
@@ -291,9 +363,43 @@
       </div>
     {/if}
 
-    {#if scheme !== null && stage !== null}
-      <div class="counter">
-        <p class="name">{#if comic && scheme.code}<CardRef code={scheme.code} name={scheme.name} />{:else}{scheme.name}{/if}</p>
+    {#if !comic}{@render mainScheme()}{/if}
+    {#if comic && tableFocus && tableFinish}<div class="table-finish">{@render tableFinish()}</div>{/if}
+
+    {#if !comic}<button class="btn btn--primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
+      {t.endRound}
+    </button>{/if}
+
+    <!--
+      Said out loud, because otherwise the round button looks broken.
+
+      One scheme prints a star where its acceleration goes: it speeds up by the
+      attachments on the villain, which this cannot see. It therefore adds
+      nothing, and a player who is not told that presses end of round, watches
+      the threat sit still, and concludes the tracker is wrong — about that and
+      then about everything else it is counting correctly.
+    -->
+    {#if scheme !== null && scheme.escalationVariable === true}
+      <p class="muted note">{t.trackerStarredAcceleration}</p>
+    {/if}
+
+    <p class="muted note">{t.trackerNote}</p>
+  </div>
+{/if}
+
+{#if comic}<dialog class="scheme-dialog" bind:this={schemeDialog} aria-label={t.advanceScheme}>
+  <h2>{t.advanceScheme}</h2>
+  {#if nextSchemeCode}<CardRef code={nextSchemeCode} name={t.campaignGuideScenario} />{/if}
+  <p>{nextSchemeText}</p>
+  <button class="btn btn--primary" onclick={() => { updateEncounter(schemeAdvanced); schemeDialog?.close(); }}>{t.campaignContinue}</button>
+  <button class="btn" onclick={() => schemeDialog?.close()}>{t.cancel}</button>
+</dialog>{/if}
+
+{#snippet mainScheme()}
+    {#if encounter !== null && scheme !== null && stage !== null}
+      <div class="counter scheme-counter" class:compact-scheme={comic}>
+        {#if comic && schemeArt}<img class="scheme-art" src={schemeArt} alt="" />{/if}
+        <p class="name">{#if comic && schemeCardCode}<CardRef code={schemeCardCode} name={scheme.name} />{:else}{scheme.name}{/if}</p>
 
         {#if stage.options.length > 1}
           <!-- Mansion Attack draws a room out of four, Kang a realm out of
@@ -345,6 +451,7 @@
             <p class="reading" class:done={schemeCompleteOn(encounter, copy)}>
               <span class="big">{threat}</span>
               <span class="muted">/ {limit}</span>
+              {#if comic && threatFeedback[copy]}<span class="threat-feedback" class:removed={threatFeedback[copy] < 0} aria-live="polite">{threatFeedback[copy] > 0 ? '+' : '−'}{Math.abs(threatFeedback[copy])}</span>{/if}
             </p>
             <div class="bar scheme" role="presentation">
               <span style={`width: ${Math.min(100, (threat / Math.max(1, limit)) * 100)}%`}></span>
@@ -355,7 +462,8 @@
                 <button
                   class="btn"
                   type="button"
-                  onclick={() => updateEncounter((c) => threatenedOn(c, copy, step))}
+                  disabled={step < 0 ? threat === 0 : schemeCompleteOn(encounter, copy)}
+                  onclick={() => changeThreat(copy, step)}
                 >
                   {step > 0 ? `+${step}` : `−${-step}`}
                 </button>
@@ -364,8 +472,21 @@
           {/each}
         {/if}
 
+        {#if comic}
+          <div class="phase-controls">
+          <button class="btn btn--primary phase-start" disabled={schemeComplete(encounter)} onclick={beginVillainPhase}>{t.villainPhaseStart} · +{phaseThreat}</button>
+          <div class="acceleration">
+            <span>{t.acceleration} · +{(encounter.progress.accelerationTokens ?? 0) + (encounter.progress.accelerationIcons ?? 0)}</span>
+            <div class="acceleration-buttons">{#each [-1, 1] as delta}
+              <button class="btn" aria-label={`${t.acceleration} ${delta > 0 ? '+1' : '−1'}`} disabled={delta < 0 && (encounter.progress.accelerationTokens ?? 0) + (encounter.progress.accelerationIcons ?? 0) === 0} onclick={() => updateEncounter(e => withAcceleration(withAcceleration(e, 'accelerationIcons', 0), 'accelerationTokens', Math.max(0, (e.progress.accelerationTokens ?? 0) + (e.progress.accelerationIcons ?? 0) + delta)))}>{delta > 0 ? '+1' : '−1'}</button>
+            {/each}</div>
+          </div>
+          {#if schemeLost}<span class="scheme-lost" role="status">{t.schemeLost}</span>{:else if schemeComplete(encounter)}<p class="threshold-warning" role="status">{t.schemeThresholdReached}</p>{/if}
+          </div>
+        {/if}
+
         {#if !isFinalSchemeStage(encounter) && schemeComplete(encounter)}
-          <button class="btn advance ready" type="button" onclick={() => updateEncounter(schemeAdvanced)}>
+          <button class="btn advance ready" type="button" onclick={() => comic ? reviewNextScheme() : updateEncounter(schemeAdvanced)}>
             {t.advanceScheme}
           </button>
         {/if}
@@ -377,28 +498,62 @@
       </div>
     {/if}
 
-    <button class="btn btn--primary end-round" type="button" onclick={() => updateEncounter(roundEnded)}>
-      {t.endRound}
-    </button>
-
-    <!--
-      Said out loud, because otherwise the round button looks broken.
-
-      One scheme prints a star where its acceleration goes: it speeds up by the
-      attachments on the villain, which this cannot see. It therefore adds
-      nothing, and a player who is not told that presses end of round, watches
-      the threat sit still, and concludes the tracker is wrong — about that and
-      then about everything else it is counting correctly.
-    -->
-    {#if scheme !== null && scheme.escalationVariable === true}
-      <p class="muted note">{t.trackerStarredAcceleration}</p>
-    {/if}
-
-    <p class="muted note">{t.trackerNote}</p>
-  </div>
-{/if}
+{/snippet}
 
 <style>
+  .scheme-dialog { max-width: min(32rem, calc(100vw - 24px)); max-height: 85dvh; padding: 1rem; border: 2px solid var(--border); background: var(--surface, #fff8f0); color: var(--text); }
+  .scheme-dialog::backdrop { background: #111522cc; }
+  .scheme-dialog p { white-space: pre-line; }
+  .scheme-lost { position: absolute; top: 44px; right: 8px; transform: rotate(-7deg); font-weight: 950; font-style: italic; font-size: .85rem; background: #ffd84a; color: #191820; padding: 4px 8px; border: 2px solid #191820; box-shadow: 3px 3px 0 #cf0028; pointer-events: none; }
+  @media (prefers-reduced-motion: no-preference) { .scheme-lost { animation: defeat-stamp .3s ease-out; } @keyframes defeat-stamp { from { transform: scale(1.6) rotate(-12deg); opacity: 0; } to { transform: scale(1) rotate(-7deg); opacity: 1; } } }
+  .threshold-warning { margin: 6px 0 0; color: #ffe17b; font-size: .8rem; font-weight: 700; }
+  .acceleration > span { display: block; font-size: .7rem; font-weight: 700; }
+  .acceleration-buttons { display: flex; gap: 4px; }
+  .acceleration-buttons .btn { min-width: 44px; min-height: 44px; padding: 4px; background: #fff8f0; color: #191820; }
+
+  .compact-scheme { position: relative; isolation: isolate; overflow: hidden; background: #191d2b !important; color: white; }
+  .scheme-art { position: absolute; z-index: -2; inset: -30% 0 auto; width: 100%; height: 220%; object-fit: cover; filter: blur(2px); }
+  .compact-scheme::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(100deg,#111522ed,#111522ac); }
+  .compact-scheme :global(.card-ref), .compact-scheme .muted { color: #f6f1e8; }
+  .compact-scheme .steps .btn { background: #fff8f0; color: #191820; }
+  .table-finish { margin-top: 6px; }
+  .table-finish :global(button) { width: 100%; min-height: 44px; }
+  .table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  .table-focus { position: fixed; z-index: 200; inset: 0; margin: 0 !important; border-radius: 0; overflow: auto; padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important; background: var(--surface, #fff8f0); }
+  .table-focus > h2, .table-focus > .note { display: none; }
+  .table-focus .villain-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+  .table-focus .horseman { padding: 0; margin: 0; min-width: 0; }
+  .table-focus .horseman > button { display: none; }
+  .table-focus :global(.maximum) { display: none; }
+  .table-focus .acceleration { margin: 0; }
+  .table-focus :global(.vital-card) { padding: 6px; }
+  .table-focus :global(.vital-card h3) { font-size: 1rem; line-height: 1.1; }
+  .table-focus :global(.vital-card h3 button) { min-height: 24px; }
+  .table-focus > .counter:not(.scheme-counter) > :global(:not(.vital-card)) { display: none; }
+  .table-focus :global(.vital-card .ref:hover), .table-focus :global(.vital-card .ref:focus-visible), .compact-scheme :global(.ref:hover), .compact-scheme :global(.ref:focus-visible) { color: #ffe17b; }
+  .table-focus :global(.vital-card .hp) { font-size: 1.8rem; margin: 0; line-height: 1.2; }
+  .table-focus :global(.vital-card > p:not(.hp)) { display: none; }
+  .table-focus :global(.vital-card .controls) { gap: 6px; margin-top: 4px; }
+  .table-focus :global(.vital-card .controls button) { min-height: 44px; padding: 4px; }
+  .table-focus :global(.vital-card .controls button:nth-child(n+3)) { display: none; }
+  .table-focus :global(.vital-card .feedback) { top: 2.3rem; right: .4rem; font-size: 1rem; }
+  .table-focus .scheme-counter { margin: 6px 0; padding: 6px; }
+  .table-focus .scheme-counter .name { margin: 0; }
+  .table-focus .scheme-counter .reading { margin: 0; }
+  .table-focus .scheme-counter .what, .table-focus .scheme-counter .bar { display: none; }
+  .table-focus .phase-start { margin-top: 6px; font-size: .8rem; padding: 4px; }
+  .table-focus .phase-controls { display: grid; grid-template-columns: minmax(0,1fr) 106px; align-items: center; gap: 6px; }
+  .table-focus .phase-start { margin: 6px 0 0; }
+  .table-focus .table-toolbar :global(.btn) { font-size: .85rem; min-height: 44px; padding: 6px 10px; }
+  .compact-scheme { padding: .75rem; margin: 0 0 1rem; border: 2px solid var(--border); border-left: 5px solid var(--accent); }
+  .compact-scheme .reading { position: relative; margin: .35rem 0; }
+  .compact-scheme .big { font-size: 2rem; }
+  .compact-scheme .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+  .compact-scheme .steps .btn { min-height: 44px; padding: .4rem; }
+  .phase-start { width: 100%; margin-top: .75rem; min-height: 44px; white-space: normal; }
+  .acceleration { margin-top: .5rem; }
+  .threat-feedback { margin-left: auto; color: #ae1230; background: #ffe4ea; padding: .15rem .5rem; font-weight: 900; }
+  .threat-feedback.removed { color: #14543c; background: #dcf8e9; }
   .villain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--space-3); }
   .horseman { padding: var(--space-3); border: 2px solid var(--border); }
   .horseman.active { border-color: var(--accent); box-shadow: 4px 4px 0 var(--accent); }

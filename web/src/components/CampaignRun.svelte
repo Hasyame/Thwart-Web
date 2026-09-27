@@ -3,7 +3,7 @@
   import type { IndexRow, Locale } from '../lib/types';
   import type { CampaignRun, Play, SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
-  import { loadCardsByCode } from '../lib/data';
+  import { cardImageUrl, loadCardsByCode } from '../lib/data';
   import { setupSteps } from '../lib/schemeSetup';
   import { endGame, formatElapsed, resumeSession, session } from '../lib/session.svelte';
   import { evaluate } from '../lib/campaign/conditions';
@@ -670,6 +670,15 @@
     return scenario === null ? run.name : label(scenario.name) || scenario.id;
   });
 
+  const bannerArt = $derived.by((): string | null => {
+    if (template?.id !== 'aoa') return null;
+    const chapter = page === 'result' && lastResult !== null
+      ? template.scenarios?.find(entry => entry.id === lastResult.scenarioId)
+      : scenario;
+    const code = chapter?.baseSetup?.villainDeck?.standard?.[0];
+    return cardImageUrl(index.find(card => card.code === code)?.img);
+  });
+
   const nextName = $derived(
     campaign?.currentScenarioId == null || campaign.currentScenarioId === lastResult?.scenarioId
       ? null
@@ -689,6 +698,7 @@
     <p class="muted note">{t.loading}</p>
   {:else}
     <header class="head" class:comic-head={template.id === 'aoa'}>
+      {#if bannerArt}<img class="banner-art" src={bannerArt} alt="" />{/if}
       <!-- The scenario just played, while its result is on screen: the campaign
            has already moved on to the next one, and naming that one over a
            result belonging to the last reads as the wrong verdict. -->
@@ -732,7 +742,9 @@
       </div>
     {/if}
 
-    <CampaignJourney {template} {campaign} locale={uiLocale} />
+    {#if template.id !== 'aoa' || page !== 'playing'}
+      <CampaignJourney {template} {campaign} locale={uiLocale} />
+    {/if}
     {#if page === 'lost'}
       <section class="panel">
         <h3>{t.campaignLost}</h3>
@@ -953,7 +965,9 @@
 </div>
 
 <style>
-  .comic-head { padding: var(--space-5); background: #191820; color: #fff; border-bottom: 6px solid var(--accent); }
+  .comic-head { position: relative; isolation: isolate; overflow: hidden; padding: var(--space-5); background: #191820; color: #fff; border-bottom: 6px solid var(--accent); }
+  .banner-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 28%; z-index: -2; }
+  .comic-head::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(100deg, #191820ed, #19182099); }
   .comic-head h2 { font-size: clamp(1.7rem, 4vw, 3rem); font-style: italic; font-weight: 950; text-transform: uppercase; line-height: 1.1; }
   .comic-head .muted { color: #e3dfe8; }
 

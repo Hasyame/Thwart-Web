@@ -6,6 +6,22 @@ import type { Strings } from '../i18n';
  * other arrives in idle time, in case they switch.
  */
 export const fr: Strings = {
+  schemeLost: 'VOUS AVEZ PERDU',
+  schemeThresholdReached: 'Seuil atteint : résolvez la manigance.',
+  tableFinish: 'Terminer le scénario',
+  villainDown: 'À TERRE',
+  villainBeaten: 'BATTU !',
+
+  tableView: 'Table de jeu',
+  tableOptions: 'Options',
+  villainPhaseStart: 'Début de phase du méchant',
+  acceleration: 'Accélération',
+  accelerationTokens: 'Jetons',
+  accelerationIcons: 'Icônes en jeu',
+  accelerationHelp: 'Ajoutées à chaque début de phase, sans multiplier par le nombre de joueurs. Ajustez les icônes lorsque les cartes quittent le jeu.',
+
+  campaignPause: 'Pause',
+  campaignGuideGatherText: 'Posez au centre de la table le deck Méchant et le deck Manigance principale indiqués. Réglez les PV de chaque méchant sur sa valeur imprimée, multipliée par le nombre de joueurs si elle porte le symbole par joueur. S’il y a plusieurs méchants, chacun a son compteur. Le scénario et ses PV sont prêts avant de constituer le deck Rencontre (guide 1.8, p. 51, étapes 8 et 9).',
   campaignClockHours: "Heures",
   campaignClockMinutes: "Minutes",
   campaignClockSeconds: "Secondes",
