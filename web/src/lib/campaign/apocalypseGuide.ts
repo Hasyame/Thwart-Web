@@ -46,11 +46,11 @@ export function apocalypseGuide(locale: Locale, players: number, expert: boolean
       'Also put into play other cards with the Setup keyword in your decks. Identity Setup abilities wait until the end of preparation.'
     ], 'v1.8 · 51 · 11 / 45071'),
     step('Préparez les cartes mises de côté', 'Prepare the set-aside cards', [
-      'Mettez de côté les stades d’Apocalypse inutilisés, les cinq sbires PRÉLAT et {card:45105a}, dont le verso est {card:45105b}.',
-      'Les Prélats sont les faces B de {card:45179b}, {card:45180b}, {card:45181b}, {card:45182b} et {card:45183b}. Le retrait d’un Hiérarque du registre n’interdit pas son verso Prélat.'
+      'Mettez de côté les stades d’Apocalypse inutilisés et {card:45105a}, dont le verso est {card:45105b}.',
+      'Gardez le premier Prélat déjà tiré ci-dessous à part pour le révéler à l’étape 7. Les quatre autres restent en réserve pour la suite du scénario. Ne mélangez aucun Prélat au deck Rencontre et ne relancez pas le tirage. Le retrait d’un Hiérarque du registre n’interdit pas son verso Prélat.'
     ], [
-      'Set aside unused Apocalypse stages, all five PRELATE minions and {card:45105a}, whose reverse is {card:45105b}.',
-      'The Prelates are the B sides: {card:45179b}, {card:45180b}, {card:45181b}, {card:45182b} and {card:45183b}. Removing an Overseer from the campaign log does not remove its Prelate side.'
+      'Set aside unused Apocalypse stages and {card:45105a}, whose reverse is {card:45105b}.',
+      'Keep the first Prelate already drawn below separate, ready to reveal at step 7. The other four stay in reserve for later in the scenario. Do not shuffle any Prelate into the encounter deck or repeat the draw. Removing an Overseer from the campaign log does not remove its Prelate side.'
     ], 'v1.8 · 51 · 12 / 45103A / AoA · 14'),
     step('Révélez Cœur de l’Empire', 'Reveal Heart of the Empire', [
       'Sortez {card:45104a} du deck Rencontre et révélez-la avec 2 menaces au total, quel que soit le nombre de joueurs.',
@@ -62,11 +62,11 @@ export function apocalypseGuide(locale: Locale, players: number, expert: boolean
       'Threat cannot be removed from this side scheme while a PRELATE is in play. Defeat the Prelate first.'
     ], '45103A / 45104A'),
     step('Révélez le premier Prélat', 'Reveal the first Prelate', [
-      'Le premier joueur révèle un Prélat aléatoire mis de côté. Utilisez le tirage ci-dessous, ou indiquez celui que vous avez déjà tiré sur votre table.',
+      'Le premier joueur révèle le Prélat déjà tiré ci-dessous. Ne faites pas de nouveau tirage. Si vous aviez effectué le tirage avec vos cartes physiques, indiquez ce Prélat ci-dessous.',
       `Placez ce sbire devant le premier joueur, engagé avec lui, avec ${5*n} PV (5 par joueur). Donnez-lui un état Tenace : il ignore la prochaine occurrence de dégâts, puis défausse cet état.`,
       'Laissez les quatre autres Prélats de côté. Revenir à cette étape ne relance pas le tirage.'
     ], [
-      'The first player reveals a random set-aside Prelate. Use the draw below, or record the one already drawn on your physical table.',
+      'The first player reveals the Prelate already drawn below. Do not draw again. If you drew using physical cards, record that Prelate below.',
       `Place that minion engaged with the first player, with ${5*n} hit points (5 per player). Give it a tough status card: it prevents the next instance of damage, then is discarded.`,
       'Keep the other four Prelates aside. Revisiting this step does not repeat the draw.'
     ], '45103A / 45179B–45183B'),

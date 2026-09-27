@@ -43,6 +43,14 @@
   }
 </script>
 
+{#snippet savedPrelate()}
+<div class="saved-draw"><strong>{uiLocale==='fr'?'Premier Prélat tiré':'First Prelate drawn'}</strong>
+            {#if prelate}<p><CardRef code={prelate} name={text.cardName(prelate)} /> · {5*campaign.heroes.length} {uiLocale==='fr'?'PV':'HP'} · {uiLocale==='fr'?'Tenace':'Tough'}</p>{:else}<button class="btn" disabled={drawing} onclick={()=>void drawPrelate()}>{uiLocale==='fr'?'Tirer le Prélat':'Draw the Prelate'}</button>{/if}
+            <p>{uiLocale==='fr'?'Il sera révélé à l’étape 7. Gardez les quatre autres de côté pour la suite.':'Reveal it at step 7. Keep the other four aside for later.'}</p>
+            <details><summary>{uiLocale==='fr'?'Quatre autres Prélats en réserve':'Other four Prelates in reserve'}</summary><div class="cards">{#each APOCALYPSE_PRELATES.filter(code=>code!==prelate) as code}<CardRef {code} name={text.cardName(code)} />{/each}</div></details>
+          </div>
+{/snippet}
+
 <div class="apocalypse-preparation">
   <div class="skip-preparation">
     <button class="btn btn--primary launch-shortcut" disabled={rejoinRequired} onclick={onReady}>{t.campaignSkipPreparation}</button>
@@ -62,16 +70,13 @@
     {#if position === 2}
       {#each sets as set}
         {#if set === 'prelates'}
-          <div class="saved-draw"><strong>{uiLocale==='fr'?'Premier Prélat tiré':'First Prelate drawn'}</strong>
-            {#if prelate}<p><CardRef code={prelate} name={text.cardName(prelate)} /> · {5*campaign.heroes.length} {uiLocale==='fr'?'PV':'HP'} · {uiLocale==='fr'?'Tenace':'Tough'}</p>{:else}<button class="btn" disabled={drawing} onclick={()=>void drawPrelate()}>{uiLocale==='fr'?'Tirer le Prélat':'Draw the Prelate'}</button>{/if}
-            <p>{uiLocale==='fr'?'Il sera révélé à l’étape 7. Gardez les quatre autres de côté pour la suite.':'Reveal it at step 7. Keep the other four aside for later.'}</p>
-            <details><summary>{uiLocale==='fr'?'Autres Prélats à préparer':'Other Prelates to prepare'}</summary><div class="cards">{#each APOCALYPSE_PRELATES.filter(code=>code!==prelate) as code}<CardRef {code} name={text.cardName(code)} />{/each}</div></details>
-          </div>
+          {@render savedPrelate()}
         {:else}
           <details class="set"><summary>{setName(set)}</summary><div class="cards">{#each index.filter(card=>card.setCode===set&&!['villain','main_scheme'].includes(card.typeCode)&&!card.code.endsWith('b')) as card (card.code)}<CardRef code={card.code} name={card.name} />{/each}</div></details>
         {/if}
       {/each}
     {/if}
+    {#if position === 4}{@render savedPrelate()}{/if}
     {#if position === 3 && sets.includes('standard_iii')}
       <p><CampaignText segments={parseCampaignText(uiLocale==='fr'
         ? 'Avec Standard III, mettez {card:45075a} en jeu, face A visible, sans jeton Poursuite. Cette carte permanente reste en jeu. À '+(campaign.heroes.length+3)+' jetons Poursuite, retirez-les tous : votre Némésis s’active contre vous si elle est en jeu ; sinon retournez la carte pour révéler votre sbire Némésis et votre manigance Némésis, mélangez le reste du set au deck Rencontre, puis revenez sur A.'
