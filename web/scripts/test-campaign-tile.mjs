@@ -1,3 +1,6 @@
+import 'fake-indexeddb/auto';
+import { db } from '../src/lib/db.ts';
+import { resumeCampaign, restartCampaign, eventsOf, stateOf } from '../src/lib/campaign/store.ts';
 /**
  * What a campaign's tile says: its face, its status, its score.
  *
@@ -122,6 +125,35 @@ const run = (templateId, finished = false) => ({ id: 'r', templateId, templateNa
   check('campaign summary also ignores revoked concession', !foldCampaign({...run('aoa'),templateJson:JSON.stringify(template)}, rows, 'fr').conceded);
   const newConcession = ev({type:'campaign_conceded'});
   check('a later explicit concession still closes the campaign', tileOf(run('aoa'), template, [...history,newConcession]).status === 'conceded');
+}
+
+
+// Recovery writes are atomic and preserve the original history.
+{
+  const template = templates.get('aoa');
+  const concession = ev({type:'campaign_conceded'});
+  const history = [setup('aoa'), result('s1_unus',true),
+    ev({type:'setup_draw',scenarioId:'s2_four_horsemen',drawId:'overseer',cardCodes:['45181a']}), concession];
+  const original = {...run('aoa',true),templateJson:JSON.stringify(template),timerAccumulatedMillis:123456};
+  await db.campaignRuns.put(original);
+  const rows = history.map(event=>({id:event.id,runId:original.id,timestamp:event.timestamp,payload:JSON.stringify(event)}));
+  await db.campaignEvents.bulkPut(rows);
+  await resumeCampaign(original);
+  const resumed = await db.campaignRuns.get(original.id);
+  const state = await stateOf(resumed);
+  check('resume reopens the same run at the Horsemen', !resumed.finished && state.currentScenarioId==='s2_four_horsemen');
+  check('resume preserves clock and selected overseer', resumed.timerAccumulatedMillis===123456 && state.draws.s2_four_horsemen.overseer[0]==='45181a');
+  check('resume preserves every original event', JSON.stringify(await db.campaignEvents.bulkGet(rows.map(row=>row.id)))===JSON.stringify(rows));
+  const count = (await eventsOf(original.id)).length;
+  await resumeCampaign(original);
+  check('repeating resume does not append duplicate undo', (await eventsOf(original.id)).length===count);
+  const fresh = await restartCampaign(original,'Fresh attempt');
+  const freshState = await stateOf(fresh);
+  check('restart creates a distinct run at Unus', fresh.id!==original.id && freshState.currentScenarioId==='s1_unus');
+  check('restart resets results, draws and clock', freshState.completedScenarios.length===0 && Object.keys(freshState.draws).length===0 && fresh.timerAccumulatedMillis===0);
+  check('restart preserves heroes and campaign settings', freshState.heroes[0].heroCardCode===state.heroes[0].heroCardCode && fresh.difficulty===original.difficulty && fresh.standardSet===original.standardSet);
+  check('restart leaves previous run and log untouched', JSON.stringify(await db.campaignRuns.get(original.id))===JSON.stringify(resumed) && (await eventsOf(original.id)).length===count);
+  await db.delete();
 }
 
 // --- the rows as stored ---------------------------------------------------------------

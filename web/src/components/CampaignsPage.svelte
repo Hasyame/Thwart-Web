@@ -8,7 +8,7 @@
   import { storedOnServer } from '../lib/sync/stored.svelte';
   import { foldCampaign, type CampaignProgress } from '../lib/campaigns';
   import { fieldHue, lastUpdatedOf, parseEventRows, tileOf, updatedWords, type CampaignStatus, type CampaignTile } from '../lib/campaignTile';
-  import { templateOf } from '../lib/campaign/store';
+  import { templateOf, resumeCampaign, restartCampaign } from '../lib/campaign/store';
   import { fetchCard } from '../lib/cardViewer.svelte';
   import { cardImageUrl } from '../lib/data';
   import type { IndexRow } from '../lib/types';
@@ -306,6 +306,11 @@
       onContinue={() => (view = { kind: 'run', id: openRun.id })}
       onBack={() => (view = { kind: 'list' })}
       onDelete={() => removeCampaign(openRun.id)}
+      onResume={() => resumeCampaign(openRun)}
+      onRestart={async () => {
+        const fresh = await restartCampaign(openRun, `${openCampaign.title} · ${t.campaignNewAttempt}`);
+        view = {kind:'hub', id:fresh.id};
+      }}
       {deckById}
       {deckHref}
       {onOpenDeck}
