@@ -742,7 +742,7 @@
       </div>
     {/if}
 
-    {#if template.id !== 'aoa' || page !== 'playing'}
+    {#if template.id !== 'aoa'}
       <CampaignJourney {template} {campaign} locale={uiLocale} />
     {/if}
     {#if page === 'lost'}

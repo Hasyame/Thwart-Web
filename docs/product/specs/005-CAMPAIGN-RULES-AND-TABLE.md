@@ -167,8 +167,9 @@ The owner authorized production publication of Web only. Android remains local.
 
 ## Compact AoA table (27 September 2026)
 
-The campaign hub owns chapter progress; hide its repeated journey strip during
-play. Keep scenario artwork in the header, a tappable clock with a modal editor,
+The campaign hub owns chapter progress; hide its repeated journey strip throughout
+the AoA scenario, including preparation and results as reconfirmed by the owner.
+Keep scenario artwork in the header, a tappable clock with a modal editor,
 and a short Pause label. Setup explicitly places the scenario and villain HP
 before the encounter deck. The opening ally choice precedes expert campaign
 health and paid healing, matching the AoA booklet.
