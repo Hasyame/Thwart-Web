@@ -195,7 +195,7 @@ export function foldCampaign(
     notice: localised(template?.notice, locale),
     scenarios,
     completed: scenarios.filter((s) => s.won).length,
-    conceded: parsed.some((e) => e.type === 'campaign_conceded'),
+    conceded: parsed.some((e) => e.type === 'campaign_conceded' && !revoked.has(e.id)),
     unreadEvents: parsed.filter((e) => !known.has(e.type)).length,
     startedAt: run.createdAt,
   };

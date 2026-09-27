@@ -469,6 +469,35 @@ export async function concede(run: CampaignRun): Promise<void> {
   await refreshFinished(run);
 }
 
+/** Reopen a conceded run without erasing any event, draw, result or timer. */
+export async function resumeCampaign(run: CampaignRun): Promise<void> {
+  await db.transaction('rw', db.campaignRuns, db.campaignEvents, async () => {
+    const current = await db.campaignRuns.get(run.id);
+    if (!current || !templateOf(current)) throw new Error('Campaign unavailable');
+    const events = await eventsOf(run.id);
+    const revoked = new Set(events.filter(event => event.type === 'revoke').map(event => event.revokedEventId));
+    for (const event of events.filter(event => event.type === 'campaign_conceded' && !revoked.has(event.id))) {
+      await append(run.id, {id:newId(), timestamp:Date.now(), type:'revoke', revokedEventId:event.id});
+    }
+    await refreshFinished(current);
+  });
+}
+
+/** A fresh attempt keeps its predecessor intact and starts with no rewards or draws. */
+export async function restartCampaign(run: CampaignRun, name: string): Promise<CampaignRun> {
+  return db.transaction('rw', db.campaignRuns, db.campaignEvents, async () => {
+    const current = await db.campaignRuns.get(run.id);
+    const template = current ? templateOf(current) : null;
+    if (!current || !template) throw new Error('Campaign unavailable');
+    const events = await eventsOf(run.id);
+    const setup = events.filter(event => event.type === 'setup').sort((a,b) => a.timestamp-b.timestamp)[0];
+    if (!setup) throw new Error('Campaign setup unavailable');
+    return startCampaign({template, name, difficulty:current.difficulty, standardSet:current.standardSet,
+      heroes:setup.heroes, choices:setup.choices ?? {},
+      startScenarioId:template.startScenarioId ?? template.scenarios?.[0]?.id ?? ''});
+  });
+}
+
 async function refreshFinished(run: CampaignRun): Promise<void> {
   // Read back rather than written from the copy the caller holds: that copy
   // predates the clock this same call may just have stopped, and writing it

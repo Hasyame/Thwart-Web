@@ -50,12 +50,14 @@
     onContinue: () => void;
     onBack: () => void;
     onDelete: () => Promise<void>;
+    onResume: () => Promise<void>;
+    onRestart: () => Promise<void>;
     deckById: ReadonlyMap<string, SavedDeck>;
     deckHref?: (id: string, edit: boolean) => string;
     onOpenDeck?: (id: string, edit: boolean) => void;
   }
 
-  const { t, uiLocale, index, storageOk, campaign, tile, template, art, boxArt, plays, eventCount, storageNote, onContinue, onBack, onDelete, deckById, deckHref, onOpenDeck }: Props = $props();
+  const { t, uiLocale, index, storageOk, campaign, tile, template, art, boxArt, plays, eventCount, storageNote, onContinue, onBack, onDelete, onResume, onRestart, deckById, deckHref, onOpenDeck }: Props = $props();
 
   /** The saved deck a hero was played with, when it is still on the shelf. */
   const deckOf = (hero: { id: string; deckId?: string | null }): SavedDeck | undefined =>
@@ -205,6 +207,22 @@
           : t.campaignScenarioLater;
   const stepGlyph = (step: Step): string => ({ won: '✓', current: '▶', lost: '✗', later: '·' })[step];
 
+  let recovery = $state<'resume' | 'restart' | null>(null);
+  let recoveryError = $state(false);
+  async function recover(): Promise<void> {
+    if (busy || !recovery) return;
+    busy = true;
+    recoveryError = false;
+    try {
+      if (recovery === 'resume') await onResume();
+      else await onRestart();
+      recovery = null;
+    } catch {
+      recoveryError = true;
+    } finally {
+      busy = false;
+    }
+  }
   let deleting = $state(false);
   let busy = $state(false);
   async function remove(): Promise<void> {
@@ -231,7 +249,7 @@
       {#if campaign.run.templateName !== campaign.title}<p class="box-name">{campaign.run.templateName}</p>{/if}
       <p class="banner-meta">
         <span class="level">{t.campaignDifficulty(campaign.run.difficulty)}</span>
-        {#if !live}<span class="level over">{t.campaignOver}</span>{/if}
+        {#if !live}<span class="level over">{status==='conceded'?t.campaignStatusConceded:t.campaignOver}</span>{/if}
         <span class="progress-words">{t.campaignProgress(tile?.beaten ?? campaign.completed, tile?.total ?? campaign.scenarios.length)}</span>
       </p>
       {#if played.size > 0}
@@ -253,6 +271,27 @@
       {/if}
     </div>
   </header>
+
+  {#if status === 'conceded' && template !== null}
+    <section class="recovery surface" aria-label={t.campaignRecoveryTitle}>
+      <h2>{t.campaignRecoveryTitle}</h2>
+      <p>{t.campaignRecoveryHint}</p>
+      <div class="recovery-actions">
+        <button class="btn btn--primary" disabled={busy} onclick={() => {recoveryError=false;recovery='resume';}}>{t.campaignResumeHere}</button>
+        <button class="btn" disabled={busy} onclick={() => {recoveryError=false;recovery='restart';}}>{t.campaignRestartBeginning}</button>
+      </div>
+    </section>
+  {/if}
+  {#if recovery !== null}
+    <DetailDialog title={recovery==='resume'?t.campaignResumeHere:t.campaignRestartBeginning} closeLabel={t.cancel} onClose={() => {if(!busy)recovery=null;}}>
+      <p>{recovery==='resume'?t.campaignResumeExplanation:t.campaignRestartExplanation}</p>
+      {#if recoveryError}<p role="alert">{t.campaignRecoveryError}</p>{/if}
+      <div class="recovery-actions">
+        <button class="btn" disabled={busy} onclick={() => recovery=null}>{t.cancel}</button>
+        <button class="btn btn--primary" disabled={busy} onclick={() => void recover()}>{recovery==='resume'?t.campaignResumeHere:t.campaignRestartBeginning}</button>
+      </div>
+    </DetailDialog>
+  {/if}
 
   <!--
     The scenarios, as cards in a strip: beaten, the one to play, the ones to
@@ -387,6 +426,9 @@
 </div>
 
 <style>
+  .recovery{padding:var(--space-4);margin-block:var(--space-4)}
+  .recovery-actions{display:flex;flex-wrap:wrap;gap:var(--space-3)}
+  .recovery-actions button{white-space:normal;min-height:44px;max-width:100%}
   .hub {
     display: grid;
     gap: var(--space-3);

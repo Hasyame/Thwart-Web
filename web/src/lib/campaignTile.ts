@@ -166,13 +166,17 @@ export function tileOf(
     (state?.completedScenarios ?? []).filter((r) => r.victory).map((r) => r.scenarioId),
   ).size;
 
-  const conceded = events.some((event) => event.type === 'campaign_conceded');
+  // Undo remains in the append-only log, so status must ignore its target.
+  const revoked = new Set(
+    events.filter((event) => event.type === 'revoke').map((event) => event.revokedEventId),
+  );
+  const conceded = events.some((event) => event.type === 'campaign_conceded' && !revoked.has(event.id));
   let status: CampaignStatus;
   if (conceded) {
     status = 'conceded';
   } else if (state?.campaignLost === true) {
     status = 'lost';
-  } else if (state?.finished === true || run.finished) {
+  } else if (state?.finished ?? run.finished) {
     status = 'won';
   } else if (results.length === 0) {
     status = 'not-started';

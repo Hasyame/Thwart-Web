@@ -226,3 +226,18 @@ focus goes to Cancel. A concession can be repaired through an appended revoke
 event without deleting history; do not rewrite immutable campaign events.
 
 Publication authorization remains Web only. Android is not released here.
+
+
+### Conceded campaign recovery (accepted 2026-09-27)
+
+The campaign menu offers two explicit actions for conceded runs: resume at the
+same stage, or restart from the beginning. Resume appends revocations for active
+concessions and preserves results, draws, rewards and elapsed time. Restart
+creates a separate run at the template's first scenario using the original heroes,
+campaign difficulty, Standard set and initial choices, with fresh draws, rewards,
+results and timer. The previous run and its history remain intact. Both actions
+explain their effect before confirmation and prevent duplicate clicks.
+
+Campaign status ignores revoked concessions and uses the folded state when the
+template is readable; a stale cached finished flag must not close a recovered run.
+Initial delivery is Web only; no Android publication is authorized by this change.
