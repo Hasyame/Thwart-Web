@@ -23,6 +23,7 @@
   import { parseCampaignText, type TextContext } from '../lib/campaign/text';
   import { FNE_TEMPLATE_ID } from '../lib/fearNoEvil';
   import { fneCardAliases } from '../lib/fneCards';
+  import { redSkullStartingThreat } from '../lib/campaign/redSkullGuide';
   import { fneGuideSets } from '../lib/campaign/fneGuide';
   import {
     counterOf,
@@ -306,7 +307,7 @@
     if (state.awaitingChoice) {
       return state.environmentOffer.length > 0 ? 'environment' : 'choice';
     }
-    if (timerRunning(run) || (['aoa','fne'].includes(template?.id ?? '') && scenario !== null && run.timerScenarioId === scenario.id)) {
+    if (timerRunning(run) || (['aoa','fne','trors'].includes(template?.id ?? '') && scenario !== null && run.timerScenarioId === scenario.id)) {
       return 'playing';
     }
     return scenario === null ? 'between' : 'briefing';
@@ -674,7 +675,7 @@
   });
 
   const bannerArt = $derived.by((): string | null => {
-    if (!['aoa','fne'].includes(template?.id ?? '')) return null;
+    if (!['aoa','fne','trors'].includes(template?.id ?? '')) return null;
     const chapter = page === 'result' && lastResult !== null
       ? template?.scenarios?.find(entry => entry.id === lastResult.scenarioId)
       : scenario;
@@ -710,7 +711,7 @@
   {:else if campaign === null}
     <p class="muted note">{t.loading}</p>
   {:else}
-    <header class="head" class:comic-head={['aoa','fne'].includes(template.id)}>
+    <header class="head" class:comic-head={['aoa','fne','trors'].includes(template.id)}>
       {#if bannerArt}<img class="banner-art" src={bannerArt} alt="" />{/if}
       <!-- The scenario just played, while its result is on screen: the campaign
            has already moved on to the next one, and naming that one over a
@@ -726,7 +727,7 @@
          checks before anything else. A counter is only shown once the campaign
          has switched it on, so an empty box does not sit at the top of the
          first scenario claiming to count something. -->
-    {#if active.length > 0 && page !== 'playing' && template.id !== 'fne'}
+    {#if active.length > 0 && page !== 'playing' && !['fne','trors'].includes(template.id)}
       <div class="counters surface">
         {#each active as counter (counter.id)}
           <div class="counter">
@@ -755,7 +756,7 @@
       </div>
     {/if}
 
-    {#if !['aoa','fne'].includes(template.id)}
+    {#if !['aoa','fne','trors'].includes(template.id)}
       <CampaignJourney {template} {campaign} locale={uiLocale} />
     {/if}
     {#if page === 'lost'}
@@ -905,7 +906,8 @@
       </section>
     {:else if page === 'playing' && scenario !== null}
       <CampaignPlaying
-        guided={['aoa','fne'].includes(template.id)}
+        guided={['aoa','fne','trors'].includes(template.id)}
+        initialThreatBonus={template.id==='trors'?redSkullStartingThreat(campaign,scenario.id):0}
         {t}
         {cardLocale}
         {index}

@@ -18,6 +18,7 @@
   } from '../lib/campaign/types';
   import ApocalypsePreparation from './ApocalypsePreparation.svelte';
   import FnePreparation from './FnePreparation.svelte';
+  import RedSkullPreparation from './RedSkullPreparation.svelte';
   import CampaignText from './CampaignText.svelte';
   import CardRef from './CardRef.svelte';
   import { openingAllies } from '../lib/campaign/openingAlly';
@@ -78,7 +79,7 @@
   const context = $derived({ state: campaign, scenarioId: scenario.id });
   /** The rate a computed amount is paid at: campaigns state two. */
   const expert = $derived(campaign.difficulty.toLowerCase() === 'expert');
-  const rejoinRequired = $derived(template.id === 'aoa' && expert && campaign.completedScenarios.some(r => r.victory) && campaign.heroes.some(h => heroCounterOf(campaign, 'hp', h.id) <= 0));
+  const rejoinRequired = $derived(['aoa','trors'].includes(template.id) && expert && campaign.completedScenarios.some(r => r.victory) && campaign.heroes.some(h => heroCounterOf(campaign, 'hp', h.id) <= 0));
 
   /**
    * One section's steps, as this run should read them right now.
@@ -350,7 +351,10 @@
 {#snippet consequencePanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(consequenceStep))}{/snippet}
 {#snippet missionPanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(missionStep))}{/snippet}
 {#snippet healthPanel()}{@render panel(t.campaignGuideCampaign, expertHealthSteps)}{/snippet}
-{#if template.id === 'fne'}
+{#snippet redSkullHealth()}{@render panel(t.campaignGuideCampaign, setup.filter(isExpertHealthStep))}{/snippet}
+{#if template.id === 'trors'}
+  <RedSkullPreparation {t} {uiLocale} {guideKey} {campaign} scenarioId={scenario.id} {text} {index} {setName} {onReady} sets={encounterSets} settings={setupSettings} health={redSkullHealth} {rejoinRequired}/>
+{:else if template.id === 'fne'}
   <FnePreparation {t} {uiLocale} {guideKey} {campaign} scenarioId={scenario.id} {text} {index} {setName} {onReady}/>
 {:else if detailedApocalypse}
   <ApocalypsePreparation {t} {uiLocale} {guideKey} {campaign} {expert} {text} {index} {encounterSets} {setName}

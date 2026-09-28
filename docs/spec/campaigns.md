@@ -194,3 +194,21 @@ it does not infer unrevealed cards or resolve every card response.
 - `npm run test:deal` — §3.2 over ten seeded campaigns.
 - `npm run test:tile` — §3.4: the faces from the shipped templates, and the status rule.
 - `npm run test:replay`, `npm run test:ratings` — §3.5.
+
+### Red Skull guide (2026-09-28)
+
+`redSkullGuide.ts` supplies original bilingual, contextual preparation for all five
+TRORS scenarios. `RedSkullPreparation` preserves navigation per run/scenario/attempt
+and exposes existing difficulty and health actions. The guide is read-only; opening
+it cannot redraw cards or reapply damage. Card references use generated card data.
+
+`templateUpgrade` narrowly corrects known encounter-set defaults and the Expert
+finale defeat transition, preserving custom set lists and stored event history.
+The Red Skull delay bonus is passed to Tracker only for initial construction;
+resumed encounters use their saved progress. The next-scheme dialog includes both
+front setup and back reveal instructions (Crossbones places reveal effects on B).
+
+Run `npm run test:red-skull-guide` for guide references, independent campaign and
+scenario difficulty, player scaling, set defaults/customization, idempotence and
+Expert-finale loss. Mobile UI verification also covers the FNE artwork selector,
+whose separate full-width row prevents collision with threat buttons.
