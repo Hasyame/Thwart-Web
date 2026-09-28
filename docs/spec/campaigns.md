@@ -212,3 +212,23 @@ Run `npm run test:red-skull-guide` for guide references, independent campaign an
 scenario difficulty, player scaling, set defaults/customization, idempotence and
 Expert-finale loss. Mobile UI verification also covers the FNE artwork selector,
 whose separate full-width row prevents collision with threat buttons.
+
+### Civil War is not a campaign (2026-09-28)
+
+The mc56 booklet explicitly supplies four standalone scenarios, not a linked
+campaign. `civilWar.ts` supplies their recipes and original bilingual preparation
+summaries; `Briefing` and `Tracker` pair each leader with its recommended main
+schemes. `buildPools` adds these owned scenarios without introducing campaign logs.
+
+The existing `/versus` entry now opens `CivilWarVersus` for this box. It validates
+camp membership, 1v1/2v2, identity conflicts and 3–4 modular sets, then guides both
+tables. `civilWarBattle` checks saved-table shape and resolves explicitly reported
+outcomes at matched phases. Save data stays browser-local under a versioned key;
+no sync wire changes or server migration. Other competitive boxes retain their
+existing UI, separately from Civil War. Test `test:civil-war` covers recipes,
+cards, both languages/modes/difficulties, player scaling, results and damaged saves.
+
+The app tracks HP, main threat, acceleration, Choosing Sides, phase, first player
+and timer. Card activations, status cards, boosts, physical reward selection and
+leader-to-leader attacks remain player-resolved, with rules and card references.
+No copied booklet prose or card dump is bundled in source control.

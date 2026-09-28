@@ -2,6 +2,7 @@
   import { onMount, type Snippet } from 'svelte';
   import type { Strings } from '../lib/i18n';
   import type { IndexRow, Locale } from '../lib/types';
+  import { isCivilLeader, civilCards } from '../lib/civilWar';
   import { loadPackCards, cardImageUrl } from '../lib/data';
   import CardRef from './CardRef.svelte';
   import CampaignVitalCard from './CampaignVitalCard.svelte';
@@ -130,7 +131,7 @@
           return;
         }
         const setup = setupFor(
-          cards.filter((card) => card.card_set_code === scenarioCode),
+          isCivilLeader(scenarioCode) ? civilCards(cards,scenarioCode) : cards.filter((card) => card.card_set_code === scenarioCode),
           players,
           expert,
         );

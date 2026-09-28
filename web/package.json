@@ -54,7 +54,8 @@
     "test:replay": "vite-node scripts/test-replay.mjs",
     "test:randomizer": "vite-node scripts/test-randomizer.mjs",
     "test:ratings": "vite-node scripts/test-ratings.mjs",
-    "test:bgg": "vite-node scripts/test-bgg.mjs"
+    "test:bgg": "vite-node scripts/test-bgg.mjs",
+    "test:civil-war": "vite-node scripts/test-civil-war.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",

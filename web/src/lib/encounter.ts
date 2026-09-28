@@ -577,7 +577,8 @@ export function setupFor(
   const villains = cards.filter(
     (card) => VILLAIN_TYPES.has(card.type_code) && !flag(card.double_sided),
   );
-  const selected = selectVillainStages(
+  const leaders = villains.some(card => card.type_code === 'leader');
+  const selected = leaders ? villains.filter(card => (expert ? ['III','IV'] : ['I','II']).includes(card.stage ?? '')) : selectVillainStages(
       villains,
       expert,
       (card) => card.name,
@@ -600,7 +601,7 @@ export function setupFor(
     regeneration: set === 'apocalypse',
     startingVillainIndex: set === 'apocalypse' ? (expert ? 2 : 1) : 0,
     scheme: groupByStage(
-      cards.filter((card) => card.type_code === MAIN_SCHEME && isNumbersSide(card)).map(schemeSide),
+      cards.filter((card) => card.type_code === MAIN_SCHEME && isNumbersSide(card)).map(card => ({...schemeSide(card), ...(['registration','resistance'].includes(card.card_set_code ?? '') && card.stage === '1B' ? {extraStartingThreat:players > 1 ? 2*players : 0} : {})})),
     ),
     players: Math.max(1, players),
   };
@@ -646,27 +647,12 @@ export function sortByStage(sides: readonly EncounterSide[]): EncounterSide[] {
   return [...sides].sort((a, b) => order(a.stage) - order(b.stage));
 }
 
-/**
- * A versus board: a leader where a villain would be, and one scheme each side.
- *
- * Built explicitly rather than through {@link setupFor}, which chooses which of
- * a villain's stages a difficulty plays. A leader has four and a versus game
- * uses all four in order — there is no standard and expert here — so borrowing
- * that rule would quietly drop half the board.
- *
- * The order is the pack file's, which is MarvelCDB's, which is the order the
- * cards are printed in.
- */
+/** Leaders use I/II or III/IV in both modes (mc56 p. 3). */
 export function versusSetup(
   leaderCards: readonly Card[],
   schemeCards: readonly Card[],
   players: number,
+  expert = false,
 ): EncounterSetup {
-  return {
-    villain: leaderCards
-      .filter((card) => card.type_code === 'leader' && !flag(card.double_sided))
-      .map(villainSide),
-    scheme: groupByStage(schemeCards.filter(isNumbersSide).map(schemeSide)),
-    players: Math.max(1, players),
-  };
+  return setupFor([...leaderCards, ...schemeCards], players, expert);
 }
