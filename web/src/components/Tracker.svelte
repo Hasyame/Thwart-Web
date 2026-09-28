@@ -52,6 +52,7 @@
     tableClock?: Snippet;
     tableFinish?: Snippet;
     comic?: boolean;
+    initialThreatBonus?: number;
     t: Strings;
     cardLocale: Locale;
     index: readonly IndexRow[];
@@ -68,7 +69,7 @@
     villainOrder?: readonly string[];
   }
 
-  const { comic = false, tableClock, tableFinish, t, cardLocale, index, expert, setup = null, villainOrder = [] }: Props = $props();
+  const { initialThreatBonus = 0, comic = false, tableClock, tableFinish, t, cardLocale, index, expert, setup = null, villainOrder = [] }: Props = $props();
   let tableFocus = $state(false);
   onMount(() => { tableFocus = comic && window.matchMedia('(max-width: 700px)').matches; });
 
@@ -139,7 +140,8 @@
         // for the rest of the game.
         loading = false;
         failed = !isUsable(setup);
-        setEncounter(isUsable(setup) ? startOf(withVillainOrder(setup, villainOrder)) : null);
+        const withBonus = {...setup, scheme:setup.scheme.map((stage,i)=>i===0?{...stage,options:stage.options.map(side=>({...side,extraStartingThreat:(side.extraStartingThreat??0)+initialThreatBonus}))}:stage)};
+        setEncounter(isUsable(withBonus) ? startOf(withVillainOrder(withBonus, villainOrder)) : null);
       })
       .catch(() => {
         if (!cancelled) {
@@ -198,7 +200,9 @@
       const cards = await loadPackCards(cardLocale, pack);
       const front = cards.find(card => nextSchemeCode ? card.code === nextSchemeCode : card.name === next.name && card.code.endsWith('a'));
       nextSchemeCode = front?.code;
-      nextSchemeText = new DOMParser().parseFromString(front?.text ?? '', 'text/html').body.textContent ?? '';
+      const back = cards.find(card => card.code === next.code);
+      nextSchemeText = new DOMParser().parseFromString([front?.text,back?.text].filter(Boolean).join('\n\n'), 'text/html').body.textContent ?? '';
+      if (!nextSchemeText.trim()) nextSchemeText = t.campaignNothingRecorded;
     } catch { nextSchemeText = t.trackerUnavailable; }
   }
   let threatFeedback = $state<Record<number, number>>({});
@@ -359,7 +363,7 @@
             yet. The app offers the step; the table takes it.
           -->
           <button class="btn advance ready" type="button" onclick={() => updateEncounter(villainAdvanced)}>
-            {t.advanceVillain}
+            {t.advanceVillain} · {encounter.setup.villain[encounter.progress.villainIndex + 1]?.stage}
           </button>
         {/if}
       </div>
@@ -508,7 +512,7 @@
 {/snippet}
 
 <style>
-  .art-count { display: flex; align-items: center; gap: 8px; font-size: .8rem; }
+  .art-count { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid #ffffff50; border-radius: 4px; background: #11152299; font-size: .8rem; }
   .art-count select { min-height: 44px; min-width: 52px; background: #fff8f0; color: #191820; border: 1px solid #575968; border-radius: 4px; padding: 4px; }
   .scheme-dialog { max-width: min(32rem, calc(100vw - 24px)); max-height: 85dvh; padding: 1rem; border: 2px solid var(--border); background: var(--surface, #fff8f0); color: var(--text); }
   .scheme-dialog::backdrop { background: #111522cc; }
@@ -539,6 +543,7 @@
   .table-focus :global(.vital-card h3) { font-size: 1rem; line-height: 1.1; }
   .table-focus :global(.vital-card h3 button) { min-height: 24px; }
   .table-focus > .counter:not(.scheme-counter) > :global(:not(.vital-card)) { display: none; }
+  .table-focus > .counter:not(.scheme-counter) > .advance { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
   .table-focus :global(.vital-card .ref:hover), .table-focus :global(.vital-card .ref:focus-visible), .compact-scheme :global(.ref:hover), .compact-scheme :global(.ref:focus-visible) { color: #ffe17b; }
   .table-focus :global(.vital-card .hp) { font-size: 1.8rem; margin: 0; line-height: 1.2; }
   .table-focus :global(.vital-card > p:not(.hp)) { display: none; }
@@ -551,7 +556,8 @@
   .table-focus .scheme-counter .reading { margin: 0; }
   .table-focus .scheme-counter .what, .table-focus .scheme-counter .bar { display: none; }
   .table-focus .phase-start { margin-top: 6px; font-size: .8rem; padding: 4px; }
-  .table-focus .phase-controls { display: grid; grid-template-columns: minmax(0,1fr) 106px; align-items: center; gap: 6px; }
+  .phase-controls { display: grid; grid-template-columns: minmax(0,1fr) 106px; align-items: center; gap: 10px; margin-top: 12px; }
+  .table-focus .phase-controls { gap: 8px; margin-top: 10px; }
   .table-focus .phase-start { margin: 6px 0 0; }
   .table-focus .table-toolbar :global(.btn) { font-size: .85rem; min-height: 44px; padding: 6px 10px; }
   .compact-scheme { padding: .75rem; margin: 0 0 1rem; border: 2px solid var(--border); border-left: 5px solid var(--accent); }

@@ -79,7 +79,7 @@
   <div class="text-column">
     <header>
       <h1>
-        {card.name}
+        {card.name}{#if card.stage} · {card.stage}{/if}
         {#if card.is_unique === true}<span class="unique" title={t.unique}>◆</span>{/if}
       </h1>
       {#if card.subname !== null && card.subname !== undefined && card.subname !== ''}

@@ -13,6 +13,7 @@
 
   interface Props {
     guided?: boolean;
+    initialThreatBonus?: number;
     t: Strings;
     cardLocale: Locale;
     index: readonly IndexRow[];
@@ -40,6 +41,7 @@
 
   const {
     guided = false,
+    initialThreatBonus = 0,
     t,
     cardLocale,
     index,
@@ -161,7 +163,7 @@
   </dialog>
 {/if}
 
-<Tracker comic={guided} {t} {cardLocale} {index} {expert} {villainOrder} setup={trackerSetup}>
+<Tracker {initialThreatBonus} comic={guided} {t} {cardLocale} {index} {expert} {villainOrder} setup={trackerSetup}>
   {#snippet tableClock()}
     <button class="btn" aria-label={t.tapToCorrect} onclick={openClockEdit}>{formatElapsed(elapsedMillis)}</button>
     <button class="btn" onclick={running ? onPause : onResume}>{running ? t.campaignPause : t.resumeClock}</button>

@@ -327,6 +327,10 @@ jobs:
         working-directory: web
         run: npm run test:fne
 
+      - name: Red Skull guided preparation
+        working-directory: web
+        run: npm run test:red-skull-guide
+
       - name: Fear No Evil guided preparation
         working-directory: web
         run: npm run test:fne-guide

@@ -268,3 +268,39 @@ with one, and adds (ART + 1) per player plus acceleration. This optional
 `EncounterProgress.artAttachments` field travels with the existing saved table;
 older clients do not operate this control. No campaign events, server schema or
 Android application code are changed. Android implementation remains pending.
+
+## Red Skull guided preparation and FNE controls (28 September 2026)
+
+The owner requested the next campaign guide for The Rise of Red Skull using the
+supplied mc10 booklet, and separation of the FNE artwork selector from threat
+buttons. Initial implementation and publication remain Web only.
+
+Web provides ten saved preparation steps for each of the five scenarios, with
+card previews, a persistent ready shortcut, top/bottom Continue, scenario settings,
+and the compact mobile table. Original summaries cover both sides of main schemes,
+villain reveal effects, Experimental Weapons, captive allies, Zola's prison and
+Red Skull's separate side-scheme deck. Sources: mc10 pages 3, 5, 7, 10, 12, 15, 17
+and the corresponding cards; the current Rules Reference governs ordinary setup.
+
+Narrow read-time corrections replace the shipped Crossbones Hydra Patrol set with
+Legions of Hydra and Zola's Hydra Assault with Under Attack; custom set lists are
+preserved. Expert Red Skull defeat ends the campaign as stated on page 15. Stored
+snapshots and events remain untouched. The physical Expert Campaign obligation
+draw remains manual; the explicit “Obligation added · heal” action records restored
+printed health. Eliminated expert heroes must resolve it before the ready shortcut.
+
+New Red Skull tables include the recorded delay threat once (flat in Standard
+campaigns, per player in Expert campaigns). Saved tables retain their current
+values. Phase controls add threat/acceleration only; delay/test tokens, special
+phase effects, obligation card tracking and physical draws are explained for the
+player to resolve. This delivery does not automate every card effect or change
+the existing campaign reward-entry model. Android has no application change or
+release in this work; its matching product snapshot documents the pending guide.
+
+FNE ART selection occupies a full separate row, with spacing above and below,
+followed by phase and acceleration controls. Retain at least 44px touch targets.
+
+The follow-up request requires explicit villain stages: preparation and reveal
+instructions name I/II/III, the table's advance action names its destination, and
+the card detail title includes the printed stage. Mobile table mode must not hide
+the advance-villain action when the current stage reaches zero HP.

@@ -29,6 +29,7 @@
     "test:deal": "vite-node scripts/test-campaign-deal.mjs",
     "test:tracker": "vite-node scripts/test-campaign-tracker.mjs",
     "test:fne": "vite-node scripts/test-campaign-fne.mjs",
+    "test:red-skull-guide": "vite-node scripts/test-red-skull-guide.mjs",
     "test:fne-guide": "vite-node scripts/test-fne-guide.mjs",
     "test:fne-solo": "vite-node scripts/test-fne-solo.mjs",
     "test:tile": "vite-node scripts/test-campaign-tile.mjs",
