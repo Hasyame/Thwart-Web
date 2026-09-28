@@ -24,6 +24,10 @@ export function fneCardAliases(
   index: readonly { code: string; packCode: string; setCode: string | null; typeCode: string }[],
 ): Map<string, string> {
   const out = new Map<string, string>();
+  out.set('fne_face_mary_a', '60110a');
+  out.set('fne_face_bloody_a', '60110b');
+  out.set('fne_face_mary_b', '60111a');
+  out.set('fne_face_bloody_b', '60111b');
   const fne = index.filter((row) => row.packCode === 'fne').sort((a, b) => a.code.localeCompare(b.code));
   for (const [id, set] of Object.entries(FNE_VILLAIN_SETS)) {
     const villain = fne.find((row) => row.setCode === set && row.typeCode === 'villain');

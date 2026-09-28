@@ -7,7 +7,7 @@
   import CampaignVitalCard from './CampaignVitalCard.svelte';
   import MaximumControl from './MaximumControl.svelte';
   import {
-    escalationFor,
+    phaseThreatFor,
     withAcceleration,
     damaged,
     damagedAt,
@@ -166,7 +166,8 @@
     let cancelled = false;
     schemeArt = null;
     schemeCardCode = code;
-    if (comic && name) void loadPackCards(locale, 'aoa').then(cards => {
+    const pack = index.find(card => card.code === code)?.packCode ?? 'aoa';
+    if (comic && name) void loadPackCards(locale, pack).then(cards => {
       const card = cards.find(card => code ? card.code === code : card.name === name && card.stage === printedStage && card.code.endsWith('b'));
       if (!cancelled) { schemeArt = cardImageUrl(card?.imagesrc); schemeCardCode = card?.code; }
     }).catch(() => {});
@@ -184,7 +185,7 @@
   let schemeDialog = $state<HTMLDialogElement>();
   let nextSchemeText = $state('');
   let nextSchemeCode = $state<string | undefined>();
-  const schemeLost = $derived(encounter !== null && schemeComplete(encounter) && isFinalSchemeStage(encounter) && (!encounter.setup.regeneration || isFinalVillainStage(encounter)));
+  const schemeLost = $derived(encounter !== null && schemeComplete(encounter) && (encounter.setup.schemeCompletionIsLoss || isFinalSchemeStage(encounter)) && (!encounter.setup.regeneration || isFinalVillainStage(encounter)));
   async function reviewNextScheme(): Promise<void> {
     if (!encounter) return;
     const next = encounter.setup.scheme[encounter.progress.schemeIndex + 1]?.options[0];
@@ -193,7 +194,8 @@
     nextSchemeCode = next.code?.replace(/b$/, 'a');
     schemeDialog?.showModal();
     try {
-      const cards = await loadPackCards(cardLocale, 'aoa');
+      const pack = index.find(card => card.code === nextSchemeCode)?.packCode ?? 'aoa';
+      const cards = await loadPackCards(cardLocale, pack);
       const front = cards.find(card => nextSchemeCode ? card.code === nextSchemeCode : card.name === next.name && card.code.endsWith('a'));
       nextSchemeCode = front?.code;
       nextSchemeText = new DOMParser().parseFromString(front?.text ?? '', 'text/html').body.textContent ?? '';
@@ -218,7 +220,7 @@
     showThreatChange(copy, applied);
     updateEncounter(c => threatenedOn(c, copy, amount));
   }
-  const phaseThreat = $derived(encounter && scheme ? escalationFor(scheme, encounter.setup.players) + (encounter.progress.accelerationTokens ?? 0) + (encounter.progress.accelerationIcons ?? 0) : 0);
+  const phaseThreat = $derived(encounter ? phaseThreatFor(encounter) : 0);
   function beginVillainPhase(): void {
     if (!encounter) return;
     const after = roundEnded(encounter);
@@ -254,7 +256,7 @@
             {@const hp = villainHealthAt(encounter, track)}
             <section class="counter horseman" class:active={(encounter.progress.activeVillain ?? 0) === track}>
               {#if comic}
-                <CampaignVitalCard {t} locale={cardLocale} code={side.code} name={`${side.name} ${side.stage}`} maximum={hp} damage={villainDamageAt(encounter, track)} defeated={villainTracks(encounter).every((_, i) => villainHealthAt(encounter!, i) !== null && villainDamageAt(encounter!, i) >= villainHealthAt(encounter!, i)!)} onDamage={amount => updateEncounter(c => damagedAt(c, track, amount))} />
+                <CampaignVitalCard {t} locale={cardLocale} code={side.code} pack={index.find(card=>card.code===side.code)?.packCode??'aoa'} name={`${side.name} ${side.stage}`} maximum={hp} damage={villainDamageAt(encounter, track)} defeated={villainTracks(encounter).every((_, i) => villainHealthAt(encounter!, i) !== null && villainDamageAt(encounter!, i) >= villainHealthAt(encounter!, i)!)} onDamage={amount => updateEncounter(c => damagedAt(c, track, amount))} />
               {:else}
               <h3>{side.name} {side.stage}</h3>
               {#if side.code}<CardRef code={side.code} name={side.name} />{/if}
@@ -277,7 +279,7 @@
 
     {#if villain !== null && !encounter.setup.activeVillainMarker}
       <div class="counter">
-        {#if comic}<CampaignVitalCard {t} locale={cardLocale} code={villain.code} name={`${villain.name} ${villain.stage}`} maximum={health} damage={encounter.progress.damage} onDamage={amount => updateEncounter(c => damaged(c, amount))} />{:else}
+        {#if comic}<CampaignVitalCard {t} locale={cardLocale} code={villain.code} pack={index.find(card=>card.code===villain.code)?.packCode??'aoa'} name={`${villain.name} ${villain.stage}`} maximum={health} damage={encounter.progress.damage} onDamage={amount => updateEncounter(c => damaged(c, amount))} />{:else}
         <p class="name">{villain.name} {villain.stage}</p>
         {/if}
         {#if encounter.setup.villainForms}
@@ -379,7 +381,7 @@
       the threat sit still, and concludes the tracker is wrong — about that and
       then about everything else it is counting correctly.
     -->
-    {#if scheme !== null && scheme.escalationVariable === true}
+    {#if scheme !== null && scheme.escalationVariable === true && scheme.code !== '60121b'}
       <p class="muted note">{t.trackerStarredAcceleration}</p>
     {/if}
 
@@ -391,7 +393,7 @@
   <h2>{t.advanceScheme}</h2>
   {#if nextSchemeCode}<CardRef code={nextSchemeCode} name={t.campaignGuideScenario} />{/if}
   <p>{nextSchemeText}</p>
-  <button class="btn btn--primary" onclick={() => { updateEncounter(schemeAdvanced); schemeDialog?.close(); }}>{t.campaignContinue}</button>
+  <button class="btn btn--primary" onclick={() => { updateEncounter(e => e.setup.schemeCompletionIsLoss ? withVillainStage(schemeAdvanced(e), 1) : schemeAdvanced(e)); schemeDialog?.close(); }}>{t.campaignContinue}</button>
   <button class="btn" onclick={() => schemeDialog?.close()}>{t.cancel}</button>
 </dialog>{/if}
 
@@ -474,6 +476,7 @@
 
         {#if comic}
           <div class="phase-controls">
+          {#if scheme?.code==='60121b'}<label class="art-count">{cardLocale==='fr'?'Œuvres sur le méchant':'Art on the villain'} <select aria-label={cardLocale==='fr'?'Œuvres sur le méchant':'Art on the villain'} value={encounter.progress.artAttachments??1} onchange={event=>{const count=Number(event.currentTarget.value);updateEncounter(e=>({...e,progress:{...e.progress,artAttachments:count}}));}}>{#each [0,1,2,3,4] as count}<option value={count}>{count}</option>{/each}</select></label>{/if}
           <button class="btn btn--primary phase-start" disabled={schemeComplete(encounter)} onclick={beginVillainPhase}>{t.villainPhaseStart} · +{phaseThreat}</button>
           <div class="acceleration">
             <span>{t.acceleration} · +{(encounter.progress.accelerationTokens ?? 0) + (encounter.progress.accelerationIcons ?? 0)}</span>
@@ -485,10 +488,14 @@
           </div>
         {/if}
 
-        {#if !isFinalSchemeStage(encounter) && schemeComplete(encounter)}
+        {#if !encounter.setup.schemeCompletionIsLoss && !isFinalSchemeStage(encounter) && schemeComplete(encounter)}
           <button class="btn advance ready" type="button" onclick={() => comic ? reviewNextScheme() : updateEncounter(schemeAdvanced)}>
             {t.advanceScheme}
           </button>
+        {/if}
+        {#if encounter.setup.schemeCompletionIsLoss && !isFinalSchemeStage(encounter) && !schemeComplete(encounter)}
+          <p>{cardLocale==='fr'?`À ${2*encounter.setup.players+2} jetons Soutien, au début de la phase du Méchant, retournez le Caïd puis passez à la manigance suivante.`:`At ${2*encounter.setup.players+2} support counters, when the villain phase begins, flip Kingpin and advance the main scheme.`}</p>
+          <button class="btn" onclick={()=>reviewNextScheme()}>{cardLocale==='fr'?'Soutien public atteint · préparer la phase suivante':'Public Support reached · prepare next phase'}</button>
         {/if}
         {#if encounter.setup.regeneration && schemeComplete(encounter)}
           {#if !isFinalVillainStage(encounter)}
@@ -501,6 +508,8 @@
 {/snippet}
 
 <style>
+  .art-count { display: flex; align-items: center; gap: 8px; font-size: .8rem; }
+  .art-count select { min-height: 44px; min-width: 52px; background: #fff8f0; color: #191820; border: 1px solid #575968; border-radius: 4px; padding: 4px; }
   .scheme-dialog { max-width: min(32rem, calc(100vw - 24px)); max-height: 85dvh; padding: 1rem; border: 2px solid var(--border); background: var(--surface, #fff8f0); color: var(--text); }
   .scheme-dialog::backdrop { background: #111522cc; }
   .scheme-dialog p { white-space: pre-line; }

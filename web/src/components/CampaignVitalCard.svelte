@@ -3,12 +3,12 @@
   import type { Locale } from '../lib/types';
   import { cardImageUrl, loadPackCards } from '../lib/data';
   import CardRef from './CardRef.svelte';
-  const { t, locale, code, name, maximum, damage, onDamage, defeated = true }: {t: Strings; locale: Locale; code?: string; name: string; maximum: number | null; damage: number; defeated?: boolean; onDamage: (amount: number) => void} = $props();
+  const { t, locale, code, name, maximum, damage, onDamage, defeated = true, pack = 'aoa' }: {t: Strings; locale: Locale; pack?: string; code?: string; name: string; maximum: number | null; damage: number; defeated?: boolean; onDamage: (amount: number) => void} = $props();
   let image = $state<string | null>(null);
   let feedback = $state(0);
   let changedAt = 0;
   let expiry: ReturnType<typeof setTimeout> | undefined;
-  $effect(() => { const key = code; const language = locale; let cancelled = false; image = null; void loadPackCards(language, 'aoa').then(cards => { if (!cancelled) image = cardImageUrl(cards.find(c => c.code === key)?.imagesrc); }).catch(() => { if (!cancelled) image = null; }); return () => { cancelled = true; }; });
+  $effect(() => { const key = code; const language = locale; const packCode = pack; let cancelled = false; image = null; void loadPackCards(language, packCode).then(cards => { if (!cancelled) image = cardImageUrl(cards.find(c => c.code === key)?.imagesrc); }).catch(() => { if (!cancelled) image = null; }); return () => { cancelled = true; }; });
   $effect(() => () => clearTimeout(expiry));
   function change(amount: number): void {
     const applied = amount > 0 ? Math.min(amount, Math.max(0, (maximum ?? Infinity) - damage)) : -Math.min(-amount, damage);

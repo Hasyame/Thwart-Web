@@ -241,3 +241,30 @@ explain their effect before confirmation and prevent duplicate clicks.
 Campaign status ignores revoked concessions and uses the folded state when the
 template is readable; a stale cached finished flag must not close a recovered run.
 Initial delivery is Web only; no Android publication is authorized by this change.
+
+## Fear No Evil guided preparation (28 September 2026)
+
+The owner requested the same detailed campaign preparation for Fear No Evil,
+using the supplied mc60 rulebook. Initial delivery and publication are Web only.
+Its specific campaign sequence on page 9 is retained: scenario preparation,
+removed player cards and legal deck replenishment, player setup, persistent HP
+and optional REC healing, completed/failed environments, then the chosen job's
+pressure consequences. Do not silently substitute the AoA mission sequence.
+
+Web now provides eleven saved preparation steps for all five jobs and Kingpin,
+with card references, saved Underling/Mary assignments, scaled quantities,
+top/bottom Continue controls and the persistent ready shortcut. The guide does
+not redraw the campaign board. Physical artwork/support draws and nemesis reveals
+remain explicit table instructions, not inferred or automatically resolved.
+
+Source audit: mc60 pages 5, 9, 13, 15, 17, 19, 21, 23, 26 and the corresponding
+card setup faces. Museum pressure scales per player; Protection Racket pressure
+is flat per scheme. Printed Bullseye I has 14 HP per player. Mary uses only the
+selected difficulty's two forms; Kingpin's scheme thresholds are losses, while
+Public Support provides the separate confirmed phase transition.
+
+The Museum tracker accepts the reported number of ART attachments (0–4), starts
+with one, and adds (ART + 1) per player plus acceleration. This optional
+`EncounterProgress.artAttachments` field travels with the existing saved table;
+older clients do not operate this control. No campaign events, server schema or
+Android application code are changed. Android implementation remains pending.

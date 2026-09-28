@@ -22,6 +22,8 @@
   } from '../lib/campaign/encounter';
   import { parseCampaignText, type TextContext } from '../lib/campaign/text';
   import { FNE_TEMPLATE_ID } from '../lib/fearNoEvil';
+  import { fneCardAliases } from '../lib/fneCards';
+  import { fneGuideSets } from '../lib/campaign/fneGuide';
   import {
     counterOf,
     heroCounterOf,
@@ -304,7 +306,7 @@
     if (state.awaitingChoice) {
       return state.environmentOffer.length > 0 ? 'environment' : 'choice';
     }
-    if (timerRunning(run) || (template?.id === 'aoa' && scenario !== null && run.timerScenarioId === scenario.id)) {
+    if (timerRunning(run) || (['aoa','fne'].includes(template?.id ?? '') && scenario !== null && run.timerScenarioId === scenario.id)) {
       return 'playing';
     }
     return scenario === null ? 'between' : 'briefing';
@@ -672,11 +674,13 @@
   });
 
   const bannerArt = $derived.by((): string | null => {
-    if (template?.id !== 'aoa') return null;
+    if (!['aoa','fne'].includes(template?.id ?? '')) return null;
     const chapter = page === 'result' && lastResult !== null
-      ? template.scenarios?.find(entry => entry.id === lastResult.scenarioId)
+      ? template?.scenarios?.find(entry => entry.id === lastResult.scenarioId)
       : scenario;
-    const code = chapter?.baseSetup?.villainDeck?.standard?.[0];
+    const code = template?.id==='fne'
+      ? fneCardAliases(index).get(campaign?.draws[chapter?.id??'']?.villain?.[0] ?? chapter?.id ?? '')
+      : chapter?.baseSetup?.villainDeck?.standard?.[0];
     return cardImageUrl(index.find(card => card.code === code)?.img);
   });
 
@@ -706,7 +710,7 @@
   {:else if campaign === null}
     <p class="muted note">{t.loading}</p>
   {:else}
-    <header class="head" class:comic-head={template.id === 'aoa'}>
+    <header class="head" class:comic-head={['aoa','fne'].includes(template.id)}>
       {#if bannerArt}<img class="banner-art" src={bannerArt} alt="" />{/if}
       <!-- The scenario just played, while its result is on screen: the campaign
            has already moved on to the next one, and naming that one over a
@@ -722,7 +726,7 @@
          checks before anything else. A counter is only shown once the campaign
          has switched it on, so an empty box does not sit at the top of the
          first scenario claiming to count something. -->
-    {#if active.length > 0 && page !== 'playing'}
+    {#if active.length > 0 && page !== 'playing' && template.id !== 'fne'}
       <div class="counters surface">
         {#each active as counter (counter.id)}
           <div class="counter">
@@ -751,7 +755,7 @@
       </div>
     {/if}
 
-    {#if template.id !== 'aoa'}
+    {#if !['aoa','fne'].includes(template.id)}
       <CampaignJourney {template} {campaign} locale={uiLocale} />
     {/if}
     {#if page === 'lost'}
@@ -901,7 +905,7 @@
       </section>
     {:else if page === 'playing' && scenario !== null}
       <CampaignPlaying
-        guided={template.id === 'aoa'}
+        guided={['aoa','fne'].includes(template.id)}
         {t}
         {cardLocale}
         {index}
@@ -911,7 +915,7 @@
         {cardName}
         mission={template.id === 'aoa' ? {code: campaign.draws[scenario.id]?.mission?.[0] ?? '45170a', overseer: campaign.draws[scenario.id]?.overseer?.[0] ?? '', threat: 5 * campaign.heroes.length + (campaign.counters.missionThreat ?? 0)} : null}
         scenarioName={label(scenario.name) || scenario.id}
-        encounterSets={encounterSetsOf(scenario, campaign, run.standardSet, run.expertSet).map(setName)}
+        encounterSets={(template.id==='fne'?fneGuideSets(campaign,scenario.id):encounterSetsOf(scenario, campaign, run.standardSet, run.expertSet)).map(setName)}
         elapsedMillis={elapsed}
         running={timerRunning(run)}
         campaignRunId={run.id}

@@ -151,6 +151,18 @@ export function trackerSetupFor(
   }
 
   const expert = isExpertCampaign(state);
+  const fneVillainCodes: Readonly<Record<string, Readonly<Record<string,string>>>> = {
+    fne_villain_hammerhead:{I:'60086',II:'60087',III:'60088'},
+    fne_villain_bullseye:{I:'60065',II:'60066',III:'60067'},
+    fne_villain_electro:{I:'60076',II:'60077',III:'60078'},
+    fne_villain_homme_pourpre:{I:'60097',II:'60098',III:'60099'},
+    fne_villain_mary_typhoide:{A:'60110a',B:'60111a'},
+    s6_caid:{A1:'60159a',A2:'60159b',B1:'60160a',B2:'60160b'},
+  };
+  const fneSchemeCodes: Readonly<Record<string,readonly string[]>> = {
+    s1_musee:['60121b'],s2_poursuite:['60128b'],s3_racket:['60134a'],
+    s4_raft:['60142b'],s5_rotatives:['60151b'],s6_caid:['60161b','60162b'],
+  };
   const side = (tracked: TrackedSide): EncounterSide => ({
     name: tracked.name,
     stage: tracked.stage ?? '',
@@ -182,17 +194,34 @@ export function trackerSetupFor(
    * printed on a card that was not on the table.
    */
   const played = (tracked: TrackedSide): boolean =>
-    tracked.onlyOn == null ||
-    tracked.onlyOn.toLowerCase() === scenarioDifficulty(state, scenario.id);
+    tracked.onlyOn == null || tracked.onlyOn.toLowerCase() === scenarioDifficulty(state, scenario.id);
+
+  const mary = template.id==='fne'&&drawn==='fne_villain_mary_typhoide';
+  const marySide = (villains ?? []).find(tracked=>tracked.stage===(scenarioDifficulty(state,scenario.id)==='expert'?'B':'A'));
+  const maryBase = scenarioDifficulty(state,scenario.id)==='expert'?'60111':'60110';
+  const bloodyFirst = state.draws[scenario.id]?.maryFace?.[0]?.includes('bloody')===true;
+  const maryForms = mary && marySide ? (bloodyFirst?['b','a']:['a','b']).map(face=>({
+    ...side(marySide),code:maryBase+face,name:face==='b'?'Bloody Mary':'Mary Typhoïde',form:face==='b'?'Bloody Mary':'Mary Typhoïde',
+  })) : null;
 
   return {
-    villain: (villains ?? []).filter(played).map(side),
+    ...(template.id==='fne'?{schemeCompletionIsLoss:true}:{}),
+    ...(maryForms?{villainForms:[maryForms]}:{}),
+    villain: maryForms ? [maryForms[0]!] : (villains ?? []).filter(played).map(tracked => ({...side(tracked),
+      ...(template.id === 'fne' ? {code:fneVillainCodes[drawn ?? scenario.id]?.[tracked.stage ?? ''],
+        // The original pre-release template carried 12; the printed stage I has 14.
+        ...(drawn==='fne_villain_bullseye'&&tracked.stage==='I'&&tracked.value===12?{value:14}:{})} : {}),
+    })),
     // One stage per entry, each with a single option: a campaign states the
     // stages it plays, where a printed scenario can offer a choice between
     // several schemes for one stage.
-    scheme: (schemes ?? []).filter(played).map((tracked) => ({
+    scheme: (schemes ?? []).filter(played).map((tracked,i) => ({
       stage: tracked.stage ?? '',
-      options: [side(tracked)],
+      options: [{...side(tracked),...(template.id==='fne'?{
+        code:fneSchemeCodes[scenario.id]?.[i],
+        // Museum pressure is per player; Racket pressure is per individual scheme.
+        extraStartingThreat:(side(tracked).extraStartingThreat??0)*(scenario.id==='s1_musee'?Math.max(1,players):1),
+      }:{})}],
     })),
     players: Math.max(1, players),
     // Fear No Evil's racket job deals a market to each player, so a table of

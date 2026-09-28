@@ -113,8 +113,7 @@ const stateFor = ({ difficulty = 'standard', counters = {}, draws = {}, scenario
     `${cleanStart} -> ${pressedStart}`,
   );
 
-  // The printed threat is per player and the pressure is flat, so the two must
-  // not be scaled together.
+  // mc60 p.17: Museum pressure adds one threat per player per mark (two in Expert).
   const pressedThree = trackerSetupFor(
     fne,
     stateFor({ scenarioId: 's1_musee', counters: { pressionMusee: 2 } }),
@@ -123,8 +122,8 @@ const stateFor = ({ difficulty = 'standard', counters = {}, draws = {}, scenario
   );
   const three = startOf(pressedThree).progress.threat;
   check(
-    'the pressure is not multiplied by the players a second time',
-    three - cleanStart * 1.5 === pressedStart - cleanStart,
+    'Museum pressure scales once by the number of players',
+    pressedStart === 6 && three === 9,
     `two: ${pressedStart}, three: ${three}`,
   );
 }
