@@ -84,6 +84,8 @@ export interface SchemeStage {
 }
 
 export interface EncounterSetup {
+  /** Some scenarios change schemes through a card effect, never by completing a stage. */
+  readonly schemeCompletionIsLoss?: boolean;
   readonly startingVillainIndex?: number;
   readonly moreVillains?: readonly (readonly EncounterSide[])[];
   readonly villainsLinked?: boolean;
@@ -106,6 +108,8 @@ export interface EncounterSetup {
 }
 
 export interface EncounterProgress {
+  /** Reported physical ART attachments on the Museum villain. */
+  readonly artAttachments?: number;
   readonly accelerationTokens?: number;
   readonly accelerationIcons?: number;
   readonly layoutVersion?: number;
@@ -398,8 +402,7 @@ export function schemeAdvanced(e: Encounter): Encounter {
  * somewhere it should not be.
  */
 export function roundEnded(e: Encounter): Encounter {
-  const side = schemeSideOf(e);
-  const escalation = side === null ? 0 : escalationFor(side, e.setup.players) + (e.progress.accelerationTokens ?? 0) + (e.progress.accelerationIcons ?? 0);
+  const escalation = phaseThreatFor(e);
   // Every copy accelerates, not only the first: a table playing one scheme
   // each is a table where each of them speeds up every round.
   let after = e;
@@ -407,6 +410,15 @@ export function roundEnded(e: Encounter): Encounter {
     after = threatenedOn(after, copy, escalation);
   }
   return withProgress(after, { round: after.progress.round + 1 });
+}
+
+export function phaseThreatFor(e: Encounter): number {
+  const side=schemeSideOf(e);
+  if(side===null)return 0;
+  const base=side.code==='60121b' && e.progress.artAttachments!==undefined
+    ? (Math.max(0,Math.min(4,e.progress.artAttachments))+1)*e.setup.players
+    : escalationFor(side,e.setup.players);
+  return base+(e.progress.accelerationTokens??0)+(e.progress.accelerationIcons??0);
 }
 
 export const withManualVillainHealth = (e: Encounter, health: number | null): Encounter =>
@@ -426,6 +438,7 @@ export function startOf(setup: EncounterSetup): Encounter {
   return {
     setup,
     progress: {
+      ...(first?.code==='60121b'?{artAttachments:1}:{}),
         villainIndex: setup.startingVillainIndex ?? 0,
         layoutVersion: 2,
       accelerationIcons: setup.regeneration ? 1 : 0,

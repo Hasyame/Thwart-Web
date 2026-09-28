@@ -114,6 +114,25 @@ starred. The ratings, which do need to know which card set such a play was,
 resolve it through the run's template (`web/src/lib/ratings.ts`
 `campaignLayoutOf`).
 
+### 3.6 Detailed Web preparation (2026-09-28)
+
+`fneGuide.ts` and `FnePreparation.svelte` provide contextual steps for each job
+and Underling, plus Kingpin, from the mc60 booklet and setup card faces. They
+read the saved draws and log without changing either. Navigation is saved per
+run/scenario/attempt; card references open the existing viewer. The current
+MC4DB import supplies the FNE cards, superseding the older no-database notes.
+
+The page-9 sequence includes player setup before persistent HP, environments
+and job penalties. Physical draws of artwork/supports and other physical-card
+effects remain player-resolved. The UI calculates Museum and Getaway pressure
+per player, while Racket pressure stays flat per individual scheme. The legacy
+template tracker adapter corrects Museum scaling and the old Bullseye I value,
+and uses card codes for illustrations and references. Mary has two forms at one
+difficulty; Kingpin advances through Public Support rather than scheme failure.
+
+`test:fne-guide` exercises six jobs, five Underlings, both languages/difficulties
+and 1–4 players, including recorded environment consequences and immutable draws.
+
 ---
 
 ## 4. Age of Apocalypse and Rules Reference v1.8

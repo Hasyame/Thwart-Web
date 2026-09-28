@@ -9,6 +9,7 @@ export function parseEncounterProgress(text: string): Partial<EncounterProgress>
     if (!record(p)) return null;
     const numbers = ['accelerationTokens','accelerationIcons','layoutVersion','villainIndex','damage','schemeIndex','schemeOption','threat','round','activeVillain','villainForm','structureIndex','structureDamage'];
     if (!numbers.every(k => p[k] === undefined || integer(p[k]))) return null;
+    if (p.artAttachments !== undefined && (!integer(p.artAttachments) || (p.artAttachments as number) > 4)) return null;
     if (p.genePool != null && !integer(p.genePool)) return null;
     const maximum = (v: unknown): boolean => v == null || (integer(v) && (v as number) > 0);
     if (!['manualVillainHealth','manualSchemeLimit'].every(k => maximum(p[k]))) return null;

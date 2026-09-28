@@ -17,6 +17,7 @@
     type SetupStep,
   } from '../lib/campaign/types';
   import ApocalypsePreparation from './ApocalypsePreparation.svelte';
+  import FnePreparation from './FnePreparation.svelte';
   import CampaignText from './CampaignText.svelte';
   import CardRef from './CardRef.svelte';
   import { openingAllies } from '../lib/campaign/openingAlly';
@@ -349,7 +350,9 @@
 {#snippet consequencePanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(consequenceStep))}{/snippet}
 {#snippet missionPanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(missionStep))}{/snippet}
 {#snippet healthPanel()}{@render panel(t.campaignGuideCampaign, expertHealthSteps)}{/snippet}
-{#if detailedApocalypse}
+{#if template.id === 'fne'}
+  <FnePreparation {t} {uiLocale} {guideKey} {campaign} scenarioId={scenario.id} {text} {index} {setName} {onReady}/>
+{:else if detailedApocalypse}
   <ApocalypsePreparation {t} {uiLocale} {guideKey} {campaign} {expert} {text} {index} {encounterSets} {setName}
     scenarioExpert={scenarioDifficulty(campaign,scenario.id)==='expert'}
     settings={setupSettings} storyContent={storyPanel} campaignContent={consequencePanel} missionContent={missionPanel}
