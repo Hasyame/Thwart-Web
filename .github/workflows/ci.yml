@@ -327,6 +327,10 @@ jobs:
         working-directory: web
         run: npm run test:fne
 
+      - name: Fear No Evil guided preparation
+        working-directory: web
+        run: npm run test:fne-guide
+
       # The same box played outside its campaign: the codes a one-off game
       # carries, the jobs and their subordinates, the tracker's numbers, the
       # briefing and the draw. The phone's FearNoEvilBoxTest asserts the same
