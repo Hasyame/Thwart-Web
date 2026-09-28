@@ -739,7 +739,7 @@ export const fr: Strings = {
     'L\u2019\u00e9quipe avec le moins de sbires et de manigances annexes dans sa zone.',
     'L\u2019\u00e9quipe avec le moins de menace sur la manigance principale de sa zone.',
     'L\u2019\u00e9quipe dont les identit\u00e9s ont le plus de points de vie restants.',
-    'L\u2019\u00e9quipe avec le moins d\u2019attachements sur son leader.',
+    'L\u2019\u00e9quipe avec le moins d\u2019attachements sur le leader dans sa zone de jeu.',
   ],
   filters: 'Filtres',
   filtersNote:

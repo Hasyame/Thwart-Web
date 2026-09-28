@@ -730,7 +730,7 @@ export const en: Strings = {
     'The team with the fewest minions and side schemes in their area.',
     'The team with the least threat on the main scheme in their area.',
     'The team whose identities have the most hit points left.',
-    'The team with the fewest attachments on their leader.',
+    'The team with the fewest attachments on the leader in their game area.',
   ],
   filters: 'Filters',
   filtersNote:

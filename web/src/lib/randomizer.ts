@@ -1,3 +1,4 @@
+import { CIVIL_WAR } from './civilWar';
 import type { CardSet, IndexRow } from './types';
 import { composeFne, needsVillain, splitFne, type FneScenario } from './fearNoEvil';
 
@@ -214,6 +215,7 @@ export function buildPools(input: PoolInput): Pools {
         ownedPackCodes.has(rule.packCode) && !input.excludedScenarios.has(rule.code),
     ),
     ...fneScenarios,
+    ...Object.entries(CIVIL_WAR).filter(([code])=>ownedPackCodes.has('cw')&&!input.excludedScenarios.has(code)&&!rules.scenarios.some(rule=>rule.code===code)).map(([code,spec])=>({code,packCode:'cw',modularCount:4,mandatoryModulars:[],recommendedModulars:[...spec.modules]})),
   ];
 
   const modularSets = sets.filter(

@@ -285,14 +285,7 @@ options and the table says which one it drew.
 // --- a versus board -------------------------------------------------------------
 
 {
-  /*
-   * Civil War, read off the real cards.
-   *
-   * A leader stands where a villain stands and has four stages, all of which a
-   * versus game uses in order. The campaign path picks two of a villain's
-   * stages by difficulty, which is why this has a builder of its own: borrowing
-   * that rule here would quietly drop half the board.
-   */
+  // mc56 p. 3: Standard I/II; Expert III/IV, in either mode.
   const cards = JSON.parse(readFileSync(join(DATA, 'cw.json'), 'utf8'));
   const all = Array.isArray(cards) ? cards : (cards.cards ?? []);
 
@@ -304,13 +297,13 @@ options and the table says which one it drew.
   const setup = versusSetup(ironMan, [stageOne, stageTwo], 2);
 
   check(
-    'a leader brings all four of its stages',
-    setup.villain.length === 4,
+    'a Standard leader brings stages I and II',
+    setup.villain.length === 2,
     setup.villain.map((side) => side.stage).join(','),
   );
   check(
     'and they are in printed order',
-    setup.villain.map((side) => side.stage).join(',') === 'I,II,III,IV',
+    setup.villain.map((side) => side.stage).join(',') === 'I,II',
   );
   check(
     'the leader is counted where a villain would be',

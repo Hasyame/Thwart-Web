@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CIVIL_WAR, isCivilLeader } from '../lib/civilWar';
   import { liveQuery } from 'dexie';
   import type { CardSet, IndexRow, Locale } from '../lib/types';
   import Tracker from './Tracker.svelte';
@@ -295,11 +296,14 @@
     setupNotice.text = null;
     session.current.scenarioCode = code;
     session.current.scenarioName = setNames.get(code) ?? code;
+    if (isCivilLeader(code) && session.current.difficulty.startsWith('EXPERT')) {
+      session.current.difficulty = 'EXPERT_I';
+    }
     // What the scenario mandates is on the table from the moment it is chosen,
     // and cannot be taken off: the picker shows those as required. Owned or
     // not — the person is saying what is in front of them, and the rules put
     // these there. docs/spec/ratings-and-modular-sets.md section 1.2.
-    session.current.modularSetCodes = [...mandatedFor(code)];
+    session.current.modularSetCodes = isCivilLeader(code) ? [...CIVIL_WAR[code].modules] : [...mandatedFor(code)];
     modularSearch = '';
   }
 
@@ -774,8 +778,8 @@
           value={session.current.difficulty}
           onchange={(e) => setDifficulty(e.currentTarget.value as DifficultyId)}
         >
-          {#each pools.difficulties as id (id)}
-            <option value={id}>{t.difficulty(id)}</option>
+          {#each pools.difficulties.filter(id=>!isCivilLeader(session.current.scenarioCode)||!id.startsWith('EXPERT')||id==='EXPERT_I') as id (id)}
+            <option value={id}>{isCivilLeader(session.current.scenarioCode)&&id==='EXPERT_I'?'Expert · III / IV':t.difficulty(id)}</option>
           {/each}
         </select>
       </label>
@@ -784,7 +788,7 @@
         <!-- An Expert set is played with a Standard one, so choosing Expert
              leaves a second question to answer. -->
         <label class="field-group">
-          <span class="field-label">{t.standardSetWith}</span>
+          <span class="field-label">{isCivilLeader(session.current.scenarioCode)?(uiLocale==='fr'?'Set Standard (sans set Expert)':'Standard set (no Expert set)'):t.standardSetWith}</span>
           <select class="field"
             value={session.current.standardSet ?? ''}
             onchange={(e) =>
@@ -947,7 +951,7 @@
       {t.goToSetup}
     </button>
   {:else if session.current.phase === 'briefing'}
-    <Briefing {t} {cardLocale} {index} setNames={setNames} />
+    <Briefing {t} {cardLocale} {uiLocale} {index} setNames={setNames} />
 
     <div class="result-actions">
       <button class="btn btn--primary big" type="button" onclick={startGame}>{t.play}</button>
@@ -957,7 +961,7 @@
   {:else if outcome === null}
     <GameRules {t} {cardLocale} />
     {#if trackEncounter}
-      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} />
+      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} comic={isCivilLeader(session.current.scenarioCode)} />
     {/if}
     <div class="running surface" class:compact={trackEncounter}>
       <!-- Name, heroes and encounter deck at the top, as the app has it: the

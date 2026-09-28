@@ -1,21 +1,24 @@
 <script lang="ts">
   import type { Strings } from '../lib/i18n';
-  import type { IndexRow, Locale } from '../lib/types';
+  import type { Card, IndexRow, Locale } from '../lib/types';
   import { loadPackCards } from '../lib/data';
   import { briefingFor, type SchemeBriefing } from '../lib/schemeSetup';
   import { isFne, loadFneBox } from '../lib/fearNoEvil';
   import { DIFFICULTIES } from '../lib/randomizer';
-  import { session } from '../lib/session.svelte';
+  import CivilWarGuide from './CivilWarGuide.svelte';
+  import { isCivilLeader } from '../lib/civilWar';
+  import { startGame, session } from '../lib/session.svelte';
 
   interface Props {
     t: Strings;
     cardLocale: Locale;
+    uiLocale: Locale;
     index: readonly IndexRow[];
     /** Modular set and difficulty set names, already localised. */
     setNames: ReadonlyMap<string, string>;
   }
 
-  const { t, cardLocale, index, setNames }: Props = $props();
+  const { t, cardLocale, uiLocale, index, setNames }: Props = $props();
 
   const scenarioCode = $derived(session.current.scenarioCode);
 
@@ -29,6 +32,7 @@
   });
 
   let briefing = $state.raw<SchemeBriefing | null>(null);
+  let civilCards = $state.raw<readonly Card[]>([]);
   let loading = $state(false);
 
   /*
@@ -84,6 +88,7 @@
     loadPackCards(cardLocale, pack)
       .then((cards) => {
         if (!cancelled) {
+          civilCards = cards;
           briefing = briefingFor(cards.filter((card) => card.card_set_code === scenarioCode));
         }
       })
@@ -103,7 +108,7 @@
   });
 
   const difficultySets = $derived(
-    session.current.standardSet === null
+    isCivilLeader(scenarioCode)&&expert ? [session.current.standardSet??'STANDARD_I'] : session.current.standardSet === null
       ? [session.current.difficulty]
       : [session.current.difficulty, session.current.standardSet],
   );
@@ -128,7 +133,7 @@
     {/if}
 
     <dt>{t.difficultyLabel}</dt>
-    <dd>{difficultySets.map((id) => t.difficulty(id)).join(' + ')}</dd>
+    <dd>{#if isCivilLeader(scenarioCode)}{expert ? 'Expert · III / IV' : 'Standard · I / II'} · {/if}{difficultySets.map((id) => t.difficulty(id)).join(' + ')}</dd>
 
     <!-- The modular sets are what the encounter deck is made of, which is what
          the table is actually being asked to fetch. -->
@@ -150,7 +155,9 @@
   </dl>
 </div>
 
-{#if loading}
+{#if isCivilLeader(scenarioCode) && civilCards.length>0}
+  <CivilWarGuide locale={uiLocale} cards={civilCards} leader={scenarioCode} players={Math.max(1,session.current.seats.length)} {expert} modules={session.current.modularSetCodes} setName={code=>setNames.get(code)??code} onReady={startGame} storageKey={`civil.guide.${scenarioCode}.${expert}`} />
+{:else if loading}
   <p class="muted note">{t.trackerLoading}</p>
 {:else if briefing !== null && briefing.steps.length > 0}
   <div class="briefing surface">

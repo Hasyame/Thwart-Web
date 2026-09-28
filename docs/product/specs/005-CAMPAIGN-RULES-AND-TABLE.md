@@ -304,3 +304,44 @@ The follow-up request requires explicit villain stages: preparation and reveal
 instructions name I/II/III, the table's advance action names its destination, and
 the card detail title includes the printed stage. Mobile table mode must not hide
 the advance-villain action when the current stage reaches zero HP.
+
+## Civil War scenarios and competitive mode (28 September 2026)
+
+The owner requested a complete rules audit and guides for both cooperative and
+competitive Civil War, plus a dedicated competitive mode. The supplied mc56
+booklet pp. 3–8 and 14–17 is the source. Civil War has no official linked campaign;
+do not invent campaign results, rewards or continuity. Four independent scenarios
+belong in ordinary Play, and the competitive experience uses the existing Versus
+route. Initial implementation and publication remain Web only.
+
+Leaders use I/II in Standard and III/IV in Expert in both formats. The old Web
+competitive four-stage sequence was incorrect. Multiplayer 1B schemes begin with
+Hinder 2 per player, solo with zero. Cooperative presets use the four modular sets
+and paired schemes specified on pp. 7–8; competitive construction permits three
+or four modular sets from the leader's own camp. Standard PvP replaces ordinary
+Standard in competitive play. The stage III/IV variant does not request the ordinary
+Expert encounter set. Explicit card setup and reveal instructions remain ordered.
+
+Competitive tables support equal teams only, 1v1 or 2v2, and opposite camps. A
+team faces the other camp's leader and deck. Its identity cannot share its own
+leader's title. Guide both physical tables before starting, while retaining the
+ready shortcut. Phases alternate Registration heroes, Resistance heroes,
+Registration villain, Resistance villain. Threat is added explicitly once for
+the active villain phase; additional effects and physical cards remain manual.
+Acceleration is a reported total, not multiplied by team size. First-player
+markers pass separately after each team's villain phase in 2v2.
+
+Reported results stay correctable. Confirm only after Resistance's matching
+phase, keeping a defeated leader targetable until that phase ends. Two defeats
+mean both teams lose; two victories invoke the five booklet tiebreaks, with the
+last counting attachments on the leader in that team's game area. Counters never
+silently declare a winner. Review stage effects before advancing. Choosing Sides
+has a separate threat counter and explicit flip; its physical reward choices and
+deck changes are not inferred from the counter.
+
+Save both boards, construction, phase, first-player markers and elapsed time on
+this browser, resuming paused after reload. This Web-local save is distinct from
+campaign events and account sync. Replacing a table requires confirmation. Reuse
+card previews, illustrated counters, cumulative change feedback and mobile touch
+targets. Android and backend have no application/schema changes in this work;
+Android implementation of these guides and corrections remains pending.
