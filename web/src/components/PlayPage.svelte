@@ -961,7 +961,14 @@
   {:else if outcome === null}
     <GameRules {t} {cardLocale} />
     {#if trackEncounter}
-      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} comic={isCivilLeader(session.current.scenarioCode)} />
+      <!-- A Civil War game opens the tracker's full-screen table view on a
+           phone, which hides this page's own "keep the screen on"; the view
+           carries the same switch, as a campaign's does. -->
+      <Tracker {t} {cardLocale} {index} expert={isExpert} setup={fneSetup} comic={isCivilLeader(session.current.scenarioCode)}>
+        {#snippet tableSettings()}
+          <label class="table-awake"><input type="checkbox" checked={wake.on} onchange={(e) => void wake.set(e.currentTarget.checked)} /><span>{t.keepScreenOn}</span></label>
+        {/snippet}
+      </Tracker>
     {/if}
     <div class="running surface" class:compact={trackEncounter}>
       <!-- Name, heroes and encounter deck at the top, as the app has it: the
@@ -1065,6 +1072,8 @@
 </section>
 
 <style>
+  .table-awake { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; color: var(--text); font-size: var(--text-sm); }
+  .table-awake input { width: 20px; height: 20px; accent-color: var(--accent); }
   .running.compact { padding: var(--space-3); }
   .compact .clock { font-size: var(--text-xl); margin-top: var(--space-2); min-height: var(--tap-min); }
   .compact p { margin-block: var(--space-1); }

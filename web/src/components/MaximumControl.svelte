@@ -37,4 +37,9 @@
   input { width: 100%; box-sizing: border-box; }
   .controls button { min-height: 44px; min-width: 44px; }
   .reset { margin-top: var(--space-2); white-space: normal; }
+  /* Its own surface and ink, not the panel's: the tracker draws this inside
+     the dark scheme and villain panels, where a transparent button with the
+     page's text colour was dark on dark in the light theme. */
+  .controls button, .reset { background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+  .controls button:is(:hover, :active, :focus-visible), .reset:is(:hover, :active, :focus-visible) { background: var(--surface-3); color: var(--text); }
 </style>

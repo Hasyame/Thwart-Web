@@ -168,6 +168,9 @@
     <button class="btn" aria-label={t.tapToCorrect} onclick={openClockEdit}>{formatElapsed(elapsedMillis)}</button>
     <button class="btn" onclick={running ? onPause : onResume}>{running ? t.campaignPause : t.resumeClock}</button>
   {/snippet}
+  {#snippet tableSettings()}
+    <label class="table-awake"><input type="checkbox" checked={wake.on} onchange={(e) => void wake.set(e.currentTarget.checked)} /><span>{t.keepScreenOn}</span></label>
+  {/snippet}
   {#snippet tableFinish()}
     <button class="btn btn--primary" onclick={() => finishDialog?.showModal()}>{t.tableFinish}</button>
   {/snippet}
@@ -204,6 +207,8 @@
 </section>
 
 <style>
+  .table-awake { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; color: var(--text); font-size: var(--text-sm); }
+  .table-awake input { width: 20px; height: 20px; accent-color: var(--accent); }
   .clock-dialog { margin: auto; width: min(30rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: var(--space-5); border: 2px solid var(--text); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text); }
   .clock-dialog::backdrop { background: var(--scrim); }
   .clock-dialog h2 { margin-top: 0; font-size: var(--text-xl); }

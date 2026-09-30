@@ -7,21 +7,22 @@
     code: string;
     /** The name already resolved, so this never has to wait to draw text. */
     name: string;
+    quoted?: boolean;
   }
 
-  const { code, name }: Props = $props();
+  const { code, name, quoted = true }: Props = $props();
 
   const known = $derived(isKnownCard(code));
 </script>
 
 {#if known}
   <CardHover {code}>
-    <button type="button" class="ref" onclick={() => showCard(code)}>"{name}"</button>
+    <button type="button" class="ref" onclick={() => showCard(code)}>{quoted ? `"${name}"` : name}</button>
   </CardHover>
 {:else}
   <!-- A campaign's own card, which no database can show. Named, not linked:
        a reference that opens nothing is worse than plain text. -->
-  <span class="plain">"{name}"</span>
+  <span class="plain">{quoted ? `"${name}"` : name}</span>
 {/if}
 
 <style>

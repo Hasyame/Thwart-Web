@@ -7,6 +7,7 @@ import { campaignSetupSteps, villainSetupSteps } from '../src/lib/schemeSetup';
 import { fneGuide, FNE_JOB_SETS } from '../src/lib/campaign/fneGuide';
 import { redSkullGuide, RED_SKULL_SCENARIOS } from '../src/lib/campaign/redSkullGuide';
 import { civilGuide, CIVIL_WAR } from '../src/lib/civilWar';
+import { openingAllies } from '../src/lib/campaign/openingAlly';
 const load=p=>JSON.parse(readFileSync(p,'utf8'));
 const aoa=expandTemplate(load('src/lib/campaign/templates/aoa.json'));
 for(const scenario of aoa.scenarios){
@@ -62,4 +63,23 @@ for (const leader of Object.keys(CIVIL_WAR)) for (const competitive of [true,fal
  const hand=civilGuide('en',leader,2,false,competitive).find(step=>step.title==='Opening hand');
  assert(hand.lines[0].includes('without shuffling those discards'),'Civil War uses current mulligan');
 }
+// Persisted decks use code=quantity, not JSON; legacy campaign seats use id.
+const allyIndex=[
+ {code:'hero',typeCode:'hero',traitKeys:['x_men']},
+ {code:'ally-x',typeCode:'ally',traitKeys:['x_men']},
+ {code:'ally-other',typeCode:'ally',traitKeys:['avenger']},
+ {code:'absent',typeCode:'ally',traitKeys:['x_men']},
+ {code:'event',typeCode:'event',traitKeys:['x_men']},
+];
+const savedDecks=[{id:'old-deck',slots:'ally-x=1,ally-other=2,event=3,absent=0'}];
+for(const hero of [
+ {id:'old-deck',heroCardCode:'hero'},
+ {id:'old-deck',deckId:null,heroCardCode:'hero'},
+ {id:'seat',deckId:'old-deck',heroCardCode:'hero'},
+]){
+ assert.deepEqual(openingAllies(hero,savedDecks,allyIndex,false).map(c=>c.code),['ally-x','ally-other']);
+ assert.deepEqual(openingAllies(hero,savedDecks,allyIndex,true).map(c=>c.code),['ally-x']);
+}
+assert.deepEqual(openingAllies({id:'old-deck',deckId:'missing',heroCardCode:'hero'},savedDecks,allyIndex,false),[],'explicit deck link must not fall back to a stale deck');
+assert.deepEqual(openingAllies({id:'old-deck',heroCardCode:'hero'},[{id:'old-deck',slots:'invalid'}],allyIndex,false),[]);
 console.log('Preparation order: AoA, FNE, Red Skull and Civil War; both languages/difficulties, 1–4 players PASS');

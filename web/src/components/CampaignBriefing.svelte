@@ -438,7 +438,7 @@
 {#if guided}<p>{t.campaignGuideScenarioText}</p>{/if}
 {@render panel(t.campaignGuideScenario, scenarioSteps)}
 {#if scenario.id === 's2_four_horsemen' && guided}
-  <section class="panel"><h3><CardRef code="45085a" name={cardName("45085a")} /></h3>
+  <section class="panel"><h3>{t.schemeSetupTitle} <CardRef code="45085a" name={cardName("45085a")} /></h3>
   <ol class="steps">
     <li class="step">{t.campaignHorsemenStartingHp(campaign.heroes.length * (scenarioDifficulty(campaign, scenario.id) === "expert" ? 12 : 9))}</li>
     <li class="step">{t.campaignHorsemenSideSetup(campaign.heroes.length)}</li>
@@ -484,10 +484,10 @@
 {#if guided}<div class="guide-actions"><button class="btn" disabled={guideStep === 0} onclick={() => moveGuide(guideStep - 1)}>{t.campaignGuidePrevious}</button>{#if guideStep < 5}<button class="btn btn--primary" onclick={() => moveGuide(guideStep + 1)}>{t.campaignGuideNext}</button>{/if}</div>{/if}
 {/if}
 <style>
-  .skip-preparation { position: sticky; top: calc(56px + env(safe-area-inset-top) + var(--space-2)); z-index: 5; padding: var(--space-2); margin-bottom: var(--space-3); background: var(--surface); border: 1px solid var(--border); }
+  .skip-preparation { position: sticky; top: calc(56px + env(safe-area-inset-top) + var(--space-2)); z-index: 5; padding: var(--space-2); margin-bottom: var(--space-3); background: var(--surface-1); border: 1px solid var(--border); }
   .skip-preparation button { width: 100%; min-height: 48px; white-space: normal; }
   [hidden] { display: none !important; }
-  .guide-nav { padding: var(--space-4); border-left: 5px solid var(--accent); background: var(--surface); }
+  .guide-nav { padding: var(--space-4); border-left: 5px solid var(--accent); background: var(--surface-1); }
   .guide-nav h2 { font-weight: 900; font-style: italic; text-transform: uppercase; }
   .guide-nav progress { width: 100%; accent-color: var(--accent); }
   .guide-actions { display: flex; justify-content: space-between; gap: var(--space-4); margin-top: var(--space-5); padding-block: var(--space-4); }

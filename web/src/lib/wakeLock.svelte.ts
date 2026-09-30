@@ -28,7 +28,7 @@ export class ScreenWakeLock {
 
   /** Taken again after the tab comes back, where the browser dropped it. */
   reacquire(): void {
-    if (this.on && document.visibilityState === 'visible' && this.#sentinel === null) {
+    if (this.on && document.visibilityState === 'visible' && (this.#sentinel === null || this.#sentinel.released)) {
       void this.set(true);
     }
   }

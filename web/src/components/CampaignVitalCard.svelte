@@ -24,7 +24,7 @@
 </script>
 <section class="vital-card" class:hurt={feedback < 0} class:healed={feedback > 0} aria-label={name}>
   {#if image}<img src={image} alt="" class="art" />{/if}
-  <h3>{#if code}<CardRef {code} {name} />{:else}{name}{/if}</h3>
+  <h3>{#if code}<CardRef {code} {name} quoted={false} />{:else}{name}{/if}</h3>
   <p class="hp" aria-live="polite">{maximum === null ? '★' : Math.max(0, maximum - damage)} <small>/ {maximum ?? '★'}</small></p>
   <p>{t.statHealth}</p>
   {#if maximum !== null && damage >= maximum}<span class="ko-stamp" role="status">{defeated ? t.villainBeaten : t.villainDown}</span>{/if}
@@ -46,8 +46,9 @@
   .hp { font-size: 2.5rem; font-weight: 900; margin: var(--space-3) 0 0; }
   small { font-size: 1rem; font-weight: 500; }
   .controls { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--space-3); }
-  .controls button { min-height: 48px; background: #fff8f0; color: #171923; }
-  .controls button:disabled { background: #343844; color: #c9cbd1; opacity: 1; }
+  .controls button { min-height: 48px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+  .controls button:is(:hover, :active, :focus-visible):not(:disabled) { background: var(--surface-3); color: var(--text); }
+  .controls button:disabled { background: var(--surface-2); color: var(--text-muted); border-color: var(--hairline); opacity: 1; }
   .feedback { position: absolute; top: 4rem; right: 1rem; padding: .25rem .6rem; font-size: 1.5rem; font-weight: 900; background: #36121d; color: #ffc1cb; }
   .hurt { border-color: #ff6378; box-shadow: inset 0 0 24px #ff284638; }
   .healed { border-color: #68efba; box-shadow: inset 0 0 24px #30de9738; }

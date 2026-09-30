@@ -45,7 +45,7 @@
 <style>
   p{margin-block:var(--space-4);line-height:var(--leading-body);max-width:var(--prose-max)}
 
-  .skip{position:sticky;top:calc(56px + env(safe-area-inset-top) + var(--space-2));z-index:5;padding:var(--space-2);background:var(--surface);border:1px solid var(--border);margin-bottom:var(--space-4)}
+  .skip{position:sticky;top:calc(56px + env(safe-area-inset-top) + var(--space-2));z-index:5;padding:var(--space-2);background:var(--surface-1);border:1px solid var(--border);margin-bottom:var(--space-4)}
   .skip button{width:100%;min-height:48px;white-space:normal}
   nav{padding:var(--space-3);border-left:4px solid var(--accent);margin-block:var(--space-4)}
   progress{width:100%;accent-color:var(--accent);margin-block:var(--space-2)}
