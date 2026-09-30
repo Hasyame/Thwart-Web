@@ -15,9 +15,9 @@ for(const locale of ['fr','en']) {
   assert.equal(schemeAdvanced(g).progress.threat,0);
   for(const competitive of [false,true]) {
    const guide=civilGuide(locale,id,n,expert,competitive);
-   assert.equal(guide.length,competitive?12:9);
+   assert.equal(guide.length,competitive?11:8);
    for(const step of guide){assert.ok(step.lines.length);for(const ref of step.cards)assert.ok(cards.some(c=>c.code===ref),ref);}
-   assert.ok(guide[3].lines[0].includes(expert?'III':'I'));
+   assert.ok(guide[2].lines[0].includes(expert?'III':'I'));
    if(competitive&&n<=2)assert.deepEqual(versusSetup(cards.filter(c=>c.card_set_code===id),cards.filter(c=>spec.schemes.includes(c.code)),n,expert),setup);
   }
   assert.equal(spec.modules.length,4);assert.ok(spec.modules.every(x=>civilModules(spec.side).includes(x)));

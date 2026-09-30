@@ -4,7 +4,7 @@
   import type { CampaignRun, Play, SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { cardImageUrl, loadCardsByCode } from '../lib/data';
-  import { setupSteps } from '../lib/schemeSetup';
+  import { campaignSetupSteps, villainSetupSteps, setupSteps } from '../lib/schemeSetup';
   import { endGame, formatElapsed, resumeSession, session } from '../lib/session.svelte';
   import { evaluate } from '../lib/campaign/conditions';
   import { fold, type HeroCardStats } from '../lib/campaign/engine';
@@ -15,6 +15,9 @@
   import { ApiError } from '../lib/sync/api';
   import {
     currentScenario,
+    villainStages,
+    scenarioDifficulty,
+    drawnVillainFor,
     encounterSetsOf,
     isExpertScenario,
     trackedSetCode,
@@ -371,6 +374,13 @@
 
   $effect(() => {
     const codes = scenario?.baseSetup?.mainScheme ?? [];
+    const players = campaign?.heroes.length ?? 1;
+    const language = uiLocale;
+    const orderedGuide = template?.id === 'aoa';
+    const initialVillain = scenario && campaign
+      ? villainStages(scenario.baseSetup, scenarioDifficulty(campaign, scenario.id), drawnVillainFor(campaign, scenario.id))[0]
+      : undefined;
+    schemeSteps = [];
     if (codes.length === 0) {
       schemeSteps = [];
       return;
@@ -388,7 +398,10 @@
         if (!cancelled) {
           // Read off the card rather than written into the template, so it
           // arrives in the language the cards are in.
-          schemeSteps = codes.flatMap((code) => setupSteps(byCode.get(code)?.text));
+          schemeSteps = orderedGuide ? [
+            ...campaignSetupSteps(byCode, codes, players, language),
+            ...villainSetupSteps(initialVillain ? byCode.get(initialVillain) : undefined, language),
+          ] : codes.flatMap(code => setupSteps(byCode.get(code)?.text));
         }
       })
       .catch(() => {

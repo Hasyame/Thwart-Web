@@ -91,7 +91,8 @@
       {#if prelate}<p class="saved-draw"><CardRef code={prelate} name={text.cardName(prelate)} /></p>{:else}<button class="btn" disabled={drawing} onclick={()=>void drawPrelate()}>{uiLocale==='fr'?'Tirer le Prélat et le mémoriser':'Draw and save the Prelate'}</button>{/if}
       <label class="field-group"><span>{uiLocale==='fr'?'Prélat déjà révélé sur votre table':'Prelate already revealed on your table'}</span><select class="field" value={prelate} disabled={drawing} onchange={event=>{if(event.currentTarget.value)onKeep(APOCALYPSE_PRELATE_DRAW,event.currentTarget.value)}}><option value="">{t.campaignChooseOne}</option>{#each APOCALYPSE_PRELATES as code}<option value={code}>{text.cardName(code)}</option>{/each}</select></label>
     {/if}
-    {#if position === 8}{@render campaignContent()}{@render recoveryContent()}{/if}
+    {#if position === 0}{@render recoveryContent()}<p>{t.campaignShufflePlayers}</p>{/if}
+    {#if position === 8}{@render campaignContent()}{/if}
     {#if position === 9}{@render missionContent()}{/if}
     {#if position === 10}{@render allyContent()}{/if}
     {#if position === 11}

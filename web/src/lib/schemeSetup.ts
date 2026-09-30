@@ -136,3 +136,51 @@ export function briefingFor(cards: readonly BriefingCard[]): SchemeBriefing {
   )[0];
   return { schemeName: earliest?.name ?? null, steps: [] };
 }
+
+
+interface CampaignSetupCard extends BriefingCard {
+  readonly code: string;
+  readonly linked_to_code?: string | null;
+  readonly base_threat?: number | null;
+  readonly base_threat_fixed?: boolean | null;
+  readonly threat?: number | null;
+  readonly threat_fixed?: boolean | null;
+}
+
+/** Read the initial scheme pair only; never execute later stages during preparation. */
+export function campaignSetupSteps(
+  cards: ReadonlyMap<string, CampaignSetupCard>, codes: readonly string[], players: number, locale: string,
+): string[] {
+  const listed = codes.map(code => cards.get(code)).filter((card): card is CampaignSetupCard => card != null);
+  const first = listed.find(card => /^(?:1)?[AB]$/i.test(card.stage ?? '')) ?? listed[0];
+  if (!first) return [];
+  const front = /B$/i.test(first.stage ?? '')
+    ? [...cards.values()].find(card => card.linked_to_code === first.code) ?? cards.get(first.code.replace(/b$/, 'a')) ?? first
+    : first;
+  const back = cards.get(front.linked_to_code ?? front.code.replace(/a$/, 'b'));
+  const result = setupSteps(front.text);
+  const reveal = (text: string | null | undefined) => setupSteps((text ?? '').replace(/<b>\s*(?:When Revealed|Une fois révélée?)\s*:?\s*<\/b>/i, '<b>Setup</b>'));
+  if (!result.length) result.push(...reveal(front.text));
+  if (back && back.code !== front.code) {
+    const start = typeof back.base_threat === 'number' ? back.base_threat * (back.base_threat_fixed ? 1 : players) : 'X';
+    const limit = typeof back.threat === 'number' ? back.threat * (back.threat_fixed ? 1 : players) : 'X';
+    result.push(locale === 'fr'
+      ? `${back.name} : retournez sur ${back.stage ?? '1B'}, avec ${start} menace(s) de départ ; seuil ${limit}.`
+      : `${back.name}: flip to ${back.stage ?? '1B'}, with ${start} starting threat; threshold ${limit}.`);
+    result.push(...reveal(back.text));
+  }
+  return result;
+}
+
+/** Initial villain effects follow the initial scheme, never later villain stages. */
+export function villainSetupSteps(card: CampaignSetupCard | undefined, locale: string): string[] {
+  if (!card) return [];
+  const result = setupSteps(card.text);
+  const reveal = /<b>\s*(?:When Revealed|Une fois révélée?)\s*:?\s*<\/b>/i;
+  const match = reveal.exec(card.text ?? '');
+  if (match) result.push(...setupSteps((card.text ?? '').slice(match.index).replace(reveal, '<b>Setup</b>')));
+  if (/^(?:Toughness|Ténacité)\./i.test(readable(card.text ?? ''))) result.unshift(locale === 'fr'
+    ? 'Donnez-lui un état Tenace (Ténacité).'
+    : 'Give it a tough status card (Toughness).');
+  return result.map(step => `${card.name} ${card.stage ?? ''} : ${step}`);
+}

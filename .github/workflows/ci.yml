@@ -331,6 +331,10 @@ jobs:
         working-directory: web
         run: npm run test:red-skull-guide
 
+      - name: Campaign preparation order
+        working-directory: web
+        run: npm run test:preparation-order
+
       - name: Civil War rules and guides
         working-directory: web
         run: npm run test:civil-war

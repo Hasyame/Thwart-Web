@@ -27,6 +27,13 @@ export interface Strings {
   readonly schemeLost: string;
   readonly tableView: string;
   readonly tableOptions: string;
+  readonly campaignPlayerDeckChanges: string;
+  readonly campaignShufflePlayers: string;
+  readonly campaignHorsemenStartingHp: (hp: number) => string;
+  readonly campaignHorsemenSideThreat: string;
+  readonly campaignHorsemenSetupSource: string;
+  readonly campaignHorsemenSideSetup: (players: number) => string;
+  readonly campaignHorsemenMainSetup: (threshold: number) => string;
   readonly campaignPause: string;
   readonly campaignGuideGatherText: string;
   readonly campaignClockHours: string;

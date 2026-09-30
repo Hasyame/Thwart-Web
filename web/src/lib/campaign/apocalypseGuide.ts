@@ -14,11 +14,11 @@ export function apocalypseGuide(locale: Locale, players: number, expert: boolean
     step('Installez vos héros', 'Set up your heroes', [
       'Posez chaque identité devant son joueur, face alter ego visible. Réglez ses PV sur sa valeur de départ. Les blessures de campagne experte seront appliquées après la mission.',
       'Choisissez le premier joueur et donnez-lui le jeton Premier joueur. Sortez les obligations pour le deck Rencontre et mettez les sets Némésis à part.',
-      'Préparez et mélangez les decks Joueur avec les récompenses conservées. Rassemblez les jetons Dégât, Menace, Accélération et les états Sonné, Désorienté et Tenace. Ne piochez pas encore.'
+      'Préparez les decks Joueur. Les ajouts et retraits issus de votre registre et de la mission sont détaillés ci-dessous, avant le mélange. Rassemblez les jetons Dégât, Menace, Accélération et les états Sonné, Désorienté et Tenace. Ne piochez pas encore.'
     ], [
       'Place each identity in front of its player, alter-ego side up. Set its dial to its starting hit points. Expert campaign damage is applied after the mission is set up.',
       'Choose the first player and give them the first-player token. Set obligations aside for the encounter deck, and keep nemesis sets aside separately.',
-      'Prepare and shuffle player decks, including retained rewards. Gather damage, threat and acceleration tokens and stunned, confused and tough status cards. Do not draw your opening hand yet.'
+      'Prepare player decks. Additions and removals from your log and mission are listed below, before shuffling. Gather damage, threat and acceleration tokens and stunned, confused and tough status cards. Do not draw your opening hand yet.'
     ], 'Rules Reference v1.8 · 51 · 1–7'),
     step('Placez Apocalypse', 'Place Apocalypse', [
       `Posez {card:${card}} au stade ${stage}, face visible. Gardez les autres stades à portée de main.`,
@@ -82,11 +82,11 @@ export function apocalypseGuide(locale: Locale, players: number, expert: boolean
       `There is no other reveal effect on this starting stage. The first villain phase adds ${n+1} threat: ${n} printed growth plus 1 from {card:45104a}.`
     ], 'v1.8 · 51 · 12 / 45103B / Apocalypse II–III'),
     step('Appliquez votre registre', 'Apply your campaign log', [
-      'Mélangez tous les exemplaires de {card:45164} et {card:45165} dans le deck Rencontre : ils composent le set de campagne L’Ère d’Apocalypse.',
-      'Appliquez les conséquences de vos parties précédentes affichées ci-dessous. Les cartes retirées restent retirées ; conservez les récompenses autorisées. Remélangez chaque deck modifié.'
+      'Ajoutez tous les exemplaires de {card:45164} et {card:45165} au deck Rencontre : ils composent le set de campagne L’Ère d’Apocalypse.',
+      'Appliquez les conséquences de votre registre pour le deck Rencontre affichées ci-dessous, puis remélangez-le. Les changements des decks Joueur ont déjà été présentés avec vos héros.'
     ], [
-      'Shuffle every copy of {card:45164} and {card:45165} into the encounter deck: these form the Age of Apocalypse campaign set.',
-      'Apply the consequences of previous games shown below. Removed cards remain removed; retain eligible rewards. Shuffle each modified deck.'
+      'Add every copy of {card:45164} and {card:45165} to the encounter deck: these form the Age of Apocalypse campaign set.',
+      'Apply the encounter-deck consequences from your log shown below, then shuffle it. Player-deck changes were already presented with your heroes.'
     ], 'v1.8 · 51 · 13 / AoA · 14, 24'),
     step('Installez votre mission', 'Set up your mission', [
       `Posez {mission} dans une zone distincte de celle des méchants, avec ${5*n} menaces (5 par joueur). Le tirage exclut les missions déjà tentées. Appliquez ensuite sa préparation particulière ci-dessous.`,

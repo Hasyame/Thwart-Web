@@ -10,8 +10,8 @@
   let position=$state(0);
   const shown=$derived(steps[Math.min(position,steps.length-1)]!);
   let heading=$state.raw<HTMLHeadingElement|null>(null);
-  $effect(()=>{const key=storageKey;try{const n=Number(localStorage.getItem(key));position=Number.isInteger(n)&&n>=0&&n<steps.length?n:0;}catch{position=0;}});
-  function move(n:number){position=n;try{localStorage.setItem(storageKey,String(n));}catch{/* Reading remains possible. */}heading?.focus();}
+  $effect(()=>{const key=storageKey+'.order-v2';try{const n=Number(localStorage.getItem(key));position=Number.isInteger(n)&&n>=0&&n<steps.length?n:0;}catch{position=0;}});
+  function move(n:number){position=n;try{localStorage.setItem(storageKey+'.order-v2',String(n));}catch{/* Reading remains possible. */}heading?.focus();}
   const stages=$derived(cards.filter(c=>c.type_code==='leader'&&c.card_set_code===leader&&(expert?['III','IV']:['I','II']).includes(c.stage??'')));
   const references=$derived(shown.title===(fr?'Les stades du leader':'Leader stages')?stages.map(c=>c.code):shown.cards);
 </script>
@@ -22,7 +22,7 @@
   {#if position<steps.length-1}<button class="btn" onclick={()=>move(position+1)}>{fr?'Continuer →':'Continue →'}</button>{/if}
   <h2 bind:this={heading} tabindex="-1">{shown.title}</h2>
   <ol>{#each shown.lines as line}<li>{line}</li>{/each}</ol>
-  {#if position===2}
+  {#if shown.title===(fr?'Le deck Rencontre':'Encounter deck')}
     {#each modules??CIVIL_WAR[leader].modules as code}<details><summary>{setName(code)}</summary><div class="refs">{#each cards.filter(c=>c.card_set_code===code) as card}<CardRef code={card.code} name={card.name}/>{/each}</div></details>{/each}
   {/if}
   {#each references as code}
@@ -30,7 +30,7 @@
     {#if card}<article><h3><CardRef {code} name={`${card.name}${card.stage?' · '+card.stage:''}`}/></h3>
       {#if card.type_code==='leader'}<p><strong>{(card.health??0)*players} {fr?'PV':'HP'}</strong></p>{/if}
       {#if typeof card.base_threat==='number'}<p>{fr?'Menace de départ':'Starting threat'} : {card.type_code==='main_scheme'&&card.stage==='1B'?(players>1?2*players:0):card.base_threat*(card.base_threat_fixed?1:players)}</p>{/if}
-      <div class="card-text">{@html cardHtml(card.text??'')}</div></article>{/if}
+      <details><summary>{fr?'Consulter le texte de la carte':'Read card text'}</summary><div class="card-text">{@html cardHtml(card.text??'')}</div></details></article>{/if}
   {/each}
   <p class="muted">mc56 · {competitive?'3–8, 14–17':'3–8'}</p>
   <div class="actions"><button class="btn" disabled={position===0} onclick={()=>move(position-1)}>{fr?'← Précédent':'← Previous'}</button>{#if position<steps.length-1}<button class="btn btn--primary" onclick={()=>move(position+1)}>{fr?'Continuer →':'Continue →'}</button>{:else if onReady}<button class="btn btn--primary" onclick={onReady}>{fr?'Démarrer':'Start'}</button>{/if}</div>
