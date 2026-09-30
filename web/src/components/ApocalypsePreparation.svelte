@@ -105,12 +105,14 @@
 </div>
 
 <style>
+  p{margin-block:var(--space-4);line-height:var(--leading-body);max-width:var(--prose-max)}
+
   .skip-preparation{position:sticky;top:calc(56px + env(safe-area-inset-top) + var(--space-2));z-index:5;padding:var(--space-2);background:var(--surface);border:1px solid var(--border);margin-bottom:var(--space-4)}
   .skip-preparation button{width:100%;min-height:48px;white-space:normal}
   .guide-nav{padding:var(--space-3);border-left:4px solid var(--accent);margin-block:var(--space-4)}
   progress{width:100%;accent-color:var(--accent)}
   h3{font-size:var(--text-xl);font-weight:900;font-style:italic;scroll-margin-top:6rem}
-  ol{padding-left:1.4rem;line-height:var(--leading-body)}li{margin-block:var(--space-3)}
+  ol{padding-left:1.4rem;line-height:var(--leading-body)}li{margin-block:var(--space-5)}
   .source{color:var(--text-muted);font-size:var(--text-sm);margin-top:var(--space-5)}
   summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}summary::before{content:'▸';margin-right:var(--space-2)}
   details{border:1px solid var(--border);padding:var(--space-3);margin-block:var(--space-2)}
