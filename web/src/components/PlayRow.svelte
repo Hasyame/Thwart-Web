@@ -4,9 +4,8 @@
   import type { Play } from '../lib/records';
   import { db } from '../lib/db';
   import { formatElapsed } from '../lib/session.svelte';
-  import { bgg, bggCanSend, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
+  import { bgg, bggCanSend, bggSendFailure, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
   import { bggComment } from '../lib/bggComment';
-  import { ApiError } from '../lib/sync/api';
   import { session } from '../lib/sync/session.svelte';
   import { storedOnServer } from '../lib/sync/stored.svelte';
 
@@ -180,7 +179,7 @@
     try {
       await sendPlayToBgg(play, t.difficulty, uiLocale);
     } catch (cause) {
-      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+      bggFailure = bggSendFailure(t, cause);
     } finally {
       busy = false;
     }
@@ -362,7 +361,7 @@
     </div>
 
     {#if bggFailure !== null && !onBgg}
-      <p class="bgg-failure" role="alert">{t.bggSendFailed(bggFailure)}</p>
+      <p class="bgg-failure" role="alert">{bggFailure}</p>
     {/if}
 
     {#if offeringMark && !onBgg}

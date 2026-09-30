@@ -52,6 +52,8 @@ export type ApiErrorCode =
   | 'bgg_bad_credentials'
   | 'bgg_rejected'
   | 'bgg_unreachable'
+  /** The play went out and BGG never answered: it may be there already. */
+  | 'bgg_uncertain'
   | 'bgg_disabled'
   /** The Android alpha sign-up, server/alpha.go: a name out of bounds, or the form closed. */
   | 'invalid_name'
@@ -143,12 +145,31 @@ export interface PullPage {
 }
 
 /**
- * `rejected` is the one that is not a success. The server did not store the
- * record and will not on a retry: a rating for something this account never
- * played, or malformed. The client's only correct move is to drop its copy.
- * docs/spec/ratings-and-modular-sets.md §2.4.
+ * `rejected` and `deferred` are the two that are not a success.
+ *
+ * `rejected`: the server did not store the record and will not on a retry: a
+ * rating for something this account never played, or malformed. The client's
+ * only correct move is to drop its copy. docs/spec/ratings-and-modular-sets.md
+ * §2.4.
+ *
+ * `deferred`: a valid rating over the account's daily allowance (reason
+ * `rate_limited`). Not stored *yet*; the client keeps it and sends it again.
  */
-export type PushOutcome = 'applied' | 'applied_over_conflict' | 'already_present' | 'rejected';
+export type PushOutcome = 'applied' | 'applied_over_conflict' | 'already_present' | 'rejected' | 'deferred';
+
+/**
+ * Whether a push result means "drop your copy".
+ *
+ * Only a `rejected` for a reason that will not change. A server from before
+ * `deferred` existed answered the daily cap `rejected`/`rate_limited`, and a
+ * rating dropped for that was a rating lost (bug hunt, 2026-09-30).
+ */
+export const isRefusedForGood = (result: PushResult): boolean =>
+  result.outcome === 'rejected' && result.reason !== 'rate_limited';
+
+/** Whether a push result stored nothing, and the record is still owed. */
+export const isDeferred = (result: PushResult): boolean =>
+  result.outcome === 'deferred' || (result.outcome === 'rejected' && result.reason === 'rate_limited');
 
 export interface PushResult {
   readonly id: string;
@@ -157,7 +178,7 @@ export interface PushResult {
   readonly outcome: PushOutcome;
   /** Named when this write went over one the client had not seen. */
   readonly supersededRevision?: number;
-  /** Why, when the outcome is `rejected`. */
+  /** Why, when the outcome is `rejected` or `deferred`. */
   readonly reason?: string;
 }
 

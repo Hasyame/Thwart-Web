@@ -438,6 +438,15 @@ bound. A nightly job deletes tombstones older than the horizon and raises
 A client whose cursor is below `minCursor` **must full-resync** (§6). This is
 the only correct response: the server genuinely cannot tell it what it missed.
 
+> **How the web client does it (2026-09-30, bug hunt; it used to retry the
+> refused cursor for ever).** On `cursor_too_old` it pulls from `since=0` with
+> `resync=1` on every page and notes every record that comes back. When the
+> pull ends, a local record the server once confirmed (it has a sync state) and
+> that did not come back is deleted: it was deleted elsewhere and its tombstone
+> swept. A local record with no state is its own new work and is pushed as
+> usual. The new cursor is written only at the end, so an interrupted recovery
+> meets the same refusal next time and starts over.
+
 Two subtleties:
 
 **Deleting a campaign run implies deleting its events.** The local `ON DELETE

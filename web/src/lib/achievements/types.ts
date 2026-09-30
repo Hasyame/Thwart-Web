@@ -104,6 +104,17 @@ export interface DeriveInput {
   readonly ownedPacks: readonly string[];
   readonly facts: readonly PlayFact[];
   readonly runs: readonly RunFact[];
+  /**
+   * Which calendar day a moment falls on, for `distinct_days`. Any value that
+   * is equal for two moments on the same day.
+   *
+   * Passed in rather than read from the machine, so the derivation stays pure
+   * and the shared vectors mean the same thing on every runner. Left out, it
+   * is the UTC day, which is what the vectors assume; the app passes the
+   * player's own day (`localDay`), because a game night either side of UTC
+   * midnight is one evening, not two days (bug hunt, 2026-09-30).
+   */
+  readonly dayOf?: (at: number) => number;
 }
 
 // --- the output -------------------------------------------------------------------

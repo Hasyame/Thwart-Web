@@ -53,7 +53,7 @@ type RecordResult struct {
 	Revision           int64  `json:"revision"`
 	Outcome            string `json:"outcome"`
 	SupersededRevision *int64 `json:"supersededRevision,omitempty"`
-	// Why a record was rejected. Only ever set with outcomeRejected.
+	// Why a record was rejected or deferred. Only ever set with those outcomes.
 	Reason string `json:"reason,omitempty"`
 }
 
@@ -67,6 +67,11 @@ const (
 	// Not stored, and the client must not retry: a rating for something this
 	// account never played, or malformed. The batch around it still applies.
 	outcomeRejected = "rejected"
+	// Not stored *yet*: a valid rating over the account's daily allowance. It
+	// is not an error in the record and nothing is wrong with it; the client
+	// keeps it and sends it again later (bug hunt, 2026-09-30: answered
+	// `rejected` before, which every client reads as "drop your copy").
+	outcomeDeferred = "deferred"
 )
 
 /*
@@ -215,7 +220,15 @@ func (s *Store) AccountCursor(ctx context.Context, accountID string) (int64, err
 	return cursor, err
 }
 
-func (s *Store) ApplyBatch(ctx context.Context, accountID string, records []IncomingRecord) ([]RecordResult, int64, error) {
+/*
+ApplyBatch stores a batch in one transaction.
+
+allowRating, when not nil, is asked once for every rating that passed
+validation and is about to be written, and a false answers that rating
+`deferred`. Asked there and nowhere earlier, so a rating refused as not played,
+or a deletion, spends none of the account's allowance.
+*/
+func (s *Store) ApplyBatch(ctx context.Context, accountID string, records []IncomingRecord, allowRating func() bool) ([]RecordResult, int64, error) {
 	unlock := s.writes.lock(accountID)
 	defer unlock()
 
@@ -227,7 +240,7 @@ func (s *Store) ApplyBatch(ctx context.Context, accountID string, records []Inco
 
 	results := make([]RecordResult, 0, len(records))
 	for _, in := range records {
-		result, err := applyOne(ctx, tx, accountID, in)
+		result, err := applyOne(ctx, tx, accountID, in, allowRating)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -246,7 +259,7 @@ func (s *Store) ApplyBatch(ctx context.Context, accountID string, records []Inco
 	return results, cursor, nil
 }
 
-func applyOne(ctx context.Context, tx *sql.Tx, accountID string, in IncomingRecord) (RecordResult, error) {
+func applyOne(ctx context.Context, tx *sql.Tx, accountID string, in IncomingRecord, allowRating func() bool) (RecordResult, error) {
 	spec := collections[in.Collection]
 
 	/*
@@ -267,6 +280,9 @@ func applyOne(ctx context.Context, tx *sql.Tx, accountID string, in IncomingReco
 		}
 		if reason != "" {
 			return RecordResult{ID: in.ID, Collection: in.Collection, Outcome: outcomeRejected, Reason: reason}, nil
+		}
+		if allowRating != nil && !allowRating() {
+			return RecordResult{ID: in.ID, Collection: in.Collection, Outcome: outcomeDeferred, Reason: reasonRateLimited}, nil
 		}
 		rating = row
 	}

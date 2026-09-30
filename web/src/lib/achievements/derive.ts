@@ -26,6 +26,15 @@ import {
 
 const DAY = 86_400_000;
 
+/** The UTC day, the default: what the shared vectors assume. */
+export const utcDay = (at: number): number => Math.floor(at / DAY);
+
+/** The day on this device's calendar, for the app itself. */
+export const localDay = (at: number): number => {
+  const d = new Date(at);
+  return d.getFullYear() * 10_000 + d.getMonth() * 100 + d.getDate();
+};
+
 const byPlay = (a: PlayFact, b: PlayFact): number =>
   a.playedAt - b.playedAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
@@ -108,6 +117,7 @@ export function derive(input: DeriveInput): AchievementState {
   const facts = [...input.facts].sort(byPlay);
   const runs = [...input.runs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const owned = new Set(input.ownedPacks);
+  const dayOf = input.dayOf ?? utcDay;
 
   // 4.1 cells
   const cells = new Map<string, { scenarioKey: string; heroCode: string; owner: MutableTally; any: MutableTally }>();
@@ -196,7 +206,8 @@ export function derive(input: DeriveInput): AchievementState {
               value = seen.size;
               break;
             case 'distinct_days':
-              seen.add(Math.floor(fact.playedAt / DAY));
+              // The caller's calendar (see DeriveInput.dayOf).
+              seen.add(dayOf(fact.playedAt));
               value = seen.size;
               break;
           }

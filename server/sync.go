@@ -270,45 +270,27 @@ func (s *Server) handlePush(w http.ResponseWriter, r *http.Request, sess session
 	}
 
 	/*
-		Ratings per account per day, refused one by one.
+		Ratings per account per day, deferred one by one.
 
-		The limiter is the server's, not the store's, so it is applied here: a
-		rating over the day's allowance is answered `rejected`/`rate_limited`
-		and taken out of the batch before the store sees it, in place, so the
-		plays beside it still land and the result list keeps its order.
+		Counted inside the store, only for a rating that passed validation and
+		is about to be written: one refused as not played, or a deletion, spends
+		nothing. A rating over the day's allowance is answered
+		`deferred`/`rate_limited`, never `rejected`, because it is not wrong and
+		will be accepted tomorrow; the plays beside it still land.
 	*/
-	limited := map[int]bool{}
-	kept := make([]IncomingRecord, 0, len(body.Records))
-	for i, rec := range body.Records {
-		if rec.Collection == "ratings" && !rec.Deleted &&
-			!s.limiter.allow("ratings:"+sess.account.ID, ratingsPerAccountDay) {
-			limited[i] = true
-			continue
-		}
-		kept = append(kept, rec)
+	allowRating := func() bool {
+		return s.limiter.allow("ratings:"+sess.account.ID, ratingsPerAccountDay)
 	}
-
-	applied, cursor, err := s.store.ApplyBatch(r.Context(), sess.account.ID, kept)
+	results, cursor, err := s.store.ApplyBatch(r.Context(), sess.account.ID, body.Records, allowRating)
 	if err != nil {
 		s.fail(w, r, "apply batch", err)
 		return
 	}
 
-	results := make([]RecordResult, 0, len(body.Records))
-	next := 0
-	for i, rec := range body.Records {
-		if limited[i] {
-			results = append(results, RecordResult{ID: rec.ID, Collection: rec.Collection, Outcome: outcomeRejected, Reason: reasonRateLimited})
-			continue
-		}
-		results = append(results, applied[next])
-		next++
-	}
-
 	// A summary served from memory must not outlive the rating that changed
 	// it. Forgotten after the commit, so the next read is the new truth.
 	for _, res := range results {
-		if res.Collection == "ratings" && res.Outcome != outcomeRejected {
+		if res.Collection == "ratings" && res.Outcome != outcomeRejected && res.Outcome != outcomeDeferred {
 			s.summaries.forget(res.ID)
 		}
 	}

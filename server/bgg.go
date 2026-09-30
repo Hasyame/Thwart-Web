@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -124,6 +126,11 @@ var (
 	errBggBadCredentials = errors.New("bgg: username or password rejected")
 	errBggRejected       = errors.New("bgg: request refused")
 	errBggUnreachable    = errors.New("bgg: not reached")
+	// The play went out in full and no answer came back: BGG may well have
+	// recorded it. Distinct from unreachable because the advice differs: a
+	// blind retry of this one posts a second copy to the person's real BGG
+	// account, which nothing in the app can take back (bug hunt, 2026-09-30).
+	errBggUncertain = errors.New("bgg: sent, no answer")
 )
 
 /*
@@ -241,12 +248,29 @@ func (b *bggRelay) postPlay(ctx context.Context, cookies []*http.Cookie, play bg
 		req.AddCookie(cookie)
 	}
 
+	// Whether the whole request left, so a failure can say if BGG may have it.
+	var sent atomic.Bool
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			if info.Err == nil {
+				sent.Store(true)
+			}
+		},
+	}))
+
 	res, err := b.client.Do(req)
 	if err != nil {
+		if sent.Load() {
+			return fmt.Errorf("%w: play: %s", errBggUncertain, transportDetail(err))
+		}
 		return fmt.Errorf("%w: play: %s", errBggUnreachable, transportDetail(err))
 	}
 	defer res.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
+	body, readErr := io.ReadAll(io.LimitReader(res.Body, 64*1024))
+	if readErr != nil {
+		// Headers came back and the body did not: the save may have landed.
+		return fmt.Errorf("%w: play answer cut off: %s", errBggUncertain, transportDetail(readErr))
+	}
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return fmt.Errorf("%w: play answered HTTP %d", errBggRejected, res.StatusCode)
@@ -290,6 +314,9 @@ func (s *Server) bggFail(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, errBggUnreachable):
 		s.log.Warn("bgg relay", "outcome", "unreachable", "detail", err.Error())
 		writeError(w, r, apiError{status: http.StatusBadGateway, code: "bgg_unreachable"})
+	case errors.Is(err, errBggUncertain):
+		s.log.Warn("bgg relay", "outcome", "uncertain", "detail", err.Error())
+		writeError(w, r, apiError{status: http.StatusGatewayTimeout, code: "bgg_uncertain"})
 	default:
 		s.log.Warn("bgg relay", "outcome", "rejected", "detail", err.Error())
 		writeError(w, r, apiError{status: http.StatusBadGateway, code: "bgg_rejected"})

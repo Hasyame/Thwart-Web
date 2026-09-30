@@ -173,6 +173,14 @@
     {#if last?.stoppedBecause === 'push_failed'}
       <p class="warning" role="alert">{t.syncStopped}</p>
     {/if}
+    {#if last !== null && last.resynced}
+      <p class="muted" role="status">{t.syncResynced}</p>
+    {/if}
+    {#if last !== null && last.deferred > 0}
+      <!-- Still here and still owed: every later sync offers them again, so
+           this stays true until the server takes them. -->
+      <p class="muted" role="status">{t.ratingDeferred(last.deferred)}</p>
+    {/if}
     {#if sync.rejected.length > 0}
       <!-- Kept until dismissed, not until the next sync, which is often
            seconds later. The records are already gone from this browser; this

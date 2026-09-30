@@ -70,8 +70,18 @@ var errNoFlush = errors.New("the response writer does not support flushing")
 
 type subscriber struct {
 	account string
-	events  chan int64
+	// The device whose token opened the stream. The token is checked once, at
+	// connect, so a device signed out later is found by this and its streams
+	// ended; without it a revoked token went on hearing the account for as
+	// long as the heartbeat kept its connection open (bug hunt, 2026-09-30).
+	device string
+	events chan int64
+	// Closed, once, to end the stream: the device was signed out.
+	ended   chan struct{}
+	endOnce sync.Once
 }
+
+func (sub *subscriber) end() { sub.endOnce.Do(func() { close(sub.ended) }) }
 
 /*
 Per-account fan-out.
@@ -91,8 +101,8 @@ func newBroadcaster() *broadcaster {
 	return &broadcaster{byAccount: map[string]map[*subscriber]struct{}{}}
 }
 
-func (b *broadcaster) subscribe(account string) *subscriber {
-	sub := &subscriber{account: account, events: make(chan int64, streamBacklog)}
+func (b *broadcaster) subscribe(account, device string) *subscriber {
+	sub := &subscriber{account: account, device: device, events: make(chan int64, streamBacklog), ended: make(chan struct{})}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	listeners, seen := b.byAccount[account]
@@ -140,6 +150,32 @@ func (b *broadcaster) notify(account string, revision int64) {
 		case sub.events <- revision:
 		default:
 			// Behind by more than the backlog. Its reconnect will catch it up.
+		}
+	}
+}
+
+/*
+endDevices ends the streams of an account's signed-out devices: every device
+but `keep`, or every one when `keep` is empty. For a password change, a
+recovery and an account deletion.
+*/
+func (b *broadcaster) endDevices(account, keep string) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	for sub := range b.byAccount[account] {
+		if keep == "" || sub.device != keep {
+			sub.end()
+		}
+	}
+}
+
+// endDevice ends one revoked device's streams.
+func (b *broadcaster) endDevice(account, device string) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	for sub := range b.byAccount[account] {
+		if sub.device == device {
+			sub.end()
 		}
 	}
 }
@@ -211,7 +247,7 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request, sess sessi
 		current. The window was a few microseconds and a test on a two-core
 		box fell into it.
 	*/
-	sub := s.streams.subscribe(sess.account.ID)
+	sub := s.streams.subscribe(sess.account.ID, sess.device.ID)
 	defer s.streams.unsubscribe(sub)
 
 	/*
@@ -251,6 +287,10 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request, sess sessi
 		case <-r.Context().Done():
 			// The client went away: closed the tab, lost the network, or was
 			// backgrounded by iOS. Nothing to clean up but the subscription.
+			return
+
+		case <-sub.ended:
+			// Signed out since it connected. Its reconnect meets a 401.
 			return
 
 		case revision, open := <-sub.events:

@@ -40,6 +40,8 @@
     "test:sync": "vite-node scripts/test-sync-state.mjs",
     "test:engine-sync": "vite-node scripts/test-sync-engine.mjs",
     "test:sync-integration": "vite-node scripts/test-sync-integration.mjs",
+    "test:sync-recovery": "vite-node scripts/test-sync-recovery.mjs",
+    "test:error-codes": "vite-node scripts/test-error-codes.mjs",
     "test:release": "node scripts/test-release.mjs",
     "test:plays": "vite-node scripts/test-plays.mjs",
     "test:merge": "vite-node scripts/test-sync-merge.mjs",

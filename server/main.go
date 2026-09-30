@@ -190,11 +190,12 @@ func run(addr, dbPath string, openRegistration bool, mailFrom, smtpAddr, siteURL
 		IdleTimeout:       60 * time.Second,
 	}
 
-	// The rate limiter keeps a map keyed by whatever unauthenticated callers
-	// send, so something has to drop the expired entries or it grows forever.
+	// The rate limiter and the rating summary cache keep maps keyed by whatever
+	// unauthenticated callers send, so something has to drop the expired
+	// entries or they grow forever.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	go sweepUntil(ctx, server.limiter, 10*time.Minute)
+	go sweepUntil(ctx, 10*time.Minute, server.limiter.sweep, func() { server.summaries.sweep(time.Now()) })
 
 	// Tombstones and stored push responses expire. Doc 02 §5: a delete stays
 	// describable for 180 days, long enough that a phone left in a drawer over
@@ -245,7 +246,7 @@ func sweepUnverified(ctx context.Context, server *Server, every time.Duration) {
 	}
 }
 
-func sweepUntil(ctx context.Context, l *limiter, every time.Duration) {
+func sweepUntil(ctx context.Context, every time.Duration, sweeps ...func()) {
 	ticker := time.NewTicker(every)
 	defer ticker.Stop()
 	for {
@@ -253,7 +254,9 @@ func sweepUntil(ctx context.Context, l *limiter, every time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			l.sweep()
+			for _, sweep := range sweeps {
+				sweep()
+			}
 		}
 	}
 }

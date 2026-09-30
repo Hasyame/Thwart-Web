@@ -11,7 +11,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { derive, newlyUnlocked } from '../src/lib/achievements/derive.ts';
+import { derive, localDay, newlyUnlocked } from '../src/lib/achievements/derive.ts';
 import { achievementTargets } from '../src/lib/achievements/details.ts';
 import { achievementChallenge } from '../src/lib/achievements/challenge.ts';
 import { parseDefinitions } from '../src/lib/achievements/definitions.ts';
@@ -119,6 +119,23 @@ for (const c of vectors.cases) {
   check('two of three: name both completed scenarios, even without ownership', targets.filter((t) => t.completedBy).map((t) => t.key).join(',') === 'rhino,klaw');
   check('losses never satisfy the missing scenario', achievementTargets({ ...input, facts: [...input.facts, { ...fact, id: 'd', scenarioKey: 'ultron', won: false }] }, definition).find((t) => t.key === 'ultron').completedBy === null);
   check('a qualifying win completes the checklist', achievementTargets({ ...input, facts: [...input.facts, { ...fact, id: 'e', scenarioKey: 'ultron' }] }, definition).every((t) => t.completedBy !== null));
+}
+
+{
+  // distinct_days on the player's calendar (bug hunt, 2026-09-30). Pinned to
+  // New York so the check means the same on every runner.
+  const zone = process.env.TZ;
+  process.env.TZ = 'America/New_York';
+  const definition = { id: 'distinct_days', category: 'volume', scope: 'global', hidden: false, tiers: [{ tier: 'bronze', n: 3 }], predicate: { kind: 'count', what: 'distinct_days' } };
+  const fact = { id: 'a', playedAt: Date.UTC(2026, 8, 30, 23, 30), scenarioKey: 'rhino', level: 'standard', won: true, players: 1, seats: [{ heroCode: 'h', aspects: ['justice'], isOwner: true }], campaignRunId: null, mode: null };
+  // 19:30 and 21:30 in New York: one evening, either side of UTC midnight.
+  const facts = [fact, { ...fact, id: 'b', playedAt: Date.UTC(2026, 9, 1, 1, 30) }];
+  const input = { definitions: [definition], definitionsVersion: 1, catalogue: { heroes: [], scenarios: [] }, ownedPacks: [], facts, runs: [] };
+  const days = (state) => state.achievements.find((a) => a.id === 'distinct_days')?.progress.current;
+  check('distinct_days: one game night is one local day', days(derive({ ...input, dayOf: localDay })) === 1, String(days(derive({ ...input, dayOf: localDay }))));
+  check('distinct_days: left out, the day is UTC, as the vectors say', days(derive(input)) === 2);
+  check('distinct_days: 23:30 and 00:30 local are two days', days(derive({ ...input, dayOf: localDay, facts: [fact, { ...fact, id: 'c', playedAt: Date.UTC(2026, 9, 1, 4, 30) }] })) === 2);
+  if (zone === undefined) delete process.env.TZ; else process.env.TZ = zone;
 }
 
 console.log(failures === 0 ? '\nPASS' : `\n${failures} FAILED`);

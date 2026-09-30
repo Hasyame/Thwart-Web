@@ -773,6 +773,8 @@ export interface Strings {
   readonly accountDeleteConfirm: string;
   readonly accountDeleteYes: string;
   readonly verifyTitle: string;
+  /** The heading once a confirmation link has failed: invalid, used or expired. */
+  readonly verifyFailedTitle: string;
   readonly verifyWorking: string;
   readonly verifyDone: (handle: string) => string;
   readonly verifyDoneHint: string;
@@ -1056,9 +1058,13 @@ export interface Strings {
   readonly bggDisconnect: string;
   readonly bggDisconnectConfirm: string;
   readonly bggSend: string;
+  /** The send button after an uncertain send, so a retry is a decision. */
+  readonly bggSendAnyway: string;
   readonly bggSending: string;
   readonly bggSent: string;
   readonly bggSendFailed: (reason: string) => string;
+  /** The play went out and BGG never answered: it may be there already. Whole sentence, no prefix. */
+  readonly bggUncertain: string;
   readonly bggError: (code: string) => string;
   readonly bggLogPlay: string;
   readonly bggFollowUp: string;
@@ -1106,6 +1112,10 @@ export interface Strings {
   readonly ratingCommunity: (mean: number, count: number) => string;
   readonly ratingCountOnly: (count: number) => string;
   readonly ratingRejected: (count: number) => string;
+  /** Ratings over the server's daily allowance, kept and sent later. */
+  readonly ratingDeferred: (count: number) => string;
+  /** After a sync that had to download everything again (cursor_too_old). */
+  readonly syncResynced: string;
   readonly ratingRefreshing: string;
   readonly playEditSave: string;
   readonly playWhen: string;

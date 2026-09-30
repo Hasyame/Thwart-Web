@@ -1,5 +1,6 @@
 import * as api from './sync/api';
 import type { Locale } from './types';
+import type { Strings } from './i18n';
 import type { Play } from './records';
 import { db } from './db';
 import { session } from './sync/session.svelte';
@@ -179,3 +180,23 @@ export async function sendPlayToBgg(
   );
   await db.plays.update(play.id, { reportedToBgg: true });
 }
+
+/**
+ * Why a play did not reach BGG, as one sentence to show.
+ *
+ * `bgg_uncertain` is not a failure to send: the play went out and no answer
+ * came back, so it may be on BGG already. It gets its own sentence, never the
+ * "Not sent to BGG" one, because a blind retry of it posts a second copy to the
+ * person's real account (bug hunt, 2026-09-30).
+ */
+export function bggSendFailure(
+  t: Pick<Strings, 'bggUncertain' | 'bggSendFailed' | 'bggError'>,
+  cause: unknown,
+): string {
+  const code = cause instanceof api.ApiError ? cause.code : 'server_error';
+  return code === 'bgg_uncertain' ? t.bggUncertain : t.bggSendFailed(t.bggError(code));
+}
+
+/** Whether a send failed in the way that may have left the play on BGG. */
+export const bggMaybeSent = (cause: unknown): boolean =>
+  cause instanceof api.ApiError && cause.code === 'bgg_uncertain';

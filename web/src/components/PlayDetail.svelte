@@ -11,9 +11,8 @@
   import { inCampaign, runOf } from '../lib/playQuery';
   import { campaignFigures } from '../lib/campaignFigures';
   import { parseTrackerNotes } from '../lib/playNotes';
-  import { bgg, bggCanSend, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
+  import { bgg, bggCanSend, bggSendFailure, bggLogPlayUrl, sendPlayToBgg } from '../lib/bgg.svelte';
   import { bggComment } from '../lib/bggComment';
-  import { ApiError } from '../lib/sync/api';
 
   /**
    * One recorded game, in full, with the two things that can be done to it.
@@ -93,7 +92,7 @@
     try {
       await sendPlayToBgg(play, t.difficulty, uiLocale);
     } catch (cause) {
-      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+      bggFailure = bggSendFailure(t, cause);
     } finally {
       busy = false;
     }
@@ -499,7 +498,7 @@
         <p class="muted note bgg-line">✓ {t.bggSent}</p>
       {/if}
       {#if bggFailure !== null && !onBgg}
-        <p class="note bgg-line danger" role="alert">{t.bggSendFailed(bggFailure)}</p>
+        <p class="note bgg-line danger" role="alert">{bggFailure}</p>
       {/if}
       {#if offeringMark && !onBgg}
         <div class="bgg-line actions">

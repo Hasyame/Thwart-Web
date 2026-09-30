@@ -498,6 +498,26 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+/*
+budgetKey names whose per-account budget a login or recovery attempt spends.
+
+The account's id when the identifier found one, so that its handle and its
+address share one budget: keyed on what was typed, they were two, and a
+patient guesser had twice the daily attempts (bug hunt, 2026-09-30). An
+identifier that finds nothing is counted under itself, as before, so guesses
+at a real account and at a made-up one are limited alike.
+
+Accepted trade-off: somebody who already knows both a handle and an address
+can learn they belong to one account by spending one budget through the other.
+Knowing both is most of the way to knowing it anyway.
+*/
+func budgetKey(identifier string, account Account, lookupErr error) string {
+	if lookupErr == nil {
+		return "account:" + account.ID
+	}
+	return strings.ToLower(identifier)
+}
+
 type loginRequest struct {
 	Handle     string `json:"handle"`
 	Email      string `json:"email"`
@@ -519,8 +539,15 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		identifier = strings.TrimSpace(body.Handle)
 	}
 	ip := clientIP(r)
-	handleKey := "login:handle:" + strings.ToLower(identifier)
-	dayKey := "login:handle:day:" + strings.ToLower(identifier)
+
+	account, err := s.store.AccountByIdentifier(r.Context(), identifier)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		s.fail(w, r, "look up account", err)
+		return
+	}
+	who := budgetKey(identifier, account, err)
+	handleKey := "login:handle:" + who
+	dayKey := "login:handle:day:" + who
 	/*
 		Two tiers, and every one of them is consulted.
 
@@ -537,12 +564,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	dayHandle := s.limiter.allow(dayKey, loginPerHandleDay)
 	if !burstIP || !dayIP || !burstHandle || !dayHandle {
 		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
-		return
-	}
-
-	account, err := s.store.AccountByIdentifier(r.Context(), identifier)
-	if err != nil && !errors.Is(err, ErrNotFound) {
-		s.fail(w, r, "look up account", err)
 		return
 	}
 
@@ -635,20 +656,20 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleKey := "recover:handle:" + strings.ToLower(identifier)
+	account, err := s.store.AccountByIdentifier(r.Context(), identifier)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		s.fail(w, r, "look up account", err)
+		return
+	}
+	who := budgetKey(identifier, account, err)
+	handleKey := "recover:handle:" + who
 	// Counted, not short-circuited: see the note in handleLogin for why every
 	// tier has to be consulted even when an earlier one has already refused.
 	recIP := s.limiter.allow("recover:ip:"+clientIP(r), recoverIP)
 	recBurst := s.limiter.allow(handleKey, recoverHandle)
-	recDay := s.limiter.allow("recover:handle:day:"+strings.ToLower(identifier), recoverHandleDay)
+	recDay := s.limiter.allow("recover:handle:day:"+who, recoverHandleDay)
 	if !recIP || !recBurst || !recDay {
 		writeError(w, r, apiError{status: http.StatusTooManyRequests, code: "rate_limited"})
-		return
-	}
-
-	account, err := s.store.AccountByIdentifier(r.Context(), identifier)
-	if err != nil && !errors.Is(err, ErrNotFound) {
-		s.fail(w, r, "look up account", err)
 		return
 	}
 
@@ -706,6 +727,7 @@ func (s *Server) handleRecover(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, "sign out other devices", err)
 		return
 	}
+	s.streams.endDevices(account.ID, device.ID)
 
 	s.limiter.forget(handleKey)
 
@@ -777,6 +799,7 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request, sess ses
 		s.fail(w, r, "sign out other devices", err)
 		return
 	}
+	s.streams.endDevices(sess.account.ID, sess.device.ID)
 
 	writeJSON(w, http.StatusOK, map[string]any{"signedOutOtherDevices": true})
 }
@@ -813,6 +836,7 @@ func (s *Server) handleDeleteDevice(w http.ResponseWriter, r *http.Request, sess
 		s.fail(w, r, "delete device", err)
 		return
 	}
+	s.streams.endDevice(sess.account.ID, id)
 	// Revoking your own device is how logout is spelled, so it is allowed and
 	// simply ends this session.
 	writeJSON(w, http.StatusOK, map[string]any{"revoked": id, "self": id == sess.device.ID})
@@ -863,6 +887,7 @@ func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request, ses
 		s.fail(w, r, "delete account", err)
 		return
 	}
+	s.streams.endDevices(sess.account.ID, "")
 	// The averages have just changed for every subject this person rated, and
 	// a summary served from memory must not go on counting them.
 	s.summaries.clear()

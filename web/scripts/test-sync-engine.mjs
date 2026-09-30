@@ -271,6 +271,7 @@ function fakePorts({ local = [], states = [], cursor = 0, pages = [], pushFails 
     ports: {
       readLocal: async () => local,
       readStates: async () => states,
+      dropUnseen: async () => {},
       applyPulled: async (changes) => {
         applied.push(...changes);
       },

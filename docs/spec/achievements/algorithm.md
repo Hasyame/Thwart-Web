@@ -160,7 +160,11 @@ rank(min), `min` defaulting to `unknown` (rank 0, always satisfied).
 **count { what }** with tiers `t1 < t2 < …`
 - value over all facts: `plays` = |facts|; `wins` = |wins|;
   `heroes_played` = |distinct heroCodes over every seat|; `distinct_days` =
-  |distinct `floor(playedAt / 86_400_000)`| (UTC days).
+  |distinct `dayOf(playedAt)`|. `dayOf` is an input to the derivation, so it
+  stays pure: the vectors leave it out and get UTC days,
+  `floor(playedAt / 86_400_000)`; a client passes the calendar day of the
+  device showing the result. Since 2026-09-30 (bug hunt): at UTC midnight, one
+  game night in New York at 19:30 and 21:30 was two days.
 - `target` = the highest tier's `n`; `current = min(value, target)`.
 - `tier` = the highest tier whose `n` ≤ value, or null.
 - done when value ≥ highest tier; the unlock is the fact at which the

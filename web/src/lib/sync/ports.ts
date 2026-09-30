@@ -150,6 +150,21 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
       }));
     },
 
+    async dropUnseen(seen: ReadonlySet<string>): Promise<void> {
+      await asRemote(() => db.transaction('rw', TABLES(), async () => {
+        for (const state of await db.syncRecords.toArray()) {
+          if (seen.has(`${state.collection} ${state.id}`)) {
+            continue;
+          }
+          // Confirmed by the server once, absent from everything it holds now:
+          // deleted on another device, the tombstone swept while this browser
+          // was away. Gone here too, as the tombstone would have made it.
+          await collectionByName(state.collection)?.table().delete(state.id);
+          await db.syncRecords.delete([state.collection, state.id]);
+        }
+      }));
+    },
+
     /**
      * Records stay dirty until the server names them.
      *
@@ -174,15 +189,24 @@ export function dexiePorts(token: string, locale: Locale): SyncPorts {
             continue;
           }
           /*
-            Refused. Not stored on the server and never will be, so the only
-            state that is not a lie is none: the row goes, and its bookkeeping
-            with it, so nothing tries to send it again. Marking it synced here
-            — which is what every other outcome gets — would leave this browser
-            showing a rating that does not exist, permanently.
+            Refused for good. Not stored on the server and never will be, so
+            the only state that is not a lie is none: the row goes, and its
+            bookkeeping with it, so nothing tries to send it again. Marking it
+            synced here — which is what every other outcome gets — would leave
+            this browser showing a rating that does not exist, permanently.
           */
-          if (result.outcome === 'rejected') {
+          if (api.isRefusedForGood(result)) {
             await collectionByName(result.collection)?.table().delete(result.id);
             await db.syncRecords.delete([result.collection, result.id]);
+            continue;
+          }
+          /*
+            Deferred: over today's allowance, and nothing wrong with it. Left
+            exactly as it is, still owed, so the next run sends it again. Not
+            deleted (bug hunt, 2026-09-30: it was) and not marked synced, which
+            would keep it here and never send it.
+          */
+          if (api.isDeferred(result)) {
             continue;
           }
           await db.syncRecords.put({

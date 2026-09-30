@@ -834,6 +834,7 @@ export const en: Strings = {
     'This deletes the account and everything on the server. There is no undo. Type your password to confirm.',
   accountDeleteYes: 'Delete it permanently',
   verifyTitle: 'Confirming your address',
+  verifyFailedTitle: 'This link did not work',
   verifyWorking: 'One moment.',
   verifyDone: (handle) => `Confirmed. The account ${handle} is now working.`,
   verifyDoneHint:
@@ -893,6 +894,17 @@ export const en: Strings = {
       server_busy: 'The server is busy. Try again in a moment.',
       unauthorized: 'You have been signed out. Sign in again.',
       offline: 'The server could not be reached. Check your connection.',
+      email_not_verified: 'Confirm your address first: the link is in the email we sent.',
+      invalid_verification: 'That confirmation link is not valid. It may already have been used.',
+      verification_expired: 'That confirmation link has expired. Ask for a new one from the account screen.',
+      cursor_too_old:
+        'This browser had been away too long to catch up. Sync again and it will download everything afresh.',
+      record_too_large: 'One of your records is too large for the server to keep.',
+      batch_too_large: 'Too much to send at once. Sync again and it will go in smaller parts.',
+      malformed_record: 'The server could not read what was sent. Update the app and try again.',
+      not_found: 'That no longer exists on the server.',
+      alpha_closed: 'The sign-up is closed for now.',
+      invalid_name: 'Enter a name of 1 to 80 characters.',
     })[code] ?? 'Something went wrong on the server. Try again.',
   recoveryTitle: 'Keep this code',
   recoveryIntro:
@@ -1181,9 +1193,12 @@ export const en: Strings = {
   bggDisconnect: 'Disconnect',
   bggDisconnectConfirm: 'Forget the BoardGameGeek connection on this browser?',
   bggSend: 'Send to BGG',
+  bggSendAnyway: 'Send again anyway',
   bggSending: 'Sending to BGG…',
   bggSent: 'Sent to BGG',
   bggSendFailed: (reason) => `Not sent to BGG: ${reason}`,
+  bggUncertain:
+    'BoardGameGeek did not answer in time, but it may have recorded this game. Check your plays on BGG before sending it again: if it is there, mark it as logged instead.',
   bggError: (code) =>
     ({
       bgg_bad_credentials: 'BoardGameGeek did not accept that username and password.',
@@ -1237,8 +1252,14 @@ export const en: Strings = {
   ratingCountOnly: (count) => `${count} rating${count === 1 ? '' : 's'} so far`,
   ratingRejected: (count) =>
     count === 1
-      ? 'One rating was refused by the server: it was for a game the server does not have. It has been removed.'
-      : `${count} ratings were refused by the server: they were for games the server does not have. They have been removed.`,
+      ? 'One rating was refused by the server: it did not match a game on your account, or its score was not valid. It has been removed.'
+      : `${count} ratings were refused by the server: they did not match games on your account, or their scores were not valid. They have been removed.`,
+  ratingDeferred: (count) =>
+    count === 1
+      ? 'One rating is waiting: the server takes up to 200 a day. It is kept here and will be sent on a later sync.'
+      : `${count} ratings are waiting: the server takes up to 200 a day. They are kept here and will be sent on a later sync.`,
+  syncResynced:
+    'This browser had been away a long time, so it downloaded everything again. Anything deleted on your other devices meanwhile is gone here too.',
   ratingRefreshing: 'Updating\u2026',
   playEditSave: 'Save the correction',
   playWhen: 'Played on',

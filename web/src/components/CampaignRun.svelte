@@ -11,8 +11,7 @@
   import { choosableScenarios } from '../lib/campaign/rules';
   import { buildCampaignPlay } from '../lib/campaign/play';
   import { syncAfter } from '../lib/sync/auto.svelte';
-  import { bgg, bggCanSend, sendPlayToBgg } from '../lib/bgg.svelte';
-  import { ApiError } from '../lib/sync/api';
+  import { bgg, bggCanSend, bggMaybeSent, bggSendFailure, sendPlayToBgg } from '../lib/bgg.svelte';
   import {
     currentScenario,
     villainStages,
@@ -508,6 +507,8 @@
   let bggPlay = $state.raw<Play | null>(null);
   let bggState = $state<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   let bggFailure = $state<string | null>(null);
+  // Sent with no answer: the retry below becomes a deliberate "anyway".
+  let bggMaybe = $state(false);
 
   async function sendToBgg(play: Play): Promise<void> {
     if (bggState === 'sending' || bggState === 'sent') {
@@ -519,7 +520,8 @@
       await sendPlayToBgg(play, t.difficulty, uiLocale);
       bggState = 'sent';
     } catch (cause) {
-      bggFailure = t.bggError(cause instanceof ApiError ? cause.code : 'server_error');
+      bggFailure = bggSendFailure(t, cause);
+      bggMaybe = bggMaybeSent(cause);
       bggState = 'failed';
     }
   }
@@ -862,8 +864,8 @@
             {#if bggState === 'sent'}
               <p class="ok">{t.bggSent}</p>
             {:else if bggState === 'failed'}
-              <p class="danger-text" role="alert">{t.bggSendFailed(bggFailure ?? '')}</p>
-              <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{t.bggSend}</button>
+              <p class="danger-text" role="alert">{bggFailure ?? ''}</p>
+              <button type="button" class="btn" onclick={() => void sendToBgg(sending)}>{bggMaybe ? t.bggSendAnyway : t.bggSend}</button>
             {:else if bggState === 'sending'}
               <p class="muted">{t.bggSending}</p>
             {:else if bgg.mode === 'ask'}

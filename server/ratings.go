@@ -54,8 +54,11 @@ const (
 )
 
 // Ratings per account per day. Nobody rates two hundred subjects in a day; a
-// client that does is a bug or a script. The excess is rejected one by one
-// rather than the batch failing, so the plays beside them still land.
+// client that does is a bug, a script, or a first sync of a long offline
+// history. The excess is deferred one by one (outcome `deferred`, reason
+// `rate_limited`) rather than the batch failing, so the plays beside them still
+// land and the client sends the rest another day. Only ratings about to be
+// stored count.
 var ratingsPerAccountDay = limitRule{200, 24 * time.Hour}
 
 // How many ratings a subject needs before its average is served at all.
@@ -478,17 +481,35 @@ func (s *Store) summariesOf(ctx context.Context, subjects []string, threshold in
 	return out, nil
 }
 
-// summaryCache keeps recently served summaries for summaryTTL. Invalidated per
-// subject on every write, so a fresh rating is visible within one request.
+/*
+summaryCache keeps recently served summaries for summaryTTL. Invalidated per
+subject on every write, so a fresh rating is visible within one request.
+
+Bounded, because it is keyed by whatever an unauthenticated caller asks about:
+any well-formed subject is an entry. Unbounded and never swept, it grew by
+about 49 MB a day from one address at its allowance (bug hunt, 2026-09-30).
+Expired entries are swept with the limiter's, and a full cache stops taking
+new subjects until a sweep makes room: past the cap a summary is simply read
+from the database, which is what a miss costs anyway.
+*/
 type summaryCache struct {
 	mu      sync.Mutex
 	entries map[string]cachedSummary
+	// Moved by every invalidation. A reader notes it before going to the
+	// database and caches what it read only if it has not moved since: a
+	// rating written in between would otherwise be forgotten before the stale
+	// value was put, and the stale value served for a whole TTL.
+	generation uint64
 }
 
 type cachedSummary struct {
 	summary Summary
 	expires time.Time
 }
+
+// About 3.4 MB at the measured 342 bytes an entry, and several times every
+// subject the app itself ever asks about.
+const maxCachedSummaries = 10_000
 
 func newSummaryCache() *summaryCache {
 	return &summaryCache{entries: map[string]cachedSummary{}}
@@ -504,10 +525,43 @@ func (c *summaryCache) get(subject string, now time.Time) (Summary, bool) {
 	return e.summary, true
 }
 
-func (c *summaryCache) put(subject string, s Summary, now time.Time) {
+// current is the generation to hand back to put.
+func (c *summaryCache) current() uint64 {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.generation
+}
+
+// put caches a summary read while the cache stood at generation readAt, and
+// drops it if anything was invalidated since.
+func (c *summaryCache) put(subject string, s Summary, now time.Time, readAt uint64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.generation != readAt {
+		return
+	}
+	if _, held := c.entries[subject]; !held && len(c.entries) >= maxCachedSummaries {
+		c.sweepLocked(now)
+		if len(c.entries) >= maxCachedSummaries {
+			return
+		}
+	}
 	c.entries[subject] = cachedSummary{summary: s, expires: now.Add(summaryTTL)}
+}
+
+// sweep drops the expired entries.
+func (c *summaryCache) sweep(now time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sweepLocked(now)
+}
+
+func (c *summaryCache) sweepLocked(now time.Time) {
+	for subject, e := range c.entries {
+		if now.After(e.expires) {
+			delete(c.entries, subject)
+		}
+	}
 }
 
 // clear drops everything. For account deletion, which touches every subject
@@ -516,12 +570,14 @@ func (c *summaryCache) clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.entries = map[string]cachedSummary{}
+	c.generation++
 }
 
 // forget drops a subject and, for a pairing, the per-set view it feeds.
 func (c *summaryCache) forget(subject string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.generation++
 	delete(c.entries, subject)
 	if set, _, found := strings.Cut(strings.TrimPrefix(subject, "modular:"), "@"); found && strings.HasPrefix(subject, "modular:") {
 		delete(c.entries, "modular:"+set)
@@ -576,13 +632,14 @@ func (s *Server) handleRatingSummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(missing) > 0 {
+		readAt := s.summaries.current()
 		fresh, err := s.store.summariesOf(r.Context(), missing, s.RatingThreshold)
 		if err != nil {
 			s.fail(w, r, "read rating summaries", err)
 			return
 		}
 		for subject, summary := range fresh {
-			s.summaries.put(subject, summary, now)
+			s.summaries.put(subject, summary, now, readAt)
 			out[subject] = summary
 		}
 	}

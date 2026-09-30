@@ -192,8 +192,8 @@ bump).
 
 { kind: 'count',           what: 'plays' | 'wins' | 'heroes_played' | 'distinct_days' }
     tiered by `tiers`; `heroes_played` counts distinct hero codes at any
-    seat over live plays; `distinct_days` counts distinct UTC calendar
-    days of `playedAt`
+    seat over live plays; `distinct_days` counts distinct calendar days of
+    `playedAt` on the player's device (UTC in the vectors; algorithm.md)
 
 { kind: 'table_win',       players: 1 | 2 | 3 | 4, distinctAspects?: boolean }
     a win at exactly that table size; with `distinctAspects`, every seat's

@@ -1,5 +1,5 @@
 import type { Limits, OutgoingRecord, PullPage, PushResponse, PushResult, ServerRecord } from './api';
-import { FALLBACK_LIMITS } from './api';
+import { ApiError, FALLBACK_LIMITS, isDeferred, isRefusedForGood } from './api';
 import type { CollectionName } from './collections';
 import { COLLECTIONS, collectionByName } from './collections';
 import { digestOf, type SyncRecordState } from './state';
@@ -46,6 +46,14 @@ export interface SyncPorts {
    * straight back.
    */
   readonly applyPulled: (changes: readonly ServerRecord[]) => Promise<void>;
+  /**
+   * After a full resync forced by `cursor_too_old`: remove every local row the
+   * server had confirmed (it has a state) that did not come back. It was
+   * deleted elsewhere while this browser was away, and the tombstone that would
+   * have said so has been swept. `seen` holds `collection id` keys. Rows with no
+   * state are this browser's own new work and are left to be pushed.
+   */
+  readonly dropUnseen: (seen: ReadonlySet<string>) => Promise<void>;
   /** Record what the server said about records this browser pushed. */
   readonly confirmPushed: (
     records: readonly OutgoingRecord[],
@@ -75,6 +83,16 @@ export interface SyncOutcome {
    * delete them on confirmation. Reported so the screen can say so once.
    */
   readonly rejected: readonly RejectedRecord[];
+  /**
+   * Ratings the server took no more of today. Still here and still owed: the
+   * next run sends them again.
+   */
+  readonly deferred: number;
+  /**
+   * The browser had been away longer than the server keeps deletions, and this
+   * run downloaded everything again instead of the changes.
+   */
+  readonly resynced: boolean;
   /** Set when the run stopped early. The remaining work is still pending. */
   readonly stoppedBecause?: 'push_failed' | 'cursor_too_old';
 }
@@ -210,11 +228,11 @@ export interface RejectedRecord {
 }
 
 export function cursorAfterPush(cursor: number, results: readonly PushResult[]): number {
-  // A rejected record has no revision — the server spent none — and must not
-  // stop the walk, or one refused rating would make the next pull re-read the
-  // whole batch beside it.
+  // A rejected or deferred record has no revision — the server spent none —
+  // and must not stop the walk, or one refused rating would make the next pull
+  // re-read the whole batch beside it.
   const revisions = results
-    .filter((result) => result.outcome !== 'rejected')
+    .filter((result) => result.outcome !== 'rejected' && result.outcome !== 'deferred')
     .map((result) => result.revision)
     .sort((a, b) => a - b);
   let next = cursor;
@@ -283,19 +301,56 @@ export async function syncOnce(ports: SyncPorts): Promise<SyncOutcome> {
 
   // A resync is a pull from zero, and every page of it carries the flag —
   // including the ones after the first, which is where this used to fail.
-  const resync = cursor === 0;
+  let resync = cursor === 0;
+
+  /*
+   * Away too long: the server has swept deletions this browser never heard
+   * of, and refuses the cursor (`cursor_too_old`, doc 02 §6). The answer is a
+   * full resync, which this used to never do: every later run retried the same
+   * refused cursor, and since pull comes before push, nothing local was ever
+   * sent again (bug hunt, 2026-09-30).
+   *
+   * What came back is collected so that what did not can be dropped at the
+   * end, and the cursor is written only then: interrupted half-way, the stored
+   * cursor is still the refused one, and the next run starts the recovery
+   * over instead of stopping in the middle of it.
+   */
+  let seen: Set<string> | null = null;
 
   for (;;) {
-    const page = await ports.pull(cursor, limits.pageSize, resync);
+    let page: PullPage;
+    try {
+      page = await ports.pull(cursor, limits.pageSize, resync);
+    } catch (cause) {
+      if (seen === null && cursor > 0 && cause instanceof ApiError && cause.code === 'cursor_too_old') {
+        seen = new Set();
+        cursor = 0;
+        resync = true;
+        continue;
+      }
+      throw cause;
+    }
     if (page.changes.length > 0) {
       await ports.applyPulled(page.changes.filter((record) => !isUnknown(record)));
       pulled += page.changes.length;
     }
+    if (seen !== null) {
+      for (const record of page.changes) {
+        seen.add(`${record.collection} ${record.id}`);
+      }
+    }
     cursor = page.cursor;
-    await ports.writeCursor(cursor);
+    if (seen === null) {
+      await ports.writeCursor(cursor);
+    }
     if (!page.hasMore) {
       break;
     }
+  }
+  const resynced = seen !== null;
+  if (seen !== null) {
+    await ports.dropUnseen(seen);
+    await ports.writeCursor(cursor);
   }
 
   const local = await ports.readLocal();
@@ -305,6 +360,7 @@ export async function syncOnce(ports: SyncPorts): Promise<SyncOutcome> {
   let pushed = 0;
   let conflicts = 0;
   const rejected: RejectedRecord[] = [];
+  let deferred = 0;
 
   /*
    * One batch at a time, in order, never in parallel.
@@ -322,13 +378,15 @@ export async function syncOnce(ports: SyncPorts): Promise<SyncOutcome> {
     try {
       response = await ports.push(batchId, batch);
     } catch {
-      return { pulled, pushed, cursor, conflicts, rejected, stoppedBecause: 'push_failed' };
+      return { pulled, pushed, cursor, conflicts, rejected, deferred, resynced, stoppedBecause: 'push_failed' };
     }
     await ports.confirmPushed(batch, response.results);
     pushed += response.results.length;
     for (const result of response.results) {
-      if (result.outcome === 'rejected') {
+      if (isRefusedForGood(result)) {
         rejected.push({ collection: result.collection, id: result.id, reason: result.reason ?? 'rejected' });
+      } else if (isDeferred(result)) {
+        deferred += 1;
       }
     }
     conflicts += response.results.filter(
@@ -342,5 +400,5 @@ export async function syncOnce(ports: SyncPorts): Promise<SyncOutcome> {
     }
   }
 
-  return { pulled, pushed, cursor, conflicts, rejected };
+  return { pulled, pushed, cursor, conflicts, rejected, deferred, resynced };
 }

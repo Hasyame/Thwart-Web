@@ -240,6 +240,20 @@ A record that fails is **not stored**, and the push result carries it as:
 once**, in plain words; it does not retry. The batch as a whole still
 succeeds: one bad rating must not hold a hundred good plays hostage.
 
+A valid rating over the daily allowance (§5) is not refused but **deferred**:
+
+```
+{ "id": "...", "collection": "ratings", "revision": 0, "outcome": "deferred",
+  "reason": "rate_limited" }
+```
+
+Nothing is stored and no revision is spent, and nothing is wrong with the
+record either: **a client keeps it, still owed, and sends it again on a later
+sync.** Added 2026-09-30 (bug hunt): the cap used to answer `rejected`, and
+every client deleted a rating that would have been accepted the next day. A
+client also treats `rejected` with reason `rate_limited`, from a server older
+than this, as `deferred`.
+
 This is the one place the server reads inside a body, and it reads exactly
 four fields: a play's `scenarioCode`, `modularSets` and `campaignRunId`, and a
 run's `templateId`, `finished` and `templateJson` (for the resolution in §2.2).
@@ -379,8 +393,10 @@ Ratings ride the push endpoint, which is already limited. Two additions:
 - `GET /v1/ratings/summary`: **120 per hour per IP**, generous because the
   scenario browser asks on every visit, and cheap because it is cached.
 - **Ratings per account per day: 200.** Nobody rates two hundred subjects in a
-  day; a client that does is a bug or a script, and the excess is `rejected`
-  with reason `rate_limited` rather than the batch failing.
+  day; a client that does is a bug, a script, or a first sync of a long
+  offline history, and the excess is `deferred` with reason `rate_limited`
+  (§2.4) rather than the batch failing. Only a rating that passed validation
+  and is about to be stored counts: a refused one or a deletion spends none.
 
 ---
 
@@ -412,6 +428,9 @@ Laid out there with the trade-offs.
 - The `ratings` collection in `SyncCollection`, a table, and the merge rule
   (§2.5).
 - Handling of the `rejected` outcome: delete the local record, say so once.
+- Handling of the `deferred` outcome (and `rejected`/`rate_limited`): keep the
+  record dirty so the next sync sends it again. Not yet done on Android as of
+  2026-09-30: it deletes on any `rejected`, and marks an unknown outcome synced.
 - The extras control on the randomiser (§1.1) and the picker requirements on
   the custom game (§1.2).
 - The rating row after a game and in the history (§2.7), the campaign rating

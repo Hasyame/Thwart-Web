@@ -10,7 +10,7 @@ import { FNE_TEMPLATE_ID, isFne } from '../fearNoEvil';
 import type { CampaignEvent } from '../campaign/types';
 import { buildCatalogue } from './catalogue';
 import { loadDefinitions } from './definitions';
-import { derive } from './derive';
+import { derive, localDay } from './derive';
 import { factOf, runFactOf } from './normalise';
 import type { AchievementState, Catalogue, DefinitionsFile, DeriveInput, PlayFact, RunFact } from './types';
 
@@ -100,6 +100,8 @@ function recompute(): void {
     ownedPacks: inputs.ownedPacks,
     facts,
     runs,
+    // The player's own days, not UTC's: see DeriveInput.dayOf.
+    dayOf: localDay,
   };
   achievements.lastInput = input;
   achievements.state = derive(input);

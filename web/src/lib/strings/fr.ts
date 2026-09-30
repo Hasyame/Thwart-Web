@@ -845,6 +845,7 @@ export const fr: Strings = {
     "Ceci supprime le compte et tout ce qui est sur le serveur. Aucun retour en arrière. Saisissez votre mot de passe pour confirmer.",
   accountDeleteYes: 'Supprimer définitivement',
   verifyTitle: 'Confirmation de votre adresse',
+  verifyFailedTitle: 'Ce lien n’a pas fonctionné',
   verifyWorking: 'Un instant.',
   verifyDone: (handle) => `Confirmée. Le compte ${handle} fonctionne désormais.`,
   verifyDoneHint:
@@ -905,6 +906,17 @@ export const fr: Strings = {
       server_busy: 'Le serveur est occupé. Réessayez dans un instant.',
       unauthorized: 'Vous avez \u00e9t\u00e9 d\u00e9connect\u00e9. Reconnectez-vous.',
       offline: 'Le serveur est injoignable. V\u00e9rifiez votre connexion.',
+      email_not_verified: 'Confirmez d’abord votre adresse : le lien est dans l’e-mail envoyé.',
+      invalid_verification: 'Ce lien de confirmation n’est pas valide. Il a peut-être déjà servi.',
+      verification_expired: 'Ce lien de confirmation a expiré. Demandez-en un nouveau depuis l’écran du compte.',
+      cursor_too_old:
+        'Ce navigateur est resté trop longtemps sans synchroniser. Relancez la synchronisation : il retéléchargera tout.',
+      record_too_large: 'Un de vos enregistrements est trop volumineux pour le serveur.',
+      batch_too_large: 'Trop de données d’un coup. Relancez la synchronisation : elles partiront en plusieurs fois.',
+      malformed_record: 'Le serveur n’a pas pu lire ce qui a été envoyé. Mettez l’application à jour et réessayez.',
+      not_found: 'Cela n’existe plus sur le serveur.',
+      alpha_closed: 'Les inscriptions sont fermées pour le moment.',
+      invalid_name: 'Saisissez un nom de 1 à 80 caractères.',
     })[code] ?? 'Une erreur est survenue sur le serveur. R\u00e9essayez.',
   recoveryTitle: 'Conservez ce code',
   recoveryIntro:
@@ -1194,9 +1206,12 @@ export const fr: Strings = {
   bggDisconnect: 'Déconnexion',
   bggDisconnectConfirm: 'Oublier la connexion BoardGameGeek sur ce navigateur ?',
   bggSend: 'Envoyer sur BGG',
+  bggSendAnyway: 'Renvoyer quand même',
   bggSending: 'Envoi sur BGG…',
   bggSent: 'Envoyée sur BGG',
   bggSendFailed: (reason) => `Pas envoyée sur BGG : ${reason}`,
+  bggUncertain:
+    'BoardGameGeek n’a pas répondu à temps, mais il a peut-être enregistré cette partie. Vérifiez vos parties sur BGG avant de la renvoyer : si elle y est, marquez-la comme enregistrée.',
   bggError: (code) =>
     ({
       bgg_bad_credentials: 'BoardGameGeek n’a pas accepté cet identifiant et ce mot de passe.',
@@ -1250,8 +1265,14 @@ export const fr: Strings = {
   ratingCountOnly: (count) => `${count} note${count === 1 ? '' : 's'} pour l\u2019instant`,
   ratingRejected: (count) =>
     count === 1
-      ? 'Une note a \u00e9t\u00e9 refus\u00e9e par le serveur : elle portait sur une partie qu\u2019il ne conna\u00eet pas. Elle a \u00e9t\u00e9 retir\u00e9e.'
-      : `${count} notes ont \u00e9t\u00e9 refus\u00e9es par le serveur : elles portaient sur des parties qu\u2019il ne conna\u00eet pas. Elles ont \u00e9t\u00e9 retir\u00e9es.`,
+      ? 'Une note a été refusée par le serveur : elle ne correspondait à aucune partie de votre compte, ou sa valeur n’était pas valide. Elle a été retirée.'
+      : `${count} notes ont été refusées par le serveur : elles ne correspondaient à aucune partie de votre compte, ou leurs valeurs n’étaient pas valides. Elles ont été retirées.`,
+  ratingDeferred: (count) =>
+    count === 1
+      ? 'Une note est en attente : le serveur en accepte 200 par jour. Elle est gardée ici et partira lors d’une prochaine synchronisation.'
+      : `${count} notes sont en attente : le serveur en accepte 200 par jour. Elles sont gardées ici et partiront lors d’une prochaine synchronisation.`,
+  syncResynced:
+    'Ce navigateur était absent depuis longtemps : il a tout retéléchargé. Ce qui a été supprimé entre-temps sur vos autres appareils l’est ici aussi.',
   ratingRefreshing: 'Mise \u00e0 jour\u2026',
   playEditSave: 'Enregistrer la correction',
   playWhen: 'Jouée le',
