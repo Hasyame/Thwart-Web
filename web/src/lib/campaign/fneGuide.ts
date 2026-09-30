@@ -34,7 +34,7 @@ export function fneGuide(locale: Locale, state: CampaignState, id: string): read
   const isMary=villainId==='fne_villain_mary_typhoide';
   add('heroes','Préparez la table','Prepare the table',[
     ['Conservez les identités de cette campagne, face alter ego. Choisissez le premier joueur. Rassemblez les jetons et les cartes d’état.', 'Keep this campaign’s identities, alter-ego side up. Choose the first player. Gather tokens and status cards.'],
-    ['Mettez les obligations à part pour le deck Rencontre et les sets Némésis en réserve. Préparez vos decks sans encore piocher.', 'Set obligations aside for the encounter deck and keep nemesis sets in reserve. Prepare your decks without drawing yet.'],
+    ['Mettez les obligations à part pour le deck Rencontre et les sets Némésis en réserve. Gardez vos decks à portée de main, sans les mélanger ni piocher. Le livret place leur préparation après les effets du scénario.', 'Set obligations aside for the encounter deck and keep nemesis sets in reserve. Keep player decks ready, without shuffling or drawing. The booklet places their preparation after scenario effects.'],
     ['Le scénario et son méchant ont déjà été attribués. Revenir dans ce guide ne relance ni le méchant ni la progression des missions.', 'The job and its villain are already assigned. Returning to this guide does not redraw the villain or progress jobs again.'],
   ],'mc60 · 9 · 1–7');
   const vlines: [string,string][]=[];
@@ -68,7 +68,7 @@ export function fneGuide(locale: Locale, state: CampaignState, id: string): read
     ['Retirez les alliés et soutiens enregistrés comme perdus ci-dessous. Complétez vos decks jusqu’à leur taille minimale légale, puis mélangez.', 'Remove the allies and supports recorded as lost below. Restore each deck to its legal minimum size, then shuffle.'],
   ],'mc60 · 9 · 8');
   add('hand','Main de départ et identités','Opening hands and identities',[
-    ['Piochez jusqu’à la taille de main de votre alter ego. Pour le mulligan, mettez de côté les cartes choisies, repiochez jusqu’à cette taille, puis remélangez les cartes écartées dans votre deck.', 'Draw to your alter-ego hand size. For a mulligan, set chosen cards aside, draw back to hand size, then shuffle the set-aside cards into your deck.'],
+    ['Piochez jusqu’à la taille de main de votre alter ego. Pour le mulligan, défaussez les cartes choisies puis repiochez jusqu’à cette taille, sans remélanger les cartes défaussées dans votre deck (référence v1.8).', 'Draw to your alter-ego hand size. For a mulligan, discard chosen cards and draw back to hand size without shuffling those discards into your deck (Rules Reference v1.8).'],
     ['Résolvez ensuite les capacités de mise en place de vos identités. Le livret de cette campagne place les effets de campagne suivants après la préparation des joueurs.', 'Then resolve your identities’ setup abilities. This campaign’s booklet places the following campaign effects after player setup.'],
   ],'mc60 · 9 · 9');
   add('health','Points de vie de campagne','Campaign hit points',campaignExpert?[

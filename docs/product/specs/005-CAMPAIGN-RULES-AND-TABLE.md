@@ -345,3 +345,28 @@ campaign events and account sync. Replacing a table requires confirmation. Reuse
 card previews, illustrated counters, cumulative change feedback and mobile touch
 targets. Android and backend have no application/schema changes in this work;
 Android implementation of these guides and corrections remains pending.
+
+
+## Ordered preparation across reworked expansions (30 September 2026)
+
+The owner requires efficient, non-repeating preparation throughout Age of
+Apocalypse, Fear No Evil, Rise of Red Skull and both Civil War formats. Each
+step has one purpose. Show known player-deck changes with the player inventory;
+where a booklet prescribes a later application, preview the cards early but
+perform the action only at that prescribed step. In particular, FNE keeps its
+scenario-before-player-setup sequence. New AoA mission additions remain in
+mission setup, after scenario setup. Do not repeat the same campaign-log changes
+in scenario setup and campaign setup.
+
+Resolve initial main-scheme 1A setup, flip to 1B with scaled starting threat and
+threshold, resolve its reveal effects, then the starting villain's setup/reveal
+effects. Do not execute future scheme or villain stages during preparation.
+Four Horsemen explicitly covers the saved villain order, its active marker,
+each player's different random side scheme with six threat, and the main scheme
+starting at zero with a threshold of twelve per player. Preserve saved draws.
+Civil War leader setup follows its scheme; preparing the leader stages earlier
+must not resolve those effects prematurely. Use the Rules Reference v1.8 mulligan:
+discard and refill without shuffling the discarded cards back into the deck.
+
+Web publication is authorized; this change has no backend or Android application
+release. Android's synchronized product snapshot records the pending behavior.

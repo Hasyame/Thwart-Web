@@ -35,8 +35,8 @@
   {#if shown.id==='deck'}
     {#each sets as set}<details><summary>{setName(set)}</summary><div class="cards">{#each index.filter(card=>card.setCode===set&&!['villain','main_scheme'].includes(card.typeCode)&&!card.code.endsWith('b')) as card (card.code)}<CardRef code={card.code} name={card.name}/>{/each}</div></details>{/each}
   {/if}
-  {#if shown.id==='decks'}
-    <div class="record"><strong>{uiLocale==='fr'?'Cartes retirées du registre':'Cards removed in the log'}</strong><div class="cards">{#each removed as code}<CardRef {code} name={text.cardName(code)}/>{:else}<p>{t.campaignNothingRecorded}</p>{/each}</div></div>
+  {#if shown.id==='heroes' || shown.id==='decks'}
+    <div class="record"><strong>{uiLocale==='fr'?(shown.id==='heroes'?'À prévoir : cartes exclues de la campagne':'Retirez ces cartes avant le mélange'):(shown.id==='heroes'?'Plan ahead: cards excluded from the campaign':'Remove these cards before shuffling')}</strong><div class="cards">{#each removed as code}<CardRef {code} name={text.cardName(code)}/>{:else}<p>{t.campaignNothingRecorded}</p>{/each}</div></div>
   {/if}
   {#if shown.id==='health'&&campaign.difficulty==='expert'&&campaign.completedScenarios.length>0}
     <ul>{#each campaign.heroes as hero}<li>{hero.name} : {campaign.heroCounters.hp?.[hero.id]??(uiLocale==='fr'?'PV de départ':'starting HP')}</li>{/each}</ul>

@@ -16,6 +16,7 @@
     type ScenarioTemplate,
     type SetupStep,
   } from '../lib/campaign/types';
+  import { aoaPlayerDeckStep, aoaScenarioStep, aoaRepeatedStep } from '../lib/campaign/preparation';
   import ApocalypsePreparation from './ApocalypsePreparation.svelte';
   import FnePreparation from './FnePreparation.svelte';
   import RedSkullPreparation from './RedSkullPreparation.svelte';
@@ -136,7 +137,9 @@
   const guided = $derived(template.id === 'aoa');
   const isExpertHealthStep = (step: SetupStep): boolean =>
     step.showCounter === 'hp' || step.showCounter === 'missionThreat' || step.action?.id === 'heal';
-  const campaignSteps = $derived(guided ? setup.filter(step => !isExpertHealthStep(step)) : setup);
+  const playerDeckSteps = $derived(guided ? setup.filter(aoaPlayerDeckStep) : []);
+  const scenarioSteps = $derived(guided ? setup.filter(step => aoaScenarioStep(step, scenario.id)) : []);
+  const campaignSteps = $derived(guided ? setup.filter(step => !isExpertHealthStep(step) && !aoaPlayerDeckStep(step) && !aoaScenarioStep(step, scenario.id) && !aoaRepeatedStep(step)) : setup);
   const expertHealthSteps = $derived(guided ? setup.filter(isExpertHealthStep) : []);
   const guideKey = $derived(`thwart.campaign-guide.${runKey}.${scenario.id}.${campaign.completedScenarios.length}`);
   let guideStep = $state(0);
@@ -146,7 +149,7 @@
 </script>
 
 {#snippet drawnCards(drawId: string, offer: number, who: string | null)}
-  {@const codes = drawnFor(drawId)}
+  {@const codes = drawnFor(drawId).map(code => drawId === 'horsemen' && scenarioDifficulty(campaign, scenario.id) === 'expert' ? code.replace(/a$/, 'b') : code)}
   {#if codes.length > 0}
     <!-- What came up, and nothing else. Listing the whole pool beside it would
          put the player back to picking one, which is the job just done for
@@ -348,6 +351,10 @@
 
 {/snippet}
 {#snippet storyPanel()}<CampaignText segments={parseCampaignText(label(scenario.flavour),text)} />{/snippet}
+{#snippet playerDeckPanel()}{@render recoveryPanel()}{@render panel(t.campaignPlayerDeckChanges, playerDeckSteps)}
+{#if setup.some(step => step.when?.drawIs === 'mission:45167a')}
+  <p>{uiLocale==='fr'?'À prévoir pour la mission : réservez un exemplaire par joueur de':'For the mission: set aside one copy per player of'} <CardRef code="45178" name={cardName('45178')} />. {uiLocale==='fr'?'L’ajout aux decks sera effectué à l’étape Mission, après les effets du scénario.':'Add it to player decks at the Mission step, after scenario effects.'}</p>
+{/if}{/snippet}
 {#snippet consequencePanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(consequenceStep))}{/snippet}
 {#snippet missionPanel()}{@render panel(t.campaignSetupLabel, campaignSteps.filter(missionStep))}{/snippet}
 {#snippet healthPanel()}{@render panel(t.campaignGuideCampaign, expertHealthSteps)}{/snippet}
@@ -360,7 +367,7 @@
   <ApocalypsePreparation {t} {uiLocale} {guideKey} {campaign} {expert} {text} {index} {encounterSets} {setName}
     scenarioExpert={scenarioDifficulty(campaign,scenario.id)==='expert'}
     settings={setupSettings} storyContent={storyPanel} campaignContent={consequencePanel} missionContent={missionPanel}
-    allyContent={allyPanel} healthContent={healthPanel} recoveryContent={recoveryPanel}
+    allyContent={allyPanel} healthContent={healthPanel} recoveryContent={playerDeckPanel}
     {rejoinRequired} {onReady} {onKeep} />
 {:else}
 <div class="skip-preparation"><button class="btn btn--primary" disabled={rejoinRequired} onclick={onReady}>{t.campaignSkipPreparation}</button>{#if rejoinRequired}<p>{t.campaignRejoinRequired}</p>{/if}</div>
@@ -382,7 +389,7 @@
 {/if}
 
 </div>
-{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{/if}
+{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{@render playerDeckPanel()}<p>{t.campaignShufflePlayers}</p>{/if}
 <div hidden={guided && guideStep !== 2}>
 {#if hasChips}
   <section class="panel">
@@ -429,7 +436,16 @@
 
 </div><div hidden={guided && guideStep !== 3}>
 {#if guided}<p>{t.campaignGuideScenarioText}</p>{/if}
-{#if schemeSteps.length > 0}
+{@render panel(t.campaignGuideScenario, scenarioSteps)}
+{#if scenario.id === 's2_four_horsemen' && guided}
+  <section class="panel"><h3><CardRef code="45085a" name={cardName("45085a")} /></h3>
+  <ol class="steps">
+    <li>{t.campaignHorsemenStartingHp(campaign.heroes.length * (scenarioDifficulty(campaign, scenario.id) === "expert" ? 12 : 9))}</li>
+    <li>{t.campaignHorsemenSideSetup(campaign.heroes.length)}</li>
+    <li>{#each ["45086","45087","45088","45089"] as code}<CardRef {code} name={cardName(code)} />{' '}{/each} {t.campaignHorsemenSideThreat}</li>
+    <li><CardRef code="45085b" name={cardName("45085b")} /> : {t.campaignHorsemenMainSetup(12 * campaign.heroes.length)}</li>
+  </ol><p class="muted">{t.campaignHorsemenSetupSource}</p></section>
+{:else if schemeSteps.length > 0}
   <!-- Rules Reference 1.8: scenario setup precedes campaign setup. -->
   <section class="panel">
     <h3>{t.schemeSetupTitle}</h3>
@@ -442,10 +458,10 @@
 {/if}
 
 </div><div hidden={guided && guideStep !== 4}>
-{@render panel(t.campaignSetupLabel, campaignSteps)}
+{@render panel(guided ? t.campaignGuideCampaign : t.campaignSetupLabel, campaignSteps)}
 {#if !guided}{@render panel(t.campaignInformation, information)}{/if}
 
-{@render recoveryPanel()}
+{#if !guided}{@render recoveryPanel()}{/if}
 {@render allyPanel()}
 
 {@render panel(t.campaignGuideCampaign, expertHealthSteps)}
