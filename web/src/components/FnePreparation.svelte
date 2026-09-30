@@ -46,12 +46,14 @@
 <div class="actions"><button class="btn" disabled={position===0} onclick={()=>move(position-1)}>{t.campaignGuidePrevious}</button>{#if position<steps.length-1}<button class="btn btn--primary" onclick={()=>move(position+1)}>{t.campaignGuideNext}</button>{:else}<button class="btn btn--primary" onclick={onReady}>{t.campaignImReady}</button>{/if}</div>
 
 <style>
+  p{margin-block:var(--space-4);line-height:var(--leading-body);max-width:var(--prose-max)}
+
   .skip{position:sticky;top:calc(56px + env(safe-area-inset-top) + var(--space-2));z-index:5;padding:var(--space-2);background:var(--surface);border:1px solid var(--border);margin-bottom:var(--space-4)}
   .skip button{width:100%;min-height:48px;white-space:normal}
   nav{padding:var(--space-3);border-left:4px solid var(--accent);margin-block:var(--space-4)}
   progress{width:100%;accent-color:var(--accent);margin-block:var(--space-2)}
   h3{font-size:var(--text-xl);font-weight:900;font-style:italic;margin-block:var(--space-5) var(--space-3)}
-  li{margin-bottom:var(--space-4);line-height:var(--leading-body)}
+  li{margin-bottom:var(--space-5);line-height:var(--leading-body)}
   ol{padding-inline-start:var(--space-5)}
   .cards{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3)}
   details{padding:var(--space-3);border-bottom:1px solid var(--border)}

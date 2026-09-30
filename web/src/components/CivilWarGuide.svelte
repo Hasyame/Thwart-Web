@@ -36,9 +36,11 @@
   <div class="actions"><button class="btn" disabled={position===0} onclick={()=>move(position-1)}>{fr?'← Précédent':'← Previous'}</button>{#if position<steps.length-1}<button class="btn btn--primary" onclick={()=>move(position+1)}>{fr?'Continuer →':'Continue →'}</button>{:else if onReady}<button class="btn btn--primary" onclick={onReady}>{fr?'Démarrer':'Start'}</button>{/if}</div>
 </section>
 <style>
+  p{margin-block:var(--space-4);line-height:var(--leading-body);max-width:var(--prose-max)}
+
   .guide{padding:var(--space-4);margin-block:var(--space-4)}
   .ready{position:sticky;top:64px;z-index:2;width:100%;margin-bottom:var(--space-4);white-space:normal}
-  progress{width:100%;accent-color:var(--accent);margin-block:12px}h2{margin-block:24px 16px}li{margin-bottom:16px;line-height:1.6}ol{padding-left:22px}
+  progress{width:100%;accent-color:var(--accent);margin-block:12px}h2{margin-block:24px 16px}li{margin-bottom:var(--space-5);line-height:1.6}ol{padding-left:22px}
   article{padding:16px;border:1px solid var(--border);margin-block:12px}.card-text{white-space:pre-line;line-height:1.6}
   .actions,.refs{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}summary{min-height:44px;align-content:center}button{min-height:44px}
 </style>

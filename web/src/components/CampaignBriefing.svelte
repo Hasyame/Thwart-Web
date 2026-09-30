@@ -440,10 +440,10 @@
 {#if scenario.id === 's2_four_horsemen' && guided}
   <section class="panel"><h3><CardRef code="45085a" name={cardName("45085a")} /></h3>
   <ol class="steps">
-    <li>{t.campaignHorsemenStartingHp(campaign.heroes.length * (scenarioDifficulty(campaign, scenario.id) === "expert" ? 12 : 9))}</li>
-    <li>{t.campaignHorsemenSideSetup(campaign.heroes.length)}</li>
-    <li>{#each ["45086","45087","45088","45089"] as code}<CardRef {code} name={cardName(code)} />{' '}{/each} {t.campaignHorsemenSideThreat}</li>
-    <li><CardRef code="45085b" name={cardName("45085b")} /> : {t.campaignHorsemenMainSetup(12 * campaign.heroes.length)}</li>
+    <li class="step">{t.campaignHorsemenStartingHp(campaign.heroes.length * (scenarioDifficulty(campaign, scenario.id) === "expert" ? 12 : 9))}</li>
+    <li class="step">{t.campaignHorsemenSideSetup(campaign.heroes.length)}</li>
+    <li class="step"><div class="scheme-cards">{#each ["45086","45087","45088","45089"] as code}<CardRef {code} name={cardName(code)} />{/each}</div><p>{t.campaignHorsemenSideThreat}</p></li>
+    <li class="step"><CardRef code="45085b" name={cardName("45085b")} /> : {t.campaignHorsemenMainSetup(12 * campaign.heroes.length)}</li>
   </ol><p class="muted">{t.campaignHorsemenSetupSource}</p></section>
 {:else if schemeSteps.length > 0}
   <!-- Rules Reference 1.8: scenario setup precedes campaign setup. -->
@@ -549,7 +549,24 @@
     margin: 0 0 var(--space-3);
   }
 
+  p {
+    margin-block: var(--space-4);
+    line-height: var(--leading-body);
+    max-width: var(--prose-max);
+  }
+
+  .scheme-cards {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
   .steps {
+    display: grid;
+    gap: var(--space-5);
+    line-height: var(--leading-body);
     list-style: none;
     padding: 0;
     margin: 0;
@@ -561,7 +578,7 @@
   .step {
     position: relative;
     padding-inline-start: var(--space-4);
-    margin-bottom: var(--space-3);
+    margin-bottom: 0;
   }
 
   .step:last-child {
