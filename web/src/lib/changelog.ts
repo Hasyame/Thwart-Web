@@ -18,6 +18,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-25',
+    en: [
+      'Preparation reviewed for all 30 scenarios in Galaxy’s Most Wanted, The Mad Titan’s Shadow, Sinister Motives, Mutant Genesis, Next Evolution and Agents of S.H.I.E.L.D.: instructions follow the rulebook order, with repeated steps removed.',
+      'The guides specify starting villain stages, main-scheme setup, special decks and per-player quantities. Campaign effects, opening hands, mulligans and end-of-setup effects appear at the appropriate step.',
+      'Cards needed later are identified during player-deck preparation. Returning to an earlier step preserves recorded random draws and campaign choices.',
+      'Card-image sources have been corrected. When a French image is unavailable, an English image is used when available.',
+    ],
+    fr: [
+      'Préparation revue pour les 30 scénarios de Convoitise Galactique, L’Ombre du Titan Fou, Sinistres Motivations, Genèse Mutante, NeXt Evolution et Agents du S.H.I.E.L.D. : les instructions suivent l’ordre du livret, avec suppression des étapes répétées.',
+      'Les guides précisent les stades de départ des méchants, la mise en place des manigances principales, les decks spéciaux et les quantités par joueur. Effets de campagne, main de départ, mulligans et effets de fin de préparation apparaissent à la bonne étape.',
+      'Les cartes nécessaires plus tard sont signalées dès la préparation des decks Joueur. Revenir à une étape précédente conserve les tirages aléatoires et les choix de campagne enregistrés.',
+      'Les sources des images de cartes ont été corrigées. Lorsqu’une image française manque, une image anglaise est utilisée si elle est disponible.',
+    ],
+  },
+  {
     date: '2026-09-24',
     en: [
       'Fear No Evil’s encounter cards (villains, main schemes, minions and the rest, 171 cards MarvelCDB does not have) are now in the card search, in English and French, and its campaign shows each job’s picture; in its briefings, the villain, the environment and the decks named are cards to open.',
