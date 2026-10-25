@@ -56,13 +56,28 @@ export function codeOfImage(imageSrc: string): string | null {
   return match?.[1]?.toLowerCase() ?? null;
 }
 
-/** cgbuilder's address: two digits of pack, the rest the card, zeros dropped. */
+/** cgbuilder has its own pack numbering (https://mc.cgbuilder.fr/cycle/).
+ * Keep explicit differences: guessing the MarvelCDB prefix can silently show
+ * another card, since the wrong image URL also succeeds. Verified 2026-10-25.
+ */
+const CGBUILDER_PACK: Readonly<Record<number, number>> = {
+  2: 3, 3: 4, 4: 2, 13: 14, 14: 13,
+  18: 19, 19: 20, 20: 21, 21: 18,
+  28: 29, 29: 28, 33: 34, 34: 33, 35: 36, 36: 35,
+  37: 39, 39: 37, 41: 42, 42: 41, 43: 44, 44: 43,
+  51: 52, 52: 51, 53: 54, 54: 53, 58: 59, 59: 58,
+};
+
+/** cgbuilder's address: mapped pack, printed card number and face. */
 export function cgbuilderUrl(code: string): string | null {
   const match = /^(\d{2})(\d+)([a-z]?)$/.exec(code);
   if (match === null) {
     return null;
   }
-  const pack = match[1]?.replace(/^0+/, '') || '0';
+  const prefix = Number(match[1]);
+  // Unknown future packs must not be guessed into another provider's numbering.
+  if (prefix < 1 || prefix > 62) return null;
+  const pack = CGBUILDER_PACK[prefix] ?? prefix;
   const card = (match[2]?.replace(/^0+/, '') || '0') + (match[3] ?? '').toUpperCase();
   return `${CGBUILDER}/${pack}/${card}.jpg`;
 }

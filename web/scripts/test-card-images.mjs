@@ -27,7 +27,7 @@ check('no code from anything else', codeOfImage('/art/campaigns/fne.jpg') === nu
 check('cgbuilder: pack and card, zeros dropped, letter upper case',
   cgbuilderUrl('01001a') === 'https://mc-src.cgbuilder.fr/images/carte/1/1A.jpg', cgbuilderUrl('01001a'));
 check('cgbuilder: a two-digit pack', cgbuilderUrl('60037a') === 'https://mc-src.cgbuilder.fr/images/carte/60/37A.jpg');
-check('cgbuilder: no letter', cgbuilderUrl('21112') === 'https://mc-src.cgbuilder.fr/images/carte/21/112.jpg');
+check('cgbuilder: no letter', cgbuilderUrl('21112') === 'https://mc-src.cgbuilder.fr/images/carte/18/112.jpg');
 
 // A reprint lives in the box it was first printed in, not its own pack.
 setMc4dbPaths({ '01001a': 'core/01001a', '12015': 'core/01088', '60037a': 'fear_no_evil_by_ffg/60037a' });
@@ -71,6 +71,12 @@ while (address !== null && !visited.has(address)) {
   address = nextCardImage(address);
 }
 check('fallback terminates instead of cycling through failed images', address === null);
+
+for (const [prefix, expected] of Object.entries({2:3,3:4,4:2,13:14,14:13,18:19,19:20,20:21,21:18,28:29,29:28,33:34,34:33,35:36,36:35,37:39,39:37,41:42,42:41,43:44,44:43,51:52,52:51,53:54,54:53,58:59,59:58})) {
+  check(`Provider pack mapping ${prefix}`, cgbuilderUrl(`${prefix.padStart(2, '0')}001a`) === `https://mc-src.cgbuilder.fr/images/carte/${expected}/1A.jpg`);
+}
+check('Deadpool Poolisation must not display X-23 Rictor', cgbuilderUrl('44041') === 'https://mc-src.cgbuilder.fr/images/carte/43/41.jpg');
+check('Unknown packs do not guess an unrelated French image', cgbuilderUrl('99001') === null);
 
 if (failures > 0) {
   console.log(`\n${failures} FAILED`);
