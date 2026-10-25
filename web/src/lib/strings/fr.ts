@@ -168,10 +168,8 @@ export const fr: Strings = {
   notFoundBody: 'Cette adresse ne correspond à aucune page de Thwart. Le lien est peut-être ancien, ou mal tapé.',
   notFoundHome: 'Aller à l’accueil',
   homeIntroTitle: 'Thwart, un compagnon pour Marvel Champions',
-  homeIntro:
-    'Toutes les cartes de Marvel Champions : Le Jeu de Cartes, en français ou en anglais, à chercher ci-dessous. Cochez les extensions que vous possédez, et le site sait quels decks vous pouvez construire, quelles parties vous pouvez tirer et quelles campagnes vous pouvez jouer.',
-  homeIntroNote:
-    'Gratuit, hors ligne, rien à installer et sans compte. Aussi sur Android. Non officiel : données des cartes de MarvelCDB ; Marvel Champions appartient à Fantasy Flight Games et Marvel.',
+  homeIntro: "Recherchez les cartes de Marvel Champions en français ou en anglais. Ajoutez vos extensions à votre collection pour préparer vos decks, vos parties et vos campagnes.",
+  homeIntroNote: "Gratuit et sans compte obligatoire. Les données déjà chargées restent disponibles hors ligne. Également sur Android. Application non officielle : données de MarvelCDB ; Marvel Champions appartient à Fantasy Flight Games et Marvel.",
   alpha: {
     title: 'Participer à l’alpha de la version Android',
     intro: 'Thwart existe aussi en application Android native. Son alpha est un test fermé officiel sur Google Play : laissez votre nom et l’adresse e-mail de votre compte Google, et vous serez ajouté aux testeurs.',
@@ -713,8 +711,7 @@ export const fr: Strings = {
   problemUnbalanced: (counts) =>
     `Les aspects de ce héros doivent contribuer à parts égales : ${counts}.`,
   importDeck: 'Importer depuis MarvelCDB',
-  importDeckNote:
-    "Collez le lien d'une decklist, ou simplement son numéro. Le deck est enregistré dans ce navigateur, avec la même clé que l'application Android : l'importer des deux côtés donne un seul deck et non deux.",
+  importDeckNote: "Collez un lien de deck MarvelCDB ou son numéro. Le deck sera enregistré dans ce navigateur.",
   importAction: 'Importer',
   importing: 'Import en cours…',
   deckImportNotFound:
@@ -765,7 +762,7 @@ export const fr: Strings = {
   aspects: 'Aspects',
   excludeBeaten: (n) =>
     n === 0 ? 'Ignorer les scénarios déjà battus' : `Ignorer les scénarios déjà battus (${n})`,
-  resetFilters: 'Tout réautoriser',
+  resetFilters: "Réinitialiser les filtres",
   savedDraws: 'Résultats enregistrés',
   beatenNote:
     "Cochez un scénario une fois battu, et le filtre ci-dessus pourra l'ignorer.",
@@ -900,7 +897,7 @@ export const fr: Strings = {
   accountWhyBody:
     'Connectez-vous et activez la synchronisation pour partager votre collection, vos decks, vos parties et vos campagnes entre appareils. Vous pouvez aussi les transférer avec une sauvegarde depuis la page Collection.',
   accountPrivacy:
-    'Le serveur conserve vos enregistrements sans les lire : il ne sait pas ce qu\u2019est une carte. Votre adresse sert \u00e0 vous connecter et \u00e0 rien d\u2019autre. Vous pouvez tout exporter ou supprimer le compte, sans demander la permission \u00e0 personne.',
+    'Le serveur conserve les données que vous synchronisez. Votre adresse sert à la connexion, à la vérification et à la récupération du compte. Vous pouvez exporter vos données ou supprimer votre compte depuis cette page.',
   accountError: (code) =>
     ({
       invalid_credentials: 'Cette adresse et ce mot de passe ne correspondent \u00e0 aucun compte.',
@@ -978,20 +975,17 @@ export const fr: Strings = {
   trackerThreatMaximum: 'Menace maximale',
   trackerPrintedMaximum: 'Rétablir la valeur imprimée',
   trackerMaximumHint: 'Total pour cette partie. Les dégâts et menaces sont conservés.',
-  trackerStarred: 'La carte imprime une étoile : saisissez le nombre',
-  trackerStarredAcceleration:
-    'Cette machination accélère d’un montant étoilé qui dépend du plateau : rien n’est ajouté ici pour elle, déplacez la menace vous-même à la fin du round.',
-  trackerNote:
-    "Des compteurs, rien de plus. L'application ne sait pas que les drones entrent en jeu ni qu'une icône Crise empêche de contrer : un compteur qui arbitre à moitié se trompe à une table, et les nombres qu'il tient vraiment cessent alors d'être crus.",
+  trackerStarred: "Valeur étoilée : saisissez la valeur applicable à votre partie",
+  trackerStarredAcceleration: "La valeur étoilée dépend des cartes en jeu. Elle n’est pas ajoutée automatiquement : ajustez la menace en suivant les instructions de la carte.",
+  trackerNote: "Ces compteurs suivent les valeurs de votre partie. Appliquez les effets des cartes et ajustez les compteurs si nécessaire.",
   round: (n) => `Tour ${n}`,
   endRound: 'Terminer le tour',
-  advanceVillain: 'Retourner le Méchant',
+  advanceVillain: "Passer au stade suivant",
   advanceScheme: 'Faire avancer la manigance',
-  whichScheme: 'Laquelle est sur la table',
+  whichScheme: "Manigance en jeu",
 
   longBreak: 'Faire une longue pause ?',
-  longBreakIntro:
-    "Pour une table qu'il faut débarrasser, ou laisser une semaine. Le chrono s'arrête et la position de chacun est notée. Une partie à la fois : enregistrer remplace celle qui était rangée.",
+  longBreakIntro: "Le chrono s’arrête et les paramètres de la partie sont sauvegardés. Une seule partie peut être conservée : cette sauvegarde remplace la précédente.",
   longBreakPhase: "Arrêtée pendant",
   phasePlayer: 'La phase des joueurs',
   phaseVillain: 'La phase du Méchant',
@@ -1009,15 +1003,14 @@ export const fr: Strings = {
   putAway: 'Faire la pause',
   savePutAway: 'Enregistrer et quitter la table',
   resumeSaved: 'Reprendre la partie',
-  discardSaved: 'Jeter',
+  discardSaved: "Supprimer la sauvegarde",
   savedGame: (scenario, when) => `${scenario}, rangée ${when}`,
-  savedGameNote:
-    'Reprendre remet les cartes et le chrono là où ils étaient. Le chrono revient arrêté : ressortir le matériel ne compte pas comme du temps de jeu.',
+  savedGameNote: "Retrouvez vos compteurs et votre chrono sauvegardés. Le chrono reste en pause pendant que vous réinstallez votre table.",
 
   goToSetup: 'Aller à la mise en place',
   play: 'Jouer',
   backToSetup: 'Modifier la mise en place',
-  clockStartsNote: "Le chrono démarre quand vous appuyez sur Jouer, pas avant. Installer une partie prend plusieurs minutes, et les compter faisait paraître chaque partie plus longue qu'elle ne l'était.",
+  clockStartsNote: "Le chrono démarre lorsque vous appuyez sur Jouer. Le temps de préparation n’est pas compté.",
   briefingTitle: 'Préparation',
   briefingIntro: "Ce qu'il faut sortir, et ce que le scénario dit d'en faire. La mise en place est lue sur la carte de manigance principale, dans la langue de vos cartes.",
   briefingGather: 'À sortir',

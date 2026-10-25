@@ -14,6 +14,7 @@
     "build": "npm run icons && vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test:security": "vite-node scripts/test-security.mjs",
     "test:contrast": "node scripts/test-contrast.mjs",
     "test:sw": "node scripts/test-sw.mjs",
     "test:card-images": "vite-node scripts/test-card-images.mjs",
