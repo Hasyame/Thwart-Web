@@ -568,6 +568,19 @@
   .table-focus .phase-controls { gap: 8px; margin-top: 10px; }
   .table-focus .phase-start { margin: 6px 0 0; }
   .table-focus .table-toolbar :global(.btn) { border-radius: 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font-size: .85rem; min-height: 44px; padding: 6px 10px; }
+  /* Keep all four villains and the finish action reachable on short phones.
+     Reflow the values beside the controls instead of shrinking touch targets.
+     Larger text can still scroll rather than being clipped. */
+  @media (max-height: 700px) and (max-width: 480px) {
+    .table-focus :global(.vital-card) { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 4px; padding: 6px; }
+    .table-focus .horseman.active :global(.vital-card) { padding: 5px; }
+    .table-focus :global(.vital-card h3) { grid-column: 1 / -1; }
+    .table-focus :global(.vital-card .hp) { display: flex; flex-direction: column; justify-content: center; font-size: 1.4rem; line-height: 1.1; }
+    .table-focus :global(.vital-card .hp small) { font-size: .75rem; }
+    .table-focus :global(.vital-card .controls) { margin: 0; gap: 4px; }
+    .table-focus .scheme-counter { margin-block: 4px; }
+    .table-focus .phase-controls { margin-top: 4px; }
+  }
   .compact-scheme { padding: .75rem; margin: 0 0 1rem; border: 2px solid var(--border); border-left: 5px solid var(--accent); }
   .compact-scheme .reading { position: relative; margin: .35rem 0; }
   .compact-scheme .big { font-size: 2rem; }

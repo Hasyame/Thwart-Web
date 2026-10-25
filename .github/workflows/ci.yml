@@ -331,6 +331,10 @@ jobs:
         working-directory: web
         run: npm run test:red-skull-guide
 
+      - name: Browser security regressions
+        working-directory: web
+        run: npm run test:security
+
       - name: Campaign preparation order
         working-directory: web
         run: npm run test:preparation-order

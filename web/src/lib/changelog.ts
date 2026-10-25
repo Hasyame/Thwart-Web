@@ -20,12 +20,18 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
     en: [
+      'On short phone screens, the four-villain table keeps the counters and finish button visible while preserving touch-friendly controls.',
+      'Clearer help for deck imports, game counters, saving and resuming a game, and account data. Malformed card or deck links now show a missing-page message instead of interrupting the app.',
+      'Security updates for build tools and the server runtime, stronger filtering of card text, and a fix for displaying photos imported from a backup.',
       'Preparation reviewed for all 30 scenarios in Galaxy’s Most Wanted, The Mad Titan’s Shadow, Sinister Motives, Mutant Genesis, Next Evolution and Agents of S.H.I.E.L.D.: instructions follow the rulebook order, with repeated steps removed.',
       'The guides specify starting villain stages, main-scheme setup, special decks and per-player quantities. Campaign effects, opening hands, mulligans and end-of-setup effects appear at the appropriate step.',
       'Cards needed later are identified during player-deck preparation. Returning to an earlier step preserves recorded random draws and campaign choices.',
       'Card-image sources have been corrected. When a French image is unavailable, an English image is used when available.',
     ],
     fr: [
+      'Sur les petits écrans de téléphone, la table des quatre méchants garde les compteurs et le bouton de fin visibles, avec des boutons adaptés au tactile.',
+      'Aides simplifiées pour importer un deck, utiliser les compteurs, sauvegarder ou reprendre une partie et comprendre les données du compte. Les liens de carte ou de deck mal formés affichent une page introuvable au lieu de bloquer l’application.',
+      'Mises à jour de sécurité des outils de compilation et du serveur, filtrage renforcé du texte des cartes et correction de l’affichage des photos importées depuis une sauvegarde.',
       'Préparation revue pour les 30 scénarios de Convoitise Galactique, L’Ombre du Titan Fou, Sinistres Motivations, Genèse Mutante, NeXt Evolution et Agents du S.H.I.E.L.D. : les instructions suivent l’ordre du livret, avec suppression des étapes répétées.',
       'Les guides précisent les stades de départ des méchants, la mise en place des manigances principales, les decks spéciaux et les quantités par joueur. Effets de campagne, main de départ, mulligans et effets de fin de préparation apparaissent à la bonne étape.',
       'Les cartes nécessaires plus tard sont signalées dès la préparation des decks Joueur. Revenir à une étape précédente conserve les tirages aléatoires et les choix de campagne enregistrés.',

@@ -167,7 +167,11 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
 
   const match = CARD_PATH.exec(normalised);
   if (match !== null && match[1] !== undefined) {
-    return { name: 'card', code: decodeURIComponent(match[1]) };
+    try {
+      return { name: 'card', code: decodeURIComponent(match[1]) };
+    } catch {
+      return { name: 'notFound', path: normalised };
+    }
   }
   if (COLLECTION_PATH.test(normalised)) {
     return { name: 'collection' };
@@ -189,9 +193,13 @@ export function routeFromPath(pathname: string, base: string, search = ''): Rout
   }
   const deck = DECK_PATH.exec(normalised);
   if (deck !== null && deck[1] !== undefined) {
-    return deck[2] === undefined
-      ? { name: 'deck', id: decodeURIComponent(deck[1]) }
-      : { name: 'deck', id: decodeURIComponent(deck[1]), edit: true };
+    try {
+      return deck[2] === undefined
+        ? { name: 'deck', id: decodeURIComponent(deck[1]) }
+        : { name: 'deck', id: decodeURIComponent(deck[1]), edit: true };
+    } catch {
+      return { name: 'notFound', path: normalised };
+    }
   }
   if (PLAY_PATH.test(normalised)) {
     return { name: 'play' };

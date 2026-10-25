@@ -57,8 +57,8 @@ const LOCALES = [
  */
 const MINIMUM_CARDS = 1500;
 
-/** Tags MarvelCDB genuinely uses in card text. Everything else is stripped. */
-const ALLOWED_TAGS = new Set(['b', 'i', 'em', 'strong', 'br', 'p', 'u']);
+/** Shared formatting allow-list, also enforced when cached cards are rendered. */
+import { safeCardMarkup } from '../src/lib/safeMarkup.js';
 
 /**
  * Curated pack type and wave, copied from the Android app's
@@ -89,21 +89,14 @@ const USER_AGENT =
   'Thwart-Web/0.1 (+https://github.com/Hasyame/Thwart-Web) card data build';
 
 /**
- * Strips markup down to the handful of tags that carry meaning.
- *
- * Done here, at build time, rather than in the browser: the card text is
- * third-party HTML and the detail view renders it as markup, so sanitising it
- * once on the way in is a great deal safer than trusting every future
- * component to remember.
+ * Escape untrusted markup at ingestion. The rendering boundary repeats this
+ * check for older caches and nested linked cards from third-party data.
  */
 function sanitizeHtml(value) {
   if (typeof value !== 'string' || value.length === 0) {
     return value ?? null;
   }
-  return value.replace(/<(\/?)([a-zA-Z0-9]+)(?:\s[^>]*?)?\/?>/g, (_match, slash, tag) => {
-    const name = String(tag).toLowerCase();
-    return ALLOWED_TAGS.has(name) ? `<${slash}${name}>` : '';
-  });
+  return safeCardMarkup(value);
 }
 
 const HTML_FIELDS = ['text', 'flavor', 'back_text', 'back_flavor', 'errata'];
@@ -137,9 +130,8 @@ const ICON_SYMBOLS = {
 /**
  * Turns the bracket tokens into markup.
  *
- * Runs *after* sanitising, deliberately: the sanitiser strips every attribute
- * from every tag, so anything with a `data-icon` on it can only have been put
- * there here, by us, and never by MarvelCDB.
+ * Runs after sanitising. Only fixed icon names are emitted; the shared
+ * rendering allow-list preserves these spans and rejects other attributes.
  */
 function renderIcons(value) {
   if (typeof value !== 'string' || value.length === 0) {

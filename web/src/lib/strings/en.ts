@@ -168,10 +168,8 @@ export const en: Strings = {
   notFoundBody: 'That address does not match any page of Thwart. The link may be old, or mistyped.',
   notFoundHome: 'Go to the home page',
   homeIntroTitle: 'Thwart, a Marvel Champions companion',
-  homeIntro:
-    'Every card of Marvel Champions: The Card Game, in English or French, searchable below. Tick the packs you own, and the site knows which decks you can build, which games you can draw and which campaigns you can play.',
-  homeIntroNote:
-    'Free, works offline, nothing to install and no account needed. Also on Android. Unofficial: card data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.',
+  homeIntro: "Find Marvel Champions cards in English or French. Add your packs to your collection to prepare decks, games and campaigns.",
+  homeIntroNote: "Free, with no account required. Previously loaded data stays available offline. Also on Android. Unofficial app: data from MarvelCDB; Marvel Champions belongs to Fantasy Flight Games and Marvel.",
   alpha: {
     title: 'Join the Android app alpha',
     intro: 'Thwart also exists as a native Android app. Its alpha is an official closed test on Google Play: leave your name and the email address of your Google account, and you will be added to the testers.',
@@ -704,8 +702,7 @@ export const en: Strings = {
   problemDuplicateUnique: (title, total) => `${total} copies of ${title}, which is unique.`,
   problemUnbalanced: (counts) => `This hero's aspects must contribute equally: ${counts}.`,
   importDeck: 'Import from MarvelCDB',
-  importDeckNote:
-    'Paste a decklist link, or just its number. The deck is stored in this browser, keyed the same way the Android app keys it, so importing it in both places gives you one deck rather than two.',
+  importDeckNote: "Paste a MarvelCDB deck link or its number. The deck will be saved in this browser.",
   importAction: 'Import',
   importing: 'Importing…',
   deckImportNotFound:
@@ -756,7 +753,7 @@ export const en: Strings = {
   aspects: 'Aspects',
   excludeBeaten: (n) =>
     n === 0 ? 'Skip scenarios I have beaten' : `Skip scenarios I have beaten (${n})`,
-  resetFilters: 'Allow everything again',
+  resetFilters: "Reset filters",
   savedDraws: 'Saved draws',
   beatenNote: 'Tick a scenario once you have beaten it, and the filter above can skip it.',
   randomizerTitle: 'Random game',
@@ -888,7 +885,7 @@ export const en: Strings = {
   accountWhyBody:
     'Sign in and enable sync to share your collection, decks, games and campaigns between devices. You can also transfer them using a backup from the Collection page.',
   accountPrivacy:
-    'The server stores your records without reading them: it does not know what a card is. Your address is kept to sign you in and for nothing else. You can export everything or delete the account outright, and neither needs anybody\u2019s permission.',
+    'The server stores the data you sync. Your email address is used to sign in, verify and recover your account. You can export your data or delete your account from this page.',
   accountError: (code) =>
     ({
       invalid_credentials: 'That address and password do not match an account.',
@@ -966,20 +963,17 @@ export const en: Strings = {
   trackerThreatMaximum: 'Maximum threat',
   trackerPrintedMaximum: 'Restore printed value',
   trackerMaximumHint: 'Total for this game. Existing damage and threat are kept.',
-  trackerStarred: 'The card prints a star, so type the number',
-  trackerStarredAcceleration:
-    'This scheme accelerates by a starred amount that depends on the board, so nothing is added for it here: move the threat yourself at the end of the round.',
-  trackerNote:
-    "Counters only. It does not know that drones enter play or that a Crisis icon stops thwarting, because a tracker that half-adjudicates rules is wrong at somebody's table, and then the numbers it is keeping stop being trusted either.",
+  trackerStarred: "Starred value: enter the value that applies to your game",
+  trackerStarredAcceleration: "The starred value depends on the cards in play. It is not added automatically: adjust threat as instructed by the card.",
+  trackerNote: "These counters track your game values. Resolve card effects and adjust the counters as needed.",
   round: (n) => `Round ${n}`,
   endRound: 'End the round',
-  advanceVillain: 'Flip the villain',
+  advanceVillain: "Advance to the next stage",
   advanceScheme: 'Advance the scheme',
-  whichScheme: 'Which one is on the table',
+  whichScheme: "Scheme in play",
 
   longBreak: 'Take a long break?',
-  longBreakIntro:
-    'For a table that has to be cleared, or left for a week. The clock stops and where everything stood is written down. One game at a time: saving replaces whatever was already put away.',
+  longBreakIntro: "The clock stops and your game settings are saved. Only one game can be kept: this save replaces the previous one.",
   longBreakPhase: 'It stopped in',
   phasePlayer: 'The player phase',
   phaseVillain: 'The villain phase',
@@ -997,15 +991,14 @@ export const en: Strings = {
   putAway: 'Take the break',
   savePutAway: 'Save and leave the table',
   resumeSaved: 'Pick it up again',
-  discardSaved: 'Throw it away',
+  discardSaved: "Delete saved game",
   savedGame: (scenario, when) => `${scenario}, put away ${when}`,
-  savedGameNote:
-    'Picking it up puts the cards and the clock back where they were. The clock comes back stopped, because getting the cards out again is not play time.',
+  savedGameNote: "Restore your saved counters and clock. The clock stays paused while you set up your table again.",
 
   goToSetup: 'Go to setup',
   play: 'Play',
   backToSetup: 'Change the setup',
-  clockStartsNote: 'The clock starts when you press Play, not before. Laying a game out takes several minutes and counting them made every game look longer than it was.',
+  clockStartsNote: "The clock starts when you press Play. Preparation time is not counted.",
   briefingTitle: 'Preparation',
   briefingIntro: 'What to fetch, and what the scenario says to do with it. The setup is read off the main scheme card, in the language your cards are in.',
   briefingGather: 'Gather',
