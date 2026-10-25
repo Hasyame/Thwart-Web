@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { expandTemplate } from '../src/lib/campaign/engine';
 import { EMPTY_STATE } from '../src/lib/campaign/types';
 import { aoaPlayerDeckStep, aoaScenarioStep, aoaRepeatedStep } from '../src/lib/campaign/preparation';
-import { campaignSetupSteps, villainSetupSteps } from '../src/lib/schemeSetup';
+import { campaignScenarioSetupSteps, campaignSetupSteps, villainSetupSteps } from '../src/lib/schemeSetup';
 import { fneGuide, FNE_JOB_SETS } from '../src/lib/campaign/fneGuide';
 import { redSkullGuide, RED_SKULL_SCENARIOS } from '../src/lib/campaign/redSkullGuide';
 import { civilGuide, CIVIL_WAR } from '../src/lib/civilWar';
@@ -83,3 +83,20 @@ for(const hero of [
 assert.deepEqual(openingAllies({id:'old-deck',deckId:'missing',heroCardCode:'hero'},savedDecks,allyIndex,false),[],'explicit deck link must not fall back to a stale deck');
 assert.deepEqual(openingAllies({id:'old-deck',heroCardCode:'hero'},[{id:'old-deck',slots:'invalid'}],allyIndex,false),[]);
 console.log('Preparation order: AoA, FNE, Red Skull and Civil War; both languages/difficulties, 1–4 players PASS');
+
+for (const locale of ['fr', 'en']) {
+  for (const [id, pack] of [['gmw','gmw'],['mts','mts'],['sm','sm'],['mg','mut_gen'],['next','next_evol'],['aos','aos']]) {
+    const template = expandTemplate(load(`public/data/campaigns/${id}.json`));
+    const cards = new Map(load(`public/data/cards/${locale}/${pack}.json`).map(c => [c.code,c]));
+    for (const scenario of template.scenarios) for (const difficulty of ['standard','expert']) {
+      const before = JSON.stringify(scenario);
+      const steps = campaignScenarioSetupSteps(cards, scenario.baseSetup.mainScheme, scenario.baseSetup.villainDeck[difficulty], scenario.id, 2, locale);
+      assert(steps.length > 0, `${id}/${scenario.id} has initial scheme instructions`);
+      assert.equal(JSON.stringify(scenario), before, 'presentation must not mutate saved setup');
+      if (scenario.id === 's3_escape') assert(!steps.some(s => s.includes('2B') || s.includes('3B')), 'later Collector stages do not run at setup');
+      if (scenario.id === 's2_tower_defense') assert(steps.some(s => s.includes('2B')), 'both Tower Defense schemes start in play');
+      if (scenario.id === 's5_venom_goblin') assert(!steps.some(s => /threshold X|seuil X/.test(s)), 'the setup card reverse is not a threat track');
+    }
+  }
+}
+console.log('Remaining campaign setup formats: PASS');

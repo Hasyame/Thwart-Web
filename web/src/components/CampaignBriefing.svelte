@@ -134,16 +134,17 @@
   const detailedApocalypse = $derived(template.id === 'aoa' && scenario.id === 's3_apocalypse');
   const missionStep = (step: SetupStep): boolean => step.when?.drawIs?.startsWith('mission:') === true;
   const consequenceStep = (step: SetupStep): boolean => step.when?.countTrue != null || step.showCardList != null;
-  const guided = $derived(template.id === 'aoa');
+  const aoa = $derived(template.id === 'aoa');
+  const guided = $derived(['aoa', 'gmw', 'mts', 'sm', 'mg', 'next', 'aos'].includes(template.id));
   const isExpertHealthStep = (step: SetupStep): boolean =>
     step.showCounter === 'hp' || step.showCounter === 'missionThreat' || step.action?.id === 'heal';
-  const playerDeckSteps = $derived(guided ? setup.filter(aoaPlayerDeckStep) : []);
-  const scenarioSteps = $derived(guided ? setup.filter(step => aoaScenarioStep(step, scenario.id)) : []);
-  const campaignSteps = $derived(guided ? setup.filter(step => !isExpertHealthStep(step) && !aoaPlayerDeckStep(step) && !aoaScenarioStep(step, scenario.id) && !aoaRepeatedStep(step)) : setup);
-  const expertHealthSteps = $derived(guided ? setup.filter(isExpertHealthStep) : []);
+  const playerDeckSteps = $derived(aoa ? setup.filter(aoaPlayerDeckStep) : []);
+  const scenarioSteps = $derived(aoa ? setup.filter(step => aoaScenarioStep(step, scenario.id)) : []);
+  const campaignSteps = $derived(aoa ? setup.filter(step => !isExpertHealthStep(step) && !aoaPlayerDeckStep(step) && !aoaScenarioStep(step, scenario.id) && !aoaRepeatedStep(step)) : setup);
+  const expertHealthSteps = $derived(aoa ? setup.filter(isExpertHealthStep) : []);
   const guideKey = $derived(`thwart.campaign-guide.${runKey}.${scenario.id}.${campaign.completedScenarios.length}`);
   let guideStep = $state(0);
-  const guideTitles = $derived([t.campaignGuideStory, t.campaignGuideHeroes, t.campaignGuideGather, t.campaignGuideScenario, t.campaignGuideCampaign, t.campaignGuideReady]);
+  const guideTitles = $derived([t.campaignGuideStory, t.campaignGuideHeroes, t.campaignGuideGather, t.campaignGuideScenario, (aoa ? t.campaignGuideCampaign : t.campaignEffectsGeneral), t.campaignGuideReady]);
   $effect(() => { const key = guideKey; try { const saved = Number(localStorage.getItem(key)); guideStep = Number.isInteger(saved) && saved >= 0 && saved < 6 ? saved : 0; } catch { guideStep = 0; } });
   function moveGuide(step: number): void { guideStep = step; try { localStorage.setItem(guideKey, String(step)); } catch { /* Preparation navigation remains usable without storage. */ } }
 </script>
@@ -389,7 +390,7 @@
 {/if}
 
 </div>
-{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{@render playerDeckPanel()}<p>{t.campaignShufflePlayers}</p>{/if}
+{#if guided && guideStep === 1}<section class="panel"><h3>{t.campaignGuideHeroes}</h3><p>{t.campaignGuideHeroesText}</p></section>{@render playerDeckPanel()}<p>{aoa ? t.campaignShufflePlayers : t.campaignShufflePlayersGeneral}</p>{/if}
 <div hidden={guided && guideStep !== 2}>
 {#if hasChips}
   <section class="panel">
@@ -435,7 +436,7 @@
 {/if}
 
 </div><div hidden={guided && guideStep !== 3}>
-{#if guided}<p>{t.campaignGuideScenarioText}</p>{/if}
+{#if guided}<p>{aoa ? t.campaignGuideScenarioText : t.campaignGuideScenarioGeneral}</p>{/if}
 {@render panel(t.campaignGuideScenario, scenarioSteps)}
 {#if scenario.id === 's2_four_horsemen' && guided}
   <section class="panel"><h3>{t.schemeSetupTitle} <CardRef code="45085a" name={cardName("45085a")} /></h3>
@@ -448,7 +449,7 @@
 {:else if schemeSteps.length > 0}
   <!-- Rules Reference 1.8: scenario setup precedes campaign setup. -->
   <section class="panel">
-    <h3>{t.schemeSetupTitle}</h3>
+    <h3>{t.schemeSetupTitle}</h3><div class="scheme-cards">{#each mainScheme as code}<CardRef {code} name={cardName(code)} />{/each}</div>
     <ul class="steps">
       {#each schemeSteps as step, i (i)}
         <li class="step"><p class="line">{step}</p></li>
@@ -458,7 +459,7 @@
 {/if}
 
 </div><div hidden={guided && guideStep !== 4}>
-{@render panel(guided ? t.campaignGuideCampaign : t.campaignSetupLabel, campaignSteps)}
+{@render panel(aoa ? t.campaignGuideCampaign : t.campaignEffectsGeneral, campaignSteps)}
 {#if !guided}{@render panel(t.campaignInformation, information)}{/if}
 
 {#if !guided}{@render recoveryPanel()}{/if}
@@ -468,7 +469,7 @@
 {#if guided}{@render panel(t.campaignInformation, information)}{/if}
 
 </div><div hidden={guided && guideStep !== 5}>
-{#if guided}<section class="panel"><h3>{t.campaignGuideReady}</h3><p>{t.campaignGuideHandText}</p></section>{/if}
+{#if guided}<section class="panel"><h3>{t.campaignGuideReady}</h3><p>{aoa ? t.campaignGuideHandText : t.campaignGuideHandGeneral}</p></section>{/if}
 <!-- The way into the scenario, as the last panel of the page: a comic
      frame to tap, and the quieter way back beneath it. -->
 <div class="ready">

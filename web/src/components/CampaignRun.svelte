@@ -4,7 +4,7 @@
   import type { CampaignRun, Play, SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { cardImageUrl, loadCardsByCode } from '../lib/data';
-  import { campaignSetupSteps, villainSetupSteps, setupSteps } from '../lib/schemeSetup';
+  import { campaignScenarioSetupSteps, setupSteps } from '../lib/schemeSetup';
   import { endGame, formatElapsed, resumeSession, session } from '../lib/session.svelte';
   import { evaluate } from '../lib/campaign/conditions';
   import { fold, type HeroCardStats } from '../lib/campaign/engine';
@@ -309,7 +309,7 @@
     if (state.awaitingChoice) {
       return state.environmentOffer.length > 0 ? 'environment' : 'choice';
     }
-    if (timerRunning(run) || (['aoa','fne','trors'].includes(template?.id ?? '') && scenario !== null && run.timerScenarioId === scenario.id)) {
+    if (timerRunning(run) || (['aoa','fne','trors','gmw','mts','sm','mg','next','aos'].includes(template?.id ?? '') && scenario !== null && run.timerScenarioId === scenario.id)) {
       return 'playing';
     }
     return scenario === null ? 'between' : 'briefing';
@@ -375,10 +375,9 @@
     const codes = scenario?.baseSetup?.mainScheme ?? [];
     const players = campaign?.heroes.length ?? 1;
     const language = uiLocale;
-    const orderedGuide = template?.id === 'aoa';
-    const initialVillain = scenario && campaign
-      ? villainStages(scenario.baseSetup, scenarioDifficulty(campaign, scenario.id), drawnVillainFor(campaign, scenario.id))[0]
-      : undefined;
+    const orderedGuide = ['aoa','gmw','mts','sm','mg','next','aos'].includes(template?.id ?? '');
+    const scenarioId = scenario?.id;
+    const villainCodes = scenario && campaign ? villainStages(scenario.baseSetup, scenarioDifficulty(campaign, scenario.id), drawnVillainFor(campaign, scenario.id)) : [];
     schemeSteps = [];
     if (codes.length === 0) {
       schemeSteps = [];
@@ -397,10 +396,9 @@
         if (!cancelled) {
           // Read off the card rather than written into the template, so it
           // arrives in the language the cards are in.
-          schemeSteps = orderedGuide ? [
-            ...campaignSetupSteps(byCode, codes, players, language),
-            ...villainSetupSteps(initialVillain ? byCode.get(initialVillain) : undefined, language),
-          ] : codes.flatMap(code => setupSteps(byCode.get(code)?.text));
+          schemeSteps = orderedGuide
+            ? campaignScenarioSetupSteps(byCode, codes, villainCodes, scenarioId, players, language)
+            : codes.flatMap(code => setupSteps(byCode.get(code)?.text));
         }
       })
       .catch(() => {
@@ -669,7 +667,7 @@
   });
 
   const counterName = (counter: { id: string; label?: LocalizedText }): string =>
-    label(counter.label) || counterNames.get(counter.id) || (template?.id === 'aoa' && counter.id === 'missionThreat' ? t.missionThreat : counter.id);
+    label(counter.label) || counterNames.get(counter.id) || t.campaignCounterNames[counter.id] || (template?.id === 'aoa' && counter.id === 'missionThreat' ? t.missionThreat : counter.id);
 
   /** The counters this campaign has switched on, which is what gets a box. */
   const active = $derived(
@@ -690,7 +688,7 @@
   });
 
   const bannerArt = $derived.by((): string | null => {
-    if (!['aoa','fne','trors'].includes(template?.id ?? '')) return null;
+    if (!['aoa','fne','trors','gmw','mts','sm','mg','next','aos'].includes(template?.id ?? '')) return null;
     const chapter = page === 'result' && lastResult !== null
       ? template?.scenarios?.find(entry => entry.id === lastResult.scenarioId)
       : scenario;
@@ -726,7 +724,7 @@
   {:else if campaign === null}
     <p class="muted note">{t.loading}</p>
   {:else}
-    <header class="head" class:comic-head={['aoa','fne','trors'].includes(template.id)}>
+    <header class="head" class:comic-head={['aoa','fne','trors','gmw','mts','sm','mg','next','aos'].includes(template.id)}>
       {#if bannerArt}<img class="banner-art" src={bannerArt} alt="" />{/if}
       <!-- The scenario just played, while its result is on screen: the campaign
            has already moved on to the next one, and naming that one over a
@@ -771,7 +769,7 @@
       </div>
     {/if}
 
-    {#if !['aoa','fne','trors'].includes(template.id)}
+    {#if !['aoa','fne','trors','gmw','mts','sm','mg','next','aos'].includes(template.id)}
       <CampaignJourney {template} {campaign} locale={uiLocale} />
     {/if}
     {#if page === 'lost'}
@@ -921,7 +919,7 @@
       </section>
     {:else if page === 'playing' && scenario !== null}
       <CampaignPlaying
-        guided={['aoa','fne','trors'].includes(template.id)}
+        guided={['aoa','fne','trors','gmw','mts','sm','mg','next','aos'].includes(template.id)}
         initialThreatBonus={template.id==='trors'?redSkullStartingThreat(campaign,scenario.id):0}
         {t}
         {cardLocale}
