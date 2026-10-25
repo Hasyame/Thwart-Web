@@ -3,25 +3,11 @@ import type { IndexRow, Locale } from './types';
 /**
  * Where a card's picture comes from, and what to try when it does not load.
  *
- * English pictures are MarvelCDB's, as they have always been. MarvelCDB has
- * no French scans (fr.marvelcdb.com serves the same English files) and no
- * picture at all for several hundred cards, so two community sites fill in:
- *
- *  - MC4DB (mc4db.merlindumesnil.net), a MarvelCDB fork: English and French
- *    pictures under `/bundles/cards/<EN|FR>/<box>/<code>.webp`. <box> is the
- *    box the picture was first printed in, per card, so it comes from MC4DB's
- *    own list, read at build time into `data/card-images.json`. The build
- *    also gives MC4DB's English picture to every card MarvelCDB has none for.
- *  - cgbuilder (mc-src.cgbuilder.fr): French only, `/images/carte/<n>/<m>.jpg`
- *    from the code alone (`01001a` is `1/1A`; lower case redirects).
- *
- * French: MC4DB French, then cgbuilder, then the English picture.
- * English: the card's picture (MarvelCDB, or MC4DB where MarvelCDB has
- * none), then MC4DB's English one if MarvelCDB fails.
- *
- * Measured on 2026-09-24: of 150 random cards, 149 had a French picture.
- * Referenced, never copied: nothing here stores or re-hosts a picture. The
- * hosts are allowed in the site's CSP img-src (deploy/nginx-thwart-security.conf).
+ * French pictures use cgbuilder, then MarvelCDB's English scan when available.
+ * English pictures use MarvelCDB. MC4DB reprint metadata is retained, but its
+ * scans are not used: since October 2026 they return a takedown placeholder
+ * with HTTP 200, which otherwise prevents the normal fallback from running.
+ * Images remain referenced, never copied or re-hosted.
  *
  * The chain is walked by one listener for the whole page (see
  * `installCardImageFallback`): any `<img>` whose address fails is moved to the
@@ -29,7 +15,6 @@ import type { IndexRow, Locale } from './types';
  */
 
 const MARVELCDB = 'https://marvelcdb.com';
-const MC4DB = 'https://mc4db.merlindumesnil.net/bundles/cards';
 const CGBUILDER = 'https://mc-src.cgbuilder.fr/images/carte';
 
 let imageLocale: Locale = 'en';
@@ -101,26 +86,25 @@ export function cardImageCandidates(imageSrc: string, locale: Locale): string[] 
   }
   const path = mc4dbFor(code);
   const out: string[] = [];
+  // MC4DB currently returns the same takedown placeholder with HTTP 200 for
+  // every scan (verified 2026-10-25). An img error handler cannot detect it.
+  // Keep its reprint metadata, but do not serve its image URLs.
   if (locale === 'fr') {
-    if (path !== null) {
-      out.push(`${MC4DB}/FR/${path}.webp`);
-    }
     const cgb = cgbuilderUrl(code);
-    if (cgb !== null) {
-      out.push(cgb);
-    }
+    if (cgb !== null) out.push(cgb);
+    const original = path?.split('/').at(-1);
+    const reprint = original ? cgbuilderUrl(original) : null;
+    if (reprint !== null) out.push(reprint);
   }
-  out.push(own);
-  const english = path === null ? null : `${MC4DB}/EN/${path}.webp`;
-  if (english !== null && english !== own) {
-    out.push(english);
-  }
-  return out;
+  const unavailableHost = new URL(own).hostname === 'mc4db.merlindumesnil.net';
+  out.push(unavailableHost ? `${MARVELCDB}/bundles/cards/${code}.png` : own);
+  return [...new Set(out)];
 }
 
 /** The first address for a card's picture, in the configured language. */
 export function localisedCardImage(imageSrc: string): string {
   const candidates = cardImageCandidates(imageSrc, imageLocale);
+  nextAfter.delete(candidates[candidates.length - 1] as string);
   for (let i = 0; i + 1 < candidates.length; i++) {
     nextAfter.set(candidates[i] as string, candidates[i + 1] as string);
   }
@@ -139,6 +123,7 @@ export function nextCardImage(url: string): string | null {
  * catches an `<img>` anywhere without each component wiring its own handler.
  */
 export function installCardImageFallback(): void {
+  const attempted = new WeakMap<HTMLImageElement, { expected: string; visited: Set<string> }>();
   document.addEventListener(
     'error',
     (event) => {
@@ -147,7 +132,12 @@ export function installCardImageFallback(): void {
         return;
       }
       const next = nextCardImage(img.getAttribute('src') ?? '');
-      if (next !== null) {
+      const source = img.getAttribute('src') ?? '';
+      const previous = attempted.get(img);
+      const visited = previous?.expected === source ? previous.visited : new Set<string>();
+      visited.add(source);
+      if (next !== null && !visited.has(next)) {
+        attempted.set(img, { expected: next, visited });
         img.src = next;
       }
     },

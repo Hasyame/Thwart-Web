@@ -21,6 +21,11 @@ export const fr: Strings = {
   accelerationHelp: 'Ajoutées à chaque début de phase, sans multiplier par le nombre de joueurs. Ajustez les icônes lorsque les cartes quittent le jeu.',
 
   campaignPlayerDeckChanges: "Cartes à ajouter ou retirer de vos decks",
+  campaignCounterNames: {"reputation": "Réputation", "wakingNightmare": "Cauchemar éveillé", "credits": "Crédits", "hp": "Points de vie", "evasion": "Évasion", "pincerThreat": "Menace de la prise en tenaille", "powerStone": "Pierre du Pouvoir", "morlocksSaved": "Morlocks sauvés", "hopeDamage": "Dégâts sur Hope", "secretsMedical": "Secrets · médical", "secretsSurveillance": "Secrets · surveillance", "secretsTactical": "Secrets · tactique", "alertLevel": "Niveau d’alerte", "rescuedCaptives": "Captifs sauvés"},
+  campaignEffectsGeneral: "Effets de campagne",
+  campaignGuideScenarioGeneral: "Constituez le deck Rencontre avec les sets du scénario et les obligations des joueurs. Réservez les cartes de campagne pour l’étape suivante. Résolvez les capacités Mise en place des cartes Rencontre, puis les instructions de la manigance et du méchant de départ ci-dessous.",
+  campaignShufflePlayersGeneral: "Mélangez vos decks après leur préparation. Ne piochez pas encore : les effets de campagne seront appliqués avant la main de départ.",
+  campaignGuideHandGeneral: "Piochez jusqu’à la taille de main alter ego, en tenant compte des modificateurs de campagne. Pour le mulligan, défaussez les cartes à remplacer puis repiochez sans remélanger cette défausse. Résolvez enfin les capacités Mise en place des cartes Joueur en jeu. Le premier joueur commence.",
   campaignShufflePlayers: "Mélangez maintenant les decks Joueur après ces modifications. Ne piochez pas : le choix de l’allié de départ et la main initiale viennent plus loin.",
   campaignHorsemenStartingHp: (hp) => `Réglez le compteur de chaque Cavalier sur ${hp} PV.`,
   campaignHorsemenSideThreat: "Chaque manigance annexe révélée commence avec 6 menaces au total, sans multiplier par les joueurs. Remélangez les manigances non tirées dans le deck Rencontre.",

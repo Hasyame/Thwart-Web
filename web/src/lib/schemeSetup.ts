@@ -184,3 +184,21 @@ export function villainSetupSteps(card: CampaignSetupCard | undefined, locale: s
     : 'Give it a tough status card (Toughness).');
   return result.map(step => `${card.name} ${card.stage ?? ''} : ${step}`);
 }
+
+/** Resolve only the starting board, including scenarios with simultaneous schemes. */
+export function campaignScenarioSetupSteps(
+  cards: ReadonlyMap<string, CampaignSetupCard>, schemeCodes: readonly string[],
+  villainCodes: readonly string[], scenarioId: string | undefined, players: number, locale: string,
+): string[] {
+  // Tower Defense starts both stages. Venom Goblin uses a separate setup card,
+  // whose reverse is a rules card rather than a numbered threat stage.
+  const schemes = scenarioId === 's2_tower_defense'
+    ? schemeCodes.flatMap(code => campaignSetupSteps(cards, [code], players, locale))
+    : scenarioId === 's5_venom_goblin'
+      ? schemeCodes.flatMap(code => setupSteps(cards.get(code)?.text))
+      : campaignSetupSteps(cards, schemeCodes, players, locale);
+  // A pool of different villains is not a sequential I/II/III deck. Their
+  // selected order and reveal instructions remain in the scenario's guide.
+  const sameVillain = new Set(villainCodes.map(code => cards.get(code)?.name)).size === 1;
+  return [...schemes, ...villainSetupSteps(sameVillain ? cards.get(villainCodes[0] ?? '') : undefined, locale)];
+}

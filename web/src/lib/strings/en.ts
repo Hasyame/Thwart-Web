@@ -21,6 +21,11 @@ export const en: Strings = {
   accelerationHelp: 'Added each phase, without multiplying by player count. Adjust icons when their cards leave play.',
 
   campaignPlayerDeckChanges: "Cards to add to or remove from player decks",
+  campaignCounterNames: {"reputation": "Reputation", "wakingNightmare": "Waking nightmare", "credits": "Credits", "hp": "Hit points", "evasion": "Evasion", "pincerThreat": "Pincer threat", "powerStone": "Power Stone", "morlocksSaved": "Morlocks saved", "hopeDamage": "Damage on Hope", "secretsMedical": "Secrets · medical", "secretsSurveillance": "Secrets · surveillance", "secretsTactical": "Secrets · tactical", "alertLevel": "Alert level", "rescuedCaptives": "Rescued captives"},
+  campaignEffectsGeneral: "Campaign effects",
+  campaignGuideScenarioGeneral: "Build the encounter deck from the scenario sets and player obligations. Reserve campaign cards for the next step. Resolve Setup abilities on encounter cards, then the starting scheme and villain instructions below.",
+  campaignShufflePlayersGeneral: "Shuffle your prepared player decks. Do not draw yet: campaign effects are resolved before the opening hand.",
+  campaignGuideHandGeneral: "Draw up to your alter-ego hand size, applying campaign modifiers. For the mulligan, discard the cards you wish to replace and draw replacements without shuffling those discards back. Finally resolve Setup abilities on player cards in play. The first player begins.",
   campaignShufflePlayers: "Now shuffle player decks after these changes. Do not draw: choose your opening ally and draw your hand later.",
   campaignHorsemenStartingHp: (hp) => `Set each Horseman’s dial to ${hp} HP.`,
   campaignHorsemenSideThreat: "Each revealed side scheme starts with 6 threat total, without multiplying by players. Shuffle unselected side schemes into the encounter deck.",

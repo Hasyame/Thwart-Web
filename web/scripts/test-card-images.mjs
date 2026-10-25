@@ -32,29 +32,23 @@ check('cgbuilder: no letter', cgbuilderUrl('21112') === 'https://mc-src.cgbuilde
 // A reprint lives in the box it was first printed in, not its own pack.
 setMc4dbPaths({ '01001a': 'core/01001a', '12015': 'core/01088', '60037a': 'fear_no_evil_by_ffg/60037a' });
 
-check('English: MarvelCDB first, MC4DB English after',
-  same(cardImageCandidates('/bundles/cards/01001a.png', 'en'), [
-    'https://marvelcdb.com/bundles/cards/01001a.png',
-    'https://mc4db.merlindumesnil.net/bundles/cards/EN/core/01001a.webp',
-  ]), JSON.stringify(cardImageCandidates('/bundles/cards/01001a.png', 'en')));
-
-check('French: MC4DB French, cgbuilder, MarvelCDB, MC4DB English',
+check('English uses the original scan, without the unavailable host',
+  same(cardImageCandidates('/bundles/cards/01001a.png', 'en'), ['https://marvelcdb.com/bundles/cards/01001a.png']));
+check('French starts with cgbuilder then the English scan',
   same(cardImageCandidates('/bundles/cards/01001a.png', 'fr'), [
-    'https://mc4db.merlindumesnil.net/bundles/cards/FR/core/01001a.webp',
     'https://mc-src.cgbuilder.fr/images/carte/1/1A.jpg',
     'https://marvelcdb.com/bundles/cards/01001a.png',
-    'https://mc4db.merlindumesnil.net/bundles/cards/EN/core/01001a.webp',
   ]));
-
-check('a reprint takes its first box from the MC4DB list',
-  cardImageCandidates('/bundles/cards/12015.png', 'fr')[0] === 'https://mc4db.merlindumesnil.net/bundles/cards/FR/core/01088.webp');
-
-// A card MarvelCDB has no picture for arrives with MC4DB's English one.
+check('reprints retain an additional original French scan',
+  cardImageCandidates('/bundles/cards/12015.png', 'fr').includes('https://mc-src.cgbuilder.fr/images/carte/1/88.jpg'));
 const borrowed = 'https://mc4db.merlindumesnil.net/bundles/cards/EN/fear_no_evil_by_ffg/60037a.webp';
-check('English: a borrowed MC4DB picture is used as it is, once',
-  same(cardImageCandidates(borrowed, 'en'), [borrowed]));
-check('French: a borrowed picture still goes to its French scan first',
-  cardImageCandidates(borrowed, 'fr')[0] === 'https://mc4db.merlindumesnil.net/bundles/cards/FR/fear_no_evil_by_ffg/60037a.webp');
+check('borrowed MC4DB URLs are repaired',
+  same(cardImageCandidates(borrowed, 'en'), ['https://marvelcdb.com/bundles/cards/60037a.png']));
+check('borrowed French cards start at the working French provider',
+  cardImageCandidates(borrowed, 'fr')[0] === 'https://mc-src.cgbuilder.fr/images/carte/60/37A.jpg');
+for (const language of ['en','fr']) for (const src of [borrowed, '/bundles/cards/01001a.png']) {
+  check(`no HTTP-200 placeholder in ${language} fallback`, !cardImageCandidates(src, language).some(u => u.includes('mc4db.merlindumesnil.net')));
+}
 
 check('something that is not a card picture is left alone',
   same(cardImageCandidates('/art/campaigns/fne.jpg', 'fr'), ['https://marvelcdb.com/art/campaigns/fne.jpg']));
@@ -62,8 +56,21 @@ check('something that is not a card picture is left alone',
 // The chain the page's error listener walks.
 const first = localisedCardImage('/bundles/cards/01001a.png');
 check('the first address is English until a language is configured', first === 'https://marvelcdb.com/bundles/cards/01001a.png', first);
-check('after it fails, MC4DB English', nextCardImage(first) === 'https://mc4db.merlindumesnil.net/bundles/cards/EN/core/01001a.webp');
+check('no unavailable provider after the English scan', nextCardImage(first) === null);
 check('and then nothing', nextCardImage('https://mc4db.merlindumesnil.net/bundles/cards/EN/core/01001a.webp') === null);
+
+// A localized image passed back through the resolver must not create a loop.
+const alreadyFrench = 'https://mc4db.merlindumesnil.net/bundles/cards/FR/core/01001a.webp';
+const unique = cardImageCandidates(alreadyFrench, 'fr');
+check('localized source appears only once', unique.length === new Set(unique).size);
+localisedCardImage(alreadyFrench);
+const visited = new Set();
+let address = alreadyFrench;
+while (address !== null && !visited.has(address)) {
+  visited.add(address);
+  address = nextCardImage(address);
+}
+check('fallback terminates instead of cycling through failed images', address === null);
 
 if (failures > 0) {
   console.log(`\n${failures} FAILED`);

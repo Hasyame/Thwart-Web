@@ -15,6 +15,11 @@ import type { Locale } from './types';
  * stated requirement, not an accident.
  */
 export interface Strings {
+  readonly campaignEffectsGeneral: string;
+  readonly campaignGuideScenarioGeneral: string;
+  readonly campaignShufflePlayersGeneral: string;
+  readonly campaignGuideHandGeneral: string;
+  readonly campaignCounterNames: Readonly<Record<string, string>>;
   readonly villainPhaseStart: string;
   readonly acceleration: string;
   readonly accelerationTokens: string;
