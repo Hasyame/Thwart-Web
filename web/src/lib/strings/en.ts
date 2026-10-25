@@ -6,6 +6,12 @@ import type { Strings } from '../i18n';
  * other arrives in idle time, in case they switch.
  */
 export const en: Strings = {
+  campaignAuditDraw: 'Draw only until you reach your alter-ego hand size, including modifiers and cards already added to your hand during setup.',
+  campaignAuditMulligan: 'Take your mulligan: discard the cards you want to replace, then draw up to your hand size. Keep these discards out of the deck.',
+  campaignAuditMulliganTitle: 'Additional mulligan',
+  campaignAuditAfterMulligan: 'After mulligans',
+  campaignAuditPlayerSetup: 'Resolve Setup abilities on player cards in play. Do not draw a second opening hand. The first player begins after any final setup effects below.',
+  campaignAuditFinished: 'When setup ends',
   schemeLost: 'YOU LOST',
   schemeThresholdReached: 'Threshold reached: resolve the main scheme.',
   tableFinish: 'Finish scenario',
@@ -46,7 +52,7 @@ export const en: Strings = {
   campaignGuideScenario: "Schemes and opening effects",
   campaignGuideCampaign: "Mission and campaign effects",
   campaignGuideReady: "Opening hand and start",
-  campaignGuideHeroesText: "Take your campaign identities, alter-ego side up. Prepare their starting HP; expert campaign damage is applied later. Choose the first player, set obligations and nemesis sets aside, and gather tokens and status cards. Apply the additions and removals below before shuffling player decks. Do not draw yet.",
+  campaignGuideHeroesText: "Take your campaign identities, alter-ego side up. Prepare their starting HP; expert campaign damage is applied later. Choose the first player, set obligations and nemesis sets aside, and gather tokens and status cards. Follow the instructions below to prepare your decks; reserve cards whose addition is explicitly scheduled later. Do not draw yet.",
   campaignGuideScenarioText: "Build the encounter deck from the scenario sets and obligations. Keep the Age of Apocalypse campaign set for the Mission step. Put cards with the Setup keyword into play, then follow the specific instructions below.",
   campaignGuideHandText: "Complete each hand up to its alter-ego hand size, counting the chosen ally and applying modifiers. For the mulligan, discard the cards you wish to replace and draw back up without reshuffling those discards. Finally, resolve Setup abilities on player cards in play. The first player begins their turn.",
   campaignAnswerNo: "No",

@@ -15,6 +15,12 @@ import type { Locale } from './types';
  * stated requirement, not an accident.
  */
 export interface Strings {
+  readonly campaignAuditDraw: string;
+  readonly campaignAuditMulligan: string;
+  readonly campaignAuditMulliganTitle: string;
+  readonly campaignAuditAfterMulligan: string;
+  readonly campaignAuditPlayerSetup: string;
+  readonly campaignAuditFinished: string;
   readonly campaignEffectsGeneral: string;
   readonly campaignGuideScenarioGeneral: string;
   readonly campaignShufflePlayersGeneral: string;

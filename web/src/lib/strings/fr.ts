@@ -6,6 +6,12 @@ import type { Strings } from '../i18n';
  * other arrives in idle time, in case they switch.
  */
 export const fr: Strings = {
+  campaignAuditDraw: 'Piochez seulement jusqu’à atteindre votre taille de main alter ego, en comptant les modificateurs et les cartes déjà ajoutées à votre main pendant la mise en place.',
+  campaignAuditMulligan: 'Effectuez votre mulligan : défaussez les cartes à remplacer, puis complétez votre main. Ne remélangez pas ces cartes défaussées dans le deck.',
+  campaignAuditMulliganTitle: 'Mulligan supplémentaire',
+  campaignAuditAfterMulligan: 'Après les mulligans',
+  campaignAuditPlayerSetup: 'Résolvez les capacités Mise en place des cartes Joueur en jeu. Ne piochez pas une deuxième main de départ. Le premier joueur commence après les éventuels derniers effets ci-dessous.',
+  campaignAuditFinished: 'À la fin de la mise en place',
   schemeLost: 'VOUS AVEZ PERDU',
   schemeThresholdReached: 'Seuil atteint : résolvez la manigance.',
   tableFinish: 'Terminer le scénario',
@@ -46,7 +52,7 @@ export const fr: Strings = {
   campaignGuideScenario: "Manigances et effets de départ",
   campaignGuideCampaign: "Mission et effets de campagne",
   campaignGuideReady: "Main de départ et lancement",
-  campaignGuideHeroesText: "Reprenez les identités de campagne, face alter ego. Préparez leurs PV de départ ; les blessures de campagne experte seront appliquées plus tard. Choisissez le premier joueur, réservez les obligations et les sets Némésis, puis rassemblez les jetons et états. Appliquez les ajouts et retraits ci-dessous avant de mélanger vos decks. Ne piochez pas encore.",
+  campaignGuideHeroesText: "Reprenez les identités de campagne, face alter ego. Préparez leurs PV de départ ; les blessures de campagne experte seront appliquées plus tard. Choisissez le premier joueur, réservez les obligations et les sets Némésis, puis rassemblez les jetons et états. Suivez les indications ci-dessous pour préparer vos decks ; gardez de côté les cartes dont l’ajout est explicitement prévu plus tard. Ne piochez pas encore.",
   campaignGuideScenarioText: "Constituez le deck Rencontre avec les sets du scénario et les obligations. Gardez le set de campagne Ère d’Apocalypse pour l’étape Mission. Mettez en jeu les cartes portant le mot-clé Mise en place, puis suivez les instructions particulières ci-dessous.",
   campaignGuideHandText: "Complétez chaque main jusqu’à la taille de main alter ego, en comptant l’allié choisi et les modificateurs. Pour le mulligan, défaussez les cartes à remplacer puis repiochez, sans remélanger cette défausse. Résolvez enfin les capacités Mise en place des cartes Joueur en jeu. Le premier joueur commence son tour.",
   campaignAnswerNo: "Non",
