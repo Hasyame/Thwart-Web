@@ -335,6 +335,10 @@ jobs:
         working-directory: web
         run: npm run test:preparation-order
 
+      - name: Remaining campaign preparation rules
+        working-directory: web
+        run: npm run test:remaining-preparation
+
       - name: Civil War rules and guides
         working-directory: web
         run: npm run test:civil-war

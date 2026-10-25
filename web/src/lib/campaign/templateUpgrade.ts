@@ -2,6 +2,7 @@ import type { CampaignTemplate } from './types';
 import { expandTemplate } from './engine';
 import legacyAoa from './templates/aoa-before-v18.json';
 import correctedAoa from './templates/aoa.json';
+import { remainingRules } from './remainingRules';
 
 /** Defaults omitted by Android's serializer are equivalent to absent optional fields. */
 function normalized(value: unknown): unknown {
@@ -19,7 +20,7 @@ export const aoaRules18 = correctedAoa as CampaignTemplate;
 /** Read-time correction of a known official snapshot. The original and event history remain untouched. */
 export function upgradeTemplate(stored: CampaignTemplate): CampaignTemplate {
   if (stored.id === 'trors') return upgradeRedSkull(stored);
-  if (stored.id !== 'aoa') return stored;
+  if (stored.id !== 'aoa') return remainingRules(stored);
   // Android omits this property when it equals its constructor default.
   const explicitDefaults = {...stored, difficulties: stored.difficulties ?? ['standard', 'expert']};
   return JSON.stringify(normalized(expandTemplate(explicitDefaults))) === baseline ? expandTemplate(aoaRules18) : stored;

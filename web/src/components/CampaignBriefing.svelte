@@ -17,6 +17,7 @@
     type SetupStep,
   } from '../lib/campaign/types';
   import { aoaPlayerDeckStep, aoaScenarioStep, aoaRepeatedStep } from '../lib/campaign/preparation';
+  import { hasRemainingGuide, preparationPhase, inventoryPreview, preparationNotes, preparationSource, type PreparationPhase } from '../lib/campaign/remainingPreparation';
   import ApocalypsePreparation from './ApocalypsePreparation.svelte';
   import FnePreparation from './FnePreparation.svelte';
   import RedSkullPreparation from './RedSkullPreparation.svelte';
@@ -25,6 +26,7 @@
   import { openingAllies } from '../lib/campaign/openingAlly';
   import type { IndexRow } from '../lib/types';
   import type { SavedDeck } from '../lib/records';
+  import { cardPreparationDetails, type CampaignSetupCard } from '../lib/schemeSetup';
 
   interface Props {
     runKey: string;
@@ -39,6 +41,7 @@
     text: TextContext;
     /** The setup printed on the scenario's own main scheme, in the card language. */
     schemeSteps: readonly string[];
+    preparationCards?: ReadonlyMap<string,CampaignSetupCard>;
     onAction: (actionId: string, heroId: string | null) => void;
     onKeep: (drawId: string, cardCode: string) => void;
     onReady: () => void;
@@ -63,6 +66,7 @@
     setName,
     text,
     schemeSteps,
+    preparationCards = new Map(),
     onAction,
     onKeep,
     onReady,
@@ -136,11 +140,14 @@
   const consequenceStep = (step: SetupStep): boolean => step.when?.countTrue != null || step.showCardList != null;
   const aoa = $derived(template.id === 'aoa');
   const guided = $derived(['aoa', 'gmw', 'mts', 'sm', 'mg', 'next', 'aos'].includes(template.id));
+  const remaining = $derived(hasRemainingGuide(template.id));
+  const phase = (target: PreparationPhase): readonly SetupStep[] => remaining ? setup.filter(step => preparationPhase(template.id,scenario.id,step) === target) : [];
+  const notes = $derived(preparationNotes(template.id,scenario.id,campaign));
   const isExpertHealthStep = (step: SetupStep): boolean =>
     step.showCounter === 'hp' || step.showCounter === 'missionThreat' || step.action?.id === 'heal';
-  const playerDeckSteps = $derived(aoa ? setup.filter(aoaPlayerDeckStep) : []);
-  const scenarioSteps = $derived(aoa ? setup.filter(step => aoaScenarioStep(step, scenario.id)) : []);
-  const campaignSteps = $derived(aoa ? setup.filter(step => !isExpertHealthStep(step) && !aoaPlayerDeckStep(step) && !aoaScenarioStep(step, scenario.id) && !aoaRepeatedStep(step)) : setup);
+  const playerDeckSteps = $derived(aoa ? setup.filter(aoaPlayerDeckStep) : [...phase('players'), ...(remaining ? inventoryPreview(template.id,scenario.id,campaign,setup) : [])]);
+  const scenarioSteps = $derived(aoa ? setup.filter(step => aoaScenarioStep(step, scenario.id)) : [...phase('beforeScheme'),...notes.beforeScheme]);
+  const campaignSteps = $derived(aoa ? setup.filter(step => !isExpertHealthStep(step) && !aoaPlayerDeckStep(step) && !aoaScenarioStep(step, scenario.id) && !aoaRepeatedStep(step)) : remaining ? [...phase('campaign'),...notes.campaign] : setup);
   const expertHealthSteps = $derived(aoa ? setup.filter(isExpertHealthStep) : []);
   const guideKey = $derived(`thwart.campaign-guide.${runKey}.${scenario.id}.${campaign.completedScenarios.length}`);
   let guideStep = $state(0);
@@ -150,7 +157,7 @@
 </script>
 
 {#snippet drawnCards(drawId: string, offer: number, who: string | null)}
-  {@const codes = drawnFor(drawId).map(code => drawId === 'horsemen' && scenarioDifficulty(campaign, scenario.id) === 'expert' ? code.replace(/a$/, 'b') : code)}
+  {@const codes = drawnFor(drawId).map(code => ['horsemen','marauderOrder','captor'].includes(drawId) && scenarioDifficulty(campaign, scenario.id) === 'expert' ? code.replace(/a$/, 'b') : code)}
   {#if codes.length > 0}
     <!-- What came up, and nothing else. Listing the whole pool beside it would
          put the player back to picking one, which is the job just done for
@@ -182,6 +189,17 @@
   {@const named = new Set(segments.filter((s) => s.kind === 'card').map((s) => s.code))}
   <li class="step">
     <p class="line"><CampaignText {segments} /></p>
+    {#if remaining}
+      {@const english = step.text?.en ?? ''}
+      {@const instruction = english.replace(/^Optional: /, '')}
+      {@const effectCodes = english.startsWith('After mulligans,') ? campaign.cardLists.evidenceGained ?? []
+        : /^(?:Reveal (?:this|the) side scheme|Put this side scheme into play|Find and reveal|Put Teleported Away)/.test(instruction) ? step.cards ?? ['16112'] : []}
+      {#each effectCodes as code}
+        {#each cardPreparationDetails(preparationCards.get(code), /^(?:Reveal|Find and reveal)/.test(instruction),campaign.heroes.length,uiLocale) as line}
+          <p class="line">{line}</p>
+        {/each}
+      {/each}
+    {/if}
 
     <!-- Values the campaign carries forward from earlier scenarios, so the step
          can be followed without leafing back through it. -->
@@ -402,7 +420,7 @@
         <dd>
           <span class="chips">
             {#each villainDeck as code (code)}
-              <span class="chip"><CardRef {code} name={cardName(code)} /></span>
+              <span class="chip"><CardRef {code} name={cardName(code)} />{#if remaining && preparationCards.get(code)?.stage} · {preparationCards.get(code)?.stage}{/if}</span>
             {/each}
           </span>
         </dd>
@@ -423,6 +441,7 @@
       {/if}
     </dl>
     {#if guided}<p>{t.campaignGuideGatherText}</p>{/if}
+    {#if remaining}{@render panel(t.campaignGuideGather,[...notes.gather,...phase('gather')])}{/if}
     {#if preSetup.filter(hasText).length > 0}
       <ul class="steps">
         {#each preSetup.filter(hasText) as step, i (i)}
@@ -458,6 +477,7 @@
   </section>
 {/if}
 
+{#if remaining}{@render panel(t.campaignGuideScenario,phase('afterScheme'))}<p class="muted">{preparationSource(template.id,scenario.id)}</p>{/if}
 </div><div hidden={guided && guideStep !== 4}>
 {@render panel(aoa ? t.campaignGuideCampaign : t.campaignEffectsGeneral, campaignSteps)}
 {#if !guided}{@render panel(t.campaignInformation, information)}{/if}
@@ -469,7 +489,16 @@
 {#if guided}{@render panel(t.campaignInformation, information)}{/if}
 
 </div><div hidden={guided && guideStep !== 5}>
-{#if guided}<section class="panel"><h3>{t.campaignGuideReady}</h3><p>{aoa ? t.campaignGuideHandText : t.campaignGuideHandGeneral}</p></section>{/if}
+{#if guided}<section class="panel"><h3>{t.campaignGuideReady}</h3>
+  {#if remaining}
+    <p>{t.campaignAuditDraw}</p>
+    <p>{t.campaignAuditMulligan}</p>
+    {@render panel(t.campaignAuditMulliganTitle,phase('mulligan'))}
+    {@render panel(t.campaignAuditAfterMulligan,phase('afterMulligan'))}
+    <p>{t.campaignAuditPlayerSetup}</p>
+    {@render panel(t.campaignAuditFinished,phase('finished'))}
+  {:else}<p>{aoa ? t.campaignGuideHandText : t.campaignGuideHandGeneral}</p>{/if}
+</section>{/if}
 <!-- The way into the scenario, as the last panel of the page: a comic
      frame to tap, and the quieter way back beneath it. -->
 <div class="ready">

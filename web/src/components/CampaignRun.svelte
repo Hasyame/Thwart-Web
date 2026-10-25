@@ -4,7 +4,7 @@
   import type { CampaignRun, Play, SavedDeck } from '../lib/records';
   import { db } from '../lib/db';
   import { cardImageUrl, loadCardsByCode } from '../lib/data';
-  import { campaignScenarioSetupSteps, setupSteps } from '../lib/schemeSetup';
+  import { campaignScenarioSetupSteps, setupSteps, type CampaignSetupCard } from '../lib/schemeSetup';
   import { endGame, formatElapsed, resumeSession, session } from '../lib/session.svelte';
   import { evaluate } from '../lib/campaign/conditions';
   import { fold, type HeroCardStats } from '../lib/campaign/engine';
@@ -370,6 +370,7 @@
   // --- the setup printed on the scenario's own main scheme --------------------
 
   let schemeSteps = $state.raw<readonly string[]>([]);
+  let preparationCards = $state.raw<ReadonlyMap<string,CampaignSetupCard>>(new Map());
 
   $effect(() => {
     const codes = scenario?.baseSetup?.mainScheme ?? [];
@@ -377,8 +378,10 @@
     const language = uiLocale;
     const orderedGuide = ['aoa','gmw','mts','sm','mg','next','aos'].includes(template?.id ?? '');
     const scenarioId = scenario?.id;
+    const setupDraws = campaign?.draws[scenarioId ?? ''] ?? {};
     const villainCodes = scenario && campaign ? villainStages(scenario.baseSetup, scenarioDifficulty(campaign, scenario.id), drawnVillainFor(campaign, scenario.id)) : [];
     schemeSteps = [];
+    preparationCards = new Map();
     if (codes.length === 0) {
       schemeSteps = [];
       return;
@@ -394,10 +397,11 @@
     void loadCardsByCode(cardLocale, packs)
       .then((byCode) => {
         if (!cancelled) {
+          preparationCards = byCode;
           // Read off the card rather than written into the template, so it
           // arrives in the language the cards are in.
           schemeSteps = orderedGuide
-            ? campaignScenarioSetupSteps(byCode, codes, villainCodes, scenarioId, players, language)
+            ? campaignScenarioSetupSteps(byCode, codes, villainCodes, scenarioId, players, language,setupDraws)
             : codes.flatMap(code => setupSteps(byCode.get(code)?.text));
         }
       })
@@ -960,6 +964,7 @@
         {setName}
         {text}
         {schemeSteps}
+        {preparationCards}
         onAction={act}
         onKeep={keep}
         onReady={begin}
