@@ -57,6 +57,12 @@ Reassess if imports change. Automated accessibility checks do not replace
 screen-reader, physical-device and full keyboard testing. External image hosts,
 mail delivery and BGG availability are not guaranteed by these tests.
 
+The pre-release backup completed and verified successfully. Its service log
+confirms that `OFFSITE` is unset: snapshots remain on the same server. This
+protects against application mistakes, but not loss of the host. An independent
+backup destination and restore exercise remain an operational follow-up; this
+audit does not copy account data to an unapproved third-party service.
+
 Publish through the normal tested-release and API-promotion workflows. Take a
 consistent database backup first; no migration is required. Back up and replace
 only the nginx security-header snippet, validate with `nginx -t`, then reload;
